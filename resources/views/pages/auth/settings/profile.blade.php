@@ -19,11 +19,30 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('settings.profile.update') }}" class="space-y-6">
+        {{-- Tambahkan enctype="multipart/form-data" agar bisa upload file --}}
+        <form method="POST" action="{{ route('settings.profile.update') }}" enctype="multipart/form-data" class="space-y-6">
             @csrf
             @method('PUT')
 
-            <!-- Name Input -->
+            <div class="flex items-center gap-4">
+                <div class="shrink-0">
+                    @if($user->avatar)
+                        <img class="h-16 w-16 object-cover rounded-full border dark:border-gray-700" 
+                             src="{{ asset('storage/' . $user->avatar) }}" 
+                             alt="Avatar">
+                    @else
+                        <div class="h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-xl font-bold text-gray-600 dark:text-gray-400">
+                            {{ $user->initials() }}
+                        </div>
+                    @endif
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profile Picture</label>
+                    <input type="file" name="avatar" accept="image/*"
+                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-gray-800 dark:file:text-gray-300">
+                </div>
+            </div>
+
             <div>
                 <x-forms.input
                     name="name"
@@ -35,7 +54,6 @@
                 />
             </div>
 
-            <!-- Email Input -->
             <div>
                 <x-forms.input
                     name="email"
@@ -46,7 +64,6 @@
                 />
             </div>
 
-            <!-- Save Button -->
             <div>
                 <x-ui.button type="submit" variant="primary">
                     Save
@@ -54,7 +71,6 @@
             </div>
         </form>
 
-        <!-- Delete Account Section -->
         <div class="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Delete account</h3>
             <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Delete your account and all of its resources</p>

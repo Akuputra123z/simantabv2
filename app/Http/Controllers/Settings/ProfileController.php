@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage; // Tambahkan ini
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -33,7 +34,22 @@ class ProfileController extends Controller
                 'max:255',
                 Rule::unique(User::class)->ignore($user->id),
             ],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'], // Validasi Avatar
         ]);
+
+        // Logika Upload Avatar
+        if ($request->hasFile('avatar')) {
+            // 1. Hapus avatar lama jika ada di storage
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            // 2. Simpan file baru ke folder 'avatars' di disk 'public'
+            $path = $request->file('avatar')->store('avatars', 'public');
+            
+            // 3. Masukkan path file ke array validated untuk disimpan ke DB
+            $validated['avatar'] = $path;
+        }
 
         $user->fill($validated);
 
@@ -49,6 +65,11 @@ class ProfileController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         $user = $request->user();
+
+        // Opsional: Hapus avatar dari storage saat akun dihapus
+        if ($user->avatar) {
+            Storage::disk('public')->delete($user->avatar);
+        }
 
         Auth::logout();
 

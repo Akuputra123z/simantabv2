@@ -1,42 +1,158 @@
 @extends('layouts.app')
 
 @section('content')
-    <x-common.page-breadcrumb pageTitle="Edit User" />
+<div class="p-6 bg-gray-50 min-h-screen dark:bg-gray-950 flex justify-center">
+    <div class="w-full max-w-2xl">
 
-    <div class="space-y-6">
-        <div class="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-            <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
-                <h3 class="text-base font-medium text-gray-800 dark:text-white/90">
-                    Edit: {{ $user->name }}
-                </h3>
+        <nav class="mb-6 flex items-center gap-2 text-sm text-gray-500 font-medium">
+            <a href="{{ route('users.index') }}" class="hover:text-indigo-600 transition-colors">Manajemen User</a>
+            <span>/</span>
+            <span class="text-gray-900 dark:text-white">Edit — {{ $user->name }}</span>
+        </nav>
+
+        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.03] shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">Edit User</h3>
+                    <p class="text-sm text-gray-500 mt-0.5">Kosongkan password jika tidak ingin mengubahnya.</p>
+                </div>
+                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold
+                    {{ $user->is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' }}">
+                    {{ $user->is_active ? 'Aktif' : 'Nonaktif' }}
+                </span>
             </div>
 
-            <form action="{{ route('users.update', $user) }}" method="POST" class="p-6">
-                @csrf
-                @method('PUT')
-
-                <div>
-                    <x-forms.input label="Name" name="name" :value="$user->name" required />
+            <div class="p-6">
+                @if($errors->any())
+                <div class="mb-5 p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
+                    <p class="font-medium mb-1">Mohon perbaiki kesalahan berikut:</p>
+                    <ul class="list-disc list-inside space-y-0.5">
+                        @foreach($errors->all() as $e) <li>{{ $e }}</li> @endforeach
+                    </ul>
                 </div>
+                @endif
 
-                <div class="mt-4">
-                    <x-forms.input label="Email" name="email" :value="$user->email" required />
-                </div>
+                <form action="{{ route('users.update', $user) }}" method="POST" id="form-edit">
+                    @csrf @method('PUT')
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                <div class="mt-4 w-full px-2.5">
-                    <div class="mt-1 flex items-center gap-3">
-                        <button type="submit" class="bg-brand-500 hover:bg-brand-600 flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white">
-                            Update User
-                        </button>
-    
-                        <a href="{{ route('users.index') }}"
-                            class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-medium text-gray-700 shadow-theme-xs transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]">
-                            Cancel
-                        </a>
+                        <div class="md:col-span-2">
+                            <label class="label-field">Nama Lengkap <span class="text-red-500">*</span></label>
+                            <input type="text" name="name" value="{{ old('name', $user->name) }}" required
+                                   class="input-field {{ $errors->has('name') ? 'border-red-500' : '' }}">
+                            @error('name') <p class="err-msg">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="label-field">Email <span class="text-red-500">*</span></label>
+                            <input type="email" name="email" value="{{ old('email', $user->email) }}" required
+                                   class="input-field {{ $errors->has('email') ? 'border-red-500' : '' }}">
+                            @error('email') <p class="err-msg">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="label-field">NIP</label>
+                            <input type="text" name="nip" value="{{ old('nip', $user->nip) }}"
+                                   class="input-field font-mono" maxlength="30">
+                            @error('nip') <p class="err-msg">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="label-field">Jabatan</label>
+                            <input type="text" name="jabatan" value="{{ old('jabatan', $user->jabatan) }}"
+                                   class="input-field">
+                        </div>
+
+                        <div>
+                            <label class="label-field">No. HP</label>
+                            <input type="text" name="phone" value="{{ old('phone', $user->phone) }}"
+                                   class="input-field">
+                        </div>
+
+                        {{-- Role --}}
+                        <div>
+                            <label class="label-field">Role <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <select name="role" required class="input-field appearance-none">
+                                    @foreach($roles as $role)
+                                    <option value="{{ $role->name }}"
+                                        {{ old('role', $user->getRoleNames()->first()) === $role->name ? 'selected' : '' }}>
+                                        {{ \App\Models\User::ROLES[$role->name] ?? ucfirst(str_replace('_', ' ', $role->name)) }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                                <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </span>
+                            </div>
+                        </div>
+
+                        {{-- Password baru (opsional) --}}
+                        <div class="md:col-span-2">
+                            <label class="label-field">Password Baru <span class="text-gray-400 font-normal">(kosongkan jika tidak diubah)</span></label>
+                            <input type="password" name="password"
+                                   class="input-field {{ $errors->has('password') ? 'border-red-500' : '' }}"
+                                   placeholder="Min. 8 karakter, huruf + angka">
+                            @error('password') <p class="err-msg">{{ $message }}</p> @enderror
+                        </div>
+
+                        {{-- Status toggle --}}
+                        <div class="md:col-span-2">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <div class="relative">
+                                    <input type="hidden" name="is_active" value="0">
+                                    <input type="checkbox" name="is_active" value="1" id="is_active"
+                                           {{ old('is_active', $user->is_active ? '1' : '0') === '1' ? 'checked' : '' }}
+                                           class="sr-only peer"
+                                           {{ $user->id === auth()->id() ? 'disabled' : '' }}>
+                                    <div class="w-10 h-6 bg-gray-200 peer-checked:bg-indigo-600 rounded-full transition-colors dark:bg-gray-700 {{ $user->id === auth()->id() ? 'opacity-50 cursor-not-allowed' : '' }}"></div>
+                                    <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Akun Aktif
+                                    @if($user->id === auth()->id())
+                                        <span class="text-gray-400 font-normal">(tidak bisa menonaktifkan akun sendiri)</span>
+                                    @endif
+                                </span>
+                            </label>
+                        </div>
+
                     </div>
-                </div>
-            </form>
+
+                    <div class="mt-6 flex items-center justify-between pt-5 border-t border-gray-100 dark:border-gray-800">
+                        <a href="{{ route('users.show', $user) }}"
+                           class="text-sm text-gray-500 hover:text-indigo-600 transition-colors">&larr; Detail User</a>
+                        <div class="flex gap-3">
+                            <a href="{{ route('users.index') }}"
+                               class="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                Batal
+                            </a>
+                            <button type="submit" id="btn-submit"
+                                    class="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50">
+                                <span id="btn-label">Perbarui User</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-@endsection
+</div>
 
+<style>
+.label-field { display:block; font-size:.8125rem; font-weight:500; color:#374151; margin-bottom:.375rem; }
+.dark .label-field { color:#9ca3af; }
+.input-field { display:block; width:100%; height:2.75rem; padding:.625rem 1rem; font-size:.875rem; border:1px solid #d1d5db; border-radius:.5rem; background:transparent; transition:border-color .15s; }
+.dark .input-field { border-color:#374151; color:#f3f4f6; }
+.input-field:focus { outline:none; border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.1); }
+.input-field.border-red-500 { border-color:#ef4444; }
+.err-msg { margin-top:.25rem; font-size:.75rem; color:#ef4444; }
+</style>
+<script>
+document.getElementById('form-edit').addEventListener('submit', function () {
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true;
+    document.getElementById('btn-label').innerText = 'Menyimpan...';
+});
+</script>
+@endsection

@@ -12,12 +12,77 @@ class MenuHelper
                 'name' => 'Dashboard',
                 'path' => route('dashboard', absolute: false),
             ],
+
         ];
     }
+
+    
 
     public static function getAdministrationItems(): array
     {
         return [
+             [
+                'icon' => 'charts',
+                'name' => 'Pengasaan',
+                'subItems' => [
+                    [
+                        'name' => 'Audit Program',
+                        'path' => route('audit-program.index', absolute: false),
+                        'pro' => false
+                    ],
+
+                     [
+                        'name' => 'Penugasan Audit',
+                        'path' => route('audit-assignment.index', absolute: false),
+                        'pro' => false
+                    ],
+
+                    [
+                        'name' => 'LHP',
+                        'path' => route('lhps.index', absolute: false),
+                        'pro' => false
+                    ],
+                
+                     [
+                        'name' => 'Rekomendasi',
+                        'path' => route('recommendations.index', absolute: false),
+                        'pro' => false
+                    ],
+                    [
+                        'name' => 'Tindak Lanjut',
+                        'path' => route('tindak-lanjuts.index', absolute: false),
+                        'pro' => false
+                    ],
+                    
+
+                    
+                ],
+            ],
+
+
+            [
+                'icon' => 'forms',
+                'name' => 'Master Data',
+                'subItems' => [
+                    [
+                        'name' => 'Kode Rekomendasi',
+                        'path' => route('kode-rekomendasi.index', absolute: false),
+                        'active' => self::isActive('kode-rekomendasi'),
+                    ],
+                    [
+                        'name' => 'Kode Temuan',
+                        'path' => route('kode-temuan.index', absolute: false),
+                        'active' => self::isActive('kode-temuan'),
+                    ],
+                    [
+                        'name' => 'Unit Diperiksa',
+                        'path' => route('unit-diperiksa.index', absolute: false),
+                        'active' => self::isActive('unit-diperiksa'),
+                    ],
+
+                   
+                ],
+            ],
             [
                 'icon' => 'charts',
                 'name' => 'User Management',
@@ -27,10 +92,26 @@ class MenuHelper
                         'path' => route('users.index', absolute: false),
                         'pro' => false
                     ],
+
+                     [
+                        'name' => 'Profil Saya',
+                        'path' => route('settings.profile.edit', absolute: false),
+                    ],
+
+                     [
+                        'name' => 'Permission',
+                        'path' => route('permissions.index', absolute: false),
+                    ],
+                    
                 ],
             ],
+
+            
+
         ];
     }
+    
+
 
     public static function getMenuGroups(): array
     {

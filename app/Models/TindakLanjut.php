@@ -88,6 +88,33 @@ class TindakLanjut extends Model
         });
     }
 
+    // ── Validation Helper ────────────────────────────────────────────────────
+
+    /**
+     * Validasi apakah nilai_tindak_lanjut tidak melebihi nilai_rekom.
+     * Panggil ini di controller sebelum store/update.
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function validateNilai(): void
+    {
+        $rekom = $this->recommendation;
+
+        if (! $rekom || ! $rekom->isUang()) {
+            return; // Non-uang tidak perlu validasi nilai
+        }
+
+        $nilaiRekom = (float) ($rekom->nilai_rekom ?? 0);
+        $nilaiTl    = (float) ($this->nilai_tindak_lanjut ?? 0);
+
+        if ($nilaiRekom > 0 && $nilaiTl > $nilaiRekom) {
+            throw new \InvalidArgumentException(
+                'Nilai tindak lanjut (Rp ' . number_format($nilaiTl, 0, ',', '.') . ') ' .
+                'tidak boleh melebihi nilai rekomendasi (Rp ' . number_format($nilaiRekom, 0, ',', '.') . ').'
+            );
+        }
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     public function nextKeCicilan(): int
@@ -96,14 +123,15 @@ class TindakLanjut extends Model
     }
 
     /**
-     * Hitung ulang nilai kalkulasi di memory (belum disimpan).
-     * Dipanggil dari booted()::saving dan dari TindakLanjutCicilan::$cascade.
+     * Hitung ulang nilai kalkulasi.
      *
-     * FIX: pisahkan logika uang vs non-uang (barang/administrasi).
-     * Untuk non-uang, status ditentukan HANYA dari status_verifikasi
-     * yang sudah di-set user — jangan di-override berdasarkan nilai uang.
+     * PERBAIKAN UTAMA:
+     * - Status yang di-set manual user (via form edit) TIDAK di-override oleh auto-logic,
+     *   KECUALI untuk kasus cicilan uang yang bisa dihitung otomatis dari data nyata.
+     * - Flag $fromCascade = true berarti dipanggil dari cicilan (bukan dari user edit),
+     *   sehingga boleh auto-override status berdasarkan perhitungan.
      */
-    public function syncCalculations(): static
+    public function syncCalculations(bool $fromCascade = false): static
     {
         $rekom     = $this->recommendation;
         $isNonUang = $rekom?->isNonUang() ?? false;
@@ -111,40 +139,53 @@ class TindakLanjut extends Model
 
         if ($isNonUang) {
             // ── BARANG / ADMINISTRASI ─────────────────────────────────────────
+            // Status ditentukan sepenuhnya oleh user (tidak di-override).
+            // Hanya mapping sisa/terbayar untuk konsistensi data.
             $isLunas = $this->status_verifikasi === 'lunas';
             $this->total_terbayar           = $isLunas ? 1 : 0;
             $this->sisa_belum_bayar         = $isLunas ? 0 : 1;
             $this->jumlah_cicilan_realisasi = 0;
+
         } else {
             // ── UANG ──────────────────────────────────────────────────────────
-            // FIX: Gunakan nilai_tindak_lanjut (input user) sebagai basis target, 
-            // jika kosong baru fallback ke nilai_rekom.
-            $targetNilai = (float) ($this->nilai_tindak_lanjut > 0 
-                            ? $this->nilai_tindak_lanjut 
-                            : ($rekom?->nilai_rekom ?? 0));
+            $nilaiRekom  = (float) ($rekom?->nilai_rekom ?? 0);
+            $targetNilai = (float) ($this->nilai_tindak_lanjut > 0
+                            ? $this->nilai_tindak_lanjut
+                            : $nilaiRekom);
 
             if ($isCicilan) {
-                // Total terbayar hanya dari cicilan yang sudah diverifikasi (diterima)
-                $this->total_terbayar = (float) $this->cicilanDiterima()->sum('nilai_bayar');
+                // Total terbayar dari cicilan yang diterima (selalu dihitung dari DB)
+                $terbayar = (float) $this->cicilanDiterima()->sum('nilai_bayar');
+                // Cap total_terbayar agar tidak melebihi target → mencegah progress > 100%
+                $this->total_terbayar           = min($terbayar, $targetNilai);
                 $this->jumlah_cicilan_realisasi = $this->cicilanDiterima()->count();
             } else {
-                // Jika Langsung, cek status verifikasi. Jika lunas, maka terbayar = target.
+                // Jenis langsung: jika user set status = lunas, terbayar = target
                 if ($this->status_verifikasi === 'lunas') {
                     $this->total_terbayar = $targetNilai;
+                } elseif ($fromCascade === false) {
+                    // Saat user edit dan status bukan lunas, jangan override total_terbayar
+                    // (biarkan nilai yang ada)
                 }
                 $this->jumlah_cicilan_realisasi = 0;
             }
 
-            // Hitung sisa berdasarkan target yang ditentukan
-            $this->sisa_belum_bayar = max(0, $targetNilai - $this->total_terbayar);
+            // Hitung sisa — pastikan tidak negatif
+            $sisa = $targetNilai - $this->total_terbayar;
+            $this->sisa_belum_bayar = max(0, $sisa);
 
-            // Auto-status berdasarkan pembayaran (Hanya jika bukan diset manual oleh user)
-            // Jika sisa 0 dan target > 0, otomatis Lunas.
-            if ($targetNilai > 0 && $this->sisa_belum_bayar <= 0) {
-                $this->status_verifikasi = 'lunas';
-            } elseif ($this->total_terbayar > 0 && $this->sisa_belum_bayar > 0) {
-                $this->status_verifikasi = 'berjalan';
+            // ── Auto-status HANYA untuk jenis cicilan (dihitung dari data nyata) ──
+            // Untuk jenis 'langsung', status dikendalikan penuh oleh user.
+            if ($isCicilan || $fromCascade) {
+                if ($targetNilai > 0 && $this->sisa_belum_bayar <= 0) {
+                    $this->status_verifikasi = 'lunas';
+                } elseif ($this->total_terbayar > 0 && $this->sisa_belum_bayar > 0) {
+                    $this->status_verifikasi = 'berjalan';
+                }
+                // Jika belum ada pembayaran sama sekali, biarkan status yang ada
             }
+            // Untuk jenis 'langsung' yang diedit user (bukan cascade):
+            // status_verifikasi TIDAK di-override → user bebas set lunas/berjalan/menunggu
         }
 
         return $this;
@@ -156,7 +197,7 @@ class TindakLanjut extends Model
     }
 
     /**
-     * FIX: progress() untuk non-uang pakai status_verifikasi, bukan nilai uang.
+     * Progress capped di 100% untuk mencegah overflow.
      */
     public function progress(): float
     {
@@ -164,18 +205,16 @@ class TindakLanjut extends Model
         if (! $rekom) return 0;
 
         if ($rekom->isNonUang()) {
-            // Untuk barang/administrasi: lunas = 100%, lainnya = 0%
             return $this->status_verifikasi === 'lunas' ? 100 : 0;
         }
 
-        // Untuk uang: hitung dari total_terbayar vs nilai_rekom
         if ($this->status_verifikasi === 'lunas') return 100;
 
         $nilaiRekom = (float) ($rekom->nilai_rekom ?? 0);
 
-        return $nilaiRekom > 0
-            ? round($this->total_terbayar / $nilaiRekom * 100, 2)
-            : 0;
+        if ($nilaiRekom <= 0) return 0;
+
+        return min(100, round($this->total_terbayar / $nilaiRekom * 100, 2));
     }
 
     public function getUraianAttribute()
@@ -197,15 +236,12 @@ class TindakLanjut extends Model
 
     protected static function booted(): void
     {
-        // Hitung kalkulasi sebelum disimpan ke DB
         static::saving(function (self $model) {
-            $model->syncCalculations();
+            // fromCascade = false → dipanggil dari user (store/update),
+            // jadi status manual user tidak di-override untuk jenis 'langsung'
+            $model->syncCalculations(fromCascade: false);
         });
 
-        /**
-         * Setelah disimpan, cascade ke Recommendation via syncStatus().
-         * syncStatus() → temuan->syncStatus() → updateStatistik()
-         */
         static::saved(function (self $model) {
             $rekom = $model->relationLoaded('recommendation')
                 ? $model->recommendation
@@ -214,10 +250,6 @@ class TindakLanjut extends Model
             $rekom?->syncStatus();
         });
 
-        /**
-         * Saat dihapus (soft delete), cascade agar status rekomendasi
-         * dan statistik LHP ikut terupdate.
-         */
         static::deleted(function (self $model) {
             $rekom = $model->recommendation()->first();
             $rekom?->syncStatus();

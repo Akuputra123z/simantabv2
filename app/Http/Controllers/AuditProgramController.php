@@ -54,9 +54,12 @@ class AuditProgramController extends Controller
 
     // Edit data
     public function edit(AuditProgram $auditProgram)
-    {
-        return view('pages.audit-program.edit', compact('auditProgram'));
-    }
+{
+    // Rename the variable being passed to the view
+    $program = $auditProgram; 
+    
+    return view('pages.audit-program.edit', compact('program'));
+}
 
     // Update data
     public function update(Request $request, AuditProgram $auditProgram)

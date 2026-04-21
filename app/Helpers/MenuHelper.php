@@ -12,118 +12,122 @@ class MenuHelper
                 'name' => 'Dashboard',
                 'path' => route('dashboard', absolute: false),
             ],
-
         ];
     }
-
-    
 
     public static function getAdministrationItems(): array
     {
         return [
-             [
-                'icon' => 'charts',
-                'name' => 'Pengasaan',
-                'subItems' => [
-                    [
-                        'name' => 'Audit Program',
-                        'path' => route('audit-program.index', absolute: false),
-                        'pro' => false
-                    ],
 
-                     [
-                        'name' => 'Penugasan Audit',
-                        'path' => route('audit-assignment.index', absolute: false),
-                        'pro' => false
-                    ],
-
-                    [
-                        'name' => 'LHP',
-                        'path' => route('lhps.index', absolute: false),
-                        'pro' => false
-                    ],
-                
-                     [
-                        'name' => 'Rekomendasi',
-                        'path' => route('recommendations.index', absolute: false),
-                        'pro' => false
-                    ],
-                    [
-                        'name' => 'Tindak Lanjut',
-                        'path' => route('tindak-lanjuts.index', absolute: false),
-                        'pro' => false
-                    ],
-                    
-
-                    
-                ],
-            ],
-
-
+            // ================= MASTER DATA =================
             [
-                'icon' => 'forms',
+                'icon' => 'database',
                 'name' => 'Master Data',
                 'subItems' => [
                     [
                         'name' => 'Kode Rekomendasi',
                         'path' => route('kode-rekomendasi.index', absolute: false),
-                        'active' => self::isActive('kode-rekomendasi'),
                     ],
                     [
                         'name' => 'Kode Temuan',
                         'path' => route('kode-temuan.index', absolute: false),
-                        'active' => self::isActive('kode-temuan'),
                     ],
                     [
                         'name' => 'Unit Diperiksa',
                         'path' => route('unit-diperiksa.index', absolute: false),
-                        'active' => self::isActive('unit-diperiksa'),
                     ],
-
-                   
                 ],
             ],
+
+            // ================= AUDIT =================
             [
-                'icon' => 'charts',
-                'name' => 'User Management',
+                'icon' => 'task',
+                'name' => 'Perencanaan Audit',
                 'subItems' => [
                     [
-                        'name' => 'Users',
-                        'path' => route('users.index', absolute: false),
-                        'pro' => false
+                        'name' => 'Audit Program',
+                        'path' => route('audit-program.index', absolute: false),
                     ],
+                    [
+                        'name' => 'Penugasan Audit',
+                        'path' => route('audit-assignment.index', absolute: false),
+                    ],
+                ],
+            ],
 
-                     [
+            // ================= LHP =================
+            [
+                'icon' => 'pages',
+                'name' => 'LHP & Tindak Lanjut',
+                'subItems' => [
+                    [
+                        'name' => 'LHP',
+                        'path' => route('lhps.index', absolute: false),
+                    ],
+                    [
+                        'name' => 'Rekomendasi',
+                        'path' => route('recommendations.index', absolute: false),
+                    ],
+                    [
+                        'name' => 'Tindak Lanjut',
+                        'path' => route('tindak-lanjuts.index', absolute: false),
+                    ],
+                ],
+            ],
+
+            // ================= LAPORAN =================
+            [
+                'icon' => 'charts',
+                'name' => 'Laporan',
+                'subItems' => [
+                    [
+                        'name' => 'Laporan',
+                        'path' => route('laporan.index', absolute: false),
+                    ],
+                ],
+            ],
+
+            // ================= USER =================
+            [
+                'icon' => 'user-profile',
+                'name' => 'Manajemen Pengguna',
+                'subItems' => [
+                    [
+                        'name' => 'Data Pengguna',
+                        'path' => route('users.index', absolute: false),
+                    ],
+                    [
+                        'name' => 'Hak Akses',
+                        'path' => route('permissions.index', absolute: false),
+                    ],
+                ],
+            ],
+
+            // ================= AKUN =================
+            [
+                'icon' => 'user-profile',
+                'name' => 'Akun Saya',
+                'subItems' => [
+                    [
                         'name' => 'Profil Saya',
                         'path' => route('settings.profile.edit', absolute: false),
                     ],
-
-                     [
-                        'name' => 'Permission',
-                        'path' => route('permissions.index', absolute: false),
-                    ],
-                    
                 ],
             ],
-
-            
-
         ];
     }
-    
-
 
     public static function getMenuGroups(): array
     {
         return [
             [
                 'title' => 'Menu',
-                'items' => self::getMainNavItems()
+                'items' => self::getMainNavItems(),
             ],
             [
                 'title' => 'Administration',
-                'items' => self::getAdministrationItems()
-            ]
+                'items' => self::getAdministrationItems(),
+            ],
         ];
     }
 
@@ -164,6 +168,8 @@ class MenuHelper
             'support-ticket' => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 17.0518V12C20 7.58174 16.4183 4 12 4C7.58168 4 3.99994 7.58174 3.99994 12V17.0518M19.9998 14.041V19.75C19.9998 20.5784 19.3282 21.25 18.4998 21.25H13.9998M6.5 18.75H5.5C4.67157 18.75 4 18.0784 4 17.25V13.75C4 12.9216 4.67157 12.25 5.5 12.25H6.5C7.32843 12.25 8 12.9216 8 13.75V17.25C8 18.0784 7.32843 18.75 6.5 18.75ZM17.4999 18.75H18.4999C19.3284 18.75 19.9999 18.0784 19.9999 17.25V13.75C19.9999 12.9216 19.3284 12.25 18.4999 12.25H17.4999C16.6715 12.25 15.9999 12.9216 15.9999 13.75V17.25C15.9999 18.0784 16.6715 18.75 17.4999 18.75Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>',
 
             'email' => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.5 8.187V17.25C3.5 17.6642 3.83579 18 4.25 18H19.75C20.1642 18 20.5 17.6642 20.5 17.25V8.18747L13.2873 13.2171C12.5141 13.7563 11.4866 13.7563 10.7134 13.2171L3.5 8.187ZM20.5 6.2286C20.5 6.23039 20.5 6.23218 20.5 6.23398V6.24336C20.4976 6.31753 20.4604 6.38643 20.3992 6.42905L12.4293 11.9867C12.1716 12.1664 11.8291 12.1664 11.5713 11.9867L3.60116 6.42885C3.538 6.38481 3.50035 6.31268 3.50032 6.23568C3.50028 6.10553 3.60577 6 3.73592 6H20.2644C20.3922 6 20.4963 6.10171 20.5 6.2286ZM22 6.25648V17.25C22 18.4926 20.9926 19.5 19.75 19.5H4.25C3.00736 19.5 2 18.4926 2 17.25V6.23398C2 6.22371 2.00021 6.2135 2.00061 6.20333C2.01781 5.25971 2.78812 4.5 3.73592 4.5H20.2644C21.2229 4.5 22 5.27697 22.0001 6.23549C22.0001 6.24249 22.0001 6.24949 22 6.25648Z" fill="currentColor"></path></svg>',
+
+            'database' => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.25C9.08058 3.25 5.75 4.25942 5.75 6.5V17.5C5.75 19.7406 9.08058 20.75 12 20.75C14.9194 20.75 18.25 19.7406 18.25 17.5V6.5C18.25 4.25942 14.9194 3.25 12 3.25ZM16.75 9.31955C15.8071 9.82406 14.1727 10.25 12 10.25C9.82734 10.25 8.19287 9.82406 7.25 9.31955V11.5C7.25 12.2899 9.2041 13.25 12 13.25C14.7959 13.25 16.75 12.2899 16.75 11.5V9.31955ZM16.75 12.8196C15.8071 13.3241 14.1727 13.75 12 13.75C9.82734 13.75 8.19287 13.3241 7.25 12.8196V14.5C7.25 15.2899 9.2041 16.25 12 16.25C14.7959 16.25 16.75 15.2899 16.75 14.5V12.8196ZM16.75 16.3196C15.8071 16.8241 14.1727 17.25 12 17.25C9.82734 17.25 8.19287 16.8241 7.25 16.3196V17.5C7.25 18.2899 9.2041 19.25 12 19.25C14.7959 19.25 16.75 18.2899 16.75 17.5V16.3196ZM12 4.75C9.2041 4.75 7.25 5.71012 7.25 6.5C7.25 7.28988 9.2041 8.25 12 8.25C14.7959 8.25 16.75 7.28988 16.75 6.5C16.75 5.71012 14.7959 4.75 12 4.75Z" fill="currentColor"/></svg>',
         ];
 
         return $icons[$iconName] ?? '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/></svg>';

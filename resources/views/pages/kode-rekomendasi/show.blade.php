@@ -19,14 +19,14 @@
             </h2>
         </div>
 
-        <x-ui.button 
-            tag="a" 
-            href="{{ route('kode-rekomendasi.edit', $data->id) }}" 
-            variant="primary"
-            class="rounded-xl px-4 py-2 shadow-sm hover:shadow-md transition"
-        >
-            Edit
-        </x-ui.button>
+<x-ui.button 
+    tag="a" 
+    href="{{ route('kode-rekomendasi.edit', $data) }}" 
+    variant="primary"
+    class="rounded-xl px-4 py-2 shadow-sm hover:shadow-md transition"
+>
+    Edit
+</x-ui.button>
     </div>
 
     {{-- Single Card --}}

@@ -78,16 +78,22 @@ public function getTemuans($lhpId)
 {
     $temuans = Temuan::query()
         ->select('id', 'lhp_id', 'kode_temuan_id', 'kondisi', 'nilai_temuan')
-        ->with('kodeTemuan:id,alternatif_rekom') 
+        ->with('kodeTemuan:id,kode,deskripsi,alternatif_rekom')
         ->where('lhp_id', $lhpId)
         ->get()
-        ->map(fn($t) => [
-            'id'               => $t->id,
-            'kondisi'          => \Illuminate\Support\Str::limit($t->kondisi, 150),
-            'nilai_temuan'     => (float) $t->nilai_temuan,
-            // Pastikan ini terkirim sebagai array
-            'alternatif_rekom' => $t->kodeTemuan->alternatif_rekom ?? [], 
-        ]);
+        ->map(function ($t) {
+            $kodeTemuan = optional($t->kodeTemuan);
+
+            return [
+                'id' => $t->id,
+                'kondisi' => \Str::limit($t->kondisi, 150),
+                'nilai_temuan' => (float) ($t->nilai_temuan ?? 0),
+                'alternatif_rekom' => $kodeTemuan->alternatif_rekom ?? [],
+                'kode_label' => $kodeTemuan->kode
+                    ? ($kodeTemuan->kode . ($kodeTemuan->deskripsi ? ' — ' . $kodeTemuan->deskripsi : ''))
+                    : null,
+            ];
+        });
 
     return response()->json($temuans);
 }

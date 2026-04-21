@@ -7,11 +7,11 @@
         "dev": "vite"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.1.12",
+        "@tailwindcss/vite": "^4.2.2",
         "axios": "^1.11.0",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^2.0.0",
-        "tailwindcss": "^4.1.12",
+        "tailwindcss": "^4.2.2",
         "vite": "^7.0.4"
     },
     "dependencies": {
@@ -24,6 +24,7 @@
         "@popperjs/core": "^2.11.8",
         "alpinejs": "^3.14.9",
         "apexcharts": "^5.3.5",
+        "chart.js": "^4.5.1",
         "flatpickr": "^4.6.13",
         "jsvectormap": "^1.7.0",
         "prismjs": "^1.30.0",

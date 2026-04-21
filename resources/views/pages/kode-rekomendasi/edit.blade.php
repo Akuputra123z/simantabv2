@@ -8,7 +8,7 @@
 
     <form action="{{ route('kode-rekomendasi.update', $data->id) }}" method="POST">
         @method('PUT')
-        @include('pages.kode-rekomendasi.form')
+        @include('pages.kode-rekomendasi.create')
     </form>
 
 </div>

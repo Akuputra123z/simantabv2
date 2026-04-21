@@ -22,7 +22,6 @@
             </div>
         </div>
 
-        {{-- Main Bento Grid --}}
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
             
             {{-- KIRI: Klasifikasi & Kondisi (8 Kolom) --}}

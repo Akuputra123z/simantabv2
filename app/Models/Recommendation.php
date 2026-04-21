@@ -61,68 +61,76 @@ class Recommendation extends Model
 
     /**
      * Sinkronisasi status & nilai berdasarkan data TindakLanjut terkini.
-     * Ini satu-satunya metode yang boleh menulis ke kolom status/nilai rekomendasi.
      *
-     * Chain: TindakLanjut::saved → syncStatus() → temuan->syncStatus() → updateStatistik()
+     * PERBAIKAN:
+     * - nilai_tl_selesai di-cap max nilai_rekom → mencegah nilai_sisa negatif
+     *   dan progress > 100%.
      */
     public function syncStatus(): void
-{
-    $query = $this->tindakLanjuts();
+    {
+        $query = $this->tindakLanjuts();
 
-    if ($this->isUang()) {
-        // ── Jenis UANG: hitung berdasarkan total_terbayar ──────────────────
-        $totalBayar = (float) (clone $query)->sum('total_terbayar');
-        $nilaiRekom = (float) ($this->nilai_rekom ?? 0);
+        if ($this->isUang()) {
+            // ── Jenis UANG ────────────────────────────────────────────────────
+            $totalBayar = (float) (clone $query)->sum('total_terbayar');
+            $nilaiRekom = (float) ($this->nilai_rekom ?? 0);
 
-        $this->nilai_tl_selesai = $totalBayar;
-        $this->nilai_sisa       = max(0, $nilaiRekom - $totalBayar);
+            // Cap agar tidak melebihi nilai_rekom → progress tidak bisa >100%
+            $totalBayarCapped = $nilaiRekom > 0 ? min($totalBayar, $nilaiRekom) : $totalBayar;
 
-        $this->status = match (true) {
-            $nilaiRekom > 0 && $totalBayar >= $nilaiRekom => self::STATUS_SELESAI,
-            $totalBayar > 0                               => self::STATUS_PROSES,
-            default                                       => self::STATUS_BELUM,
-        };
-    } else {
-        // ── Jenis BARANG / ADMINISTRASI: hitung berdasarkan status_verifikasi ──
-        $totalTl = (clone $query)->count();
-        $lunas   = (clone $query)->where('status_verifikasi', 'lunas')->count();
-        $hasProses = (clone $query)
-            ->whereIn('status_verifikasi', ['menunggu_verifikasi', 'berjalan'])
-            ->exists();
+            $this->nilai_tl_selesai = $totalBayarCapped;
+            $this->nilai_sisa       = max(0, $nilaiRekom - $totalBayarCapped);
 
-        $this->nilai_rekom      = 0;
-        $this->nilai_tl_selesai = 0;
-        $this->nilai_sisa       = 0;
+            $this->status = match (true) {
+                $nilaiRekom > 0 && $totalBayarCapped >= $nilaiRekom => self::STATUS_SELESAI,
+                $totalBayar > 0                                      => self::STATUS_PROSES,
+                default                                              => self::STATUS_BELUM,
+            };
+        } else {
+            // ── Jenis BARANG / ADMINISTRASI ───────────────────────────────────
+            $totalTl   = (clone $query)->count();
+            $lunas     = (clone $query)->where('status_verifikasi', 'lunas')->count();
+            $hasProses = (clone $query)
+                ->whereIn('status_verifikasi', ['menunggu_verifikasi', 'berjalan'])
+                ->exists();
 
-        $this->status = match (true) {
-            $totalTl > 0 && $lunas >= $totalTl => self::STATUS_SELESAI, // semua TL sudah lunas
-            $hasProses                          => self::STATUS_PROSES,
-            $totalTl > 0                        => self::STATUS_PROSES,  // ada TL tapi belum lunas
-            default                             => self::STATUS_BELUM,
-        };
+            $this->nilai_rekom      = 0;
+            $this->nilai_tl_selesai = 0;
+            $this->nilai_sisa       = 0;
+
+            $this->status = match (true) {
+                $totalTl > 0 && $lunas >= $totalTl => self::STATUS_SELESAI,
+                $hasProses                          => self::STATUS_PROSES,
+                $totalTl > 0                        => self::STATUS_PROSES,
+                default                             => self::STATUS_BELUM,
+            };
+        }
+
+        $this->saveQuietly();
+
+        if ($this->temuan) {
+            $this->temuan->syncStatus();
+        }
     }
 
-    $this->saveQuietly();
+    /**
+     * Progress selalu dibatasi 0–100.
+     */
+    public function progress(): float
+    {
+        if ($this->isUang()) {
+            $nilaiRekom = (float) $this->nilai_rekom;
 
-    // cascade ke temuan
-   if ($this->temuan) {
-        $this->temuan->syncStatus(); 
+            if ($nilaiRekom <= 0) return 0;
+
+            // Ambil total_terbayar dari TL (sudah di-cap di syncStatus)
+            $totalBayar = $this->tindakLanjuts->sum('total_terbayar');
+
+            return min(100, round(($totalBayar / $nilaiRekom) * 100, 2));
+        }
+
+        return $this->status === self::STATUS_SELESAI ? 100 : 0;
     }
-}
-
-  public function progress(): float
-{
-    if ($this->isUang()) {
-        $totalBayar = $this->tindakLanjuts->sum('total_terbayar');
-        $nilaiRekom = (float) $this->nilai_rekom;
-
-        return $nilaiRekom > 0
-            ? round(($totalBayar / $nilaiRekom) * 100, 2)
-            : 0;
-    }
-
-    return $this->status === self::STATUS_SELESAI ? 100 : 0;
-}
 
     // ── Relationships ─────────────────────────────────────────────────────────
 
@@ -138,7 +146,5 @@ class Recommendation extends Model
     protected static function booted(): void
     {
         // Sengaja kosong.
-        // Statistik diupdate via chain: controller → updateStatistik()
-        // atau via: TindakLanjut::saved → syncStatus() → temuan->syncStatus() → updateStatistik()
     }
 }

@@ -76,7 +76,6 @@ class TindakLanjutCicilan extends Model
         // Auto-set nomor urut cicilan
         static::creating(function (self $model) {
             if (! $model->ke) {
-                // Gunakan query murni untuk menghindari cache model
                 $lastKe = \DB::table('tindak_lanjut_cicilans')
                     ->where('tindak_lanjut_id', $model->tindak_lanjut_id)
                     ->whereNull('deleted_at')
@@ -87,26 +86,30 @@ class TindakLanjutCicilan extends Model
 
         /**
          * Cascade ke atas: Cicilan → TindakLanjut
-         * * PENTING: Gunakan 'saved' dan pastikan data sudah benar-benar ada di DB 
-         * sebelum memicu perhitungan di model induk.
+         *
+         * PERBAIKAN: panggil syncCalculations(fromCascade: true) agar auto-status
+         * pada jenis cicilan berjalan dengan benar (status boleh di-override
+         * berdasarkan hitungan nyata dari DB cicilan).
          */
         $cascade = function (self $model): void {
-            // Gunakan find() tanpa cache untuk memastikan data terbaru
             $tl = TindakLanjut::where('id', $model->tindak_lanjut_id)->first();
-            
+
             if ($tl) {
-                // Trigger perhitungan ulang di model TindakLanjut
-                // syncCalculations() akan dipanggil otomatis di dalam event saving TindakLanjut
-                $tl->save(); 
+                // Bypass event saving agar tidak double-call syncCalculations,
+                // lalu panggil manual dengan flag fromCascade = true
+                $tl->syncCalculations(fromCascade: true);
+                $tl->saveQuietly(); // saveQuietly agar tidak re-trigger booted::saving
+                // Tetap trigger syncStatus rekomendasi secara manual
+                $rekom = $tl->recommendation()->first();
+                $rekom?->syncStatus();
             }
         };
 
-        // Trigger cascade pada event-event penting
         static::saved($cascade);
         static::deleted($cascade);
         static::restored($cascade);
 
-        // Reorder nomor urut saat cicilan dihapus permanent/soft delete
+        // Reorder nomor urut saat cicilan dihapus
         static::deleted(function (self $model) {
             static::where('tindak_lanjut_id', $model->tindak_lanjut_id)
                 ->where('ke', '>', $model->ke)

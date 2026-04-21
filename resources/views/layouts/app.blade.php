@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
+    
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    
     <title>{{ $title ?? 'Dashboard' }} | Admin</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -74,6 +76,11 @@
         </div>
     </div>
 
+
+
     @stack('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+       
 </body>
 </html>

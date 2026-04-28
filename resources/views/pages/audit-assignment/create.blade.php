@@ -23,125 +23,233 @@
     <form action="{{ route('audit-assignment.store') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
         @csrf
 
-        {{-- SECTION: Informasi Audit --}}
-        <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
-            <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-200">Informasi Audit</h3>
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+{{-- SECTION: Informasi Audit --}}
+<div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-8">
 
-                <select name="audit_program_id"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                    required>
-                    <option value="">Pilih Program Audit</option>
-                    @foreach($programs as $program)
-                        <option value="{{ $program->id }}" {{ old('audit_program_id') == $program->id ? 'selected' : '' }}>
-                            {{ $program->nama_program }}
-                        </option>
-                    @endforeach
-                </select>
+    {{-- TITLE --}}
+    <div>
+        <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">
+            Informasi Audit
+        </h3>
+        <p class="text-sm text-gray-500">
+            Isi data utama penugasan audit
+        </p>
+    </div>
 
-                <input type="text" name="nomor_surat"
-                    value="{{ old('nomor_surat') }}"
-                    placeholder="700/001/INSPEKTORAT/2026"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                    required>
+    {{-- GRID --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
+        {{-- Program Audit --}}
+        <div class="space-y-2">
+            <label for="audit_program_id" class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Program Audit
+            </label>
+            <select name="audit_program_id" id="audit_program_id"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                focus:ring-2 focus:ring-blue-500 outline-none"
+                required>
+                <option value="">Pilih Program Audit</option>
+                @foreach($programs as $program)
+                    <option value="{{ $program->id }}" @selected(old('audit_program_id') == $program->id)>
+                        {{ $program->nama_program }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Jenis Pengawasan --}}
+        <div class="space-y-2">
+            <label for="jenis_pengawasan" class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Jenis Pengawasan
+            </label>
+            <select name="jenis_pengawasan" id="jenis_pengawasan"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                focus:ring-2 focus:ring-blue-500 outline-none"
+                required>
+                <option value="">Pilih Jenis</option>
+                @foreach(\App\Models\AuditAssignment::listJenisPengawasan() as $jenis)
+                    <option value="{{ $jenis }}" @selected(old('jenis_pengawasan') == $jenis)>
+                        {{ ucfirst(str_replace('_', ' ', $jenis)) }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Nomor Surat --}}
+        <div class="space-y-2 md:col-span-2">
+            <label for="nomor_surat" class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Nomor Surat
+            </label>
+            <input type="text" name="nomor_surat" id="nomor_surat"
+                value="{{ old('nomor_surat') }}"
+                placeholder="700/001/INSPEKTORAT/2026"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                focus:ring-2 focus:ring-blue-500 outline-none"
+                required>
+        </div>
+
+        {{-- Nama Tim --}}
+        <div class="space-y-2 md:col-span-2">
+            <label for="nama_tim" class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Nama Tim Audit
+            </label>
+            <input type="text" name="nama_tim" id="nama_tim"
+                value="{{ old('nama_tim') }}"
+                placeholder="Nama Tim Audit"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                focus:ring-2 focus:ring-blue-500 outline-none"
+                required>
+        </div>
+
+    </div>
+
+    {{-- SUB SECTION: Filter Unit --}}
+    <div class="border-t border-gray-200 pt-6 dark:border-gray-700 space-y-6">
+
+        <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+            Filter Unit
+        </h4>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            {{-- Kategori --}}
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Kategori Unit
+                </label>
                 <select id="filter_kategori"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                    <option value="">Kategori Unit</option>
+                    class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                    dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                    focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="">Pilih Kategori</option>
                     @foreach($kategoriOptions as $k => $v)
-                        <option value="{{ $k }}">{{ $v }}</option>
+                        <option value="{{ $k }}" @selected(old('filter_kategori') == $k)>
+                            {{ $v }}
+                        </option>
                     @endforeach
                 </select>
+            </div>
 
+            {{-- Kecamatan --}}
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Kecamatan
+                </label>
                 <select id="filter_kecamatan"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                    <option value="">Kecamatan</option>
+                    class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                    dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                    focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="">Pilih Kecamatan</option>
                 </select>
+            </div>
 
+            {{-- Unit --}}
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Nama Unit
+                </label>
                 <select name="unit_diperiksa_id" id="unit"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                    class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                    dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                    focus:ring-2 focus:ring-blue-500 outline-none"
                     required>
-                    <option value="">Nama Unit</option>
+                    <option value="">Pilih Unit</option>
                 </select>
-
-                <input type="text" name="nama_tim"
-                    value="{{ old('nama_tim') }}"
-                    placeholder="Nama Tim Audit"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                    required>
             </div>
+
+        </div>
+    </div>
+
+</div>
+
+{{-- SECTION: Jadwal & Personel --}}
+<div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6 mt-8">
+    <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-200">Jadwal & Personel</h3>
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+
+        {{-- Tanggal Mulai --}}
+        <div class="space-y-2 relative">
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400">Tanggal Mulai</label>
+            <div class="relative">
+                <input type="text" id="tanggal_mulai_display" readonly
+                    placeholder="Pilih Tanggal"
+                    class="h-11 w-full cursor-pointer rounded-lg border border-gray-300 px-4 pr-10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:ring-2 focus:ring-blue-500 outline-none"
+                    onclick="togglePicker('mulai')">
+                <input type="hidden" name="tanggal_mulai" id="tanggal_mulai" value="{{ old('tanggal_mulai') }}" required>
+                <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                    </svg>
+                </span>
+            </div>
+            <div id="picker-mulai" class="absolute left-0 top-full mt-2 z-50 hidden w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-900"></div>
         </div>
 
-        {{-- SECTION: Jadwal & Personel --}}
-        <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
-            <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-200">Jadwal & Personel</h3>
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-
-                {{-- Tanggal Mulai --}}
-                <div class="relative">
-                    <input type="text" id="tanggal_mulai_display" readonly
-                        placeholder="Tanggal Mulai"
-                        class="h-11 w-full cursor-pointer rounded-lg border border-gray-300 px-4 pr-10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                        onclick="togglePicker('mulai')">
-                    <input type="hidden" name="tanggal_mulai" id="tanggal_mulai" value="{{ old('tanggal_mulai') }}" required>
-                    <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                        </svg>
-                    </span>
-                    <div id="picker-mulai" class="absolute left-0 top-12 z-50 hidden w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-900"></div>
-                </div>
-
-                {{-- Tanggal Selesai --}}
-                <div class="relative">
-                    <input type="text" id="tanggal_selesai_display" readonly
-                        placeholder="Tanggal Selesai"
-                        class="h-11 w-full cursor-pointer rounded-lg border border-gray-300 px-4 pr-10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                        onclick="togglePicker('selesai')">
-                    <input type="hidden" name="tanggal_selesai" id="tanggal_selesai" value="{{ old('tanggal_selesai') }}" required>
-                    <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                        </svg>
-                    </span>
-                    <div id="picker-selesai" class="absolute left-0 top-12 z-50 hidden w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-900"></div>
-                </div>
-
-                <select name="status"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                    <option value="draft"   {{ old('status') == 'draft'    ? 'selected' : '' }}>Draft</option>
-                    <option value="berjalan"{{ old('status') == 'berjalan' ? 'selected' : '' }}>Berjalan</option>
-                    <option value="selesai" {{ old('status') == 'selesai'  ? 'selected' : '' }}>Selesai</option>
-                </select>
+        {{-- Tanggal Selesai --}}
+        <div class="space-y-2 relative">
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400">Tanggal Selesai</label>
+            <div class="relative">
+                <input type="text" id="tanggal_selesai_display" readonly
+                    placeholder="Pilih Tanggal"
+                    class="h-11 w-full cursor-pointer rounded-lg border border-gray-300 px-4 pr-10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:ring-2 focus:ring-blue-500 outline-none"
+                    onclick="togglePicker('selesai')">
+                <input type="hidden" name="tanggal_selesai" id="tanggal_selesai" value="{{ old('tanggal_selesai') }}" required>
+                <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                    </svg>
+                </span>
             </div>
-
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <select name="ketua_tim_id"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                    <option value="">Ketua Tim</option>
-                    @foreach($ketuaTim as $user)
-                        <option value="{{ $user->id }}" {{ old('ketua_tim_id') == $user->id ? 'selected' : '' }}>
-                            {{ $user->name }}
-                        </option>
-                    @endforeach
-                </select>
-
-                <select name="members[]" multiple
-                    class="min-h-[120px] w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                    @foreach($members as $user)
-                        <option value="{{ $user->id }}"
-                            {{ in_array($user->id, old('members', [])) ? 'selected' : '' }}>
-                            {{ $user->name }}
-                        </option>
-                    @endforeach
-                </select>
-                <p class="text-xs text-gray-400 -mt-4 md:col-start-2">Tahan Ctrl / ⌘ untuk memilih lebih dari satu anggota.</p>
-            </div>
+            <div id="picker-selesai" class="absolute left-0 top-full mt-2 z-50 hidden w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-900"></div>
         </div>
+
+        <div class="space-y-2">
+            <label for="status" class="block text-sm font-medium text-gray-600 dark:text-gray-400">Status</label>
+            <select name="status" id="status"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="draft" @selected(old('status') == 'draft')>Draft</option>
+                <option value="berjalan" @selected(old('status') == 'berjalan')>Berjalan</option>
+                <option value="selesai" @selected(old('status') == 'selesai')>Selesai</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">
+        <div class="space-y-2">
+            <label for="ketua_tim_id" class="block text-sm font-medium text-gray-600 dark:text-gray-400">Ketua Tim</label>
+            <select name="ketua_tim_id" id="ketua_tim_id"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">Pilih Ketua Tim</option>
+                @foreach($ketuaTim as $user)
+                    <option value="{{ $user->id }}" @selected(old('ketua_tim_id') == $user->id)>
+                        {{ $user->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="space-y-2">
+            <label for="members" class="block text-sm font-medium text-gray-600 dark:text-gray-400">Anggota Tim</label>
+            <select name="members[]" id="members" multiple
+                class="min-h-[120px] w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:ring-2 focus:ring-blue-500 outline-none">
+                @foreach($members as $user)
+                    <option value="{{ $user->id }}" @selected(in_array($user->id, old('members', [])))>
+                        {{ $user->name }}
+                    </option>
+                @endforeach
+            </select>
+            <p class="text-xs text-gray-400">Tahan Ctrl / ⌘ untuk memilih lebih dari satu anggota.</p>
+        </div>
+    </div>
+</div>
 
         {{-- SECTION: Dokumen / Lampiran --}}
         <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-4">
-            <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-200">Dokumen / Lampiran</h3>
+            <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-200">Lampiran Surat Tugas</h3>
 
             <input type="file" name="attachments[]" id="attachments" multiple
                 accept=".jpg,.jpeg,.png,.pdf,.docx"
@@ -163,16 +271,24 @@
         </div>
 
         {{-- BUTTON --}}
-        <div class="flex justify-end gap-3">
-            <a href="{{ route('audit-assignment.index') }}"
-                class="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5">
-                Batal
-            </a>
-            <button type="submit"
-                class="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700">
-                Simpan
-            </button>
-        </div>
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+    
+    <a href="{{ route('audit-assignment.index') }}"
+        class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-600 
+        hover:bg-gray-50 transition-colors
+        dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5">
+        
+        Batal
+    </a>
+
+    <button type="submit"
+        class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white 
+        hover:bg-blue-700 transition-colors shadow-sm hover:shadow">
+        
+        Simpan Data
+    </button>
+
+</div>
     </form>
 </div>
 @endsection
@@ -265,10 +381,30 @@ function shiftMonth(key, dir) {
 }
 
 function selectDate(key, y, m, d) {
-    const hiddenId  = key === 'mulai' ? 'tanggal_mulai'         : 'tanggal_selesai';
+    const val = formatValue(y, m, d);
+
+    if (key === 'selesai') {
+        const mulai = document.getElementById('tanggal_mulai').value;
+        if (mulai && val < mulai) {
+            alert('Tanggal selesai tidak boleh sebelum tanggal mulai');
+            return;
+        }
+    }
+
+    if (key === 'mulai') {
+        const selesai = document.getElementById('tanggal_selesai').value;
+        if (selesai && val > selesai) {
+            alert('Tanggal mulai tidak boleh setelah tanggal selesai');
+            return;
+        }
+    }
+
+    const hiddenId  = key === 'mulai' ? 'tanggal_mulai' : 'tanggal_selesai';
     const displayId = key === 'mulai' ? 'tanggal_mulai_display' : 'tanggal_selesai_display';
-    document.getElementById(hiddenId).value  = formatValue(y, m, d);
+
+    document.getElementById(hiddenId).value  = val;
     document.getElementById(displayId).value = formatDisplay(y, m, d);
+
     document.getElementById(`picker-${key}`).classList.add('hidden');
 }
 

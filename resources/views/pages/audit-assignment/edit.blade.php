@@ -11,8 +11,11 @@
 
     {{-- ERROR --}}
     @if ($errors->any())
-        <div class="rounded-lg bg-red-100 p-4 text-sm text-red-700">
-            <ul class="list-disc pl-5 space-y-1">
+        <div class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+            <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 9v4m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z"/>
+            </svg>
+            <ul class="list-disc pl-4 space-y-1">
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
@@ -23,131 +26,205 @@
     <form action="{{ route('audit-assignment.update', $data->id) }}" method="POST" enctype="multipart/form-data" class="space-y-8">
         @csrf
         @method('PUT')
+        <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-8">
 
-        {{-- SECTION: Informasi Audit --}}
-        <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
-            <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-200">Informasi Audit</h3>
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div>
+        <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">
+            Informasi Audit
+        </h3>
+        <p class="text-sm text-gray-500">
+            Perbarui data utama penugasan audit
+        </p>
+    </div>
 
-                <select name="audit_program_id"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                    required>
-                    <option value="">Pilih Program Audit</option>
-                    @foreach($programs as $program)
-                        <option value="{{ $program->id }}"
-                            {{ old('audit_program_id', $data->audit_program_id) == $program->id ? 'selected' : '' }}>
-                            {{ $program->nama_program }}
-                        </option>
-                    @endforeach
-                </select>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                <input type="text" name="nomor_surat"
-                    value="{{ old('nomor_surat', $data->nomor_surat) }}"
-                    placeholder="700/001/INSPEKTORAT/2026"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                    required>
-
-                {{-- Filter Kategori --}}
-                <select id="filter_kategori"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                    <option value="">Kategori Unit</option>
-                    @foreach($kategoriOptions as $k => $v)
-                        <option value="{{ $k }}" {{ $currentKategori === strtolower($k) ? 'selected' : '' }}>
-                            {{ $v }}
-                        </option>
-                    @endforeach
-                </select>
-
-                {{-- Filter Kecamatan — diisi via JS saat load --}}
-                <select id="filter_kecamatan"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                    <option value="">Kecamatan</option>
-                </select>
-
-                {{-- Unit — diisi via JS saat load --}}
-                <select name="unit_diperiksa_id" id="unit"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                    required>
-                    <option value="">Nama Unit</option>
-                </select>
-
-                <input type="text" name="nama_tim"
-                    value="{{ old('nama_tim', $data->nama_tim) }}"
-                    placeholder="Nama Tim Audit"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                    required>
-            </div>
+        {{-- Program Audit --}}
+        <div class="space-y-2">
+            <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Program Audit</label>
+            <select name="audit_program_id"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                focus:ring-2 focus:ring-blue-500 outline-none"
+                required>
+                <option value="">Pilih Program Audit</option>
+                @foreach($programs as $program)
+                    <option value="{{ $program->id }}" 
+                        @selected(old('audit_program_id', $data->audit_program_id) == $program->id)>
+                        {{ $program->nama_program }}
+                    </option>
+                @endforeach
+            </select>
         </div>
 
-        {{-- SECTION: Jadwal & Personel --}}
-        <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
-            <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-200">Jadwal & Personel</h3>
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-
-                {{-- Tanggal Mulai --}}
-                <div class="relative">
-                    <input type="text" id="tanggal_mulai_display" readonly
-                        placeholder="Tanggal Mulai"
-                        class="h-11 w-full cursor-pointer rounded-lg border border-gray-300 px-4 pr-10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                        onclick="togglePicker('mulai')">
-                    <input type="hidden" name="tanggal_mulai" id="tanggal_mulai"
-                        value="{{ old('tanggal_mulai', $data->tanggal_mulai?->format('Y-m-d')) }}" required>
-                    <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                        </svg>
-                    </span>
-                    <div id="picker-mulai" class="absolute left-0 top-12 z-50 hidden w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-900"></div>
-                </div>
-
-                {{-- Tanggal Selesai --}}
-                <div class="relative">
-                    <input type="text" id="tanggal_selesai_display" readonly
-                        placeholder="Tanggal Selesai"
-                        class="h-11 w-full cursor-pointer rounded-lg border border-gray-300 px-4 pr-10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                        onclick="togglePicker('selesai')">
-                    <input type="hidden" name="tanggal_selesai" id="tanggal_selesai"
-                        value="{{ old('tanggal_selesai', $data->tanggal_selesai?->format('Y-m-d')) }}" required>
-                    <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                        </svg>
-                    </span>
-                    <div id="picker-selesai" class="absolute left-0 top-12 z-50 hidden w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-900"></div>
-                </div>
-
-                <select name="status"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                    <option value="draft"    {{ old('status', $data->status) === 'draft'    ? 'selected' : '' }}>Draft</option>
-                    <option value="berjalan" {{ old('status', $data->status) === 'berjalan' ? 'selected' : '' }}>Berjalan</option>
-                    <option value="selesai"  {{ old('status', $data->status) === 'selesai'  ? 'selected' : '' }}>Selesai</option>
-                </select>
-            </div>
-
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <select name="ketua_tim_id"
-                    class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                    <option value="">Ketua Tim</option>
-                    @foreach($ketuaTim as $user)
-                        <option value="{{ $user->id }}"
-                            {{ old('ketua_tim_id', $data->ketua_tim_id) == $user->id ? 'selected' : '' }}>
-                            {{ $user->name }}
-                        </option>
-                    @endforeach
-                </select>
-
-                <select name="members[]" multiple
-                    class="min-h-[120px] w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                    @foreach($members as $user)
-                        <option value="{{ $user->id }}"
-                            {{ $data->members->contains($user->id) ? 'selected' : '' }}>
-                            {{ $user->name }}
-                        </option>
-                    @endforeach
-                </select>
-                <p class="text-xs text-gray-400 -mt-4 md:col-start-2">Tahan Ctrl / ⌘ untuk memilih lebih dari satu anggota.</p>
-            </div>
+        {{-- Jenis Pengawasan --}}
+        <div class="space-y-2">
+            <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Jenis Pengawasan</label>
+            <select name="jenis_pengawasan"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                focus:ring-2 focus:ring-blue-500 outline-none"
+                required>
+                <option value="">Pilih Jenis</option>
+                @foreach(\App\Models\AuditAssignment::listJenisPengawasan() as $jenis)
+                    <option value="{{ $jenis }}"
+                        @selected(old('jenis_pengawasan', $data->jenis_pengawasan) == $jenis)>
+                        {{ ucfirst(str_replace('_', ' ', $jenis)) }}
+                    </option>
+                @endforeach
+            </select>
         </div>
+
+        {{-- Nomor Surat --}}
+        <div class="space-y-2 md:col-span-2">
+            <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Nomor Surat</label>
+            <input type="text" name="nomor_surat"
+                value="{{ old('nomor_surat', $data->nomor_surat) }}"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                focus:ring-2 focus:ring-blue-500 outline-none"
+                required>
+        </div>
+
+        {{-- Nama Tim --}}
+        <div class="space-y-2 md:col-span-2">
+            <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Nama Tim Audit</label>
+            <input type="text" name="nama_tim"
+                value="{{ old('nama_tim', $data->nama_tim) }}"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                focus:ring-2 focus:ring-blue-500 outline-none"
+                required>
+        </div>
+
+    </div>
+
+    {{-- FILTER UNIT (SAMA PERSIS CREATE) --}}
+    <div class="border-t border-gray-200 pt-6 dark:border-gray-700 space-y-6">
+
+        <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+            Filter Unit
+        </h4>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <select id="filter_kategori"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">Pilih Kategori</option>
+                @foreach($kategoriOptions as $k => $v)
+                    <option value="{{ $k }}" @selected($currentKategori === strtolower($k))>
+                        {{ $v }}
+                    </option>
+                @endforeach
+            </select>
+
+            <select id="filter_kecamatan"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">Pilih Kecamatan</option>
+            </select>
+
+            <select name="unit_diperiksa_id" id="unit"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 
+                dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 
+                focus:ring-2 focus:ring-blue-500 outline-none"
+                required>
+                <option value="">Pilih Unit</option>
+            </select>
+
+        </div>
+    </div>
+
+</div>
+
+
+{{-- SECTION: Jadwal & Personel --}}
+<div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6 mt-8">
+    <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-200">Jadwal & Personel</h3>
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+
+        {{-- Tanggal Mulai --}}
+        <div class="space-y-2 relative">
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400">Tanggal Mulai</label>
+            <div class="relative">
+                <input type="text" id="tanggal_mulai_display" readonly
+                    placeholder="Pilih Tanggal Mulai"
+                    class="h-11 w-full cursor-pointer rounded-lg border border-gray-300 px-4 pr-10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                    onclick="togglePicker('mulai')">
+                <input type="hidden" name="tanggal_mulai" id="tanggal_mulai"
+                    value="{{ old('tanggal_mulai', $data->tanggal_mulai?->format('Y-m-d')) }}" required>
+                <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                    </svg>
+                </span>
+            </div>
+            <div id="picker-mulai" class="absolute left-0 top-full mt-2 z-50 hidden w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-900"></div>
+        </div>
+
+        {{-- Tanggal Selesai --}}
+        <div class="space-y-2 relative">
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400">Tanggal Selesai</label>
+            <div class="relative">
+                <input type="text" id="tanggal_selesai_display" readonly
+                    placeholder="Pilih Tanggal Selesai"
+                    class="h-11 w-full cursor-pointer rounded-lg border border-gray-300 px-4 pr-10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                    onclick="togglePicker('selesai')">
+                <input type="hidden" name="tanggal_selesai" id="tanggal_selesai"
+                    value="{{ old('tanggal_selesai', $data->tanggal_selesai?->format('Y-m-d')) }}" required>
+                <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                    </svg>
+                </span>
+            </div>
+            <div id="picker-selesai" class="absolute left-0 top-full mt-2 z-50 hidden w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-900"></div>
+        </div>
+
+        <div class="space-y-2">
+            <label for="status" class="block text-sm font-medium text-gray-600 dark:text-gray-400">Status Audit</label>
+            <select name="status" id="status"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition">
+                <option value="draft"    {{ old('status', $data->status) === 'draft'    ? 'selected' : '' }}>Draft</option>
+                <option value="berjalan" {{ old('status', $data->status) === 'berjalan' ? 'selected' : '' }}>Berjalan</option>
+                <option value="selesai"  {{ old('status', $data->status) === 'selesai'  ? 'selected' : '' }}>Selesai</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 mt-6">
+        <div class="space-y-2">
+            <label for="ketua_tim_id" class="block text-sm font-medium text-gray-600 dark:text-gray-400">Ketua Tim</label>
+            <select name="ketua_tim_id" id="ketua_tim_id"
+                class="h-11 w-full rounded-lg border border-gray-300 px-4 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition">
+                <option value="">Pilih Ketua Tim</option>
+                @foreach($ketuaTim as $user)
+                    <option value="{{ $user->id }}"
+                        {{ old('ketua_tim_id', $data->ketua_tim_id) == $user->id ? 'selected' : '' }}>
+                        {{ $user->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="space-y-2">
+            <label for="members" class="block text-sm font-medium text-gray-600 dark:text-gray-400">Anggota Tim</label>
+            <select name="members[]" id="members" multiple
+                class="min-h-[120px] w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition">
+                @foreach($members as $user)
+                    <option value="{{ $user->id }}"
+                        {{ $data->members->contains($user->id) ? 'selected' : '' }}>
+                        {{ $user->name }}
+                    </option>
+                @endforeach
+            </select>
+            <p class="text-xs text-gray-400">Tahan Ctrl / ⌘ untuk memilih lebih dari satu anggota.</p>
+        </div>
+    </div>
+</div>
 
         {{-- SECTION: Lampiran Existing --}}
         @if($data->attachments->count())
@@ -199,18 +276,26 @@
             </div>
             <ul id="file-list" class="space-y-2 text-sm"></ul>
         </div>
+        
 
         {{-- BUTTON --}}
-        <div class="flex justify-end gap-3">
-            <a href="{{ route('audit-assignment.show', $data->id) }}"
-                class="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5">
-                Batal
-            </a>
-            <button type="submit"
-                class="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700">
-                Simpan Perubahan
-            </button>
-        </div>
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+
+    <a href="{{ route('audit-assignment.show', $data->id) }}"
+        class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-600 
+        hover:bg-gray-50 transition-colors
+        dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5">
+        Batal
+    </a>
+
+    <button type="submit"
+        onclick="this.disabled=true; this.innerText='Menyimpan...'; this.form.submit();"
+        class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white 
+        hover:bg-blue-700 transition-colors shadow-sm hover:shadow">
+        Simpan Perubahan
+    </button>
+
+</div>
     </form>
 </div>
 @endsection
@@ -288,22 +373,30 @@ function renderPicker(key) {
 function togglePicker(key) {
     const el = document.getElementById(`picker-${key}`);
     const otherKey = key === 'mulai' ? 'selesai' : 'mulai';
-    document.getElementById(`picker-${otherKey}`).classList.add('hidden');
-    if (el.classList.contains('hidden')) { renderPicker(key); el.classList.remove('hidden'); }
-    else { el.classList.add('hidden'); }
+    const otherEl = document.getElementById(`picker-${otherKey}`);
+    
+    if(otherEl) otherEl.classList.add('hidden');
+    
+    if (el && el.classList.contains('hidden')) { 
+        renderPicker(key); 
+        el.classList.remove('hidden'); 
+    } else if(el) { 
+        el.classList.add('hidden'); 
+    }
 }
 
 function shiftMonth(key, dir) {
     const s = pickerState[key];
     s.month += dir;
     if (s.month > 11) { s.month = 0; s.year++; }
-    if (s.month < 0)  { s.month = 11; s.year--; }
+    else if (s.month < 0)  { s.month = 11; s.year--; }
     renderPicker(key);
 }
 
 function selectDate(key, y, m, d) {
     const hiddenId  = key === 'mulai' ? 'tanggal_mulai'         : 'tanggal_selesai';
     const displayId = key === 'mulai' ? 'tanggal_mulai_display' : 'tanggal_selesai_display';
+    
     document.getElementById(hiddenId).value  = formatValue(y, m, d);
     document.getElementById(displayId).value = formatDisplay(y, m, d);
     document.getElementById(`picker-${key}`).classList.add('hidden');
@@ -314,25 +407,38 @@ function selectToday(key) {
     selectDate(key, n.getFullYear(), n.getMonth(), n.getDate());
 }
 
+// Global click listener untuk menutup picker
 document.addEventListener('click', function(e) {
     ['mulai','selesai'].forEach(key => {
         const picker  = document.getElementById(`picker-${key}`);
         const display = document.getElementById(key === 'mulai' ? 'tanggal_mulai_display' : 'tanggal_selesai_display');
-        if (!picker.contains(e.target) && e.target !== display) picker.classList.add('hidden');
+        if (picker && !picker.contains(e.target) && e.target !== display) {
+            picker.classList.add('hidden');
+        }
     });
 });
 
-// ── Pre-fill tanggal & cascade saat DOMContentLoaded ───────────────
+// ── Perbaikan Utama pada Inisialisasi ───────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-    // Pre-fill tanggal display
+    // Pre-fill tanggal display dengan proteksi null/error
     ['mulai','selesai'].forEach(key => {
-        const hiddenId  = key === 'mulai' ? 'tanggal_mulai'         : 'tanggal_selesai';
-        const displayId = key === 'mulai' ? 'tanggal_mulai_display' : 'tanggal_selesai_display';
-        const val = document.getElementById(hiddenId).value;
-        if (val) {
-            const [y, m, d] = val.split('-').map(Number);
-            document.getElementById(displayId).value = formatDisplay(y, m - 1, d);
-            pickerState[key] = { year: y, month: m - 1 };
+        const hiddenInput = document.getElementById(key === 'mulai' ? 'tanggal_mulai' : 'tanggal_selesai');
+        const displayInput = document.getElementById(key === 'mulai' ? 'tanggal_mulai_display' : 'tanggal_selesai_display');
+        
+        if (hiddenInput && hiddenInput.value && hiddenInput.value.includes('-')) {
+            try {
+                const parts = hiddenInput.value.split('-');
+                const y = parseInt(parts[0]);
+                const m = parseInt(parts[1]);
+                const d = parseInt(parts[2]);
+                
+                if(!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                    displayInput.value = formatDisplay(y, m - 1, d);
+                    pickerState[key] = { year: y, month: m - 1 };
+                }
+            } catch (e) {
+                console.warn("Format tanggal tidak valid", e);
+            }
         }
     });
 

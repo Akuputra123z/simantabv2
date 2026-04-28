@@ -9,7 +9,7 @@
             </svg>
             Kembali ke Daftar
         </a>
-        <h2 class="mt-3 text-2xl font-bold text-gray-800 dark:text-white/90">Edit Program Audit (PKPT)</h2>
+        <h2 class="mt-3 text-2xl font-bold text-gray-800 dark:text-white/90">Edit Program Kerja</h2>
         <p class="text-sm text-gray-500">Perbarui data program pengawasan tahunan.</p>
     </div>
 
@@ -33,27 +33,25 @@
                 @enderror
             </div>
 
-            {{-- Tahun & Target --}}
             <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+             
 
-                {{-- Tahun --}}
+                {{-- Tahun PKPT --}}
                 <div class="space-y-2">
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Tahun PKPT</label>
                     <select 
                         name="tahun" 
-                        class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:text-white">
-
+                        class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                         @foreach(range(date('Y') + 1, date('Y') - 2) as $y)
-                            <option 
-                                value="{{ $y }}" 
-                                {{ old('tahun', $program->tahun) == $y ? 'selected' : '' }}>
+                            <option value="{{ $y }}" {{ old('tahun', $program->tahun) == $y ? 'selected' : '' }}>
                                 {{ $y }}
                             </option>
                         @endforeach
-
                     </select>
                 </div>
+            </div>
 
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 {{-- Target Assignment --}}
                 <div class="space-y-2">
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Target Assignment (Unit)</label>
@@ -62,12 +60,20 @@
                         name="target_assignment" 
                         value="{{ old('target_assignment', $program->target_assignment) }}"
                         class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:text-white">
-
-                    @error('target_assignment') 
-                        <p class="text-xs text-red-500 mt-1">{{ $message }}</p> 
-                    @enderror
+                    @error('target_assignment') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                 </div>
 
+                {{-- Status --}}
+                <div class="space-y-2">
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Status Program</label>
+                    <select name="status" 
+                        class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                        <option value="draft" {{ old('status', $program->status) == 'draft' ? 'selected' : '' }}>Draft</option>
+                        <option value="berjalan" {{ old('status', $program->status) == 'berjalan' ? 'selected' : '' }}>Berjalan</option>
+                        <option value="selesai" {{ old('status', $program->status) == 'selesai' ? 'selected' : '' }}>Selesai</option>
+                    </select>
+                    @error('status') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                </div>
             </div>
 
             {{-- Action --}}
@@ -78,8 +84,8 @@
 
                 <button 
                     type="submit" 
-                    class="rounded-xl bg-yellow-500 px-8 py-2.5 text-sm font-medium text-white hover:bg-yellow-600 transition-all shadow-lg shadow-yellow-500/25">
-                    Update Program
+                    class="rounded-xl bg-blue-600 px-8 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/25">
+                    Simpan Perubahan
                 </button>
             </div>
         </form>

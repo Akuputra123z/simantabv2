@@ -11,42 +11,42 @@
         <p class="text-sm text-gray-500">Input rencana pengawasan tahunan baru.</p>
     </div>
 
-    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] sm:p-8">
-        <form action="{{ route('audit-program.store') }}" method="POST" class="space-y-6">
-            @csrf
-            
+   <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] sm:p-8">
+    <form action="{{ route('audit-program.store') }}" method="POST" class="space-y-6">
+        @csrf
+        
+        <div class="space-y-2">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Nama Program</label>
+            <input type="text" name="nama_program" value="{{ old('nama_program') }}" placeholder="Contoh: Audit Operasional BOS" 
+                class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">
+            @error('nama_program') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div class="space-y-2">
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Nama Program</label>
-                <input type="text" name="nama_program" value="{{ old('nama_program') }}" placeholder="Contoh: Audit Operasional BOS" 
-                    class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">
-                @error('nama_program') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Tahun PKPT</label>
+                <select name="tahun" class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:text-white">
+                    @foreach(range(date('Y') + 1, date('Y') - 2) as $y)
+                        <option value="{{ $y }}" {{ old('tahun', date('Y')) == $y ? 'selected' : '' }}>{{ $y }}</option>
+                    @endforeach
+                </select>
             </div>
+        </div>
 
-            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div class="space-y-2">
-                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Tahun PKPT</label>
-                    <select name="tahun" class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:text-white">
-                        @foreach(range(date('Y') + 1, date('Y') - 2) as $y)
-                            <option value="{{ $y }}" {{ old('tahun', date('Y')) == $y ? 'selected' : '' }}>{{ $y }}</option>
-                        @endforeach
-                    </select>
-                </div>
+        <div class="space-y-2">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Target Assignment (Unit)</label>
+            <input type="number" name="target_assignment" value="{{ old('target_assignment', 0) }}" 
+                class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:text-white">
+            @error('target_assignment') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+        </div>
 
-                <div class="space-y-2">
-                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Target Assignment (Unit)</label>
-                    <input type="number" name="target_assignment" value="{{ old('target_assignment', 0) }}" 
-                        class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:text-white">
-                    @error('target_assignment') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-            </div>
-
-            <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-6 dark:border-gray-800">
-                <button type="reset" class="rounded-xl px-6 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5">Reset</button>
-                <button type="submit" class="rounded-xl bg-blue-600 px-8 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/25">
-                    Simpan Program
-                </button>
-            </div>
-        </form>
-    </div>
+        <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-6 dark:border-gray-800">
+            <button type="reset" class="rounded-xl px-6 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5">Reset</button>
+            <button type="submit" class="rounded-xl bg-blue-600 px-8 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/25">
+                Simpan Program
+            </button>
+        </div>
+    </form>
+</div>
 </div>
 @endsection

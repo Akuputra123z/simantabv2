@@ -17,7 +17,11 @@ class User extends Authenticatable
         'email',
         'password',
         'nip',
+        'pangkat_gol',
         'jabatan',
+        'pendidikan_terakhir',
+        'jenis_kelamin',
+        'unit_kerja',
         'phone',
         'avatar',
         'is_active',
@@ -70,23 +74,23 @@ class User extends Authenticatable
     /**
      * Inisial nama untuk avatar.
      */
-    public function initials(): string
-    {
-        return Str::of($this->name)
-            ->explode(' ')
-            ->map(fn (string $n) => Str::of($n)->substr(0, 1)->upper())
-            ->take(2)
-            ->implode('');
-    }
+    public function getInitialsAttribute(): string
+{
+    return Str::of($this->name)
+        ->explode(' ')
+        ->map(fn ($n) => Str::substr($n, 0, 1))
+        ->take(2)
+        ->implode('');
+}
 
     /**
      * Label role pertama yang dimiliki user.
      */
-    public function roleName(): string
-    {
-        $role = $this->getRoleNames()->first();
-        return self::ROLES[$role] ?? ucfirst(str_replace('_', ' ', $role ?? '-'));
-    }
+    public function getRoleNameAttribute(): string
+{
+    $role = $this->getRoleNames()->first();
+    return self::ROLES[$role] ?? ucfirst(str_replace('_', ' ', $role ?? '-'));
+}
 
     /**
      * Cek apakah user bisa mengakses fitur audit lapangan

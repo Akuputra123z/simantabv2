@@ -20,7 +20,7 @@
                  alt="{{ Auth::user()->name }}" 
                  class="h-full w-full object-cover">
         @else
-            {{ Auth::user()->initials() }}
+            {{ Auth::user()->initials }}
         @endif
         </span>
 

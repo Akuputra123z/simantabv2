@@ -1,132 +1,453 @@
-@extends('layouts.fullscreen-layout')
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login - E-AUDIT INSPEKTORAT</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-error": "#ffffff",
+            "on-secondary-fixed": "#011b3e",
+            "error": "#ba1a1a",
+            "on-background": "#1a1c1c",
+            "on-tertiary-container": "#ffdfd2",
+            "inverse-surface": "#2f3131",
+            "secondary-fixed-dim": "#b2c7f3",
+            "secondary": "#4a5f85",
+            "tertiary-container": "#ae4600",
+            "surface-variant": "#e2e2e2",
+            "primary": "#0049ab",
+            "surface-container": "#eeeeee",
+            "on-secondary-fixed-variant": "#32476c",
+            "on-error-container": "#93000a",
+            "on-primary-fixed": "#001945",
+            "on-tertiary": "#ffffff",
+            "primary-container": "#1d61d1",
+            "primary-fixed-dim": "#b0c6ff",
+            "surface": "#f9f9f9",
+            "error-container": "#ffdad6",
+            "secondary-container": "#bdd2fe",
+            "tertiary-fixed-dim": "#ffb694",
+            "on-tertiary-fixed": "#351000",
+            "on-tertiary-fixed-variant": "#7b2f00",
+            "on-primary-fixed-variant": "#00429b",
+            "on-secondary-container": "#455a80",
+            "outline": "#737785",
+            "inverse-on-surface": "#f0f1f1",
+            "surface-dim": "#dadada",
+            "tertiary": "#873500",
+            "surface-container-high": "#e8e8e8",
+            "secondary-fixed": "#d7e3ff",
+            "tertiary-fixed": "#ffdbcc",
+            "on-surface": "#1a1c1c",
+            "on-primary-container": "#dee5ff",
+            "on-primary": "#ffffff",
+            "surface-container-low": "#f3f3f4",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary": "#ffffff",
+            "surface-bright": "#f9f9f9",
+            "background": "#f9f9f9",
+            "inverse-primary": "#b0c6ff",
+            "surface-tint": "#0858c8",
+            "surface-container-highest": "#e2e2e2",
+            "on-surface-variant": "#424653",
+            "primary-fixed": "#d9e2ff",
+            "outline-variant": "#c2c6d6"
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            "2xl": "1rem",
+            full: "9999px"
+          },
+          fontFamily: {
+            "body-md": ["Inter"],
+            "caption": ["Inter"],
+            "label-sm": ["Inter"],
+            h1: ["Inter"],
+            h2: ["Inter"]
+          },
+          fontSize: {
+            "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+            caption: ["12px", { lineHeight: "16px", fontWeight: "400" }],
+            "label-sm": ["14px", { lineHeight: "20px", fontWeight: "500" }],
+            h1: ["30px", { lineHeight: "38px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            h2: ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "600" }]
+          }
+        }
+      }
+    }
+</script>
+<style>
+    * { box-sizing: border-box; }
 
-@section('content')
-    <div class="relative z-1 bg-white p-6 sm:p-0 dark:bg-gray-900">
-        <div class="relative flex h-screen w-full flex-col justify-center sm:p-0 lg:flex-row dark:bg-gray-900">
-            <!-- Form -->
-            <div class="flex w-full flex-1 flex-col lg:w-1/2">
-                <div class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
+    .glass-panel {
+        background: rgba(255,255,255,0.03);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 4px 30px rgba(0,0,0,0.1);
+    }
+    .smooth-gradient {
+        background: linear-gradient(135deg, #1d61d1 0%, #0049ab 100%);
+    }
+    .smooth-gradient-hover:hover {
+        background: linear-gradient(135deg, #1d61d1 10%, #00429b 100%);
+    }
+    .bg-mesh {
+        background-color: #051024;
+        background-image:
+            radial-gradient(at 80% 0%, hsla(217,100%,25%,0.4) 0px, transparent 50%),
+            radial-gradient(at 0% 100%, hsla(217,100%,15%,0.6) 0px, transparent 50%);
+    }
+
+    /* Floating badges — static on small screens, animated on lg+ */
+    .float-badge-right {
+        transform: translateY(16px);
+        transition: transform 0.5s ease;
+    }
+    .float-badge-right:hover { transform: translateY(-8px); }
+
+    .float-badge-left {
+        transform: translateY(-16px);
+        transition: transform 0.5s ease;
+    }
+    .float-badge-left:hover { transform: translateY(8px); }
+
+    /* Bar chart bars hover */
+    .bar { transition: height 0.3s ease; }
+
+    /* Shimmer on info card */
+    .shimmer-group:hover .shimmer {
+        transform: translateX(100%);
+        transition: transform 1s ease-in-out;
+    }
+    .shimmer {
+        transform: translateX(-100%);
+        transition: none;
+    }
+
+    /* Ensure the page never overflows on small screens */
+    html, body { height: 100%; }
+</style>
+</head>
+<body class="bg-slate-50 text-on-background font-body-md antialiased selection:bg-[#1d61d1] selection:text-white min-h-screen flex flex-col">
+
+<main class="flex-grow flex w-full items-start lg:items-center justify-center p-3 sm:p-4 lg:p-8">
+
+    <!-- Outer card -->
+    <div class="flex w-full bg-surface-container-lowest rounded-2xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-outline-variant/20 flex-col lg:flex-row max-w-[1300px] mx-auto">
+
+        <!-- ═══════════════════════════════════════
+             LEFT — Authentication Zone
+        ════════════════════════════════════════ -->
+        <div class="w-full lg:w-[42%] xl:w-[38%] bg-white flex flex-col items-center justify-center px-5 py-10 sm:px-8 sm:py-12 lg:px-16 lg:py-16 relative z-10">
+
+            <div class="w-full max-w-[400px] mb-40">
+                <div class="w-full max-w-[400px]">
+                    <a href="{{ route('home') }}" class="group inline-flex items-center text-[13px] font-medium text-gray-400 hover:text-primary transition-all duration-300">
+                        <span class="material-symbols-outlined text-[18px] mr-2 group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                        Kembali ke Beranda
+                    </a>
+                </div>
+                
+
+                <!-- Logo & Header -->
+        <div class="mb-8 text-center flex flex-col items-center space-y-4 mt-10">
+
+    <!-- Logo -->
+    <div class="flex justify-center">
+        <img 
+            src="{{ asset('images/logo/image.png') }}" 
+            alt="Logo Inspektorat" 
+            class="h-24 sm:h-28 w-auto object-contain"
+        >
+    </div>
+
+    <!-- Nama Instansi -->
+    <div class="space-y-0.5">
+        <h1 class="text-[18px] sm:text-[20px] font-bold text-gray-900 tracking-tight">
+            E-AUDIT INSPEKTORAT
+        </h1>
+        <p class="text-[12px] text-[#1d61d1] font-semibold tracking-[0.15em] uppercase">
+            Kabupaten Rembang
+        </p>
+    </div>
+
+    <!-- Divider -->
+    <div class="w-14 h-[2px] bg-gradient-to-r from-[#1d61d1] to-blue-400 rounded-full"></div>
+
+    <!-- Welcome Text -->
+    <div class="space-y-1 pt-1">
+        <h2 class="text-[18px] sm:text-[20px] font-semibold text-gray-800">
+            Selamat Datang
+        </h2>
+        <p class="text-[13px] text-gray-500 font-light">
+            Silakan masuk untuk melanjutkan ke sistem
+        </p>
+    </div>
+
+</div>
+                <!-- Form -->
+                <form method="POST" action="{{ route('login') }}" class="space-y-5">
+                    @csrf
+
+                    <!-- Email -->
                     <div>
-                        <div class="mb-5 sm:mb-8">
-                            <h1 class="text-title-sm sm:text-title-md mb-2 font-semibold text-gray-800 dark:text-white/90">
-                                Sign In
-                            </h1>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                Enter your email and password to sign in!
-                            </p>
+                        <label class="block text-[13px] font-medium text-gray-700 mb-1.5" for="email">Email</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                <span class="material-symbols-outlined text-gray-400 group-focus-within:text-[#1d61d1] transition-colors duration-300 text-[20px]">mail</span>
+                            </div>
+                            <input
+                                class="w-full pl-10 pr-4 py-[11px] rounded-xl border {{ $errors->has('email') ? 'border-red-400 bg-red-50/30' : 'border-gray-200 bg-gray-50/50' }} text-gray-900 focus:bg-white focus:ring-4 focus:ring-[#1d61d1]/10 focus:border-[#1d61d1] transition-all duration-300 text-[14px] font-light placeholder:text-gray-400 outline-none"
+                                id="email"
+                                type="email"
+                                name="email"
+                                value="{{ old('email') }}"
+                                required
+                                autofocus
+                                autocomplete="email"
+                                placeholder="Masukkan email Anda"
+                            />
                         </div>
-                        <div>
-                            <form method="POST" action="{{ route('login') }}">
-                                @csrf
-                                <div class="space-y-5">
-                                    <!-- Email -->
-                                    <div>
-                                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                            Email<span class="text-error-500">*</span>
-                                        </label>
-                                        <input type="email" id="email" name="email" value="{{ old('email') }}" placeholder="info@gmail.com" autofocus
-                                            class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 @error('email') border-error-500 @enderror" />
-                                        @error('email')
-                                            <p class="mt-1.5 text-sm text-error-500">{{ $message }}</p>
-                                        @enderror
+                        @error('email')
+                            <p class="text-red-500 text-[12px] mt-1.5 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">error</span>
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+
+                    <!-- Password -->
+                    <div x-data="{ show: false }">
+                        <label class="block text-[13px] font-medium text-gray-700 mb-1.5" for="password">Password</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                <span class="material-symbols-outlined text-gray-400 group-focus-within:text-[#1d61d1] transition-colors duration-300 text-[20px]">lock</span>
+                            </div>
+                            <input
+                                :type="show ? 'text' : 'password'"
+                                class="w-full pl-10 pr-11 py-[11px] rounded-xl border {{ $errors->has('password') ? 'border-red-400 bg-red-50/30' : 'border-gray-200 bg-gray-50/50' }} text-gray-900 focus:bg-white focus:ring-4 focus:ring-[#1d61d1]/10 focus:border-[#1d61d1] transition-all duration-300 text-[14px] font-light placeholder:text-gray-400 outline-none"
+                                id="password"
+                                name="password"
+                                required
+                                autocomplete="current-password"
+                                placeholder="••••••••"
+                            />
+                            <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center">
+                                <button type="button" @click="show = !show" class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none">
+                                    <span class="material-symbols-outlined text-[20px]" x-text="show ? 'visibility_off' : 'visibility'">visibility</span>
+                                </button>
+                            </div>
+                        </div>
+                        @error('password')
+                            <p class="text-red-500 text-[12px] mt-1.5 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">error</span>
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+
+                    <!-- Remember & Forgot -->
+                    <div class="flex items-center justify-between pt-1 pb-2">
+                        <div class="flex items-center">
+                            <input class="h-[16px] w-[16px] text-[#1d61d1] focus:ring-[#1d61d1]/20 border-gray-300 rounded cursor-pointer transition-colors duration-200" id="remember-me" type="checkbox" name="remember"/>
+                            <label class="ml-2.5 text-[13px] text-gray-600 cursor-pointer font-light" for="remember-me">Ingat saya</label>
+                        </div>
+                        @if (Route::has('password.request'))
+                            <a class="text-[13px] text-[#1d61d1] hover:text-[#0049ab] transition-colors font-medium" href="{{ route('password.request') }}">Lupa password?</a>
+                        @endif
+                    </div>
+
+                    <!-- Global error alert -->
+                    @if ($errors->any() && !$errors->has('email') && !$errors->has('password'))
+                        <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2.5 text-red-600 text-[13px]">
+                            <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+                            Email atau password salah
+                        </div>
+                    @endif
+                    @if ($errors->has('email') || $errors->has('password'))
+                        <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2.5 text-red-600 text-[13px]">
+                            <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+                            Email atau password salah. Silakan coba lagi.
+                        </div>
+                    @endif
+
+                    <div class="flex justify-center py-2">
+    <x-turnstile />
+</div>
+@error('cf-turnstile-response')
+    <p class="text-red-500 text-[12px] mb-4 flex items-center gap-1 justify-center">
+        <span class="material-symbols-outlined text-[14px]">error</span>
+        Konfirmasi bahwa Anda bukan robot.
+    </p>
+@enderror
+
+                    <!-- Submit -->
+                    <div>
+                        <button type="submit" class="w-full flex justify-center items-center py-[13px] px-6 border border-transparent rounded-xl shadow-lg shadow-[#1d61d1]/20 text-[14px] font-semibold text-white smooth-gradient smooth-gradient-hover transition-all duration-300 ease-out focus:outline-none focus:ring-4 focus:ring-[#1d61d1]/30 active:scale-[0.98]">
+                            <span class="material-symbols-outlined mr-2 text-[20px]">lock_open</span>
+                            Masuk ke Sistem
+                        </button>
+                    </div>
+
+                  
+
+                    <!-- Security notice -->
+                    <div class="pt-2 flex flex-col items-center justify-center text-center opacity-60 hover:opacity-100 transition-opacity duration-300">
+                    
+                        <p class="text-[11px] text-gray-500 max-w-[280px] leading-relaxed font-light">
+                            Sistem ini dilindungi dengan enkripsi AES-256 dan hanya untuk pengguna yang berwenang.
+                        </p>
+                    </div>
+
+                    
+
+                </form>
+            </div>
+
+            <!-- Footer mobile -->
+            <div class="mt-8 lg:hidden text-center w-full">
+                <p class="text-[11px] text-gray-400 font-light">© 2024 Inspektorat. All rights reserved.</p>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             RIGHT — Information Zone
+        ════════════════════════════════════════ -->
+        <div class="hidden lg:flex w-[58%] xl:w-[62%] bg-mesh relative overflow-hidden flex-col justify-between items-center p-12 xl:p-16 rounded-r-2xl">
+
+            <!-- Background dot grid -->
+            <div class="absolute inset-0 pointer-events-none" style="background-image:radial-gradient(rgba(255,255,255,0.08) 1px,transparent 1px);background-size:40px 40px;opacity:0.5;"></div>
+
+            <!-- Decorative glows -->
+            <div class="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-blue-500/20 rounded-full blur-[100px] pointer-events-none"></div>
+            <div class="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+            <!-- Headline -->
+            <div class="z-10 text-left w-full max-w-xl mt-4 relative">
+                <h2 class="font-h1 text-[38px] xl:text-[46px] leading-[1.15] font-bold text-white mb-6 tracking-tight">
+                    Transparansi, <br/>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-200">Akuntabilitas,</span><br/>
+                    Integritas.
+                </h2>
+                <div class="w-14 h-1.5 bg-gradient-to-r from-[#1d61d1] to-blue-400 rounded-full mb-6 shadow-[0_0_15px_rgba(29,97,209,0.5)]"></div>
+               
+            </div>
+
+            <!-- Illustration -->
+            <div class="z-10 relative flex-grow flex items-center justify-center w-full my-8 xl:my-10">
+                <div class="relative w-full max-w-[500px] h-[340px] xl:h-[370px]">
+
+                    <!-- Dashboard card -->
+                    <div class="absolute inset-0 glass-panel rounded-2xl overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] -rotate-2 hover:rotate-0 transition-transform duration-700 ease-out">
+                        <!-- Titlebar -->
+                        <div class="h-9 border-b border-white/5 flex items-center px-5 bg-white/5">
+                            <div class="flex gap-2">
+                                <div class="w-3 h-3 rounded-full bg-red-400/80 shadow-[0_0_8px_rgba(248,113,113,0.5)]"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-400/80 shadow-[0_0_8px_rgba(250,204,21,0.5)]"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-400/80 shadow-[0_0_8px_rgba(74,222,128,0.5)]"></div>
+                            </div>
+                        </div>
+                        <!-- Content -->
+                        <div class="p-6 flex flex-col gap-5">
+                            <!-- Stat cards row -->
+                            <div class="flex gap-4">
+                                <div class="flex-1 rounded-xl bg-white/[0.02] border border-white/5 p-4 hover:bg-white/[0.05] transition-colors duration-300">
+                                    <div class="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                                        <span class="material-symbols-outlined text-blue-400 text-[18px]">monitoring</span>
                                     </div>
-                                    <!-- Password -->
-                                    <div>
-                                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                            Password<span class="text-error-500">*</span>
-                                        </label>
-                                        <div x-data="{ showPassword: false }" class="relative">
-                                            <input :type="showPassword ? 'text' : 'password'" name="password"
-                                                placeholder="Enter your password"
-                                                class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pr-11 pl-4 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 @error('password') border-error-500 @enderror" />
-                                            <span @click="showPassword = !showPassword"
-                                                class="absolute top-1/2 right-4 z-30 -translate-y-1/2 cursor-pointer text-gray-500 dark:text-gray-400">
-                                                <svg x-show="!showPassword" class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M10.0002 13.8619C7.23361 13.8619 4.86803 12.1372 3.92328 9.70241C4.86804 7.26761 7.23361 5.54297 10.0002 5.54297C12.7667 5.54297 15.1323 7.26762 16.0771 9.70243C15.1323 12.1372 12.7667 13.8619 10.0002 13.8619ZM10.0002 4.04297C6.48191 4.04297 3.49489 6.30917 2.4155 9.4593C2.3615 9.61687 2.3615 9.78794 2.41549 9.94552C3.49488 13.0957 6.48191 15.3619 10.0002 15.3619C13.5184 15.3619 16.5055 13.0957 17.5849 9.94555C17.6389 9.78797 17.6389 9.6169 17.5849 9.45932C16.5055 6.30919 13.5184 4.04297 10.0002 4.04297ZM9.99151 7.84413C8.96527 7.84413 8.13333 8.67606 8.13333 9.70231C8.13333 10.7286 8.96527 11.5605 9.99151 11.5605H10.0064C11.0326 11.5605 11.8646 10.7286 11.8646 9.70231C11.8646 8.67606 11.0326 7.84413 10.0064 7.84413H9.99151Z" fill="#98A2B3" />
-                                                </svg>
-                                                <svg x-show="showPassword" class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                                        d="M4.63803 3.57709C4.34513 3.2842 3.87026 3.2842 3.57737 3.57709C3.28447 3.86999 3.28447 4.34486 3.57737 4.63775L4.85323 5.91362C3.74609 6.84199 2.89363 8.06395 2.4155 9.45936C2.3615 9.61694 2.3615 9.78801 2.41549 9.94558C3.49488 13.0957 6.48191 15.3619 10.0002 15.3619C11.255 15.3619 12.4422 15.0737 13.4994 14.5598L15.3625 16.4229C15.6554 16.7158 16.1302 16.7158 16.4231 16.4229C16.716 16.13 16.716 15.6551 16.4231 15.3622L4.63803 3.57709ZM12.3608 13.4212L10.4475 11.5079C10.3061 11.5423 10.1584 11.5606 10.0064 11.5606H9.99151C8.96527 11.5606 8.13333 10.7286 8.13333 9.70237C8.13333 9.5461 8.15262 9.39434 8.18895 9.24933L5.91885 6.97923C5.03505 7.69015 4.34057 8.62704 3.92328 9.70247C4.86803 12.1373 7.23361 13.8619 10.0002 13.8619C10.8326 13.8619 11.6287 13.7058 12.3608 13.4212ZM16.0771 9.70249C15.7843 10.4569 15.3552 11.1432 14.8199 11.7311L15.8813 12.7925C16.6329 11.9813 17.2187 11.0143 17.5849 9.94561C17.6389 9.78803 17.6389 9.61696 17.5849 9.45938C16.5055 6.30925 13.5184 4.04303 10.0002 4.04303C9.13525 4.04303 8.30244 4.17999 7.52218 4.43338L8.75139 5.66259C9.1556 5.58413 9.57311 5.54303 10.0002 5.54303C12.7667 5.54303 15.1323 7.26768 16.0771 9.70249Z"
-                                                        fill="#98A2B3" />
-                                                </svg>
-                                            </span>
-                                        </div>
-                                        @error('password')
-                                            <p class="mt-1.5 text-sm text-error-500">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                    <!-- Checkbox -->
-                                    <div class="flex items-center justify-between">
-                                        <div x-data="{ checkboxToggle: false }">
-                                            <label for="remember"
-                                                class="flex cursor-pointer items-center text-sm font-normal text-gray-700 select-none dark:text-gray-400">
-                                                <div class="relative">
-                                                    <input type="checkbox" id="remember" name="remember" class="sr-only" @change="checkboxToggle = !checkboxToggle" />
-                                                    <div :class="checkboxToggle ? 'border-brand-500 bg-brand-500' :
-                                                        'bg-transparent border-gray-300 dark:border-gray-700'"
-                                                        class="mr-3 flex h-5 w-5 items-center justify-center rounded-md border-[1.25px]">
-                                                        <span :class="checkboxToggle ? '' : 'opacity-0'">
-                                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                <path d="M11.6666 3.5L5.24992 9.91667L2.33325 7" stroke="white" stroke-width="1.94437" stroke-linecap="round" stroke-linejoin="round" />
-                                                            </svg>
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                Keep me logged in
-                                            </label>
-                                        </div>
-                                        @if (Route::has('password.request'))
-                                            <a href="{{ route('password.request') }}" class="text-brand-500 hover:text-brand-600 dark:text-brand-400 text-sm">
-                                                Forgot password?
-                                            </a>
-                                        @endif
-                                    </div>
-                                    <!-- Button -->
-                                    <div>
-                                        <button type="submit"
-                                            class="bg-brand-500 shadow-theme-xs hover:bg-brand-600 flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-medium text-white transition">
-                                            Sign In
-                                        </button>
-                                    </div>
+                                    <div class="w-1/2 h-2 bg-white/20 rounded-full mb-2"></div>
+                                    <div class="w-3/4 h-2 bg-white/10 rounded-full"></div>
                                 </div>
-                            </form>
-                            <div class="mt-5">
-                                <p class="text-center text-sm font-normal text-gray-700 sm:text-start dark:text-gray-400">
-                                    Don't have an account?
-                                    <a href="{{ route('register') }}" class="text-brand-500 hover:text-brand-600 dark:text-brand-400">Sign Up</a>
-                                </p>
+                                <div class="flex-1 rounded-xl bg-white/[0.02] border border-white/5 p-4 hover:bg-white/[0.05] transition-colors duration-300">
+                                    <div class="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(34,197,94,0.2)]">
+                                        <span class="material-symbols-outlined text-green-400 text-[18px]">task_alt</span>
+                                    </div>
+                                    <div class="w-1/2 h-2 bg-white/20 rounded-full mb-2"></div>
+                                    <div class="w-3/4 h-2 bg-white/10 rounded-full"></div>
+                                </div>
+                                <div class="flex-1 rounded-xl bg-white/[0.02] border border-white/5 p-4 hover:bg-white/[0.05] transition-colors duration-300">
+                                    <div class="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+                                        <span class="material-symbols-outlined text-purple-400 text-[18px]">description</span>
+                                    </div>
+                                    <div class="w-1/2 h-2 bg-white/20 rounded-full mb-2"></div>
+                                    <div class="w-3/4 h-2 bg-white/10 rounded-full"></div>
+                                </div>
+                            </div>
+                            <!-- Bar chart -->
+                            <div class="w-full h-[120px] xl:h-[130px] rounded-xl bg-white/[0.02] border border-white/5 p-4 relative overflow-hidden">
+                                <div class="absolute bottom-0 left-0 w-full h-full bg-gradient-to-t from-blue-500/5 to-transparent"></div>
+                                <div class="flex items-end gap-2.5 h-full justify-between px-1 pb-1 relative z-10">
+                                    <div class="flex-1 bg-gradient-to-t from-blue-500/60 to-blue-400/40 rounded-t-md bar" style="height:33%"></div>
+                                    <div class="flex-1 bg-gradient-to-t from-blue-500/70 to-blue-400/50 rounded-t-md bar" style="height:66%"></div>
+                                    <div class="flex-1 bg-gradient-to-t from-blue-500/80 to-blue-400/60 rounded-t-md bar" style="height:50%"></div>
+                                    <div class="flex-1 bg-gradient-to-t from-blue-500/60 to-blue-400/40 rounded-t-md bar" style="height:75%"></div>
+                                    <div class="flex-1 bg-gradient-to-t from-[#1d61d1]/90 to-blue-400/70 rounded-t-md shadow-[0_0_20px_rgba(29,97,209,0.3)]" style="height:100%"></div>
+                                    <div class="flex-1 bg-gradient-to-t from-blue-500/80 to-blue-400/60 rounded-t-md bar" style="height:80%"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <div class="bg-brand-950 relative hidden h-full w-full items-center lg:grid lg:w-1/2 dark:bg-white/5">
-                <div class="z-1 flex items-center justify-center">
-                    <!-- ===== Common Grid Shape Start ===== -->
-                    <x-common.common-grid-shape/>
-                    <div class="flex max-w-xs flex-col items-center">
-                        <a href="{{ route('dashboard') }}" class="mb-4 block">
-                            <img src="{{ asset('images/logo/auth-logo.svg') }}" alt="Logo" />
-                        </a>
-                        <p class="text-center text-gray-400 dark:text-white/60">
-                            Free and Open-Source Tailwind CSS Admin Dashboard Template
-                        </p>
+                    <!-- Badge: Data Terenkripsi -->
+                    <div class="absolute -right-6 xl:-right-8 top-14 p-4 glass-panel rounded-2xl flex items-center gap-3.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] float-badge-right z-20 border border-white/10 min-w-[180px]">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#1d61d1]/30 to-blue-500/10 flex items-center justify-center border border-blue-400/20 shadow-[0_0_15px_rgba(29,97,209,0.3)] shrink-0">
+                            <span class="material-symbols-outlined text-blue-300 text-[22px]" style="font-variation-settings:'FILL' 1;">security</span>
+                        </div>
+                        <div>
+                            <div class="text-[13px] text-white font-medium tracking-wide">Data Terenkripsi</div>
+                            <div class="text-[11px] text-blue-200/60 mt-0.5">AES-256 Bit Security</div>
+                        </div>
+                    </div>
+
+                    <!-- Badge: Audit Real-time -->
+                    <div class="absolute -left-6 xl:-left-8 bottom-16 p-4 glass-panel rounded-2xl flex items-center gap-3.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] float-badge-left z-20 border border-white/10 min-w-[180px]">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-500/20 to-green-400/5 flex items-center justify-center border border-green-400/20 shadow-[0_0_15px_rgba(34,197,94,0.2)] shrink-0">
+                            <span class="material-symbols-outlined text-green-400 text-[22px]" style="font-variation-settings:'FILL' 1;">fact_check</span>
+                        </div>
+                        <div>
+                            <div class="text-[13px] text-white font-medium tracking-wide">Audit Real-time</div>
+                            <div class="text-[11px] text-blue-200/60 mt-0.5">Sinkronisasi Otomatis</div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <!-- Toggler -->
-            <div class="fixed right-6 bottom-6 z-50">
-                <button
-                    class="bg-brand-500 hover:bg-brand-600 inline-flex size-14 items-center justify-center rounded-full text-white transition-colors"
-                    @click.prevent="$store.theme.toggle()">
-                    <svg class="hidden fill-current dark:block" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"> <path fill-rule="evenodd" clip-rule="evenodd" d="M9.99998 1.5415C10.4142 1.5415 10.75 1.87729 10.75 2.2915V3.5415C10.75 3.95572 10.4142 4.2915 9.99998 4.2915C9.58577 4.2915 9.24998 3.95572 9.24998 3.5415V2.2915C9.24998 1.87729 9.58577 1.5415 9.99998 1.5415ZM10.0009 6.79327C8.22978 6.79327 6.79402 8.22904 6.79402 10.0001C6.79402 11.7712 8.22978 13.207 10.0009 13.207C11.772 13.207 13.2078 11.7712 13.2078 10.0001C13.2078 8.22904 11.772 6.79327 10.0009 6.79327ZM5.29402 10.0001C5.29402 7.40061 7.40135 5.29327 10.0009 5.29327C12.6004 5.29327 14.7078 7.40061 14.7078 10.0001C14.7078 12.5997 12.6004 14.707 10.0009 14.707C7.40135 14.707 5.29402 12.5997 5.29402 10.0001ZM15.9813 5.08035C16.2742 4.78746 16.2742 4.31258 15.9813 4.01969C15.6884 3.7268 15.2135 3.7268 14.9207 4.01969L14.0368 4.90357C13.7439 5.19647 13.7439 5.67134 14.0368 5.96423C14.3297 6.25713 14.8045 6.25713 15.0974 5.96423L15.9813 5.08035ZM18.4577 10.0001C18.4577 10.4143 18.1219 10.7501 17.7077 10.7501H16.4577C16.0435 10.7501 15.7077 10.4143 15.7077 10.0001C15.7077 9.58592 16.0435 9.25013 16.4577 9.25013H17.7077C18.1219 9.25013 18.4577 9.58592 18.4577 10.0001ZM14.9207 15.9806C15.2135 16.2735 15.6884 16.2735 15.9813 15.9806C16.2742 15.6877 16.2742 15.2128 15.9813 14.9199L15.0974 14.036C14.8045 13.7431 14.3297 13.7431 14.0368 14.036C13.7439 14.3289 13.7439 14.8038 14.0368 15.0967L14.9207 15.9806ZM9.99998 15.7088C10.4142 15.7088 10.75 16.0445 10.75 16.4588V17.7088C10.75 18.123 10.4142 18.4588 9.99998 18.4588C9.58577 18.4588 9.24998 18.123 9.24998 17.7088V16.4588C9.24998 16.0445 9.58577 15.7088 9.99998 15.7088ZM5.96356 15.0972C6.25646 14.8043 6.25646 14.3295 5.96356 14.0366C5.67067 13.7437 5.1958 13.7437 4.9029 14.0366L4.01902 14.9204C3.72613 15.2133 3.72613 15.6882 4.01902 15.9811C4.31191 16.274 4.78679 16.274 5.07968 15.9811L5.96356 15.0972ZM4.29224 10.0001C4.29224 10.4143 3.95645 10.7501 3.54224 10.7501H2.29224C1.87802 10.7501 1.54224 10.4143 1.54224 10.0001C1.54224 9.58592 1.87802 9.25013 2.29224 9.25013H3.54224C3.95645 9.25013 4.29224 9.58592 4.29224 10.0001ZM4.9029 5.9637C5.1958 6.25659 5.67067 6.25659 5.96356 5.9637C6.25646 5.6708 6.25646 5.19593 5.96356 4.90303L5.07968 4.01915C4.78679 3.72626 4.31191 3.72626 4.01902 4.01915C3.72613 4.31204 3.72613 4.78692 4.01902 5.07981L4.9029 5.9637Z" fill="" />
-                    </svg>
-                    <svg class="fill-current dark:hidden" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.4547 11.97L18.1799 12.1611C18.265 11.8383 18.1265 11.4982 17.8401 11.3266C17.5538 11.1551 17.1885 11.1934 16.944 11.4207L17.4547 11.97ZM8.0306 2.5459L8.57989 3.05657C8.80718 2.81209 8.84554 2.44682 8.67398 2.16046C8.50243 1.8741 8.16227 1.73559 7.83948 1.82066L8.0306 2.5459ZM12.9154 13.0035C9.64678 13.0035 6.99707 10.3538 6.99707 7.08524H5.49707C5.49707 11.1823 8.81835 14.5035 12.9154 14.5035V13.0035ZM16.944 11.4207C15.8869 12.4035 14.4721 13.0035 12.9154 13.0035V14.5035C14.8657 14.5035 16.6418 13.7499 17.9654 12.5193L16.944 11.4207ZM16.7295 11.7789C15.9437 14.7607 13.2277 16.9586 10.0003 16.9586V18.4586C13.9257 18.4586 17.2249 15.7853 18.1799 12.1611L16.7295 11.7789ZM10.0003 16.9586C6.15734 16.9586 3.04199 13.8433 3.04199 10.0003H1.54199C1.54199 14.6717 5.32892 18.4586 10.0003 18.4586V16.9586ZM3.04199 10.0003C3.04199 6.77289 5.23988 4.05695 8.22173 3.27114L7.83948 1.82066C4.21532 2.77574 1.54199 6.07486 1.54199 10.0003H3.04199ZM6.99707 7.08524C6.99707 5.52854 7.5971 4.11366 8.57989 3.05657L7.48132 2.03522C6.25073 3.35885 5.49707 5.13487 5.49707 7.08524H6.99707Z" fill="" />
-                    </svg>
-                </button>
+
+            <!-- Security card -->
+            <div class="z-10 w-full max-w-[500px] glass-panel p-5 rounded-2xl flex items-start gap-4 mb-2 hover:bg-white/[0.05] transition-all duration-500 border border-white/5 shadow-xl relative overflow-hidden shimmer-group">
+                <div class="shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none"></div>
+                <div class="bg-gradient-to-br from-blue-500/20 to-[#1d61d1]/10 p-3 rounded-xl shrink-0 border border-blue-400/20">
+                    <span class="material-symbols-outlined text-blue-300 text-[24px]" style="font-variation-settings:'FILL' 1;">verified_user</span>
+                </div>
+                <div class="pt-0.5">
+                    <h4 class="text-[15px] font-semibold text-white mb-1.5 tracking-wide">Keamanan Sistem Terjamin</h4>
+                    <p class="text-[13px] leading-[1.65] text-blue-100/70 font-light">Seluruh data dan aktivitas diawasi dan dilindungi sesuai standar keamanan informasi pemerintah.</p>
+                </div>
             </div>
-        </div>
-    </div>
-@endsection
+
+            <!-- Footer desktop right panel -->
+            <div class="z-10 w-full text-left mt-4">
+                <p class="text-[11px] text-blue-200/30 font-light tracking-wide">© 2024 Inspektorat. All rights reserved.</p>
+            </div>
+
+        </div><!-- /right panel -->
+
+    </div><!-- /outer card -->
+
+</main>
+<x-turnstile.scripts />
+
+</body>
+</html>

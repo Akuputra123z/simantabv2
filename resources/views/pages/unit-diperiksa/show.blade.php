@@ -19,7 +19,7 @@
                 class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl">
                 Edit Profil
             </a>
-        </div>
+        </div>  
     </div>
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-12">

@@ -24,6 +24,7 @@ class AuditAssignment extends Model
     protected $fillable = [
         'audit_program_id',
         'unit_diperiksa_id',
+        'jenis_pengawasan',
         'tanggal_mulai',
         'tanggal_selesai',
         'ketua_tim_id',
@@ -55,6 +56,16 @@ class AuditAssignment extends Model
     | Scopes
     |--------------------------------------------------------------------------
     */
+     public static function listJenisPengawasan()
+    {
+        return [
+            'Audit',
+            'Reviu',
+            'Evaluasi',
+            'Pemantauan TL',
+            'Consulting',
+        ];
+    }
 
     public function getLabelAttribute(): string
 {

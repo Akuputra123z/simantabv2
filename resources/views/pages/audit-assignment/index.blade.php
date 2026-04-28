@@ -59,72 +59,161 @@
                 </a>
             </div>
         </div>
-
         <div class="max-w-full overflow-x-auto custom-scrollbar">
-            <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
-                <thead class="bg-gray-50/50 dark:bg-gray-900/50">
-                    <tr class="text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                        <th class="px-6 py-3 w-10 text-center">
-                            <input type="checkbox" id="check-all" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
-                        </th>
-                        <th class="px-4 py-3">Ketua Tim</th>
-                        <th class="px-4 py-3">Audit Program</th>
-                        <th class="px-4 py-3">Unit</th>
-                        <th class="px-4 py-3 text-center">Status</th>
-                        <th class="px-4 py-3 text-center">Action</th>
-                    </tr>
-                </thead>
+    <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
+        
+        {{-- HEADER --}}
+        <thead class="bg-gray-50/70 dark:bg-gray-900/50">
+            <tr class="text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                <th class="px-6 py-3 w-10 text-center">
+                    <input type="checkbox" id="check-all"
+                        class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                </th>
+                <th class="px-4 py-3">Ketua Tim</th>
+                <th class="px-4 py-3">Program Audit</th>
+                <th class="px-4 py-3">Unit</th>
+                <th class="px-4 py-3 text-center">Jenis Pengawasan</th>
+                <th class="px-4 py-3 text-center">Status</th>
+                <th class="px-4 py-3 text-center">Action</th>
+            </tr>
+        </thead>
 
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                    @forelse($assignments as $assignment)
-                    <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] text-sm">
-                        <td class="px-6 py-4 text-center">
-                            <input type="checkbox" name="ids[]" value="{{ $assignment->id }}" class="check-item h-4 w-4 rounded border-gray-300 cursor-pointer">
-                        </td>
-                        <td class="px-4 py-4 whitespace-nowrap">
-                            <div class="flex items-center gap-3">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-xs uppercase">
-                                    {{ substr($assignment->ketuaTim->name ?? '??', 0, 2) }}
-                                </div>
-                                <div>
-                                    <p class="font-medium text-gray-800 dark:text-white">{{ $assignment->ketuaTim->name ?? '-' }}</p>
-                                    <p class="text-xs text-gray-500 text-left">{{ $assignment->ketuaTim->email ?? '-' }}</p>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-4 py-4 text-gray-600 dark:text-gray-400">{{ $assignment->auditProgram->nama_program ?? '-' }}</td>
-                        <td class="px-4 py-4 text-gray-600 dark:text-gray-400">{{ $assignment->unitDiperiksa->nama_unit ?? '-' }}</td>
-                        <td class="px-4 py-4 text-center">
-                            @php
-                                $status = strtolower($assignment->status);
-                                $statusClass = ($status == 'complete' || $status == 'selesai')
-                                    ? 'bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-500' 
-                                    : 'bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-500';
-                            @endphp
-                            <span class="{{ $statusClass }} rounded-full px-3 py-1 text-xs font-medium inline-block">
-                                {{ ucfirst($assignment->status) }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-4">
-                            <div class="flex items-center justify-center gap-3 text-gray-400">
-                                <a href="{{ route('audit-assignment.show', $assignment->id) }}" class="hover:text-blue-500 transition-colors" title="Detail">
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                                </a>
-                                <a href="{{ route('audit-assignment.edit', $assignment->id) }}" class="hover:text-primary transition-colors" title="Edit">
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                </a>
-                                <button type="button" onclick="confirmDelete('single', '{{ $assignment->id }}')" class="hover:text-red-500 transition-colors" title="Hapus">
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="6" class="px-4 py-16 text-center text-gray-500 italic">Data tidak ditemukan.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+        {{-- BODY --}}
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            @forelse($assignments as $assignment)
+            <tr class="hover:bg-gray-50/60 dark:hover:bg-white/[0.03] text-sm transition">
+
+                {{-- CHECKBOX --}}
+                <td class="px-6 py-4 text-center">
+                    <input type="checkbox" name="ids[]" value="{{ $assignment->id }}"
+                        class="check-item h-4 w-4 rounded border-gray-300 cursor-pointer">
+                </td>
+
+                {{-- KETUA TIM --}}
+                <td class="px-4 py-4 whitespace-nowrap">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full 
+                            bg-blue-100 text-blue-600 font-bold text-xs uppercase">
+                            {{ substr($assignment->ketuaTim->name ?? '??', 0, 2) }}
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 dark:text-white">
+                                {{ $assignment->ketuaTim->name ?? '-' }}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                {{ $assignment->ketuaTim->email ?? '-' }}
+                            </p>
+                        </div>
+                    </div>
+                </td>
+
+                {{-- PROGRAM --}}
+                <td class="px-4 py-4 text-gray-600 dark:text-gray-400">
+                    {{ $assignment->auditProgram->nama_program ?? '-' }}
+                </td>
+
+                {{-- UNIT --}}
+                <td class="px-4 py-4 text-gray-600 dark:text-gray-400">
+                    {{ $assignment->unitDiperiksa->nama_unit ?? '-' }}
+                </td>
+
+                {{-- JENIS PENGAWASAN --}}
+                <td class="px-4 py-4 text-center">
+                    @php
+                        $jenis = $assignment->jenis_pengawasan;
+                        $jenisClass = match($jenis) {
+                            'reguler'      => 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400',
+                            'khusus'       => 'bg-purple-100 text-purple-600 dark:bg-purple-500/15 dark:text-purple-400',
+                            'investigasi'  => 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400',
+                            'reviu'        => 'bg-yellow-100 text-yellow-600 dark:bg-yellow-500/15 dark:text-yellow-400',
+                            'monitoring'   => 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400',
+                            default        => 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                        };
+                    @endphp
+
+                    <span class="{{ $jenisClass }} rounded-full px-3 py-1 text-xs font-medium inline-block">
+                        {{ ucfirst(str_replace('_',' ',$jenis)) }}
+                    </span>
+                </td>
+
+                {{-- STATUS --}}
+                <td class="px-4 py-4 text-center">
+                    @php
+                        $status = strtolower($assignment->status);
+                        $statusClass = match($status) {
+                            'selesai'   => 'bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-400',
+                            'berjalan'  => 'bg-yellow-100 text-yellow-600 dark:bg-yellow-500/15 dark:text-yellow-400',
+                            'draft'     => 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+                            default     => 'bg-gray-100 text-gray-600'
+                        };
+                    @endphp
+
+                    <span class="{{ $statusClass }} rounded-full px-3 py-1 text-xs font-medium inline-block">
+                        {{ ucfirst($status) }}
+                    </span>
+                </td>
+
+                {{-- ACTION --}}
+                {{-- Aksi --}}
+<td class="px-5 py-4 text-right">
+    <div class="flex justify-end gap-3 text-gray-400">
+
+        <!-- Detail -->
+        <a href="{{ route('audit-assignment.show', $assignment->id) }}"
+           class="hover:text-gray-800 dark:hover:text-white transition-colors"
+           title="Detail">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+        </a>
+
+        <!-- Edit -->
+        <a href="{{ route('audit-assignment.edit', $assignment->id) }}"
+           class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+           title="Edit">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M18.414 5.586a2 2 0 112.828 2.828L11.828 17H9v-2.828l9.414-9.586z"/>
+            </svg>
+        </a>
+
+        <!-- Delete -->
+        <form action="{{ route('audit-assignment.destroy', $assignment->id) }}"
+              method="POST"
+              onsubmit="return confirm('Hapus data ini?')">
+            @csrf
+            @method('DELETE')
+
+            <button type="submit"
+                    class="hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                    title="Hapus">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </button>
+        </form>
+
+    </div>
+</td>
+             
+
+            </tr>
+            @empty
+            <tr>
+                <td colspan="7" class="px-4 py-16 text-center text-gray-500 italic">
+                    Data tidak ditemukan.
+                </td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
     </form>
 </div>
 

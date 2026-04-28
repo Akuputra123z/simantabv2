@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
+
 
 class LoginController extends Controller
 {
@@ -24,6 +26,7 @@ class LoginController extends Controller
         $request->validate([
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'cf-turnstile-response' => ['required', new Turnstile],
         ]);
 
         $this->ensureIsNotRateLimited($request);

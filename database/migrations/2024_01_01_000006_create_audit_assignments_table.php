@@ -18,6 +18,7 @@ return new class extends Migration
             $table->date('tanggal_selesai');
             $table->foreignId('ketua_tim_id')
                   ->constrained('users')->restrictOnDelete();
+            $table->string('jenis_pengawasan', 50)->index();
             $table->string('nama_tim', 50)->nullable()
                   ->comment('Tim I | Tim II | Tim III');
             $table->string('nomor_surat', 100)

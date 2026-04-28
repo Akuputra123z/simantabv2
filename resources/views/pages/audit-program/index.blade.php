@@ -44,90 +44,107 @@
             </div>
         </div>
 
-        {{-- Table --}}
-        <div class="border-t border-gray-100 p-5 sm:p-6 dark:border-gray-800">
-            <div class="overflow-hidden border border-gray-200 rounded-xl dark:border-gray-800">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/[0.02]">
-                            <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Nama Program & Tahun</th>
-                            <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">Target / Realisasi</th>
-                            <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Progress LHP</th>
-                            <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">Status</th>
-                            <th class="px-5 py-3 text-right text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-sm">
-                        @forelse($data as $item)
-                        <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
-                            <td class="px-5 py-4">
-                                <span class="block font-semibold text-gray-800 dark:text-white/90">{{ $item->nama_program }}</span>
-                                <span class="text-xs text-gray-500">Tahun {{ $item->tahun }}</span>
-                            </td>
-                            <td class="px-5 py-4 text-center">
-                                <div class="text-sm font-bold text-gray-800 dark:text-white">
-                                    {{ $item->realisasi_assignment }} <span class="text-gray-400 font-normal">/ {{ $item->target_assignment }}</span>
-                                </div>
-                                <span class="text-[10px] text-gray-400 uppercase">Assignment</span>
-                            </td>
-                            <td class="px-5 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                                        <div class="h-full bg-blue-500 rounded-full" style="width: {{ $item->progress }}%"></div>
-                                    </div>
-                                    <span class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ $item->progress }}%</span>
-                                </div>
-                                <span class="text-[10px] text-gray-400 mt-1 block">{{ $item->sudah_lhp }} LHP Selesai</span>
-                            </td>
-                            <td class="px-5 py-4 text-center">
-                                @php
-                                    $statusColor = $item->status == 'berjalan' 
-                                        ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400' 
-                                        : 'bg-gray-50 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400';
+      {{-- Table --}}
+<div class="border-t border-gray-100 p-5 sm:p-6 dark:border-gray-800">
+    <div class="overflow-hidden border border-gray-200 rounded-xl dark:border-gray-800">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/[0.02]">
+                    <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Nama Program & Tahun</th>
+                    <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">Target / Realisasi</th>
+                    <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Progress LHP</th>
+                    <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">Status</th>
+                    <th class="px-5 py-3 text-right text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-sm">
+                @forelse($data as $item)
+                <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
+                    {{-- Nama & Tahun --}}
+                    <td class="px-5 py-4">
+                        <span class="block font-semibold text-gray-800 dark:text-white/90">{{ $item->nama_program }}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-gray-500">PKPT {{ $item->tahun }}</span>
+                    </td>
+                    {{-- Target / Realisasi --}}
+                    <td class="px-5 py-4 text-center">
+                        <div class="text-sm font-bold text-gray-800 dark:text-white">
+                            {{ $item->assignments_count ?? 0 }} <span class="text-gray-400 font-normal">/ {{ $item->target_assignment }}</span>
+                        </div>
+                        <span class="text-[10px] text-gray-400 uppercase">Assignment</span>
+                    </td>
+
+                    {{-- Progress LHP --}}
+                    <td class="px-5 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                {{-- Menghindari devide by zero --}}
+                                @php 
+                                    $percent = $item->target_assignment > 0 ? ($item->assignments_count / $item->target_assignment) * 100 : 0; 
                                 @endphp
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $statusColor }}">
-                                    {{ $item->status }}
-                                </span>
-                            </td>
-                            <td class="px-5 py-4 text-right">
-                                <div class="flex justify-end gap-3 text-gray-400">
-                                    <a href="{{ route('audit-program.show', $item->id) }}" class="hover:text-gray-800 dark:hover:text-white transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                    </a>
-                                    <a href="{{ route('audit-program.edit', $item->id) }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                    </a>
-                                    <form action="{{ route('audit-program.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Hapus program ini?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="hover:text-red-600 dark:hover:text-red-400 transition-colors">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="5" class="px-5 py-12 text-center text-gray-400">
-                                <div class="flex flex-col items-center">
-                                    <svg class="w-12 h-12 mb-3 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                    <p>Belum ada program kerja pengawasan</p>
-                                </div>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            
-            {{-- Pagination --}}
-            <div class="mt-5 flex items-center justify-between border-t border-gray-50 pt-5 dark:border-gray-800">
-                <p class="text-[11px] font-bold text-gray-400 uppercase">
-                    Halaman {{ $data->currentPage() }} dari {{ $data->lastPage() }}
-                </p>
-                <div>{{ $data->links() }}</div>
-            </div>
+                                <div class="h-full bg-blue-500 rounded-full" style="width: {{ $percent }}%"></div>
+                            </div>
+                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ number_format($percent, 0) }}%</span>
+                        </div>
+                        <span class="text-[10px] text-gray-400 mt-1 block">Berdasarkan Target Assignment</span>
+                    </td>
+
+                    {{-- Status --}}
+                    <td class="px-5 py-4 text-center">
+                        @php
+                            $statusClasses = [
+                                'draft' => 'bg-gray-100 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400',
+                                'berjalan' => 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400',
+                                'selesai' => 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400',
+                            ];
+                            $currentClass = $statusClasses[$item->status] ?? $statusClasses['draft'];
+                        @endphp
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $currentClass }}">
+                            {{ $item->status }}
+                        </span>
+                    </td>
+
+                    {{-- Aksi --}}
+                    <td class="px-5 py-4 text-right">
+                        <div class="flex justify-end gap-3 text-gray-400">
+                            <a href="{{ route('audit-program.show', $item->id) }}" class="hover:text-gray-800 dark:hover:text-white transition-colors" title="Detail">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </a>
+                            <a href="{{ route('audit-program.edit', $item->id) }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Edit">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </a>
+                            <form action="{{ route('audit-program.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Hapus program ini?')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Hapus">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="px-5 py-12 text-center text-gray-400">
+                        <div class="flex flex-col items-center">
+                            <svg class="w-12 h-12 mb-3 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                            <p>Belum ada program kerja pengawasan</p>
+                        </div>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    
+    {{-- Pagination --}}
+    <div class="mt-5 flex items-center justify-between border-t border-gray-50 pt-5 dark:border-gray-800">
+        <p class="text-[11px] font-bold text-gray-400 uppercase">
+            Halaman {{ $data->currentPage() }} dari {{ $data->lastPage() }}
+        </p>
+        <div class="flex">
+            {{ $data->links() }}
         </div>
+    </div>
+</div>
     </div>
 </div>
 @endsection

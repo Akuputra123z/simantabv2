@@ -34,7 +34,7 @@
                     <select name="kategori" onchange="this.form.submit()" 
                         class="h-10 rounded-lg border border-gray-200 bg-transparent px-3 text-sm text-gray-500 outline-none focus:border-blue-300 dark:border-gray-700 dark:bg-gray-900">
                         <option value="">Kategori</option>
-                        @foreach(['SKPD', 'Sekolah', 'Puskesmas', 'Desa', 'BLUD'] as $cat)
+                        @foreach(['SKPD', 'Sekolah', 'OPD', 'Desa', 'BLUD'] as $cat)
                             <option value="{{ $cat }}" {{ request('kategori') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
                         @endforeach
                     </select>

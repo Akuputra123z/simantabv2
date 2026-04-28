@@ -13,19 +13,21 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
-    // ── Index ─────────────────────────────────────────────────────────────────
+    // ── Index ────────────────────────────────────────────────────────────────
 
     public function index(Request $request): View
     {
         $users = User::query()
-            ->with('roles') // eager load — hindari N+1
-            ->when($request->filled('search'), fn ($q) =>
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%")
-                  ->orWhere('nip', 'like', "%{$request->search}%")
-            )
+            ->with('roles')
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $q->where(function ($query) use ($request) {
+                    $query->where('name', 'like', "%{$request->search}%")
+                          ->orWhere('email', 'like', "%{$request->search}%")
+                          ->orWhere('nip', 'like', "%{$request->search}%");
+                });
+            })
             ->when($request->filled('role'), fn ($q) =>
-                $q->role($request->role) // Spatie scope
+                $q->role($request->role)
             )
             ->when($request->filled('status'), fn ($q) =>
                 $q->where('is_active', $request->status === 'aktif')
@@ -36,14 +38,22 @@ class UserController extends Controller
 
         $roles = Role::orderBy('name')->pluck('name');
 
-        // Stats untuk cards — query sekali pakai selectRaw
-        $stats = [
-            'total'  => User::count(),
-            'aktif'  => User::where('is_active', true)->count(),
-            'nonaktif' => User::where('is_active', false)->count(),
-        ];
+        // 🔥 lebih efisien (1 query)
+        $stats = User::selectRaw("
+                COUNT(*) as total,
+                SUM(is_active = 1) as aktif,
+                SUM(is_active = 0) as nonaktif
+            ")->first();
 
-        return view('users.index', compact('users', 'roles', 'stats'));
+        return view('users.index', [
+            'users' => $users,
+            'roles' => $roles,
+            'stats' => [
+                'total' => $stats->total ?? 0,
+                'aktif' => $stats->aktif ?? 0,
+                'nonaktif' => $stats->nonaktif ?? 0,
+            ]
+        ]);
     }
 
     // ── Create ────────────────────────────────────────────────────────────────
@@ -118,7 +128,6 @@ class UserController extends Controller
             'is_active' => ['boolean'],
         ]);
 
-        // Cegah super_admin menonaktifkan dirinya sendiri
         if ($user->id === auth()->id() && ! $request->boolean('is_active')) {
             return back()->with('error', 'Anda tidak dapat menonaktifkan akun sendiri.');
         }
@@ -132,12 +141,12 @@ class UserController extends Controller
             'is_active' => $request->boolean('is_active', true),
         ]);
 
-        // Update password hanya jika diisi
         if (! empty($validated['password'])) {
-            $user->update(['password' => Hash::make($validated['password'])]);
+            $user->update([
+                'password' => Hash::make($validated['password'])
+            ]);
         }
 
-        // Sync role (Spatie: hapus role lama, assign role baru)
         $user->syncRoles([$validated['role']]);
 
         return redirect()
@@ -153,10 +162,11 @@ class UserController extends Controller
             return back()->with('error', 'Tidak dapat menonaktifkan akun sendiri.');
         }
 
-        $user->update(['is_active' => ! $user->is_active]);
+        $user->update([
+            'is_active' => ! $user->is_active
+        ]);
 
-        $status = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
-        return back()->with('success', "User {$user->name} berhasil {$status}.");
+        return back()->with('success', 'Status user berhasil diperbarui.');
     }
 
     // ── Destroy ───────────────────────────────────────────────────────────────
@@ -167,7 +177,8 @@ class UserController extends Controller
             return back()->with('error', 'Tidak dapat menghapus akun sendiri.');
         }
 
-        if ($user->hasRole(User::ROLE_SUPER_ADMIN) && User::role(User::ROLE_SUPER_ADMIN)->count() <= 1) {
+        if ($user->hasRole(User::ROLE_SUPER_ADMIN) &&
+            User::role(User::ROLE_SUPER_ADMIN)->count() <= 1) {
             return back()->with('error', 'Tidak dapat menghapus satu-satunya super admin.');
         }
 

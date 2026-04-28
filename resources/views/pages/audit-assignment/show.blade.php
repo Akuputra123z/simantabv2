@@ -4,35 +4,49 @@
 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6">
 
     {{-- HEADER --}}
-    <div class="flex items-center justify-between">
-        <div>
-            <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Detail Audit Assignment</h2>
-            <p class="mt-1 text-sm text-gray-500">{{ $data->nomor_surat }}</p>
-        </div>
-        <div class="flex gap-3">
-            <a href="{{ route('audit-assignment.edit', $data->id) }}"
-                class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700">
-                Edit
-            </a>
-            <a href="{{ route('audit-assignment.index') }}"
-                class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5">
-                Kembali
-            </a>
-        </div>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+    <div>
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white">
+            Detail Audit Assignment
+        </h2>
+        <p class="mt-1 text-sm text-gray-500">
+            {{ $data->nomor_surat }}
+        </p>
     </div>
+
+    <div class="flex items-center gap-3">
+        <a href="{{ route('audit-assignment.edit', $data->id) }}"
+            class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white 
+            hover:bg-blue-700 transition-colors shadow-sm hover:shadow">
+            Edit
+        </a>
+
+        <a href="{{ route('audit-assignment.index') }}"
+            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-600 
+            hover:bg-gray-50 transition-colors
+            dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5">
+            Kembali
+        </a>
+    </div>
+
+</div>
 
     {{-- STATUS BADGE --}}
     <div>
-        @php
-            $badge = match($data->status) {
-                'berjalan' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-                'selesai'  => 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-                default    => 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-            };
-        @endphp
-        <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold capitalize {{ $badge }}">
-            {{ $data->status }}
-        </span>
+       @php
+    $badge = match($data->status) {
+        'berjalan' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+        'selesai'  => 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+        default    => 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+    };
+@endphp
+
+<div>
+    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold capitalize {{ $badge }}">
+        {{ $data->status }}
+    </span>
+</div>
     </div>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -41,72 +55,102 @@
         <div class="lg:col-span-2 space-y-6">
 
             {{-- Informasi Audit --}}
-            <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03]">
-                <h3 class="mb-6 text-lg font-semibold text-gray-700 dark:text-gray-200">Informasi Audit</h3>
-                <dl class="grid grid-cols-1 gap-y-5 sm:grid-cols-2">
-                    <div>
-                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Program Audit</dt>
-                        <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
-                            {{ $data->auditProgram?->nama_program ?? '-' }}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Nomor Surat</dt>
-                        <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">{{ $data->nomor_surat }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Unit Diperiksa</dt>
-                        <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
-                            {{ $data->unitDiperiksa?->nama_unit ?? '-' }}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Kecamatan</dt>
-                        <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
-                            {{ $data->unitDiperiksa?->nama_kecamatan ?? '-' }}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Nama Tim</dt>
-                        <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">{{ $data->nama_tim }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Kategori Unit</dt>
-                        <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
-                            {{ $data->unitDiperiksa?->kategori ?? '-' }}
-                        </dd>
-                    </div>
-                </dl>
-            </div>
+           <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
+
+    <div>
+        <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">
+            Informasi Audit
+        </h3>
+        <p class="text-sm text-gray-500">
+            Detail utama penugasan audit
+        </p>
+    </div>
+
+    <dl class="grid grid-cols-1 gap-y-6 sm:grid-cols-2">
+
+        <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Program Audit</dt>
+            <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
+                {{ $data->auditProgram?->nama_program ?? '-' }}
+            </dd>
+        </div>
+
+        <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Jenis Pengawasan</dt>
+            <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
+                {{ ucfirst(str_replace('_',' ',$data->jenis_pengawasan)) }}
+            </dd>
+        </div>
+
+        <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Nomor Surat</dt>
+            <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
+                {{ $data->nomor_surat }}
+            </dd>
+        </div>
+
+        <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Nama Tim</dt>
+            <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
+                {{ $data->nama_tim }}
+            </dd>
+        </div>
+
+        <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Unit Diperiksa</dt>
+            <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
+                {{ $data->unitDiperiksa?->nama_unit ?? '-' }}
+            </dd>
+        </div>
+
+        <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Kecamatan</dt>
+            <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
+                {{ $data->unitDiperiksa?->nama_kecamatan ?? '-' }}
+            </dd>
+        </div>
+
+    </dl>
+</div>
 
             {{-- Jadwal --}}
-            <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03]">
-                <h3 class="mb-6 text-lg font-semibold text-gray-700 dark:text-gray-200">Jadwal</h3>
-                <dl class="grid grid-cols-1 gap-y-5 sm:grid-cols-3">
-                    <div>
-                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Tanggal Mulai</dt>
-                        <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
-                            {{ $data->tanggal_mulai?->translatedFormat('d F Y') ?? '-' }}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Tanggal Selesai</dt>
-                        <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
-                            {{ $data->tanggal_selesai?->translatedFormat('d F Y') ?? '-' }}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Durasi</dt>
-                        <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
-                            @if($data->tanggal_mulai && $data->tanggal_selesai)
-                                {{ $data->tanggal_mulai->diffInDays($data->tanggal_selesai) + 1 }} hari
-                            @else
-                                -
-                            @endif
-                        </dd>
-                    </div>
-                </dl>
-            </div>
+           <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
+
+    <div>
+        <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">
+            Jadwal
+        </h3>
+    </div>
+
+    <dl class="grid grid-cols-1 gap-y-6 sm:grid-cols-3">
+
+        <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Tanggal Mulai</dt>
+            <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
+                {{ $data->tanggal_mulai?->translatedFormat('d F Y') ?? '-' }}
+            </dd>
+        </div>
+
+        <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Tanggal Selesai</dt>
+            <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
+                {{ $data->tanggal_selesai?->translatedFormat('d F Y') ?? '-' }}
+            </dd>
+        </div>
+
+        <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Durasi</dt>
+            <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">
+                @if($data->tanggal_mulai && $data->tanggal_selesai)
+                    {{ $data->tanggal_mulai->diffInDays($data->tanggal_selesai) + 1 }} hari
+                @else
+                    -
+                @endif
+            </dd>
+        </div>
+
+    </dl>
+</div>
 
             {{-- Lampiran --}}
             <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03]">
@@ -213,17 +257,23 @@
     </div>
 
     {{-- DELETE --}}
-    <div class="flex justify-end">
-        <form action="{{ route('audit-assignment.destroy', $data->id) }}" method="POST"
-            onsubmit="return confirm('Yakin ingin menghapus assignment ini?')">
-            @csrf
-            @method('DELETE')
-            <button type="submit"
-                class="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40">
-                Hapus Assignment
-            </button>
-        </form>
-    </div>
+    <div class="flex items-center justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
+
+    <form action="{{ route('audit-assignment.destroy', $data->id) }}" method="POST"
+        onsubmit="return confirm('Yakin ingin menghapus assignment ini?')">
+        @csrf
+        @method('DELETE')
+
+        <button type="submit"
+            class="inline-flex items-center gap-2 rounded-lg bg-red-50 px-5 py-2.5 text-sm font-medium text-red-600 
+            hover:bg-red-100 transition-colors
+            dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40">
+            Hapus Assignment
+        </button>
+
+    </form>
+
+</div>
 
 </div>
 @endsection

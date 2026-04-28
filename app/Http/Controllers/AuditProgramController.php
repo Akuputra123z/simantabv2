@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditProgram;
 use Illuminate\Http\Request;
 
+
 class AuditProgramController extends Controller
 {
     public function index(Request $request)
@@ -33,24 +34,27 @@ class AuditProgramController extends Controller
     }
 
     // Simpan data baru
-    public function store(Request $request)
-    {
-        $request->validate([
-            'nama_program' => 'required|string|max:255',
-            'tahun' => 'required|integer',
-            'target_assignment' => 'required|integer|min:1',
-        ]);
+   public function store(Request $request)
+{
 
-        AuditProgram::create([
-            'nama_program' => $request->nama_program,
-            'tahun' => $request->tahun,
-            'target_assignment' => $request->target_assignment,
-            'status' => 'berjalan', // Default status
-        ]);
+    $validated = $request->validate([
+        'nama_program'      => 'required|string|max:255',
+        'tahun'             => 'required|integer|digits:4',
+        'target_assignment' => 'required|integer|min:1',
+    ]);
 
-        return redirect()->route('audit-program.index')
-            ->with('success', 'Program Audit berhasil ditambahkan.');
-    }
+    AuditProgram::create([
+        'nama_program'      => $validated['nama_program'],
+        'tahun'             => $validated['tahun'],
+        'target_assignment' => $validated['target_assignment'],
+        'status'            => 'berjalan',
+        'created_by'        => auth()->id(),
+        'updated_by'        => auth()->id(),
+    ]);
+
+    return redirect()->route('audit-program.index')
+        ->with('success', 'Program Audit berhasil ditambahkan.');
+}
 
     // Edit data
     public function edit(AuditProgram $auditProgram)
@@ -62,20 +66,26 @@ class AuditProgramController extends Controller
 }
 
     // Update data
-    public function update(Request $request, AuditProgram $auditProgram)
-    {
-        $request->validate([
-            'nama_program' => 'required|string|max:255',
-            'tahun' => 'required|integer',
-            'target_assignment' => 'required|integer',
-            'status' => 'required|in:berjalan,selesai',
-        ]);
+ public function update(Request $request, AuditProgram $auditProgram)
+{
+    // 1. Tampung hasil validasi ke dalam variabel $validated
+    $validated = $request->validate([
+        'nama_program'      => 'required|string|max:255',
+        'tahun'             => 'required|integer|digits:4',
+        'target_assignment' => 'required|integer|min:1',
+        'status'            => 'required|in:draft,berjalan,selesai', // Tambahkan 'draft' jika ada di migrasi
+    ]);
 
-        $auditProgram->update($request->all());
+    // 2. Tambahkan informasi siapa yang mengubah data (Audit Trail)
+    $validated['updated_by'] = auth()->id();
 
-        return redirect()->route('audit-program.index')
-            ->with('success', 'Program Audit berhasil diperbarui.');
-    }
+    // 3. Update HANYA menggunakan data yang telah divalidasi
+    // Ini mencegah error "Field doesn't have a default value" dan celah keamanan
+    $auditProgram->update($validated);
+
+    return redirect()->route('audit-program.index')
+        ->with('success', 'Program Audit berhasil diperbarui.');
+}
 
     public function show(AuditProgram $auditProgram)
     {

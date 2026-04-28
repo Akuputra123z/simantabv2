@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use Database\Seeders\KetuaTimSeeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -21,7 +22,8 @@ class DatabaseSeeder extends Seeder
         KodeRekomendasiSeeder::class,
         KodeTemuanSeeder::class,
         RoleAndPermissionSeeder::class,
-        UnitDiperiksaSeeder::class
+        UnitDiperiksaSeeder::class,
+        UserSeeder::class
     ]);
     }
 }

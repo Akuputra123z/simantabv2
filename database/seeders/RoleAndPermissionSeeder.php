@@ -8,18 +8,12 @@ use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-/**
- * Jalankan dengan: php artisan db:seed --class=RoleAndPermissionSeeder
- * Atau lewat DatabaseSeeder: $this->call(RoleAndPermissionSeeder::class)
- */
 class RoleAndPermissionSeeder extends Seeder
 {
     public function run(): void
     {
-        // Reset cache Spatie agar perubahan langsung efektif
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // ── 1. Definisi Permission ─────────────────────────────────────────────
         $permissions = [
             // LHP
             'lhp.view', 'lhp.create', 'lhp.edit', 'lhp.delete',

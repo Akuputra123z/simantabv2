@@ -7,7 +7,7 @@ use App\Models\AuditProgram;
 use App\Models\UnitDiperiksa;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class AuditAssignmentController extends Controller
 {
@@ -108,6 +108,7 @@ public function store(Request $request)
     $validated = $request->validate([
         'unit_diperiksa_id' => 'required|exists:unit_diperiksas,id',
         'tanggal_mulai'     => 'required|date',
+        'jenis_pengawasan'  => ['required', Rule::in(AuditAssignment::listJenisPengawasan())],
         'tanggal_selesai'   => 'required|date|after_or_equal:tanggal_mulai',
         'ketua_tim_id'      => 'required|exists:users,id',
         'nama_tim'          => 'required|string|max:255',
@@ -157,6 +158,7 @@ public function update(Request $request, $id)
         'unit_diperiksa_id'  => 'required|exists:unit_diperiksas,id',
         'tanggal_mulai'      => 'required|date',
         'tanggal_selesai'    => 'required|date|after_or_equal:tanggal_mulai',
+        'jenis_pengawasan'  => ['required', Rule::in(AuditAssignment::listJenisPengawasan())],
         'ketua_tim_id'       => 'required|exists:users,id',
         'nama_tim'           => 'required|string|max:255',
         'nomor_surat'        => 'required|string|max:255',

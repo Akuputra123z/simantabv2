@@ -481,16 +481,16 @@ function renderPicker(key) {
             </button>`;
     }
 
-    el.innerHTML = `
+   el.innerHTML = `
         <div class="mb-3 flex items-center justify-between">
-            <button type="button" onclick="shiftMonth('${key}',-1)"
+            <button type="button" onclick="shiftMonth(event, '${key}', -1)"
                 class="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-800">
                 <svg class="h-4 w-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
                 </svg>
             </button>
             <span class="text-sm font-semibold text-gray-800 dark:text-white">${MONTHS[month]} ${year}</span>
-            <button type="button" onclick="shiftMonth('${key}',1)"
+            <button type="button" onclick="shiftMonth(event, '${key}', 1)"
                 class="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-800">
                 <svg class="h-4 w-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
@@ -502,7 +502,7 @@ function renderPicker(key) {
         </div>
         <div class="grid grid-cols-7">${cells}</div>
         <div class="mt-3 border-t border-gray-100 pt-2 dark:border-gray-700">
-            <button type="button" onclick="selectToday('${key}')"
+            <button type="button" onclick="selectToday(event, '${key}')"
                 class="w-full rounded-lg py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20">
                 Hari Ini
             </button>
@@ -521,7 +521,9 @@ function togglePicker(key) {
     }
 }
 
-function shiftMonth(key, dir) {
+function shiftMonth(e, key, dir) {
+    if (e) e.stopPropagation(); // Stop event agar tidak mengenai listener 'click' di document
+    
     const s = pickerState[key];
     s.month += dir;
     if (s.month > 11) { s.month = 0;  s.year++; }
@@ -557,7 +559,9 @@ function selectDate(key, y, m, d) {
     document.getElementById(`picker-${key}`).classList.add('hidden');
 }
 
-function selectToday(key) {
+function selectToday(e, key) {
+    if (e) e.stopPropagation();
+    
     const n = new Date();
     selectDate(key, n.getFullYear(), n.getMonth(), n.getDate());
 }

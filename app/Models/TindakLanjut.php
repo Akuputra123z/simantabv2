@@ -88,6 +88,37 @@ class TindakLanjut extends Model
         });
     }
 
+    // ── Scopes ────────────────────────────────────────────────────────────────
+
+    /**
+     * Scope untuk menangani filter pencarian dan status.
+     */
+    public function scopeFilter($query, array $filters)
+    {
+        // Filter berdasarkan pencarian teks (Uraian Rekomendasi atau Nomor LHP)
+        $query->when($filters['search'] ?? null, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                // Cari di tabel tindak_lanjuts sendiri (catatan)
+                $q->where('catatan_tl', 'like', '%' . $search . '%')
+                  // Atau cari di relasi Recommendation (uraian_rekom)
+                  ->orWhereHas('recommendation', function ($qRekom) use ($search) {
+                      $qRekom->where('uraian_rekom', 'like', '%' . $search . '%')
+                             // Atau cari di relasi Temuan -> LHP (nomor_lhp)
+                             ->orWhereHas('temuan.lhp', function ($qLhp) use ($search) {
+                                 $qLhp->where('nomor_lhp', 'like', '%' . $search . '%');
+                             });
+                  });
+            });
+        });
+
+        // Filter berdasarkan status verifikasi
+        $query->when($filters['status'] ?? null, function ($query, $status) {
+            $query->where('status_verifikasi', $status);
+        });
+
+        return $query;
+    }
+
     // ── Validation Helper ────────────────────────────────────────────────────
 
     /**

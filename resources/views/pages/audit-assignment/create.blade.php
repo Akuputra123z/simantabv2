@@ -233,17 +233,33 @@
         </div>
 
         <div class="space-y-2">
-            <label for="members" class="block text-sm font-medium text-gray-600 dark:text-gray-400">Anggota Tim</label>
-            <select name="members[]" id="members" multiple
-                class="min-h-[120px] w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 focus:ring-2 focus:ring-blue-500 outline-none">
-                @foreach($members as $user)
-                    <option value="{{ $user->id }}" @selected(in_array($user->id, old('members', [])))>
-                        {{ $user->name }}
-                    </option>
-                @endforeach
-            </select>
-            <p class="text-xs text-gray-400">Tahan Ctrl / ⌘ untuk memilih lebih dari satu anggota.</p>
-        </div>
+    <label class="block text-sm font-medium text-gray-600 dark:text-gray-400">
+        Anggota Tim
+    </label>
+
+    {{-- Tag Container --}}
+    <div id="member-picker"
+        class="min-h-[44px] w-full rounded-lg border border-gray-300 px-3 py-2 flex flex-wrap gap-2 cursor-text
+        dark:border-gray-700 dark:bg-gray-900 focus-within:ring-2 focus-within:ring-blue-500 transition">
+        
+        {{-- Chips render di sini via JS --}}
+        
+        <input type="text" id="member-search"
+            placeholder="Cari anggota..."
+            autocomplete="off"
+            class="flex-1 min-w-[140px] bg-transparent outline-none text-sm text-gray-800 dark:text-white placeholder-gray-400">
+    </div>
+
+    {{-- Dropdown Suggestions --}}
+    <div id="member-dropdown"
+        class="hidden absolute z-50 mt-1 w-full max-h-52 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+    </div>
+
+    {{-- Hidden inputs untuk submit --}}
+    <div id="member-hidden-inputs"></div>
+
+    <p class="text-xs text-gray-400">Ketik nama untuk mencari dan pilih anggota tim.</p>
+</div>
     </div>
 </div>
 
@@ -303,6 +319,139 @@ const pickerState = {
     mulai:   { year: new Date().getFullYear(), month: new Date().getMonth() },
     selesai: { year: new Date().getFullYear(), month: new Date().getMonth() },
 };
+
+// ── Member Tag Picker ─────────────────────────────────────────────────
+(function () {
+    // Data semua member dari Blade (render sebagai JSON)
+    const ALL_MEMBERS = @json($members->map(fn($u) => ['id' => $u->id, 'name' => $u->name]));
+
+    // Untuk edit: pre-selected members
+    const PRESELECTED = @json(
+        isset($data) 
+            ? $data->members->map(fn($u) => ['id' => $u->id, 'name' => $u->name]) 
+            : []
+    );
+
+    let selected = []; // [{id, name}]
+
+    const picker      = document.getElementById('member-picker');
+    const searchInput = document.getElementById('member-search');
+    const dropdown    = document.getElementById('member-dropdown');
+    const hiddenWrap  = document.getElementById('member-hidden-inputs');
+
+    // Init pre-selected (untuk edit page)
+    PRESELECTED.forEach(m => addMember(m));
+
+    // Posisi dropdown relatif ke picker
+    function positionDropdown() {
+        const rect = picker.getBoundingClientRect();
+        dropdown.style.width = picker.offsetWidth + 'px';
+    }
+
+    function renderChips() {
+        // Hapus semua chip lama (bukan input search)
+        picker.querySelectorAll('.member-chip').forEach(el => el.remove());
+
+        // Insert chips sebelum search input
+        selected.forEach(m => {
+            const chip = document.createElement('span');
+            chip.className = 'member-chip inline-flex items-center gap-1 rounded-full bg-blue-100 text-blue-700 text-xs font-medium px-2.5 py-1 dark:bg-blue-900/40 dark:text-blue-300';
+            chip.innerHTML = `
+                ${m.name}
+                <button type="button" data-id="${m.id}"
+                    class="ml-0.5 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 p-0.5 transition"
+                    onclick="removeMember(${m.id})">
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>`;
+            picker.insertBefore(chip, searchInput);
+        });
+    }
+
+    function renderHiddenInputs() {
+        hiddenWrap.innerHTML = '';
+        selected.forEach(m => {
+            const inp = document.createElement('input');
+            inp.type  = 'hidden';
+            inp.name  = 'members[]';
+            inp.value = m.id;
+            hiddenWrap.appendChild(inp);
+        });
+    }
+
+    function renderDropdown(query) {
+        const q = query.toLowerCase().trim();
+        const filtered = ALL_MEMBERS.filter(m =>
+            m.name.toLowerCase().includes(q) &&
+            !selected.find(s => s.id === m.id)
+        );
+
+        if (!filtered.length || !q) {
+            dropdown.classList.add('hidden');
+            return;
+        }
+
+        dropdown.innerHTML = filtered.map(m => `
+            <button type="button" onclick="addMemberById(${m.id})"
+                class="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 dark:text-gray-200 dark:hover:bg-blue-900/20 transition text-left">
+                <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-xs font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-300 uppercase shrink-0">
+                    ${m.name.charAt(0)}
+                </span>
+                ${m.name}
+            </button>`).join('');
+
+        positionDropdown();
+        dropdown.classList.remove('hidden');
+    }
+
+    function addMember(m) {
+        if (selected.find(s => s.id === m.id)) return;
+        selected.push(m);
+        renderChips();
+        renderHiddenInputs();
+        searchInput.value = '';
+        dropdown.classList.add('hidden');
+    }
+
+    // Global functions (dipanggil dari inline onclick)
+    window.addMemberById = function(id) {
+        const m = ALL_MEMBERS.find(m => m.id === id);
+        if (m) addMember(m);
+        searchInput.focus();
+    };
+
+    window.removeMember = function(id) {
+        selected = selected.filter(m => m.id !== id);
+        renderChips();
+        renderHiddenInputs();
+    };
+
+    // Events
+    searchInput.addEventListener('input', () => renderDropdown(searchInput.value));
+    searchInput.addEventListener('focus', () => {
+        if (searchInput.value) renderDropdown(searchInput.value);
+    });
+
+    picker.addEventListener('click', () => searchInput.focus());
+
+    // Backspace untuk hapus chip terakhir
+    searchInput.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !searchInput.value && selected.length) {
+            selected.pop();
+            renderChips();
+            renderHiddenInputs();
+        }
+        if (e.key === 'Escape') dropdown.classList.add('hidden');
+    });
+
+    // Tutup dropdown saat klik di luar
+    document.addEventListener('click', e => {
+        if (!picker.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+})();
 
 function pad(n) { return String(n).padStart(2, '0'); }
 function formatDisplay(y, m, d) { return `${pad(d)}-${pad(m+1)}-${y}`; }

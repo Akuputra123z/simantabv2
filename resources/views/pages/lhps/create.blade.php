@@ -248,6 +248,7 @@
         return [
             'id'        => $k->id,
             'kode'      => $k->kode,
+            'nama'      => $k->pernyataan ?? $k->nama ?? '', // Sesuaikan dengan kolom nama/pernyataan di DB
             'deskripsi' => $k->deskripsi ?? null,
         ];
     });
@@ -347,40 +348,57 @@ function addTemuan() {
             </div>
 
             {{-- Nilai Kerugian Negara --}}
-            <div>
-                <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
-                    Nilai Kerugian Negara (Rp)
-                </label>
-                <div class="rupiah-wrap relative">
-                    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
-                    <input type="text"
-                           inputmode="numeric"
-                           autocomplete="off"
-                           placeholder="0"
-                           class="rupiah-field w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                           data-name="temuans[${idx}][nilai_kerugian_negara]"
-                           data-value="0">
-                    <p class="rupiah-error hidden mt-1 text-xs text-red-500"></p>
-                </div>
-            </div>
+           {{-- Nilai Kerugian Negara --}}
+<div>
+    <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
+        Kerugian Negara (Rp)
+    </label>
+    <div class="rupiah-wrap relative">
+        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
+        <input type="text" inputmode="numeric" autocomplete="off" placeholder="0"
+               class="rupiah-field w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+               data-name="temuans[${idx}][nilai_kerugian_negara]" data-value="0">
+    </div>
+</div>
 
-            {{-- Nilai Kerugian Daerah --}}
-            <div>
-                <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
-                    Nilai Kerugian Daerah (Rp)
-                </label>
-                <div class="rupiah-wrap relative">
-                    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
-                    <input type="text"
-                           inputmode="numeric"
-                           autocomplete="off"
-                           placeholder="0"
-                           class="rupiah-field w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                           data-name="temuans[${idx}][nilai_kerugian_daerah]"
-                           data-value="0">
-                    <p class="rupiah-error hidden mt-1 text-xs text-red-500"></p>
-                </div>
-            </div>
+{{-- Nilai Kerugian Daerah --}}
+<div>
+    <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
+        Kerugian Daerah (Rp)
+    </label>
+    <div class="rupiah-wrap relative">
+        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
+        <input type="text" inputmode="numeric" autocomplete="off" placeholder="0"
+               class="rupiah-field w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+               data-name="temuans[${idx}][nilai_kerugian_daerah]" data-value="0">
+    </div>
+</div>
+
+{{-- ✅ BARU: Nilai Kerugian Desa --}}
+<div>
+    <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
+        Kerugian Desa (Rp)
+    </label>
+    <div class="rupiah-wrap relative">
+        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
+        <input type="text" inputmode="numeric" autocomplete="off" placeholder="0"
+               class="rupiah-field w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+               data-name="temuans[${idx}][nilai_kerugian_desa]" data-value="0">
+    </div>
+</div>
+
+{{-- ✅ BARU: Nilai Kerugian BOS/BLUD --}}
+<div>
+    <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
+        Kerugian BOS/BLUD (Rp)
+    </label>
+    <div class="rupiah-wrap relative">
+        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
+        <input type="text" inputmode="numeric" autocomplete="off" placeholder="0"
+               class="rupiah-field w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+               data-name="temuans[${idx}][nilai_kerugian_bos_blud]" data-value="0">
+    </div>
+</div>
 
             {{-- Total Nilai (computed, read-only) --}}
             <div class="md:col-span-2">
@@ -405,18 +423,23 @@ function addTemuan() {
     window.RupiahInput.initAll(row);
 
     // Wire-up: hitung total saat nilai berubah
-    const hiddenNegara = row.querySelector(`[name="temuans[${idx}][nilai_kerugian_negara]"]`);
-    const hiddenDaerah = row.querySelector(`[name="temuans[${idx}][nilai_kerugian_daerah]"]`);
+    const hiddenNegara  = row.querySelector(`[name="temuans[${idx}][nilai_kerugian_negara]"]`);
+    const hiddenDaerah  = row.querySelector(`[name="temuans[${idx}][nilai_kerugian_daerah]"]`);
+    const hiddenDesa    = row.querySelector(`[name="temuans[${idx}][nilai_kerugian_desa]"]`);
+    const hiddenBosBLud = row.querySelector(`[name="temuans[${idx}][nilai_kerugian_bos_blud]"]`);
+
     const totalDisplay = row.querySelector(`#total-nilai-${idx}`);
     const hiddenTotal  = row.querySelector(`#hidden-total-${idx}`);
 
     function recalcTotal() {
-        const n = parseInt(hiddenNegara?.value || '0', 10);
-        const d = parseInt(hiddenDaerah?.value || '0', 10);
-        const total = n + d;
-        totalDisplay.textContent = 'Rp\u00a0' + window.RupiahInput.fmt(total);
-        hiddenTotal.value = total;
-    }
+    const n = parseInt(hiddenNegara?.value   || '0', 10);
+    const d = parseInt(hiddenDaerah?.value   || '0', 10);
+    const s = parseInt(hiddenDesa?.value     || '0', 10); // desa
+    const b = parseInt(hiddenBosBLud?.value  || '0', 10); // bos/blud
+    const total = n + d + s + b;
+    totalDisplay.textContent = 'Rp\u00a0' + window.RupiahInput.fmt(total);
+    hiddenTotal.value = total;
+}
 
     // Override onChange dari RupiahInput (via MutationObserver-lite: pakai event)
     row.querySelectorAll('.rupiah-field').forEach(field => {
@@ -529,18 +552,18 @@ function addLampiran() {
 
 function removeLampiran(btn) {
     btn.closest('.lampiran-row').remove();
-    const rows = document.querySelectorAll('.lampiran-row');
-    updateBadge('badge-lampiran', rows.length);
-    updateEmpty('lampiran-container', 'lampiran-empty', rows.length);
+    const count = document.querySelectorAll('.lampiran-row').length;
+    updateBadge('badge-lampiran', count);
+    updateEmpty('lampiran-container', 'lampiran-empty', count);
 }
 
 /* ─────────────────────────────────────────────────────────
    FORM SUBMIT GUARD
 ───────────────────────────────────────────────────────── */
-document.getElementById('form-lhp').addEventListener('submit', function (e) {
-    const btn  = document.getElementById('btn-submit');
+document.getElementById('form-lhp').addEventListener('submit', function() {
+    const btn = document.getElementById('btn-submit');
     const text = document.getElementById('btn-submit-text');
-    btn.disabled     = true;
+    btn.disabled = true;
     text.textContent = 'Menyimpan...';
 });
 

@@ -180,11 +180,6 @@ class Lhp extends Model
 
     protected static function booted(): void
     {
-        // Sengaja kosong.
-        // Statistik TIDAK boleh dihitung dari dalam booted() karena:
-        // 1. booted() jalan di dalam transaksi — statistik baca data belum di-commit
-        // 2. Menyebabkan kalkulasi berulang (3-5x per satu aksi user)
-        //
-        // Statistik selalu dihitung dari controller, SETELAH DB::commit().
+       
     }
 }

@@ -1,65 +1,110 @@
 {{-- resources/views/components/_rupiah-input.blade.php --}}
 <script>
 window.RupiahInput = (function () {
-    // Membersihkan segala karakter kecuali angka
-    function clean(val) {
-        return String(val || '0').replace(/\D/g, '');
+    /**
+     * Membersihkan string dari karakter non-digit.
+     * Mengembalikan string angka murni.
+     */
+    function parseRaw(val) {
+        if (typeof val === 'number') return String(val);
+        return String(val || '0').replace(/\D/g, '') || '0';
     }
 
-    function fmt(val) {
-        const num = clean(val);
-        if (!num || num === '0') return '';
-        return num.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    /**
+     * Memformat angka menjadi format ribuan Indonesia (titik).
+     */
+    function formatIDR(val) {
+        const raw = parseRaw(val);
+        if (raw === '0') return '';
+        return raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     }
 
+    /**
+     * Inisialisasi elemen input tunggal
+     */
     function init(displayEl, opts = {}) {
-        const { name, value = 0 } = opts;
+        const name = opts.name || displayEl.dataset.name;
+        const initialValue = opts.value || displayEl.dataset.value || '0';
 
+        // Pastikan input mode numerik untuk keyboard HP yang nyaman
+        if (!displayEl.getAttribute('inputmode')) {
+            displayEl.setAttribute('inputmode', 'numeric');
+        }
+
+        // Cari atau buat input hidden untuk menyimpan nilai asli (integer)
         let hiddenEl = displayEl.parentElement.querySelector(`input[type="hidden"][name="${name}"]`);
-        if (!hiddenEl) {
+        if (!hiddenEl && name) {
             hiddenEl = document.createElement('input');
             hiddenEl.type = 'hidden';
             hiddenEl.name = name;
             displayEl.parentElement.appendChild(hiddenEl);
         }
 
-        // SET NILAI AWAL DARI DATABASE
-        const initialRaw = clean(value);
-        hiddenEl.value = initialRaw;
-        displayEl.value = initialRaw !== '0' ? fmt(initialRaw) : '';
+        // Set Nilai Awal
+        const rawInitial = parseRaw(initialValue);
+        if (hiddenEl) hiddenEl.value = rawInitial;
+        displayEl.value = formatIDR(rawInitial);
 
-        displayEl.addEventListener('input', function() {
-            let cursor = this.selectionStart;
-            const prevLen = this.value.length;
+        // Handler Input
+        displayEl.addEventListener('input', function(e) {
+            const originalValue = this.value;
+            const selectionStart = this.selectionStart;
             
-            const raw = clean(this.value);
-            const formatted = fmt(raw);
+            const raw = parseRaw(originalValue);
+            const formatted = formatIDR(raw);
             
             this.value = formatted;
 
-            // Jaga posisi kursor
-            const diff = formatted.length - prevLen;
-            this.setSelectionRange(cursor + diff, cursor + diff);
+            // Hitung posisi kursor yang baru agar tidak melompat
+            // Menghitung berapa banyak karakter non-digit sebelum kursor
+            let newCursorPos = selectionStart;
+            const beforeCursor = originalValue.substring(0, selectionStart);
+            const digitsBefore = beforeCursor.replace(/\D/g, '').length;
+            
+            let countDigits = 0;
+            let i = 0;
+            for (i = 0; i < formatted.length && countDigits < digitsBefore; i++) {
+                if (/\d/.test(formatted[i])) countDigits++;
+            }
+            newCursorPos = i;
 
-            hiddenEl.value = raw;
-            // Penting: Beritahu Alpine kalau data berubah
-            displayEl.dispatchEvent(new Event('change', { bubbles: true }));
+            this.setSelectionRange(newCursorPos, newCursorPos);
+
+            // Update Hidden Input
+            if (hiddenEl) {
+                hiddenEl.value = raw;
+                // Dispatch event agar didengar oleh script luar (seperti hitung total otomatis)
+                hiddenEl.dispatchEvent(new Event('change', { bubbles: true }));
+                hiddenEl.dispatchEvent(new Event('input', { bubbles: true }));
+            }
         });
 
-        displayEl._hiddenEl = hiddenEl;
+        // Handler saat blur: rapikan jika kosong
+        displayEl.addEventListener('blur', function() {
+            if (parseRaw(this.value) === '0') {
+                this.value = '';
+                if (hiddenEl) hiddenEl.value = '0';
+            }
+        });
     }
 
+    /**
+     * Scan seluruh DOM atau container tertentu
+     */
     function initAll(container = document) {
         container.querySelectorAll('.rupiah-field:not([data-ri-init])').forEach(el => {
             el.setAttribute('data-ri-init', '1');
-            init(el, {
-                name: el.dataset.name,
-                value: el.dataset.value
-            });
+            init(el);
         });
     }
 
-    return { initAll, fmt };
+    return { 
+        initAll, 
+        fmt: formatIDR,
+        parse: parseRaw 
+    };
 })();
+
+// Inisialisasi saat DOM siap
 document.addEventListener('DOMContentLoaded', () => window.RupiahInput.initAll());
 </script>

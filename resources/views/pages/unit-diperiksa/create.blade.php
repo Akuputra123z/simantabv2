@@ -23,6 +23,7 @@
                 <div>
                     <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400">Kategori</label>
                     <select name="kategori" required class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm focus:border-blue-500 outline-none dark:border-gray-700 dark:text-white">
+                        <option value="" disabled {{ old('kategori') ? '' : 'selected' }}>Pilih Kategori</option>
                         @foreach($kategoriOptions as $opt)
                             <option value="{{ $opt }}" {{ old('kategori') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                         @endforeach
@@ -31,8 +32,19 @@
 
                 <div>
                     <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400">Kecamatan</label>
-                    <input type="text" name="nama_kecamatan" value="{{ old('nama_kecamatan') }}" placeholder="Sulang / Sarang"
-                        class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm focus:border-blue-500 outline-none dark:border-gray-700 dark:text-white">
+                    {{-- Mengubah Input menjadi Select --}}
+                    <select name="nama_kecamatan" required class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm focus:border-blue-500 outline-none dark:border-gray-700 dark:text-white">
+                        <option value="" disabled {{ old('nama_kecamatan') ? '' : 'selected' }}>Pilih Kecamatan</option>
+                        @php
+                            $kecamatans = [
+                                'Bulu', 'Gunem', 'Kaliori', 'Kragan', 'Lasem', 'Pancur', 'Rembang', 
+                                'Sale', 'Sarang', 'Sedan', 'Sluke', 'Sulang', 'Sumber', 'Pamotan'
+                            ];
+                        @endphp
+                        @foreach($kecamatans as $kec)
+                            <option value="{{ $kec }}" {{ old('nama_kecamatan') == $kec ? 'selected' : '' }}>{{ $kec }}</option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <div>

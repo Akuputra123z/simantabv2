@@ -1,111 +1,153 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="p-6 bg-gray-50 min-h-screen dark:bg-gray-950 flex justify-center py-12">
-    <div class="w-full max-w-xl"> {{-- Ukuran ideal: Tidak kekecilan, tidak kebesaran --}}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-950 flex justify-center py-12 px-4">
+    <div class="w-full max-w-xl">
 
-        {{-- Breadcrumb: Lebih bersih tanpa background --}}
-        <nav class="mb-6 flex items-center gap-2 text-sm font-medium tracking-tight">
-            <a href="{{ route('users.index') }}" class="text-gray-400 hover:text-indigo-600 transition-colors">Manajemen User</a>
-            <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span class="text-gray-900 dark:text-white font-bold">{{ $user->name }}</span>
+        {{-- Breadcrumb (lebih subtle) --}}
+        <nav class="mb-6 flex items-center gap-2 text-sm">
+            <a href="{{ route('users.index') }}" class="text-gray-400 hover:text-indigo-500 transition">
+                User
+            </a>
+            <span class="text-gray-300">/</span>
+            <span class="text-gray-900 dark:text-white font-semibold truncate">
+                {{ $user->name }}
+            </span>
         </nav>
 
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden">
+        <div class="rounded-2xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 overflow-hidden">
 
-            {{-- Header: Layout Sejajar (Side-by-side) yang elegan --}}
-            <div class="px-8 py-8 flex items-center gap-6 border-b border-gray-50 dark:border-gray-800">
-                <div class="flex-shrink-0 w-20 h-20 rounded-2xl bg-indigo-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-indigo-100 dark:shadow-none">
-                   {{ $user->initials }}
+            {{-- HEADER --}}
+            <div class="p-6 flex items-center gap-4">
+
+                {{-- Avatar --}}
+                <div class="w-16 h-16 rounded-xl bg-indigo-600 flex items-center justify-center text-lg font-semibold text-white">
+                    {{ $user->initials }}
                 </div>
 
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-3 mb-1">
-                        <h2 class="text-xl font-bold text-gray-900 dark:text-white truncate tracking-tight">{{ $user->name }}</h2>
-                        <span class="inline-flex px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-widest {{ $user->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' }}">
+                {{-- Info --}}
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            {{ $user->name }}
+                        </h2>
+
+                        <span class="text-xs px-2 py-0.5 rounded-md font-medium
+                            {{ $user->is_active ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600' }}">
                             {{ $user->is_active ? 'Active' : 'Inactive' }}
                         </span>
                     </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 truncate mb-3">{{ $user->email }}</p>
-                    
-                    <span class="inline-flex px-3 py-1 rounded-lg text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+
+                    <p class="text-sm text-gray-500 truncate">
+                        {{ $user->email }}
+                    </p>
+
+                    <p class="text-xs text-gray-400 mt-1">
                         {{ $user->role_name }}
-                    </span>
+                    </p>
                 </div>
             </div>
 
-            {{-- Info Content --}}
-            <div class="px-8 py-6">
-                <div class="space-y-4">
-                    @php
-                        $details = [
-                            ['label' => 'Nomor Induk / NIP', 'value' => $user->nip, 'mono' => true],
-                            ['label' => 'Jabatan & Golongan', 'value' => $user->jabatan . ' (' . ($user->pangkat_gol ?: '-') . ')'],
-                            ['label' => 'Unit Kerja', 'value' => $user->unit_kerja],
-                            ['label' => 'Pendidikan Terakhir', 'value' => $user->pendidikan_terakhir],
-                            ['label' => 'Kontak', 'value' => $user->phone],
-                        ];
-                    @endphp
+            {{-- CONTENT --}}
+            <div class="px-6 pb-6">
 
-                    @foreach($details as $item)
-                    <div class="flex flex-col">
-                        <span class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">{{ $item['label'] }}</span>
-                        <span class="text-sm font-semibold text-gray-800 dark:text-gray-200 {{ ($item['mono'] ?? false) ? 'font-mono tracking-wider text-indigo-600 dark:text-indigo-400' : '' }}">
-                            {{ $item['value'] ?: '—' }}
-                        </span>
+                {{-- GRID INFO --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+
+                    <div>
+                        <p class="text-gray-400 text-xs mb-1">NIP</p>
+                        <p class="font-medium text-gray-800 dark:text-gray-200 font-mono">
+                            {{ $user->nip ?: '—' }}
+                        </p>
                     </div>
-                    @endforeach
+
+                    <div>
+                        <p class="text-gray-400 text-xs mb-1">Jabatan</p>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">
+                            {{ $user->jabatan }} ({{ $user->pangkat_gol ?: '-' }})
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-gray-400 text-xs mb-1">Unit Kerja</p>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">
+                            {{ $user->unit_kerja ?: '—' }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-gray-400 text-xs mb-1">Pendidikan</p>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">
+                            {{ $user->pendidikan_terakhir ?: '—' }}
+                        </p>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <p class="text-gray-400 text-xs mb-1">Kontak</p>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">
+                            {{ $user->phone ?: '—' }}
+                        </p>
+                    </div>
                 </div>
 
-                {{-- Permissions: Lebih visual --}}
-                <div class="mt-8 pt-6 border-t border-gray-50 dark:border-gray-800">
-                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3 text-center">Sistem Hak Akses</p>
-                    <div class="flex flex-wrap justify-center gap-2">
+                {{-- PERMISSIONS --}}
+                <div class="mt-6">
+                    <p class="text-xs text-gray-400 mb-2">Permissions</p>
+
+                    <div class="flex flex-wrap gap-2">
                         @forelse($user->getAllPermissions()->sortBy('name') as $perm)
-                        <span class="px-2.5 py-1 rounded-md bg-gray-50 dark:bg-gray-800/50 text-[11px] font-medium text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-gray-800">
-                            {{ str_replace('.', ':', $perm->name) }}
-                        </span>
+                            <span class="text-xs px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                                {{ str_replace('.', ':', $perm->name) }}
+                            </span>
                         @empty
-                        <span class="text-xs text-gray-400 italic">No specific permissions granted.</span>
+                            <span class="text-xs text-gray-400 italic">
+                                No permissions
+                            </span>
                         @endforelse
                     </div>
                 </div>
             </div>
 
-            {{-- Action Buttons: Bersih dan Terfokus --}}
-            <div class="px-8 py-6 bg-gray-50/50 dark:bg-gray-800/30 flex items-center justify-between">
-                <a href="{{ route('users.index') }}" class="group flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-indigo-600 transition-colors">
-                    <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    Kembali
+            {{-- ACTION --}}
+            <div class="flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-gray-800/40">
+
+                <a href="{{ route('users.index') }}"
+                   class="text-sm text-gray-400 hover:text-indigo-500 transition">
+                    ← Kembali
                 </a>
 
-                <div class="flex items-center gap-3">
+                <div class="flex gap-2">
+
                     @can('user.edit')
                     <a href="{{ route('users.edit', $user) }}"
-                       class="px-5 py-2 text-sm font-bold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:shadow-md transition-all">
-                        Edit Profil
+                       class="px-4 py-2 text-sm rounded-lg bg-gray-900 text-white hover:opacity-90 transition">
+                        Edit
                     </a>
                     @endcan
 
                     @can('user.delete')
                     @if($user->id !== auth()->id())
-                    <form action="{{ route('users.destroy', $user) }}" method="POST" onsubmit="return confirm('Hapus user ini?')">
+                    <form action="{{ route('users.destroy', $user) }}" method="POST"
+                          onsubmit="return confirm('Hapus user ini?')">
                         @csrf @method('DELETE')
-                        <button type="submit" class="px-5 py-2 text-sm font-bold text-white bg-rose-600 rounded-xl hover:bg-rose-700 hover:shadow-lg hover:shadow-rose-100 transition-all transform active:scale-95">
+
+                        <button class="px-4 py-2 text-sm rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition">
                             Hapus
                         </button>
                     </form>
                     @endif
                     @endcan
+
                 </div>
             </div>
         </div>
 
-        <div class="mt-6 flex justify-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            <span>Dibuat: {{ $user->created_at?->format('d/m/Y') }}</span>
-            <span class="text-gray-200 dark:text-gray-800">|</span>
-            <span>Update: {{ $user->updated_at?->format('d/m/Y H:i') }}</span>
+        {{-- FOOTER META --}}
+        <div class="mt-5 text-center text-xs text-gray-400">
+            Dibuat {{ $user->created_at?->format('d M Y') }} •
+            Update {{ $user->updated_at?->format('d M Y H:i') }}
         </div>
+
     </div>
 </div>
 @endsection

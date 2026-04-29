@@ -130,7 +130,7 @@
         </form>
     </div>
 
-    {{-- TABEL LHP --}}
+  {{-- TABEL LHP --}}
     <div class="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
         <div class="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
             <div class="flex items-center justify-between">
@@ -148,7 +148,7 @@
                         <th class="px-4 py-3">Nomor LHP</th>
                         <th class="px-4 py-3">Program Audit</th>
                         <th class="px-4 py-3">Tanggal</th>
-                        <th class="px-4 py-3 text-center">Sem</th>
+                        {{-- Kolom Semester Dihapus --}}
                         <th class="px-4 py-3">IRBAN</th>
                         <th class="px-4 py-3 text-center">Status</th>
                         <th class="px-4 py-3 text-center">Temuan</th>
@@ -185,7 +185,7 @@
                         <td class="px-4 py-3 whitespace-nowrap text-gray-500 text-xs">
                             {{ $lhp->tanggal_lhp?->format('d/m/Y') ?? '-' }}
                         </td>
-                        <td class="px-4 py-3 text-center text-gray-500">{{ $lhp->semester }}</td>
+                        {{-- Data Semester Dihapus --}}
                         <td class="px-4 py-3 text-gray-500 text-xs">{{ $lhp->irban }}</td>
                         <td class="px-4 py-3 text-center">
                             <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $statusConf }}">
@@ -246,7 +246,8 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="11" class="px-4 py-16 text-center text-gray-400 dark:text-gray-500">
+                        {{-- Colspan dikurangi menjadi 10 karena satu kolom dihapus --}}
+                        <td colspan="10" class="px-4 py-16 text-center text-gray-400 dark:text-gray-500">
                             Tidak ada data LHP sesuai filter.
                         </td>
                     </tr>

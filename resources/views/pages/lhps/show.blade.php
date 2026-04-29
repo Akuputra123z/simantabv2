@@ -84,17 +84,20 @@
     @endif
 
     {{-- ── STATISTIK CARDS ── --}}
-    @php
-        $stat          = $lhp->statistik;
-        $totalTemuan   = $stat?->total_temuan   ?? $lhp->temuans->count();
-        $totalKerugian = $stat?->total_kerugian ?? $lhp->total_kerugian;
-        $persenSelesai = $stat?->persen_selesai_gabungan ?? 0;
-        $rekomSelesai  = $stat?->rekom_selesai  ?? 0;
-        $totalRekom    = $stat?->total_rekomendasi ?? 0;
+  @php
+    // 1. Ambil data riil langsung dari database (bukan cache statistik)
+    $totalTemuan   = $lhp->temuans->count();
+    $totalKerugian = $lhp->temuans->sum('nilai_temuan'); 
+    
+    // 2. Ambil progres dari statistik (karena hitungannya kompleks melibatkan TL)
+    $stat          = $lhp->statistik;
+    $persenSelesai = $stat?->persen_selesai_gabungan ?? 0;
+    $rekomSelesai  = $stat?->rekom_selesai  ?? 0;
+    $totalRekom    = $stat?->total_rekomendasi ?? 0;
 
-        // Hitung temuan selesai dari koleksi yang sudah di-load
-        $temuanSelesai = $lhp->temuans->where('status_tl', 'selesai')->count();
-    @endphp
+    // 3. Hitung temuan selesai secara dinamis
+    $temuanSelesai = $lhp->temuans->where('status_tl', 'selesai')->count();
+@endphp
 
     <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">

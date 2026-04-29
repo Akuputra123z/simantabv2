@@ -14,20 +14,35 @@ class TindakLanjutController extends Controller
 {
     public function __construct(private readonly LhpStatistikService $statistikService) {}
 
-    public function index()
+    /**
+     * Menampilkan daftar tindak lanjut dengan filter pencarian dan status.
+     */
+    public function index(Request $request)
     {
-        $tindakLanjuts = TindakLanjut::with([
-            'recommendation.temuan.lhp',
-            'recommendation',
-        ])
-        ->latest()
-        ->paginate(15);
+        // 1. Query Dasar dengan Scope forUser (Keamanan) & eager loading
+        $query = TindakLanjut::query()
+            ->forUser(auth()->user()) 
+            ->with([
+                'recommendation.temuan.lhp',
+                'recommendation',
+                'creator'
+            ]);
 
-        $stats = DB::table('tindak_lanjuts')
-            ->whereNull('deleted_at')
-            ->selectRaw("
-                SUM(CASE WHEN status_verifikasi = 'lunas'               THEN 1 ELSE 0 END) AS total_lunas,
-                SUM(CASE WHEN status_verifikasi = 'berjalan'            THEN 1 ELSE 0 END) AS total_berjalan,
+        // 2. Terapkan Filter (Scope yang kita buat di Model)
+        $query->filter($request->only(['search', 'status']));
+
+        // 3. Ambil data paginated
+        $tindakLanjuts = $query->latest()->paginate(15)->withQueryString();
+
+        // 4. Hitung Statistik (Menyesuaikan dengan filter yang sedang aktif)
+        // Gunakan query clone agar tidak merusak query utama pagination
+        $statsQuery = TindakLanjut::query()
+            ->forUser(auth()->user())
+            ->filter($request->only(['search'])); // Filter stats berdasarkan search saja, bukan status select
+
+        $stats = $statsQuery->selectRaw("
+                SUM(CASE WHEN status_verifikasi = 'lunas' THEN 1 ELSE 0 END) AS total_lunas,
+                SUM(CASE WHEN status_verifikasi = 'berjalan' THEN 1 ELSE 0 END) AS total_berjalan,
                 SUM(CASE WHEN status_verifikasi = 'menunggu_verifikasi' THEN 1 ELSE 0 END) AS total_menunggu
             ")
             ->first();
@@ -63,7 +78,6 @@ class TindakLanjutController extends Controller
             'hambatan'                => 'nullable|string|max:1000',
         ]);
 
-        // ── Validasi nilai TL tidak boleh melebihi nilai_sisa rekomendasi ──
         $rekom    = Recommendation::findOrFail($validated['recommendation_id']);
         $nilaiTl  = (float) ($validated['nilai_tindak_lanjut'] ?? 0);
         $nilaiSisa = (float) ($rekom->nilai_sisa ?? 0);
@@ -74,16 +88,13 @@ class TindakLanjutController extends Controller
                 ->withErrors([
                     'nilai_tindak_lanjut' =>
                         'Nilai tindak lanjut (Rp ' . number_format($nilaiTl, 0, ',', '.') . ') ' .
-                        'melebihi sisa rekomendasi (Rp ' . number_format($nilaiSisa, 0, ',', '.') . '). ' .
-                        'Harap sesuaikan nilainya.',
+                        'melebihi sisa rekomendasi (Rp ' . number_format($nilaiSisa, 0, ',', '.') . ').',
                 ]);
         }
 
         try {
             DB::beginTransaction();
-
             $tindakLanjut = TindakLanjut::create($validated);
-
             DB::commit();
 
             $this->updateStatistik($tindakLanjut);
@@ -95,7 +106,7 @@ class TindakLanjutController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('TindakLanjut store error: ' . $e->getMessage());
-            return back()->withInput()->with('error', 'Gagal menyimpan: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal menyimpan data.');
         }
     }
 
@@ -118,7 +129,6 @@ class TindakLanjutController extends Controller
 
         $recommendations = Recommendation::with(['temuan.lhp'])
             ->where(function ($q) use ($tindakLanjut) {
-                // Tampilkan semua yang belum selesai ATAU rekomendasi yang sedang di-edit ini
                 $q->where('status', '!=', Recommendation::STATUS_SELESAI)
                   ->orWhere('id', $tindakLanjut->recommendation_id);
             })
@@ -145,16 +155,11 @@ class TindakLanjutController extends Controller
             'hambatan'                => 'nullable|string|max:1000',
         ]);
 
-        // ── Validasi nilai TL tidak boleh melebihi nilai_sisa rekomendasi ──
-        // Catatan: nilai_sisa di rekomendasi adalah sisa SETELAH dikurangi TL lain.
-        // Untuk mode edit, kita hitung nilai_sisa + nilai_tl sekarang (sebelum diupdate),
-        // agar user bisa mengubah nilai TL-nya sendiri.
         $rekom          = Recommendation::findOrFail($validated['recommendation_id']);
         $nilaiTlBaru    = (float) ($validated['nilai_tindak_lanjut'] ?? 0);
         $nilaiTlLama    = (float) ($tindakLanjut->nilai_tindak_lanjut ?? 0);
 
         if ($rekom->isUang()) {
-            // Sisa "tersedia" untuk TL ini = nilai_sisa rekom sekarang + kontribusi TL lama ini
             $sisaAvailable = (float) ($rekom->nilai_sisa ?? 0) + $nilaiTlLama;
 
             if ($sisaAvailable > 0 && $nilaiTlBaru > $sisaAvailable) {
@@ -162,39 +167,32 @@ class TindakLanjutController extends Controller
                     ->withInput()
                     ->withErrors([
                         'nilai_tindak_lanjut' =>
-                            'Nilai tindak lanjut (Rp ' . number_format($nilaiTlBaru, 0, ',', '.') . ') ' .
-                            'melebihi nilai yang tersedia (Rp ' . number_format($sisaAvailable, 0, ',', '.') . '). ' .
-                            'Harap sesuaikan nilainya.',
+                            'Nilai tindak lanjut melebihi nilai tersedia (Rp ' . number_format($sisaAvailable, 0, ',', '.') . ').',
                     ]);
             }
         }
 
         try {
             DB::beginTransaction();
-
-            $tindakLanjut->fill($validated);
-            // syncCalculations dipanggil via booted::saving — status user dihormati (fromCascade=false)
-            $tindakLanjut->save();
-
+            $tindakLanjut->update($validated);
             DB::commit();
 
             $this->updateStatistik($tindakLanjut);
 
             return redirect()
                 ->route('tindak-lanjuts.index')
-                ->with('success', 'Tindak lanjut berhasil diperbarui.');
+                ->with('success', 'Tindak lanjut diperbarui.');
 
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('TindakLanjut update error: ' . $e->getMessage());
-            return back()->withInput()->with('error', 'Gagal memperbarui: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal memperbarui data.');
         }
     }
 
     public function destroy(TindakLanjut $tindakLanjut)
     {
         $lhpId = $tindakLanjut->recommendation?->temuan?->lhp_id;
-
         $tindakLanjut->delete();
 
         if ($lhpId) {
@@ -203,10 +201,8 @@ class TindakLanjutController extends Controller
 
         return redirect()
             ->route('tindak-lanjuts.index')
-            ->with('success', 'Tindak lanjut berhasil dihapus.');
+            ->with('success', 'Tindak lanjut dihapus.');
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private function updateStatistik(TindakLanjut $tl): void
     {

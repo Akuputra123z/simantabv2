@@ -138,52 +138,114 @@
                     </div>
                     
                     <div class="divide-y divide-gray-100 dark:divide-gray-800">
-                        <template x-for="(temuan, index) in temuans" :key="temuan.key">
-                            <div class="p-6 space-y-4 bg-white dark:bg-transparent">
-                                <div class="flex items-center justify-between">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400 uppercase">Temuan #<span x-text="index + 1"></span></span>
-                                    <button type="button" @click="removeTemuan(index)" class="text-rose-500 hover:text-rose-600 p-1">
-                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                    </button>
-                                </div>
-                                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    {{-- ID Hidden (untuk update data lama) --}}
-                                    <input type="hidden" :name="`temuans[${index}][id]`" x-model="temuan.id">
-                                    
-                                    <div class="md:col-span-2">
-                                        <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Kode Temuan</label>
-                                        <select :name="`temuans[${index}][kode_temuan_id]`" x-model="temuan.kode_temuan_id" required
-                                                class="shadow-theme-xs h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                                            <option value="">Pilih Kode</option>
-                                            @foreach ($kodeTemuans as $k)
-                                                <option value="{{ $k->id }}">{{ $k->kode }} - {{ $k->deskripsi }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    
-                                   {{-- Ganti bagian input Nilai Temuan di dalam loop temuans --}}
-                                    {{-- Di dalam loop temuans --}}
-<div class="rupiah-wrap relative">
-    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">Rp</span>
-    <input type="text" 
-           class="rupiah-field shadow-theme-xs h-10 w-full rounded-lg border border-gray-300 bg-transparent pl-9 pr-3 text-sm font-semibold dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-           {{-- Gunakan x-bind untuk memastikan data-value selalu sinkron dengan state Alpine --}}
-           :data-name="`temuans[${index}][nilai_kerugian_negara]`"
-           :data-value="temuan.nilai_kerugian_negara"
-           {{-- Update state Alpine saat user mengetik --}}
-           @change="temuan.nilai_kerugian_negara = $event.target._hiddenEl.value">
-</div>
+                   <template x-for="(temuan, index) in temuans" :key="temuan.key">
+    <div class="p-6 space-y-4 bg-white dark:bg-transparent">
+        <div class="flex items-center justify-between">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400 uppercase">
+                Temuan #<span x-text="index + 1"></span>
+            </span>
+            <button type="button" @click="removeTemuan(index)" class="text-rose-500 hover:text-rose-600 p-1">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </button>
+        </div>
 
-                                    <div class="md:col-span-2">
-                                        <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Kondisi</label>
-                                        <textarea :name="`temuans[${index}][kondisi]`" x-model="temuan.kondisi" rows="2" required
-                                                  placeholder="Jelaskan kondisi temuan..."
-                                                  class="shadow-theme-xs w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white"></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <input type="hidden" :name="`temuans[${index}][id]`" x-model="temuan.id">
 
+            {{-- Kode Temuan --}}
+            <div class="md:col-span-2">
+                <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Kode Temuan</label>
+                <select :name="`temuans[${index}][kode_temuan_id]`" x-model="temuan.kode_temuan_id"
+                        class="shadow-theme-xs h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                    <option value="">Pilih Kode</option>
+                    @foreach ($kodeTemuans as $k)
+                        <option value="{{ $k->id }}">{{ $k->kode }} - {{ $k->deskripsi }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- Kondisi --}}
+            <div class="md:col-span-2">
+                <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Kondisi / Uraian <span class="text-red-500">*</span></label>
+                <textarea :name="`temuans[${index}][kondisi]`" x-model="temuan.kondisi" rows="3"
+                          placeholder="Jelaskan kondisi temuan..."
+                          class="shadow-theme-xs w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white"></textarea>
+            </div>
+
+            {{-- Kerugian Negara --}}
+            <div>
+                <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Kerugian Negara (Rp)</label>
+                <div class="rupiah-wrap relative">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
+                    <input type="text" inputmode="numeric" autocomplete="off" placeholder="0"
+                           class="rupiah-field shadow-theme-xs h-10 w-full rounded-lg border border-gray-300 bg-transparent pl-9 pr-3 text-sm font-semibold dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                           :data-name="`temuans[${index}][nilai_kerugian_negara]`"
+                           :data-value="temuan.nilai_kerugian_negara"
+                           @input="temuan.nilai_kerugian_negara = $event.target._hiddenEl ? $event.target._hiddenEl.value : $event.target.value.replace(/\D/g, '')">
+                </div>
+            </div>
+
+            {{-- Kerugian Daerah --}}
+            <div>
+                <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Kerugian Daerah (Rp)</label>
+                <div class="rupiah-wrap relative">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
+                    <input type="text" inputmode="numeric" autocomplete="off" placeholder="0"
+                           class="rupiah-field shadow-theme-xs h-10 w-full rounded-lg border border-gray-300 bg-transparent pl-9 pr-3 text-sm font-semibold dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                           :data-name="`temuans[${index}][nilai_kerugian_daerah]`"
+                           :data-value="temuan.nilai_kerugian_daerah"
+                           @input="temuan.nilai_kerugian_daerah = $event.target._hiddenEl ? $event.target._hiddenEl.value : $event.target.value.replace(/\D/g, '')">
+                </div>
+            </div>
+
+            {{-- Kerugian Desa --}}
+            <div>
+                <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Kerugian Desa (Rp)</label>
+                <div class="rupiah-wrap relative">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
+                    <input type="text" inputmode="numeric" autocomplete="off" placeholder="0"
+                           class="rupiah-field shadow-theme-xs h-10 w-full rounded-lg border border-gray-300 bg-transparent pl-9 pr-3 text-sm font-semibold dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                           :data-name="`temuans[${index}][nilai_kerugian_desa]`"
+                           :data-value="temuan.nilai_kerugian_desa"
+                           @input="temuan.nilai_kerugian_desa = $event.target._hiddenEl ? $event.target._hiddenEl.value : $event.target.value.replace(/\D/g, '')">
+                </div>
+            </div>
+
+            {{-- Kerugian BOS/BLUD --}}
+            <div>
+                <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Kerugian BOS/BLUD (Rp)</label>
+                <div class="rupiah-wrap relative">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
+                    <input type="text" inputmode="numeric" autocomplete="off" placeholder="0"
+                           class="rupiah-field shadow-theme-xs h-10 w-full rounded-lg border border-gray-300 bg-transparent pl-9 pr-3 text-sm font-semibold dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                           :data-name="`temuans[${index}][nilai_kerugian_bos_blud]`"
+                           :data-value="temuan.nilai_kerugian_bos_blud"
+                           @input="temuan.nilai_kerugian_bos_blud = $event.target._hiddenEl ? $event.target._hiddenEl.value : $event.target.value.replace(/\D/g, '')">
+                </div>
+            </div>
+
+            {{-- Total Otomatis (read-only) --}}
+            <div class="md:col-span-2">
+                <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Nilai Kerugian (Otomatis)</label>
+                <div class="flex items-center gap-2 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5 dark:bg-gray-900 dark:border-gray-700">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-200"
+                          x-text="'Rp\u00a0' + formatRupiah(
+                              (parseInt(temuan.nilai_kerugian_negara)  || 0) +
+                              (parseInt(temuan.nilai_kerugian_daerah)  || 0) +
+                              (parseInt(temuan.nilai_kerugian_desa)    || 0) +
+                              (parseInt(temuan.nilai_kerugian_bos_blud)|| 0)
+                          )">
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
                         <div x-show="temuans.length === 0" class="p-10 text-center">
                             <p class="text-xs text-gray-400 italic italic">Tidak ada data temuan. Klik tambah untuk memulai.</p>
                         </div>
@@ -240,14 +302,23 @@
 function lhpEditForm() {
     return {
         // Load data temuan yang sudah ada dari database
-       temuans: @json($lhp->temuans).map(t => ({
+        temuans: @json($lhp->temuans).map(t => ({
             key: 'old-' + t.id,
             id: t.id,
             kode_temuan_id: t.kode_temuan_id,
-            nilai_kerugian_negara: parseInt(t.nilai_kerugian_negara) || 0, // Pastikan Integer
+            nilai_kerugian_negara:   parseInt(t.nilai_kerugian_negara)   || 0,
+            nilai_kerugian_daerah:   parseInt(t.nilai_kerugian_daerah)   || 0,
+            nilai_kerugian_desa:     parseInt(t.nilai_kerugian_desa)     || 0,
+            nilai_kerugian_bos_blud: parseInt(t.nilai_kerugian_bos_blud) || 0,
             kondisi: t.kondisi
         })),
         attachments: [],
+
+        // Helper untuk format angka ke Rupiah di UI
+        formatRupiah(number) {
+            if (!number) return '0';
+            return new Intl.NumberFormat('id-ID').format(number);
+        },
 
         addTemuan() {
             this.temuans.push({
@@ -255,6 +326,9 @@ function lhpEditForm() {
                 id: null,
                 kode_temuan_id: '',
                 nilai_kerugian_negara: 0,
+                nilai_kerugian_daerah: 0,
+                nilai_kerugian_desa: 0,
+                nilai_kerugian_bos_blud: 0,
                 kondisi: ''
             });
             this.reinitRupiah();
@@ -276,23 +350,30 @@ function lhpEditForm() {
 
         reinitRupiah() {
             this.$nextTick(() => {
-                // Hapus inisialisasi lama pada elemen yang baru ditambahkan
+                // Bersihkan flag init agar script masking bisa mendeteksi elemen baru
                 document.querySelectorAll('.rupiah-field').forEach(el => {
                     if (!el._hiddenEl) el.removeAttribute('data-ri-init');
                 });
-                window.RupiahInput.initAll();
+                // Panggil library masking
+                if (window.RupiahInput) {
+                    window.RupiahInput.initAll();
+                }
             });
         },
 
         init() {
-            setTimeout(() => this.reinitRupiah(), 100);
+            // Inisialisasi awal
+            setTimeout(() => this.reinitRupiah(), 150);
             
             // Loading state saat submit
             const form = document.querySelector('form');
             form?.addEventListener('submit', () => {
                 const btn = document.getElementById('btn-submit');
                 const txt = document.getElementById('btn-text');
-                if(btn) btn.disabled = true;
+                if(btn) {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-70', 'cursor-not-allowed');
+                }
                 if(txt) txt.textContent = 'Menyimpan...';
             });
         }

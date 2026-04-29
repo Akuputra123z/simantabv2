@@ -32,7 +32,7 @@
                              alt="Avatar">
                     @else
                         <div class="h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-xl font-bold text-gray-600 dark:text-gray-400">
-                            {{ $user->initials() }}
+                            {{ $user->initials }}
                         </div>
                     @endif
                 </div>

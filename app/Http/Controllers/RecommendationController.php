@@ -47,50 +47,48 @@ class RecommendationController extends Controller
         return view('pages.recommendations.index', compact('recommendations'));
     }
 
-    public function create()
-    {
-        // LHP yang tampil hanya yang masih memiliki temuan tanpa rekomendasi
-        $lhps = Lhp::query()
-            ->select('id', 'nomor_lhp', 'tanggal_lhp')
-            ->whereHas('temuans', function ($query) {
-                $query->whereDoesntHave('recommendations');
-            })
-            ->orderByDesc('tanggal_lhp')
-            ->get();
+   public function create()
+{
+    // ✅ LHP muncul selama punya minimal 1 temuan (apapun status rekomnya)
+    $lhps = Lhp::query()
+        ->select('id', 'nomor_lhp', 'tanggal_lhp')
+        ->has('temuans') // cukup pastikan ada temuan
+        ->orderByDesc('tanggal_lhp')
+        ->get();
 
-        $kodeRekoms = KodeRekomendasi::query()
-            ->select('id', 'kode', 'deskripsi', 'kode_numerik')
-            ->active()
-            ->orderBy('kode')
-            ->get();
+    $kodeRekoms = KodeRekomendasi::query()
+        ->select('id', 'kode', 'deskripsi', 'kode_numerik')
+        ->active()
+        ->orderBy('kode')
+        ->get();
 
-        return view('pages.recommendations.create', compact('lhps', 'kodeRekoms'));
-    }
+    return view('pages.recommendations.create', compact('lhps', 'kodeRekoms'));
+}
 
-    public function getTemuans($lhpId)
-    {
-        $temuans = Temuan::query()
-            ->select('id', 'lhp_id', 'kode_temuan_id', 'kondisi', 'nilai_temuan')
-            ->with('kodeTemuan:id,kode,deskripsi,alternatif_rekom')
-            ->where('lhp_id', $lhpId)
-            // Menghindari duplikat: Temuan yang sudah ada rekomendasinya tidak muncul
-            ->whereDoesntHave('recommendations') 
-            ->get()
-            ->map(function ($t) {
-                $kodeTemuan = optional($t->kodeTemuan);
-                return [
-                    'id' => $t->id,
-                    'kondisi' => Str::limit($t->kondisi, 150),
-                    'nilai_temuan' => (float) ($t->nilai_temuan ?? 0),
-                    'alternatif_rekom' => $kodeTemuan->alternatif_rekom ?? [],
-                    'kode_label' => $kodeTemuan->kode
-                        ? ($kodeTemuan->kode . ($kodeTemuan->deskripsi ? ' — ' . $kodeTemuan->deskripsi : ''))
-                        : null,
-                ];
-            });
+  public function getTemuans($lhpId)
+{
+    $temuans = Temuan::query()
+        ->select('id', 'lhp_id', 'kode_temuan_id', 'kondisi', 'nilai_temuan')
+        ->with('kodeTemuan:id,kode,deskripsi,alternatif_rekom')
+        ->where('lhp_id', $lhpId)
+        // ✅ Semua temuan muncul — user bisa tambah rekom kedua
+        // ->whereDoesntHave('recommendations') // ← HAPUS baris ini
+        ->get()
+        ->map(function ($t) {
+            $kodeTemuan = optional($t->kodeTemuan);
+            return [
+                'id'               => $t->id,
+                'kondisi'          => \Str::limit($t->kondisi, 150),
+                'nilai_temuan'     => (float) ($t->nilai_temuan ?? 0),
+                'alternatif_rekom' => $kodeTemuan->alternatif_rekom ?? [],
+                'kode_label'       => $kodeTemuan->kode
+                    ? ($kodeTemuan->kode . ($kodeTemuan->deskripsi ? ' — ' . $kodeTemuan->deskripsi : ''))
+                    : null,
+            ];
+        });
 
-        return response()->json($temuans);
-    }
+    return response()->json($temuans);
+}
 
     public function store(Request $request)
     {
@@ -161,44 +159,82 @@ class RecommendationController extends Controller
         return view('pages.recommendations.edit', compact('recommendation', 'kodeRekoms'));
     }
 
-    public function update(Request $request, Recommendation $recommendation)
-    {
-        $validated = $request->validate([
-            'kode_rekomendasi_id' => 'required|exists:kode_rekomendasis,id',
-            'uraian_rekom'        => 'required|string',
-            'jenis_rekomendasi'   => 'required|in:uang,barang,administrasi',
-            'nilai_rekom'         => 'nullable|numeric|min:0',
-            'batas_waktu'         => 'required|date',
+public function update(Request $request, Recommendation $recommendation)
+{
+    $validated = $request->validate([
+        'kode_rekomendasi_id' => 'required|exists:kode_rekomendasis,id',
+        'uraian_rekom'        => 'required|string',
+        'jenis_rekomendasi'   => 'required|in:uang,barang,administrasi',
+        'nilai_rekom'         => 'nullable|numeric|min:0',
+        'batas_waktu'         => 'required|date',
+    ]);
+
+    DB::beginTransaction();
+    try {
+        $jenis      = $validated['jenis_rekomendasi'];
+        $nilaiRekom = in_array($jenis, ['barang', 'administrasi'])
+            ? 0
+            : (float) ($validated['nilai_rekom'] ?? 0);
+
+        $nilaiRekomLama = (float) $recommendation->nilai_rekom;
+        $jenisLama      = $recommendation->jenis_rekomendasi;
+        $nilaiBerubah   = abs($nilaiRekomLama - $nilaiRekom) > 0.01 || $jenisLama !== $jenis;
+
+        // Update field dasar dulu — TANPA nilai_sisa dan status
+        // karena keduanya akan dihitung ulang oleh syncStatus()
+        $recommendation->update([
+            'kode_rekomendasi_id' => $validated['kode_rekomendasi_id'],
+            'uraian_rekom'        => $validated['uraian_rekom'],
+            'jenis_rekomendasi'   => $jenis,
+            'nilai_rekom'         => $nilaiRekom,
+            'batas_waktu'         => $validated['batas_waktu'],
+            'updated_by'          => auth()->id(),
         ]);
 
-        DB::beginTransaction();
-        try {
-            $jenis = $validated['jenis_rekomendasi'];
-            $nilaiRekom = in_array($jenis, ['barang', 'administrasi']) ? 0 : (float) ($validated['nilai_rekom'] ?? 0);
+        // Jika nilai_rekom atau jenis berubah, reset semua TL terkait
+        // agar tidak ada TL dengan nilai yang tidak konsisten
+        if ($nilaiBerubah) {
+            $recommendation->tindakLanjuts()->each(function ($tl) {
+                // Reset status verifikasi TL ke menunggu
+                $tl->update([
+                    'status_verifikasi'   => 'menunggu_verifikasi',
+                    'nilai_tindak_lanjut' => 0,
+                ]);
 
-            $recommendation->update([
-                'kode_rekomendasi_id' => $validated['kode_rekomendasi_id'],
-                'uraian_rekom'        => $validated['uraian_rekom'],
-                'jenis_rekomendasi'   => $jenis,
-                'nilai_rekom'         => $nilaiRekom,
-                'nilai_sisa'          => $nilaiRekom, 
-                'batas_waktu'         => $validated['batas_waktu'],
-                'updated_by'          => auth()->id(),
-            ]);
-
-            DB::commit();
-
-            if ($recommendation->temuan?->lhp_id) {
-                $this->statistikService->updateStatistik($recommendation->temuan->lhp_id);
-            }
-
-            return redirect()->route('recommendations.show', $recommendation)->with('success', 'Rekomendasi diperbarui.');
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            return back()->withInput()->with('error', 'Gagal memperbarui data.');
+                // Reset cicilan jika ada
+                if ($tl->jenis_penyelesaian === 'cicilan') {
+                    $tl->cicilans()->update([
+                        'status'             => 'menunggu',
+                        'diverifikasi_oleh'  => null,
+                        'diverifikasi_pada'  => null,
+                        'catatan_verifikasi' => null,
+                    ]);
+                }
+            });
         }
-    }
 
+        // ✅ WAJIB: syncStatus() menghitung ulang nilai_tl_selesai, nilai_sisa,
+        // dan status dari kondisi TindakLanjut aktual, lalu menjalar ke Temuan
+        $recommendation->refresh(); // pastikan relasi tidak stale
+        $recommendation->load('tindakLanjuts.cicilans');
+        $recommendation->syncStatus();
+
+        DB::commit();
+
+        // Setelah syncStatus() selesai, baru trigger kalkulasi LHP
+        if ($recommendation->temuan?->lhp_id) {
+            $this->statistikService->updateStatistik($recommendation->temuan->lhp_id);
+        }
+
+        return redirect()
+            ->route('recommendations.show', $recommendation)
+            ->with('success', 'Rekomendasi diperbarui dan status disinkronkan.');
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        return back()->withInput()->with('error', 'Gagal memperbarui data: ' . $e->getMessage());
+    }
+}
     public function destroy(Recommendation $recommendation)
     {
         $lhpId = $recommendation->temuan?->lhp_id;

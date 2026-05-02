@@ -92,22 +92,24 @@ class TindakLanjutController extends Controller
                 ]);
         }
 
-        try {
-            DB::beginTransaction();
-            $tindakLanjut = TindakLanjut::create($validated);
-            DB::commit();
+       try {
+        DB::beginTransaction();
+        $tindakLanjut = TindakLanjut::create($validated);
+        DB::commit();
 
-            $this->updateStatistik($tindakLanjut);
+        // ✅ Sync status Recommendation DULU sebelum hitung statistik LHP
+        $this->syncRekomendasi($tindakLanjut);
+        $this->updateStatistik($tindakLanjut);
 
-            return redirect()
-                ->route('tindak-lanjuts.index')
-                ->with('success', 'Tindak lanjut berhasil disimpan.');
+        return redirect()
+            ->route('tindak-lanjuts.index')
+            ->with('success', 'Tindak lanjut berhasil disimpan.');
 
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error('TindakLanjut store error: ' . $e->getMessage());
-            return back()->withInput()->with('error', 'Gagal menyimpan data.');
-        }
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        Log::error('TindakLanjut store error: ' . $e->getMessage());
+        return back()->withInput()->with('error', 'Gagal menyimpan data.');
+    }
     }
 
     public function show(TindakLanjut $tindakLanjut)
@@ -173,42 +175,75 @@ class TindakLanjutController extends Controller
         }
 
         try {
-            DB::beginTransaction();
-            $tindakLanjut->update($validated);
-            DB::commit();
+        DB::beginTransaction();
+        $tindakLanjut->update($validated);
+        DB::commit();
 
-            $this->updateStatistik($tindakLanjut);
-
-            return redirect()
-                ->route('tindak-lanjuts.index')
-                ->with('success', 'Tindak lanjut diperbarui.');
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error('TindakLanjut update error: ' . $e->getMessage());
-            return back()->withInput()->with('error', 'Gagal memperbarui data.');
-        }
-    }
-
-    public function destroy(TindakLanjut $tindakLanjut)
-    {
-        $lhpId = $tindakLanjut->recommendation?->temuan?->lhp_id;
-        $tindakLanjut->delete();
-
-        if ($lhpId) {
-            $this->statistikService->updateStatistik($lhpId);
-        }
+        // ✅ Sync status Recommendation DULU sebelum hitung statistik LHP
+        $this->syncRekomendasi($tindakLanjut);
+        $this->updateStatistik($tindakLanjut);
 
         return redirect()
             ->route('tindak-lanjuts.index')
-            ->with('success', 'Tindak lanjut dihapus.');
+            ->with('success', 'Tindak lanjut diperbarui.');
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        Log::error('TindakLanjut update error: ' . $e->getMessage());
+        return back()->withInput()->with('error', 'Gagal memperbarui data.');
+    }
     }
 
-    private function updateStatistik(TindakLanjut $tl): void
-    {
-        $lhpId = $tl->recommendation?->temuan?->lhp_id;
-        if ($lhpId) {
-            $this->statistikService->updateStatistik($lhpId);
-        }
+    public function destroy(TindakLanjut $tindakLanjut)
+{
+    $lhpId = $tindakLanjut->recommendation?->temuan?->lhp_id;
+    
+    // Simpan recommendation sebelum TL dihapus untuk sync setelahnya
+    $recommendation = $tindakLanjut->recommendation;
+    
+    $tindakLanjut->delete();
+
+    // ✅ Sync recommendation setelah TL dihapus
+    if ($recommendation) {
+        $recommendation->refresh();
+        $recommendation->load('tindakLanjuts.cicilans');
+        $recommendation->syncStatus();
     }
+
+    if ($lhpId) {
+        $this->statistikService->updateStatistik($lhpId);
+    }
+
+    return redirect()
+        ->route('tindak-lanjuts.index')
+        ->with('success', 'Tindak lanjut dihapus.');
+}
+
+private function syncRekomendasi(TindakLanjut $tl): void
+{
+    $recommendation = $tl->recommendation;
+    if (! $recommendation) {
+        // Load jika belum ter-load
+        $tl->load('recommendation.tindakLanjuts.cicilans');
+        $recommendation = $tl->recommendation;
+    }
+
+    if (! $recommendation) return;
+
+    // Refresh dari DB agar tidak baca cache lama, lalu load semua TL terkait
+    $recommendation->refresh();
+    $recommendation->load('tindakLanjuts.cicilans');
+    
+    // syncStatus() akan update: status, nilai_tl_selesai, nilai_sisa
+    // lalu memanggil temuan->syncStatus() secara otomatis
+    $recommendation->syncStatus();
+}
+
+private function updateStatistik(TindakLanjut $tl): void
+{
+    $lhpId = $tl->recommendation?->temuan?->lhp_id;
+    if ($lhpId) {
+        $this->statistikService->updateStatistik($lhpId);
+    }
+}
 }

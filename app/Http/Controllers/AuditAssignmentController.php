@@ -13,40 +13,30 @@ class AuditAssignmentController extends Controller
 {
 public function index(Request $request)
 {
-    // Ambil data filter dari URL
-    $search = $request->get('search');
-    $tahun = $request->get('tahun');
-    $status = $request->get('status');
+    $query = AuditAssignment::with(['ketuaTim', 'auditProgram', 'unitDiperiksa'])
+        // ✅ Assignment selesai jika sudah punya minimal 1 LHP
+        ->withCount('lhps');
 
-    // Query dasar dengan Eager Loading agar tidak berat
-    $query = \App\Models\AuditAssignment::with(['ketuaTim', 'auditProgram', 'unitDiperiksa']);
-
-    // Logika Pencarian (Search)
-    if ($search) {
+    if ($search = $request->get('search')) {
         $query->where(function($q) use ($search) {
-            $q->whereHas('auditProgram', function($query) use ($search) {
-                $query->where('nama_program', 'like', "%{$search}%");
-            })->orWhereHas('ketuaTim', function($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%");
-            });
+            $q->whereHas('auditProgram', fn($q) =>
+                $q->where('nama_program', 'like', "%{$search}%")
+            )->orWhereHas('ketuaTim', fn($q) =>
+                $q->where('name', 'like', "%{$search}%")
+            );
         });
     }
 
-    // Logika Filter Tahun
-    if ($tahun) {
+    if ($tahun = $request->get('tahun')) {
         $query->whereYear('tanggal_mulai', $tahun);
     }
 
-    // Logika Filter Status
-    if ($status) {
+    if ($status = $request->get('status')) {
         $query->where('status', $status);
     }
 
-    // Ambil hasil akhirnya
     $assignments = $query->latest()->get();
 
-    // ✅ BAGIAN KRUSIAL: Kirim variabel ke View
-    // Pastikan path 'audit-assignment.index' sesuai dengan lokasi file blade kamu
     return view('pages.audit-assignment.index', compact('assignments'));
 }
 
@@ -153,21 +143,22 @@ public function store(Request $request)
 public function update(Request $request, $id)
 {
     $data = AuditAssignment::findOrFail($id);
+    $auditProgramIdLama = $data->audit_program_id; // simpan sebelum update
 
     $validated = $request->validate([
-        'unit_diperiksa_id'  => 'required|exists:unit_diperiksas,id',
-        'tanggal_mulai'      => 'required|date',
-        'tanggal_selesai'    => 'required|date|after_or_equal:tanggal_mulai',
-        'jenis_pengawasan'  => ['required', Rule::in(AuditAssignment::listJenisPengawasan())],
-        'ketua_tim_id'       => 'required|exists:users,id',
-        'nama_tim'           => 'required|string|max:255',
-        'nomor_surat'        => 'required|string|max:255',
-        'audit_program_id'   => 'required|exists:audit_programs,id',
-        'status'             => 'required|in:draft,berjalan,selesai',
-        'members'            => 'nullable|array',
-        'members.*'          => 'exists:users,id',
-        'attachments.*'      => 'nullable|file|max:2048',
-        'delete_attachments' => 'nullable|array',
+        'unit_diperiksa_id'    => 'required|exists:unit_diperiksas,id',
+        'tanggal_mulai'        => 'required|date',
+        'tanggal_selesai'      => 'required|date|after_or_equal:tanggal_mulai',
+        'jenis_pengawasan'     => ['required', Rule::in(AuditAssignment::listJenisPengawasan())],
+        'ketua_tim_id'         => 'required|exists:users,id',
+        'nama_tim'             => 'required|string|max:255',
+        'nomor_surat'          => 'required|string|max:255',
+        'audit_program_id'     => 'required|exists:audit_programs,id',
+        'status'               => 'required|in:draft,berjalan,selesai',
+        'members'              => 'nullable|array',
+        'members.*'            => 'exists:users,id',
+        'attachments.*'        => 'nullable|file|max:2048',
+        'delete_attachments'   => 'nullable|array',
         'delete_attachments.*' => 'exists:attachments,id',
     ]);
 
@@ -175,23 +166,18 @@ public function update(Request $request, $id)
         collect($validated)->except(['members', 'delete_attachments'])->toArray()
     );
 
-    // ✅ Sync members dengan pivot jabatan_tim = 'anggota'
     $syncData = collect($request->members ?? [])
         ->mapWithKeys(fn($id) => [$id => ['jabatan_tim' => 'anggota']])
         ->toArray();
-    $data->members()->sync($syncData); // sync kosong = detach semua jika tidak ada
+    $data->members()->sync($syncData);
 
-    // Hapus lampiran yang dicentang
     if ($request->filled('delete_attachments')) {
         foreach ($request->delete_attachments as $idFile) {
             $file = $data->attachments()->where('id', $idFile)->first();
-            if ($file) {
-                $file->delete();
-            }
+            if ($file) $file->delete();
         }
     }
 
-    // Tambah file baru
     if ($request->hasFile('attachments')) {
         foreach ($request->file('attachments') as $file) {
             $path = $file->store('attachments/audit', 'public');
@@ -205,11 +191,37 @@ public function update(Request $request, $id)
         }
     }
 
+    // ✅ Sinkronkan status program induk setelah assignment diubah
+    $this->sinkronStatusProgram($validated['audit_program_id']);
+
+    // ✅ Jika program berubah (pindah program), sinkronkan program lama juga
+    if ($auditProgramIdLama !== (int) $validated['audit_program_id']) {
+        $this->sinkronStatusProgram($auditProgramIdLama);
+    }
+
     return redirect()
         ->route('audit-assignment.show', $data->id)
         ->with('success', 'Data berhasil diupdate');
 }
 
+// ── Tambahkan method ini di AuditAssignmentController ──────────────────────
+private function sinkronStatusProgram(int $auditProgramId): void
+{
+    $statuses = \App\Models\AuditAssignment::where('audit_program_id', $auditProgramId)
+        ->pluck('status');
+
+    if ($statuses->isEmpty()) return;
+
+    $statusProgram = match(true) {
+        $statuses->every(fn($s) => $s === 'selesai')                          => 'selesai',
+        $statuses->contains(fn($s) => in_array($s, ['berjalan', 'selesai'])) => 'berjalan',
+        default                                                                 => 'draft',
+    };
+
+    \App\Models\AuditProgram::where('id', $auditProgramId)
+        ->where('status', '!=', $statusProgram)
+        ->update(['status' => $statusProgram]);
+}
 
 public function show($id)
 {
@@ -270,18 +282,20 @@ public function bulkDelete(Request $request)
 public function destroy($id)
 {
     $assignment = AuditAssignment::findOrFail($id);
+    $auditProgramId = $assignment->audit_program_id; // simpan sebelum hapus
 
-    // Hapus semua lampiran terkait
     foreach ($assignment->attachments as $file) {
         \Storage::disk('public')->delete($file->file_path);
         $file->delete();
     }
 
-    // Hapus relasi members
     $assignment->members()->detach();
-
-    // Hapus data utama
     $assignment->delete();
+
+    // ✅ Sinkronkan program setelah assignment dihapus
+    if ($auditProgramId) {
+        $this->sinkronStatusProgram($auditProgramId);
+    }
 
     return redirect()
         ->route('audit-assignment.index')

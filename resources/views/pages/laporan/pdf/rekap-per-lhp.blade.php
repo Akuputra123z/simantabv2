@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Laporan Monitoring TL - {{ $lhp->nomor_lhp }}</title>
-    <style>
+   <style>
         /* Modern Government Report Style - 2026 */
-        @page { size: A4; margin: 1.2cm 1.5cm; }
+        @page { 
+            size: A4; 
+            /* Perhatikan margin atas dinaikkan signifikan ke 2.5cm agar logo tidak terpotong printer */
+            margin: 2.5cm 1.5cm 1.5cm 1.5cm; 
+        }
         
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
@@ -16,133 +20,186 @@
             padding: 0; 
         }
 
-        /* Kop Surat Modern & Tegas */
-        .header { 
-            text-align: center; 
-            border-bottom: 2.5px solid #0f172a; 
-            padding-bottom: 8px; 
-            margin-bottom: 18px; 
+        /* --- KOP SURAT SECTION (OPTIMIZED & CLEAN) --- */
+        .kop-container {
+            width: 100%;
+            margin-bottom: 20px; /* Tambah jarak ke judul */
+            border-bottom: 3px double #000;
+            padding-bottom: 10px;
         }
-        .kop-instansi { font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #0f172a; }
-        .kop-sub { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #2563eb; margin-top: 2px; }
-        .alamat { font-size: 8px; color: #64748b; margin-top: 4px; }
 
+        .table-kop {
+            width: 100%;
+            border-collapse: collapse;
+            border: none !important;
+        }
+
+        .table-kop td {
+            border: none !important;
+            vertical-align: middle; /* Logo dan teks sejajar tengah */
+            padding: 0;
+        }
+
+        .kop-instansi { 
+            font-size: 16px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            color: #000;
+            margin: 0;
+            line-height: 1.1;
+        }
+
+        .kop-sub { 
+            font-size: 20px; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            color: #000; 
+            margin: 2px 0;
+        }
+
+        .alamat { 
+            font-size: 8.5px; 
+            color: #334155; 
+            font-style: italic;
+            line-height: 1.3;
+            margin-top: 5px;
+        }
+
+        /* --- TABLE & CONTENT STYLE --- */
         .title { 
             text-align: center; 
             font-size: 12px; 
             font-weight: 800; 
-            margin: 10px 0 15px; 
+            margin: 15px 0; 
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            text-decoration: underline;
         }
 
-        /* Info Metadata */
         .meta-container { 
             width: 100%; 
             margin-bottom: 15px; 
             border-top: 1px solid #e2e8f0;
             border-bottom: 1px solid #e2e8f0;
             padding: 6px 0;
+            border-collapse: collapse;
         }
-        .meta-container td { padding: 2px 0; }
-        .label-meta { color: #64748b; font-weight: 600; width: 14%; text-transform: uppercase; font-size: 8px; }
-        .val-meta { font-weight: 700; width: 36%; color: #0f172a; }
+        .meta-container td { padding: 2px 0; border: none; }
+        .label-meta { color: #64748b; font-weight: 600; width: 15%; text-transform: uppercase; font-size: 8px; }
+        .val-meta { font-weight: 700; width: 35%; color: #0f172a; }
 
-        /* Bento Stats - Improved UX */
-        .stat-grid { 
-            display: table; 
-            width: 100%; 
-            border-collapse: separate; 
-            border-spacing: 6px 0; 
-            margin-bottom: 20px; 
-        }
+        .stat-grid { display: table; width: 100%; border-spacing: 6px 0; margin-bottom: 20px; }
         .stat-item { 
             display: table-cell; 
             background: #f8fafc; 
             border: 1px solid #e2e8f0; 
             padding: 8px; 
             border-radius: 8px; 
-            text-align: left;
             border-left: 3px solid #cbd5e1;
         }
         .stat-item.selesai { border-left-color: #10b981; }
         .stat-item.proses { border-left-color: #f59e0b; }
         .stat-item.belum { border-left-color: #ef4444; }
-        
-        .st-label { font-size: 7px; text-transform: uppercase; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px; }
+        .st-label { font-size: 7px; text-transform: uppercase; font-weight: 700; color: #64748b; display: block; }
         .st-val { font-size: 12px; font-weight: 800; color: #0f172a; }
 
-        /* Main Table - Modern Minimalist */
         .table-main { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         .table-main th { 
             background: #f1f5f9; 
-            color: #475569; 
-            font-weight: 700; 
-            text-transform: uppercase; 
-            font-size: 8px; 
             padding: 10px 8px; 
             border: 1px solid #e2e8f0;
-            text-align: center;
+            font-size: 8px;
+            text-transform: uppercase;
         }
         .table-main td { padding: 10px 8px; border: 1px solid #e2e8f0; vertical-align: top; }
-        
-        /* Stripes for better readability */
-        .table-main tbody tr:nth-child(even) { background: #fbfcfd; }
 
-        /* Rekomendasi UX */
-        .rekom-wrapper { margin-bottom: 8px; }
-        .rekom-tag { 
-            font-weight: 700; 
-            color: #2563eb; 
-            margin-right: 4px;
-        }
-        .rekom-text { font-weight: 500; color: #1e293b; line-height: 1.5; }
-        
         .tl-box { 
             background: #ffffff; 
             border: 1px solid #f1f5f9;
             border-left: 2px solid #e2e8f0; 
             padding: 4px 8px; 
             margin-top: 4px; 
-            border-radius: 0 4px 4px 0;
         }
-        .tl-row { 
-            font-size: 7.5px; 
-            color: #64748b; 
-            padding: 2px 0; 
-            border-bottom: 0.5px solid #f8fafc;
-        }
-        .tl-row:last-child { border-bottom: none; }
+        .tl-row { font-size: 7.5px; color: #64748b; border-bottom: 0.5px solid #f8fafc; }
         .tl-amount { color: #0f172a; font-weight: 700; float: right; }
 
-        /* Footer & Totals */
         .tfoot-dark { background: #1e293b !important; color: #ffffff; }
         .tfoot-red { background: #fef2f2 !important; color: #991b1b; }
 
-        .signature-section { margin-top: 35px; width: 100%; }
-        .sig-box { float: right; width: 220px; text-align: center; }
-        .sig-space { height: 55px; }
+        /* --- SIGNATURE STYLE UPDATED --- */
+.signature-section { 
+    margin-top: 30px; 
+    width: 100%; 
+}
 
-        /* Helpers */
+.sig-box { 
+    float: right; 
+    width: 320px; /* Diperlebar agar gelar panjang muat satu baris */
+    text-align: center; 
+}
+
+.sig-space { 
+    height: 70px; /* Ruang tanda tangan basah */
+}
+
+.sig-name {
+    font-weight: 800;
+    text-decoration: underline;
+    text-transform: uppercase;
+    font-size: 9.5px;
+    color: #000;
+}
+
+.sig-nip {
+    color: #1e293b;
+    font-weight: 600;
+    margin-top: 2px;
+}
+        
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .font-bold { font-weight: 700; }
-        .badge-kode { font-size: 7px; color: #94a3b8; border: 1px solid #e2e8f0; padding: 1px 4px; border-radius: 4px; margin-top: 4px; display: inline-block; }
+        .badge-kode { font-size: 7px; color: #94a3b8; border: 1px solid #e2e8f0; padding: 1px 4px; border-radius: 4px; display: inline-block; }
+
+        
     </style>
 </head>
 <body onload="window.print()">
 
-    <div class="header">
-        <div class="kop-instansi">Pemerintah Kabupaten Rembang</div>
-        <div class="kop-sub">Inspektorat Daerah</div>
-        <div class="alamat">Gedung Inspektorat, Jl. Gatot Subroto No. 8, Rembang 59211 | (0295) 691234</div>
-    </div>
+   <!-- KOP SURAT SECTION (FIX RAPI) -->
+<div class="kop-container">
+    <table class="table-kop">
+        <tr>
+       <td style="width: 100px; text-align: left; vertical-align: middle; padding: 10px;">
+    @php
+        $logoPath = public_path('images/logo/rembang.png');
+        $logoBase64 = base64_encode(file_get_contents($logoPath));
+    @endphp
+    <img src="data:image/png;base64,{{ $logoBase64 }}" 
+         style="width: 80px; height: 80px; object-fit: contain; display: block;">
+</td>
 
-    <div class="title">Monitoring Tindak Lanjut Hasil Pemeriksaan</div>
+            <td style="text-align: center;">
+                <div class="kop-instansi">Pemerintah Kabupaten Rembang</div>
+                <div class="kop-sub">Inspektorat Daerah</div>
+                <div class="alamat">
+
+                   
+                    Jl. Raya Rembang-Lasem Km 1,1, Tireman Barat, Tireman, Kec. Rembang, Kabupaten Rembang, Jawa Tengah 59219 <br>
+                    Telepon: (0295) 691320 | Email: inspektorat@rembangkab.go.id <br>
+                    Laman: https://inspektorat.rembangkab.go.id
+                </div>
+            </td>
+            
+            <td style="width: 80px;"></td>
+        </tr>
+    </table>
+</div>
+
+    <div class="title">Laporan Monitoring Tindak Lanjut Hasil Pemeriksaan</div>
 
     <table class="meta-container">
         <tr>
-            <td class="label-meta">No. Dokumen</td>
+            <td class="label-meta">No. LHP</td>
             <td class="val-meta">: {{ $lhp->nomor_lhp }}</td>
             <td class="label-meta">Tanggal Cetak</td>
             <td class="val-meta">: {{ now()->translatedFormat('d F Y') }}</td>
@@ -224,7 +281,7 @@
                                             </div>
                                         @endforeach
                                         @if($lunas->isEmpty())
-                                            <div class="tl-row" style="color: #e2e8f0;">• Belum ada realisasi</div>
+                                            <div class="tl-row" style="color: #cbd5e1;">• Belum ada realisasi</div>
                                         @endif
                                     @endforelse
                                 </div>
@@ -253,13 +310,19 @@
         </tfoot>
     </table>
 
-    <div class="signature-section">
+   <div class="signature-section">
         <div class="sig-box">
             <p>Rembang, {{ now()->translatedFormat('d F Y') }}</p>
-            <p>Inspektur Kabupaten Rembang,</p>
+            <p style="margin-top: -8px; font-weight: 700;">Inspektur Kabupaten Rembang,</p>
+            
             <div class="sig-space"></div>
-            <p class="font-bold"><u>( ........................................... )</u></p>
-            <p style="margin-top: -10px; color: #64748b;">NIP. .............................................</p>
+            
+            <div class="sig-name">
+                IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.
+            </div>
+            <div class="sig-nip">
+                NIP. 197411281999032003
+            </div>
         </div>
         <div style="clear: both;"></div>
     </div>

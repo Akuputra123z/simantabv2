@@ -82,17 +82,26 @@
                         </div>
 
                         {{-- Nilai Tindak Lanjut --}}
-                        <div class="w-full px-2.5 xl:w-1/2">
-                            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                Nilai Tindak Lanjut (Rp)
-                            </label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-500 text-sm">Rp</span>
-                                <input type="number" name="nilai_tindak_lanjut" step="1" min="0"
-                                    value="{{ old('nilai_tindak_lanjut', $tindakLanjut->nilai_tindak_lanjut) }}"
-                                    class="h-11 w-full rounded-lg border border-gray-300 bg-transparent pl-11 pr-4 py-2.5 text-sm focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:bg-gray-900 dark:border-gray-700 dark:text-white">
-                            </div>
-                        </div>
+<div class="w-full px-2.5 xl:w-1/2" id="field-nilai-tl">
+    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+        Nilai Tindak Lanjut (Rp) <span class="text-red-500">*</span>
+    </label>
+    <div class="relative group">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-500 text-sm font-bold group-focus-within:text-brand-500 transition-colors pointer-events-none">Rp</span>
+        
+        {{-- Input Tampilan (Text agar bisa pakai format titik) --}}
+        <input type="text" id="display-nilai-tl"
+            inputmode="numeric"
+            value="{{ number_format((int)old('nilai_tindak_lanjut', $tindakLanjut->nilai_tindak_lanjut), 0, ',', '.') }}"
+            placeholder="0"
+            autocomplete="off"
+            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent pl-11 pr-4 py-2.5 text-sm font-bold focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+        
+        {{-- Input Hidden (Angka asli untuk database) --}}
+        <input type="hidden" name="nilai_tindak_lanjut" id="nilai_tindak_lanjut"
+            value="{{ old('nilai_tindak_lanjut', $tindakLanjut->nilai_tindak_lanjut) }}">
+    </div>
+</div>
 
                         {{-- Section Cicilan --}}
                         <div id="section-cicilan-edit"
@@ -227,26 +236,70 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    /* ── Helpers ─────────────────────────────────────────── */
+    function formatRibuan(val) {
+        const num = String(val).replace(/\D/g, '');
+        if (!num) return '';
+        return num.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    /* ── Elemen ──────────────────────────────────────────── */
     const form           = document.getElementById('edit-form');
     const submitBtn      = document.getElementById('submit-btn');
     const btnText        = document.getElementById('btn-text');
     const radios         = document.querySelectorAll('input[name="jenis_penyelesaian"]');
     const sectionCicilan = document.getElementById('section-cicilan-edit');
+    
+    // Elemen untuk dual-input nilai
+    const displayNilai   = document.getElementById('display-nilai-tl');
+    const hiddenNilai    = document.getElementById('nilai_tindak_lanjut');
 
-    // Tampilkan/sembunyikan section cicilan
+    /* ── Logika Format Ribuan (Input) ────────────────────── */
+    if (displayNilai && hiddenNilai) {
+        displayNilai.addEventListener('input', function () {
+            const raw = this.value.replace(/\./g, '').replace(/\D/g, '');
+            
+            // Simpan posisi kursor agar tidak melompat
+            const curPos = this.selectionStart;
+            const prevLen = this.value.length;
+            
+            const formatted = formatRibuan(raw);
+            this.value = formatted;
+
+            const diff = formatted.length - prevLen;
+            try { this.setSelectionRange(curPos + diff, curPos + diff); } catch(e) {}
+
+            hiddenNilai.value = parseInt(raw || '0', 10);
+        });
+
+        // Handle paste agar tetap terformat
+        displayNilai.addEventListener('paste', function (e) {
+            e.preventDefault();
+            const pasted = (e.clipboardData || window.clipboardData).getData('text');
+            const cleaned = pasted.replace(/\D/g, '');
+            this.value = formatRibuan(cleaned);
+            hiddenNilai.value = parseInt(cleaned || '0', 10);
+        });
+    }
+
+    /* ── Toggle Section Cicilan ──────────────────────────── */
     radios.forEach(radio => {
         radio.addEventListener('change', function () {
-            sectionCicilan.classList.toggle('hidden', this.value !== 'cicilan');
+            if (sectionCicilan) {
+                sectionCicilan.classList.toggle('hidden', this.value !== 'cicilan');
+            }
         });
     });
 
-    // Cegah double submit
-    form.addEventListener('submit', function () {
+    /* ── Guard Submit ────────────────────────────────────── */
+    form.addEventListener('submit', function (e) {
+        // Jika ada logika validasi sisa saldo bisa ditambahkan di sini
+        
         submitBtn.disabled = true;
         btnText.innerText  = 'Menyimpan...';
     });
 
-    // Cegah nilai negatif
+    // Cegah nilai negatif pada input number lainnya
     document.querySelectorAll('input[type="number"]').forEach(input => {
         input.addEventListener('input', function () {
             if (this.value < 0) this.value = 0;

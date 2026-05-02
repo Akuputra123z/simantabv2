@@ -66,6 +66,10 @@ class Recommendation extends Model
      * - nilai_tl_selesai di-cap max nilai_rekom → mencegah nilai_sisa negatif
      *   dan progress > 100%.
      */
+  /**
+     * Sinkronisasi status & nilai berdasarkan data TindakLanjut terkini.
+     * FIX: Status berubah jadi PROSES jika ada TL, meskipun nominal belum masuk (karena belum verifikasi).
+     */
     public function syncStatus(): void
     {
         $query = $this->tindakLanjuts();
@@ -74,6 +78,9 @@ class Recommendation extends Model
             // ── Jenis UANG ────────────────────────────────────────────────────
             $totalBayar = (float) (clone $query)->sum('total_terbayar');
             $nilaiRekom = (float) ($this->nilai_rekom ?? 0);
+            
+            // Cek apakah sudah ada input tindak lanjut (meskipun belum diverifikasi)
+            $hasAnyTl = (clone $query)->exists();
 
             // Cap agar tidak melebihi nilai_rekom → progress tidak bisa >100%
             $totalBayarCapped = $nilaiRekom > 0 ? min($totalBayar, $nilaiRekom) : $totalBayar;
@@ -82,9 +89,13 @@ class Recommendation extends Model
             $this->nilai_sisa       = max(0, $nilaiRekom - $totalBayarCapped);
 
             $this->status = match (true) {
+                // Selesai jika nilai yang lunas/diverifikasi >= rekomendasi
                 $nilaiRekom > 0 && $totalBayarCapped >= $nilaiRekom => self::STATUS_SELESAI,
-                $totalBayar > 0                                      => self::STATUS_PROSES,
-                default                                              => self::STATUS_BELUM,
+                
+                // Proses jika sudah ada nilai masuk ATAU sekadar sudah ada data input TL
+                $totalBayar > 0 || $hasAnyTl                        => self::STATUS_PROSES,
+                
+                default                                             => self::STATUS_BELUM,
             };
         } else {
             // ── Jenis BARANG / ADMINISTRASI ───────────────────────────────────
@@ -100,8 +111,7 @@ class Recommendation extends Model
 
             $this->status = match (true) {
                 $totalTl > 0 && $lunas >= $totalTl => self::STATUS_SELESAI,
-                $hasProses                          => self::STATUS_PROSES,
-                $totalTl > 0                        => self::STATUS_PROSES,
+                $lunas > 0 || $hasProses || $totalTl > 0 => self::STATUS_PROSES,
                 default                             => self::STATUS_BELUM,
             };
         }

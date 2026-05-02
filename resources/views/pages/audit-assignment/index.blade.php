@@ -64,19 +64,20 @@
         
         {{-- HEADER --}}
         <thead class="bg-gray-50/70 dark:bg-gray-900/50">
-            <tr class="text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                <th class="px-6 py-3 w-10 text-center">
-                    <input type="checkbox" id="check-all"
-                        class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
-                </th>
-                <th class="px-4 py-3">Ketua Tim</th>
-                <th class="px-4 py-3">Program Audit</th>
-                <th class="px-4 py-3">Unit</th>
-                <th class="px-4 py-3 text-center">Jenis Pengawasan</th>
-                <th class="px-4 py-3 text-center">Status</th>
-                <th class="px-4 py-3 text-center">Action</th>
-            </tr>
-        </thead>
+    <tr class="text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+        <th class="px-6 py-3 w-10 text-center">
+            <input type="checkbox" id="check-all"
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+        </th>
+        <th class="px-4 py-3">Ketua Tim</th>
+        <th class="px-4 py-3">Program Audit</th>
+        <th class="px-4 py-3">Unit</th>
+        <th class="px-4 py-3">Progress</th> {{-- Kolom Baru --}}
+        <th class="px-4 py-3 text-center">Jenis Pengawasan</th>
+        <th class="px-4 py-3 text-center">Status</th>
+        <th class="px-4 py-3 text-center">Action</th>
+    </tr>
+</thead>
 
         {{-- BODY --}}
         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -113,9 +114,32 @@
                 </td>
 
                 {{-- UNIT --}}
-                <td class="px-4 py-4 text-gray-600 dark:text-gray-400">
-                    {{ $assignment->unitDiperiksa->nama_unit ?? '-' }}
-                </td>
+              <td class="px-4 py-4 text-gray-600 dark:text-gray-400">
+    {{ $assignment->unitDiperiksa->nama_unit ?? '-' }}
+</td>
+        {{-- PROGRESS --}}
+<td class="px-4 py-4 min-w-[150px]">
+    @php
+        // Mengambil progress dari statistik LHP terkait
+        $progress = $assignment->lhps->first()->statistik->persen_selesai_gabungan ?? 0;
+        
+        $barColor = match(true) {
+            $progress >= 100 => 'bg-green-500',
+            $progress >= 50  => 'bg-blue-500',
+            $progress > 0    => 'bg-yellow-500',
+            default          => 'bg-gray-200 dark:bg-gray-700'
+        };
+    @endphp
+    <div class="flex items-center gap-3">
+        <div class="flex-1 h-2 w-full rounded-full bg-gray-100 dark:bg-gray-800">
+            <div class="h-2 rounded-full {{ $barColor }} transition-all duration-500" 
+                 style="width: {{ $progress }}%"></div>
+        </div>
+        <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">
+            {{ number_format($progress, 0) }}%
+        </span>
+    </div>
+</td>
 
                 {{-- JENIS PENGAWASAN --}}
                 <td class="px-4 py-4 text-center">
@@ -137,22 +161,31 @@
                 </td>
 
                 {{-- STATUS --}}
-                <td class="px-4 py-4 text-center">
-                    @php
-                        $status = strtolower($assignment->status);
-                        $statusClass = match($status) {
-                            'selesai'   => 'bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-400',
-                            'berjalan'  => 'bg-yellow-100 text-yellow-600 dark:bg-yellow-500/15 dark:text-yellow-400',
-                            'draft'     => 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
-                            default     => 'bg-gray-100 text-gray-600'
-                        };
-                    @endphp
+<td class="px-4 py-4 text-center">
+    @php
+        // 1. Ambil nilai progress dari statistik LHP pertama
+        $progress = $assignment->lhps->first()->statistik->persen_selesai_gabungan ?? 0;
+        $punyaLhp = ($assignment->lhps_count ?? 0) > 0;
 
-                    <span class="{{ $statusClass }} rounded-full px-3 py-1 text-xs font-medium inline-block">
-                        {{ ucfirst($status) }}
-                    </span>
-                </td>
+        // 2. Logika Status: Jika progress mencapai 100%, paksa status menjadi 'selesai'
+        $statusFinal = match(true) {
+            $progress >= 100 => 'selesai',
+            $punyaLhp        => 'berjalan',
+            default          => strtolower($assignment->status),
+        };
 
+        // 3. Penentuan warna label berdasarkan status final
+        $statusClass = match($statusFinal) {
+            'selesai'  => 'bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-400',
+            'berjalan' => 'bg-yellow-100 text-yellow-600 dark:bg-yellow-500/15 dark:text-yellow-400',
+            default    => 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+        };
+    @endphp
+
+    <span class="{{ $statusClass }} rounded-full px-3 py-1 text-xs font-medium inline-block">
+        {{ ucfirst($statusFinal) }}
+    </span>
+</td>
                 {{-- ACTION --}}
                 {{-- Aksi --}}
 <td class="px-5 py-4 text-right">

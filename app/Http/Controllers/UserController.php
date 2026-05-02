@@ -38,7 +38,6 @@ class UserController extends Controller
 
         $roles = Role::orderBy('name')->pluck('name');
 
-        // 🔥 lebih efisien (1 query)
         $stats = User::selectRaw("
                 COUNT(*) as total,
                 SUM(is_active = 1) as aktif,
@@ -69,14 +68,15 @@ class UserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
-            'nip'      => ['nullable', 'string', 'max:30', 'unique:users,nip'],
-            'jabatan'  => ['nullable', 'string', 'max:100'],
-            'phone'    => ['nullable', 'string', 'max:20'],
-            'password' => ['required', Password::min(8)->letters()->numbers()],
-            'role'     => ['required', 'string', 'exists:roles,name'],
+            'name'      => ['required', 'string', 'max:255'],
+            'email'     => ['required', 'email', 'max:255', 'unique:users,email'],
+            'nip'       => ['nullable', 'string', 'max:30', 'unique:users,nip'],
+            'jabatan'   => ['nullable', 'string', 'max:100'],
+            'phone'     => ['nullable', 'string', 'max:20'],
+            'password'  => ['required', Password::min(8)->letters()->numbers()],
+            'role'      => ['required', 'string', 'exists:roles,name'],
             'is_active' => ['boolean'],
+            // Turnstile sudah dipastikan tidak ada di sini
         ]);
 
         $user = User::create([
@@ -118,13 +118,13 @@ class UserController extends Controller
     public function update(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'nip'      => ['nullable', 'string', 'max:30', Rule::unique('users')->ignore($user->id)],
-            'jabatan'  => ['nullable', 'string', 'max:100'],
-            'phone'    => ['nullable', 'string', 'max:20'],
-            'password' => ['nullable', Password::min(8)->letters()->numbers()],
-            'role'     => ['required', 'string', 'exists:roles,name'],
+            'name'      => ['required', 'string', 'max:255'],
+            'email'     => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'nip'       => ['nullable', 'string', 'max:30', Rule::unique('users')->ignore($user->id)],
+            'jabatan'   => ['nullable', 'string', 'max:100'],
+            'phone'     => ['nullable', 'string', 'max:20'],
+            'password'  => ['nullable', Password::min(8)->letters()->numbers()],
+            'role'      => ['required', 'string', 'exists:roles,name'],
             'is_active' => ['boolean'],
         ]);
 

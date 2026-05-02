@@ -11,8 +11,6 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
-
 
 class LoginController extends Controller
 {
@@ -23,14 +21,15 @@ class LoginController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // ── Validasi (Turnstile Dihapus) ──────────────────────────────────
         $request->validate([
-            'email' => ['required', 'string', 'email'],
+            'email'    => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
-            'cf-turnstile-response' => ['required', new Turnstile],
         ]);
 
         $this->ensureIsNotRateLimited($request);
 
+        // ── Attempt Login ────────────────────────────────────────────────
         if (! Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey($request));
 
@@ -80,4 +79,3 @@ class LoginController extends Controller
         return Str::transliterate(Str::lower($request->string('email')).'|'.$request->ip());
     }
 }
-

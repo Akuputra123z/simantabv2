@@ -212,20 +212,22 @@ class TindakLanjutCicilanController extends Controller
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private function updateGlobalStatistik(TindakLanjut $tindakLanjut): void
-    {
-        $lhpId = $tindakLanjut->recommendation?->temuan?->lhp_id;
-        if ($lhpId) {
-            $this->statistikService->updateStatistik($lhpId);
-        }
+   private function updateGlobalStatistik(TindakLanjut $tindakLanjut): void
+{
+    // ✅ Refresh TL dari DB agar relasi cicilan terbaru terbaca
+    $tindakLanjut->refresh();
+    $tindakLanjut->load('recommendation.tindakLanjuts.cicilans');
+
+    $recommendation = $tindakLanjut->recommendation;
+    if ($recommendation) {
+        // Sync recommendation: update status, nilai_tl_selesai, nilai_sisa
+        // sekaligus trigger temuan->syncStatus()
+        $recommendation->syncStatus();
     }
 
-    private function authorizeCicilan(TindakLanjut $tindakLanjut, TindakLanjutCicilan $cicilan): void
-    {
-        abort_if(
-            $cicilan->tindak_lanjut_id !== $tindakLanjut->id,
-            403,
-            'Cicilan tidak ditemukan pada tindak lanjut ini.'
-        );
+    $lhpId = $recommendation?->temuan?->lhp_id;
+    if ($lhpId) {
+        $this->statistikService->updateStatistik($lhpId);
     }
+}
 }

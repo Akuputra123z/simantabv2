@@ -17,40 +17,24 @@ class AuditProgram extends Model
 
     protected static $logExcept = ['created_by', 'updated_by', 'created_at', 'updated_at', 'deleted_at'];
 
-
     protected $fillable = [
-        'nama_program',
-        'tahun',
-        'status',
-        'created_by',
-        'updated_by',
-        'target_assignment',
+        'nama_program', 'tahun', 'status',
+        'created_by', 'updated_by', 'target_assignment',
     ];
 
-    // ✅ AUTO APPEND KE JSON / FILAMENT
-    protected $appends = [
-        'realisasi_assignment',
-        'sudah_lhp',
-        'sisa_target',
-        'progress',
-    ];
+    // ❌ HAPUS $appends — ini penyebab N+1 query
+    // protected $appends = ['realisasi_assignment', 'sudah_lhp', 'sisa_target', 'progress'];
 
     protected function casts(): array
     {
         return [
-            'tahun'              => 'integer',
-            'target_assignment'  => 'integer',
-            'deleted_at'         => 'datetime',
+            'tahun'             => 'integer',
+            'target_assignment' => 'integer',
+            'deleted_at'        => 'datetime',
         ];
     }
 
-   
-
-    /*
-    |--------------------------------------------------------------------------
-    | Scopes
-    |--------------------------------------------------------------------------
-    */
+    // ── Scopes ────────────────────────────────────────────────────────────────
 
     public function scopeTahun(Builder $query, int $tahun): Builder
     {
@@ -67,18 +51,11 @@ class AuditProgram extends Model
         return $query->where('status', 'berjalan');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
+    // ── Relationships ─────────────────────────────────────────────────────────
 
     public function assignments(): HasMany
     {
-        return $this->hasMany(
-            AuditAssignment::class,
-            'audit_program_id'
-        );
+        return $this->hasMany(AuditAssignment::class, 'audit_program_id');
     }
 
     public function lhps(): HasManyThrough
@@ -91,42 +68,51 @@ class AuditProgram extends Model
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | ACCESSORS (🔥 CORE FITUR)
-    |--------------------------------------------------------------------------
-    */
+    // ── Accessors — hanya dipakai saat relasi sudah di-eager load ─────────────
 
-    // ✅ Realisasi (gunakan eager count kalau ada)
+    /**
+     * Total assignment yang terealisasi.
+     * Gunakan withCount('assignments') di controller agar tidak N+1.
+     */
     public function getRealisasiAssignmentAttribute(): int
     {
-        return $this->assignments_count
-            ?? $this->assignments()->count();
+        // ✅ Prioritaskan withCount hasil eager load
+        if (isset($this->attributes['assignments_count'])) {
+            return (int) $this->attributes['assignments_count'];
+        }
+        return $this->assignments()->count();
     }
 
-    // ✅ Sudah LHP (optimize query)
+    /**
+     * Assignment yang sudah punya LHP.
+     * Gunakan withCount(['assignments as sudah_lhp_count' => ...]) di controller.
+     */
     public function getSudahLhpAttribute(): int
     {
-        return $this->assignments()
-            ->has('lhps')
-            ->count();
+        if (isset($this->attributes['sudah_lhp_count'])) {
+            return (int) $this->attributes['sudah_lhp_count'];
+        }
+        return $this->assignments()->has('lhps')->count();
     }
 
-    // ✅ Sisa target
     public function getSisaTargetAttribute(): int
     {
         return max(0, ($this->target_assignment ?? 0) - $this->realisasi_assignment);
     }
 
-    // ✅ Progress %
+    /**
+     * Progress = assignment selesai TL / total assignment (bukan vs target).
+     * Gunakan withCount(['assignments as assignments_selesai_count' => ...]) di controller.
+     */
     public function getProgressAttribute(): float
     {
-        $target = $this->target_assignment ?? 0;
+        $total = $this->realisasi_assignment;
+        if ($total === 0) return 0.0;
 
-        if ($target === 0) {
-            return 0;
-        }
+        $selesai = isset($this->attributes['assignments_selesai_count'])
+            ? (int) $this->attributes['assignments_selesai_count']
+            : $this->assignments()->where('status', 'selesai')->count();
 
-        return round(($this->sudah_lhp / $target) * 100, 1);
+        return round(($selesai / $total) * 100, 1);
     }
 }

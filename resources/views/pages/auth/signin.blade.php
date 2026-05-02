@@ -7,7 +7,6 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script id="tailwind-config">
     tailwind.config = {
@@ -284,34 +283,20 @@
                         </div>
                     @endif
 
-                    <div class="flex justify-center py-2">
-    <x-turnstile />
+    
+
+                   <div>
+    <button type="submit" class="w-full flex justify-center items-center py-[13px] px-6 border border-transparent rounded-xl shadow-lg shadow-[#1d61d1]/20 text-[14px] font-semibold text-white smooth-gradient smooth-gradient-hover transition-all duration-300 ease-out focus:outline-none focus:ring-4 focus:ring-[#1d61d1]/30 active:scale-[0.98]">
+        <span class="material-symbols-outlined mr-2 text-[20px]">lock_open</span>
+        Masuk ke Sistem
+    </button>
 </div>
-@error('cf-turnstile-response')
-    <p class="text-red-500 text-[12px] mb-4 flex items-center gap-1 justify-center">
-        <span class="material-symbols-outlined text-[14px]">error</span>
-        Konfirmasi bahwa Anda bukan robot.
+
+<div class="pt-2 flex flex-col items-center justify-center text-center opacity-60 hover:opacity-100 transition-opacity duration-300">
+    <p class="text-[11px] text-gray-500 max-w-[280px] leading-relaxed font-light">
+        Sistem ini dilindungi dengan enkripsi AES-256 dan hanya untuk pengguna yang berwenang.
     </p>
-@enderror
-
-                    <!-- Submit -->
-                    <div>
-                        <button type="submit" class="w-full flex justify-center items-center py-[13px] px-6 border border-transparent rounded-xl shadow-lg shadow-[#1d61d1]/20 text-[14px] font-semibold text-white smooth-gradient smooth-gradient-hover transition-all duration-300 ease-out focus:outline-none focus:ring-4 focus:ring-[#1d61d1]/30 active:scale-[0.98]">
-                            <span class="material-symbols-outlined mr-2 text-[20px]">lock_open</span>
-                            Masuk ke Sistem
-                        </button>
-                    </div>
-
-                  
-
-                    <!-- Security notice -->
-                    <div class="pt-2 flex flex-col items-center justify-center text-center opacity-60 hover:opacity-100 transition-opacity duration-300">
-                    
-                        <p class="text-[11px] text-gray-500 max-w-[280px] leading-relaxed font-light">
-                            Sistem ini dilindungi dengan enkripsi AES-256 dan hanya untuk pengguna yang berwenang.
-                        </p>
-                    </div>
-
+</div>
                     
 
                 </form>
@@ -447,7 +432,7 @@
     </div><!-- /outer card -->
 
 </main>
-<x-turnstile.scripts />
+
 
 </body>
 </html>

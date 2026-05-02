@@ -65,43 +65,70 @@
                         <span class="block font-semibold text-gray-800 dark:text-white/90">{{ $item->nama_program }}</span>
                         <span class="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-gray-500">PKPT {{ $item->tahun }}</span>
                     </td>
-                    {{-- Target / Realisasi --}}
-                    <td class="px-5 py-4 text-center">
-                        <div class="text-sm font-bold text-gray-800 dark:text-white">
-                            {{ $item->assignments_count ?? 0 }} <span class="text-gray-400 font-normal">/ {{ $item->target_assignment }}</span>
-                        </div>
-                        <span class="text-[10px] text-gray-400 uppercase">Assignment</span>
-                    </td>
+{{-- Target / Realisasi --}}
+<td class="px-5 py-4 text-center">
+    <div class="text-sm font-bold text-gray-800 dark:text-white">
+        {{ $item->assignments_count ?? 0 }}
+        <span class="text-gray-400 font-normal">/ {{ $item->target_assignment }}</span>
+    </div>
+    <span class="text-[10px] text-gray-400 uppercase">Assignment / Target</span>
+</td>
 
-                    {{-- Progress LHP --}}
-                    <td class="px-5 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                                {{-- Menghindari devide by zero --}}
-                                @php 
-                                    $percent = $item->target_assignment > 0 ? ($item->assignments_count / $item->target_assignment) * 100 : 0; 
-                                @endphp
-                                <div class="h-full bg-blue-500 rounded-full" style="width: {{ $percent }}%"></div>
-                            </div>
-                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ number_format($percent, 0) }}%</span>
-                        </div>
-                        <span class="text-[10px] text-gray-400 mt-1 block">Berdasarkan Target Assignment</span>
-                    </td>
+{{-- Progress --}}
+<td class="px-5 py-4">
+    @php
+        $target          = $item->target_assignment ?? 0;
+        $selesai         = $item->assignments_selesai_count ?? 0;
 
-                    {{-- Status --}}
-                    <td class="px-5 py-4 text-center">
-                        @php
-                            $statusClasses = [
-                                'draft' => 'bg-gray-100 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400',
-                                'berjalan' => 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400',
-                                'selesai' => 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400',
-                            ];
-                            $currentClass = $statusClasses[$item->status] ?? $statusClasses['draft'];
-                        @endphp
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $currentClass }}">
-                            {{ $item->status }}
-                        </span>
-                    </td>
+        // ✅ Progress = assignment berstatus selesai / target_assignment
+        $percent = $target > 0
+            ? round(min($selesai / $target, 1.0) * 100)
+            : 0;
+    @endphp
+    <div class="flex items-center gap-3">
+        <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500
+                {{ $percent >= 100 ? 'bg-green-500' : ($percent > 0 ? 'bg-blue-500' : 'bg-gray-300') }}"
+                 style="width: {{ $percent }}%">
+            </div>
+        </div>
+        <span class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ $percent }}%</span>
+    </div>
+    <span class="text-[10px] text-gray-400 mt-1 block">
+        {{ $selesai }} assignment selesai / {{ $target }} target
+    </span>
+</td>
+
+{{-- Status --}}
+<td class="px-5 py-4 text-center">
+    @php
+        $total    = $item->assignments_count ?? 0;
+        $selesai  = $item->assignments_selesai_count ?? 0;
+        $berjalan = $item->assignments_berjalan_count ?? 0;
+
+        // ✅ Status = dari assignment, bukan dari kolom DB yang mungkin stale
+        $statusDinamis = match(true) {
+            $target > 0 && $selesai >= $target               => 'selesai',
+            $total > 0 && ($berjalan + $selesai) > 0         => 'berjalan',
+            default                                           => 'draft',
+        };
+
+        $statusClasses = [
+            'draft'    => 'bg-gray-100 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400',
+            'berjalan' => 'bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400',
+            'selesai'  => 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400',
+        ];
+    @endphp
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full
+                 text-[10px] font-bold uppercase tracking-wider
+                 {{ $statusClasses[$statusDinamis] }}">
+        {{ ucfirst($statusDinamis) }}
+    </span>
+</td>
+
+
+
+                  
 
                     {{-- Aksi --}}
                     <td class="px-5 py-4 text-right">

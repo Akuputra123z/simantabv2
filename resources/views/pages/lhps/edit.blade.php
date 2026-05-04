@@ -338,16 +338,16 @@ function lhpEditForm() {
         // Data master untuk preview deskripsi
         kodeMaster: @json($kodeTemuans),
         
-        temuans: @json($lhp->temuans).map(t => ({
-            key: 'old-' + t.id,
-            id: t.id,
-            kode_temuan_id: t.kode_temuan_id,
-            nilai_kerugian_negara:   parseInt(t.nilai_kerugian_negara)   || 0,
-            nilai_kerugian_daerah:   parseInt(t.nilai_kerugian_daerah)   || 0,
-            nilai_kerugian_desa:     parseInt(t.nilai_kerugian_desa)     || 0,
-            nilai_kerugian_bos_blud: parseInt(t.nilai_kerugian_bos_blud) || 0,
-            kondisi: t.kondisi
-        })),
+        temuans: @json(old('temuans', $lhp->temuans)).map(t => ({
+    key: t.id ? 'old-' + t.id : Date.now() + Math.random(),
+    id: t.id ?? null,
+    kode_temuan_id: t.kode_temuan_id ?? '',
+    nilai_kerugian_negara:   parseInt(t.nilai_kerugian_negara)   || 0,
+    nilai_kerugian_daerah:   parseInt(t.nilai_kerugian_daerah)   || 0,
+    nilai_kerugian_desa:     parseInt(t.nilai_kerugian_desa)     || 0,
+    nilai_kerugian_bos_blud: parseInt(t.nilai_kerugian_bos_blud) || 0,
+    kondisi: t.kondisi ?? ''
+})),
         attachments: [],
 
         formatRupiah(number) {
@@ -404,12 +404,16 @@ function lhpEditForm() {
         initSingleSelect(key) {
             const el = document.getElementById(`select-kode-${key}`);
             if (el && !el.tomselect) {
-                new TomSelect(el, {
+               new TomSelect(el, {
                     create: false,
                     maxOptions: 100,
+                    onChange: (value) => {
+                        if (el._x_model) {
+                            el._x_model.set(value);
+                        }
+                    },
                     render: {
                         option: function(data, escape) {
-                            // Split kode dan deskripsi untuk styling yang lebih rapi
                             const parts = data.text.split(' - ');
                             return `<div class="py-2 px-3 border-b border-gray-50 dark:border-gray-800">
                                 <div class="font-bold text-brand-600 dark:text-brand-400 text-xs">${escape(parts[0])}</div>

@@ -60,24 +60,54 @@
                 <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
 
                     {{-- Penugasan Audit --}}
-                    <div class="md:col-span-2">
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Penugasan Audit <span class="text-red-500">*</span>
-                        </label>
-                        <select name="audit_assignment_id"
-                                class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white @error('audit_assignment_id') border-red-500 @enderror">
-                            <option value="">-- Pilih Penugasan --</option>
-                            @foreach ($assignments as $a)
-                                <option value="{{ $a->id }}" {{ old('audit_assignment_id') == $a->id ? 'selected' : '' }}>
-                                    {{ $a->auditProgram->nama_program ?? '-' }}
-                                    @if($a->unitDiperiksa) — {{ $a->unitDiperiksa->nama_unit }} @endif
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('audit_assignment_id')
-                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                        @enderror
-                    </div>
+                    {{-- 1. Pilih Program Kerja (PKPT) --}}
+<div class="md:col-span-2">
+    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Program Kerja (PKPT) <span class="text-red-500">*</span>
+    </label>
+    <select id="select-program"
+            class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+        <option value="">-- Pilih Program Kerja --</option>
+    </select>
+</div>
+
+{{-- 2. Pilih Penugasan (Berdasarkan Program) --}}
+<div class="md:col-span-1">
+    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Penugasan Audit <span class="text-red-500">*</span>
+    </label>
+    <select id="select-assignment" disabled
+            class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 focus:border-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+        <option value="">-- Pilih Program Terlebih Dahulu --</option>
+    </select>
+</div>
+{{-- Ganti field ini: dari name="audit_assignment_id" ke readonly display --}}
+{{-- Dan tambah dua hidden input terpisah --}}
+
+{{-- 3. Pilih Unit Kerja (Berdasarkan Penugasan) --}}
+<div class="md:col-span-1">
+    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Unit Kerja / Objek Audit <span class="text-red-500">*</span>
+    </label>
+    <select id="select-unit" disabled
+            class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3.5 py-2.5 text-sm
+                   text-gray-900 focus:border-primary-500 dark:border-gray-600 
+                   dark:bg-gray-800 dark:text-white 
+                   @error('unit_diperiksa_id') border-red-500 @enderror">
+        <option value="">-- Pilih Penugasan Terlebih Dahulu --</option>
+    </select>
+
+    {{-- Hidden inputs yang benar-benar dikirim ke server --}}
+    <input type="hidden" name="audit_assignment_id" id="hidden-assignment-id" value="">
+    <input type="hidden" name="unit_diperiksa_id"   id="hidden-unit-id"       value="">
+
+    @error('unit_diperiksa_id')
+        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+    @enderror
+    @error('audit_assignment_id')
+        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+    @enderror
+</div>
 
                     {{-- Nomor LHP --}}
                     <div>
@@ -105,42 +135,6 @@
                         @enderror
                     </div>
 
-                    {{-- Semester --}}
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Semester <span class="text-red-500">*</span>
-                        </label>
-                        <select name="semester"
-                                class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white @error('semester') border-red-500 @enderror">
-                            <option value="">-- Pilih Semester --</option>
-                            <option value="1" {{ old('semester') == '1' ? 'selected' : '' }}>Semester I</option>
-                            <option value="2" {{ old('semester') == '2' ? 'selected' : '' }}>Semester II</option>
-                        </select>
-                        @error('semester')
-                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- IRBAN --}}
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            IRBAN <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="irban" value="{{ old('irban') }}"
-                               placeholder="Contoh: IRBAN I"
-                               class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white @error('irban') border-red-500 @enderror">
-                        @error('irban')
-                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- Jenis Pemeriksaan --}}
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Jenis Pemeriksaan</label>
-                        <input type="text" name="jenis_pemeriksaan" value="{{ old('jenis_pemeriksaan') }}"
-                               placeholder="Contoh: Reguler / Khusus"
-                               class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                    </div>
 
                     {{-- Catatan Umum --}}
                     <div class="md:col-span-2">
@@ -236,259 +230,228 @@
 
 {{-- ── Data Kode Temuan untuk JS ── --}}
 <script>
-/**
- * Data kode temuan dari server — sudah include nama/deskripsi.
- * Format: [{ id, kode, nama, deskripsi }]
- * 
- * CATATAN: pastikan KodeTemuan model punya kolom 'nama' atau 'deskripsi'.
- * Sesuaikan key di bawah dengan nama kolom aktual model Anda.
- */
 @php
-    $kodeTemuanData = $kodeTemuans->map(function ($k) {
+    // Siapkan semua data assignments sebagai JSON untuk JS
+    $assignmentData = $assignments->map(function ($a) {
         return [
-            'id'        => $k->id,
-            'kode'      => $k->kode,
-            'nama'      => $k->pernyataan ?? $k->nama ?? '', // Sesuaikan dengan kolom nama/pernyataan di DB
-            'deskripsi' => $k->deskripsi ?? null,
+            'id'                     => $a->id,
+            'audit_program_detail_id'=> $a->audit_program_detail_id,
+            'program_id'             => $a->auditProgramDetail?->audit_program_id,
+            'program_nama'           => $a->auditProgramDetail?->auditProgram?->nama_program ?? '-',
+            'detail_nama'            => $a->auditProgramDetail?->nama_detail_program ?? '-',
+            'nomor_surat'            => $a->nomor_surat,
+            'units'                  => $a->unitDiperiksas->map(fn($u) => [
+                'id'   => $u->id,
+                'nama' => $u->nama_unit,
+            ])->values(),
         ];
     });
+
+    $kodeTemuanData = $kodeTemuans->map(fn($k) => [
+        'id'        => $k->id,
+        'kode'      => $k->kode,
+        'nama'      => $k->pernyataan ?? $k->nama ?? '',
+        'deskripsi' => $k->deskripsi ?? null,
+    ]);
 @endphp
 
+const ALL_ASSIGNMENTS = @json($assignmentData);
+const KODE_TEMUANS    = @json($kodeTemuanData);
 
-const KODE_TEMUANS = @json($kodeTemuanData);
+// ── Cascade Logic ──────────────────────────────────────────────────
 
+const selProgram    = document.getElementById('select-program');
+const selAssignment = document.getElementById('select-assignment');
+const selUnit       = document.getElementById('select-unit');
 
-/* ─────────────────────────────────────────────────────────
-   STATE
-───────────────────────────────────────────────────────── */
+// Bangun daftar program unik dari ALL_ASSIGNMENTS
+(function buildProgramOptions() {
+    const seen = new Set();
+    ALL_ASSIGNMENTS.forEach(a => {
+        if (!seen.has(a.program_id)) {
+            seen.add(a.program_id);
+            const opt = new Option(a.program_nama, a.program_id);
+            selProgram.add(opt);
+        }
+    });
+})();
+
+selProgram.addEventListener('change', function () {
+    const programId = this.value;
+
+    // Reset downstream
+    selAssignment.innerHTML = '<option value="">-- Pilih Penugasan --</option>';
+    selUnit.innerHTML        = '<option value="">-- Pilih Penugasan Terlebih Dahulu --</option>';
+    selAssignment.disabled   = true;
+    selUnit.disabled         = true;
+
+    if (!programId) return;
+
+    // Filter assignments berdasarkan program
+    const filtered = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(programId));
+
+    filtered.forEach(a => {
+        const label = a.detail_nama + (a.nomor_surat ? ' — ' + a.nomor_surat : '');
+        selAssignment.add(new Option(label, a.id));
+    });
+
+    selAssignment.disabled = filtered.length === 0;
+});
+
+selAssignment.addEventListener('change', function () {
+    const assignmentId = this.value;
+
+    // Reset unit dropdown
+    selUnit.innerHTML = '<option value="">-- Pilih Unit --</option>';
+    document.getElementById('hidden-assignment-id').value = assignmentId || '';
+    document.getElementById('hidden-unit-id').value       = '';
+
+    if (!assignmentId) {
+        selUnit.disabled = true;
+        return;
+    }
+
+    const assignment = ALL_ASSIGNMENTS.find(a => String(a.id) === String(assignmentId));
+
+    if (assignment && assignment.units.length > 0) {
+        assignment.units.forEach(u => {
+            // ✅ FIX: value sekarang adalah ID unit, bukan assignmentId
+            selUnit.add(new Option(u.nama, u.id));
+        });
+        selUnit.disabled = false;
+
+        // Jika hanya 1 unit, otomatis pilih dan isi hidden input
+        if (assignment.units.length === 1) {
+            selUnit.selectedIndex = 1;
+            document.getElementById('hidden-unit-id').value = assignment.units[0].id;
+        }
+    } else {
+        selUnit.innerHTML = '<option value="">Tidak ada unit tersedia</option>';
+        selUnit.disabled  = true;
+    }
+});
+
+// Tangkap perubahan unit → isi hidden input
+selUnit.addEventListener('change', function () {
+    document.getElementById('hidden-unit-id').value = this.value || '';
+});
+// ── Badge & Empty State ────────────────────────────────────────────
+
 let temuanCount   = 0;
 let lampiranCount = 0;
 
-/* ─────────────────────────────────────────────────────────
-   HELPERS UI
-───────────────────────────────────────────────────────── */
 function updateBadge(id, count) {
-    document.getElementById(id).textContent = count;
+    const el = document.getElementById(id);
+    if (el) el.textContent = count;
 }
 
 function updateEmpty(containerId, emptyId, count) {
     const container = document.getElementById(containerId);
     const empty     = document.getElementById(emptyId);
-    container.style.display = count ? '' : 'none';
-    empty.style.display     = count ? 'none' : '';
+    if (container && empty) {
+        container.style.display = count ? '' : 'none';
+        empty.style.display     = count ? 'none' : '';
+    }
 }
 
-/* ─────────────────────────────────────────────────────────
-   TEMUAN
-───────────────────────────────────────────────────────── */
+// ── Temuan Logic ───────────────────────────────────────────────────
+
 document.getElementById('btn-add-temuan').addEventListener('click', addTemuan);
 
 function addTemuan() {
     const idx = temuanCount++;
     const row = document.createElement('div');
-    row.className = 'temuan-row p-6 transition-all';
+    row.className = 'temuan-row p-6 transition-all border-b border-gray-100 dark:border-gray-700';
     row.dataset.idx = idx;
 
-    /**
-     * Opsi kode temuan: tampilkan kode + nama + deskripsi (jika ada).
-     * Contoh tampilan: [1.1] Kekurangan Volume — Pekerjaan tidak sesuai kontrak
-     */
     const kodeOptions = KODE_TEMUANS.map(k => {
-        const label = k.deskripsi
-            ? `[${k.kode}] — ${k.deskripsi}`
-            : `[${k.kode}]`;
-        return `<option value="${k.id}" title="${label}">${label}</option>`;
+        const label = k.deskripsi ? `[${k.kode}] — ${k.deskripsi}` : `[${k.kode}]`;
+        return `<option value="${k.id}">${label}</option>`;
     }).join('');
 
     row.innerHTML = `
         <div class="mb-4 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900 dark:text-blue-300 temuan-num-badge">${temuanCount}</span>
-                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Temuan #<span class="temuan-num">${temuanCount}</span></span>
+                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900 dark:text-blue-300 temuan-num-badge">${idx + 1}</span>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Temuan #<span class="temuan-num">${idx + 1}</span></span>
             </div>
-            <button type="button" onclick="removeTemuan(this)"
-                    class="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors dark:hover:bg-red-900/20">
-                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
+            <button type="button" onclick="removeTemuan(this)" class="text-red-500 hover:text-red-700 text-xs font-medium flex items-center gap-1">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 Hapus
             </button>
         </div>
-
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-
-            {{-- Kode Temuan --}}
             <div class="md:col-span-2">
-                <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
-                    Kode Temuan
-                </label>
-                <select name="temuans[${idx}][kode_temuan_id]"
-                        class="kode-temuan-select form-select border rounded-lg px-3 py-2 w-full"
-                        data-idx="${idx}">
+                <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase">Kode Temuan</label>
+                <select name="temuans[${idx}][kode_temuan_id]" class="kode-temuan-select w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm dark:bg-gray-700 dark:text-white" data-idx="${idx}">
                     <option value="">-- Pilih Kode Temuan --</option>
-                     ${kodeOptions}
+                    ${kodeOptions}
                 </select>
-                {{-- Info box: tampil saat kode dipilih --}}
-                <div id="kode-info-${idx}" class="hidden mt-2 flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300">
-                    <svg class="mt-0.5 h-3.5 w-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                    </svg>
+                <div id="kode-info-${idx}" class="hidden mt-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300">
                     <span id="kode-info-text-${idx}"></span>
                 </div>
             </div>
-
-            {{-- Kondisi / Uraian --}}
             <div class="md:col-span-2">
-                <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
-                    Kondisi / Uraian Temuan <span class="text-red-500">*</span>
-                </label>
-                <textarea name="temuans[${idx}][kondisi]" rows="3"
-                          placeholder="Uraikan kondisi temuan secara singkat dan jelas..."
-                          class="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></textarea>
+                <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase">Kondisi / Uraian Temuan <span class="text-red-500">*</span></label>
+                <textarea name="temuans[${idx}][kondisi]" rows="3" class="w-full rounded-lg border border-gray-300 p-2.5 text-sm dark:bg-gray-700 dark:text-white" required></textarea>
             </div>
-
-            {{-- Nilai Kerugian Negara --}}
-           {{-- Nilai Kerugian Negara --}}
-<div>
-    <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
-        Kerugian Negara (Rp)
-    </label>
-    <div class="rupiah-wrap relative">
-        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
-        <input type="text" inputmode="numeric" autocomplete="off" placeholder="0"
-               class="rupiah-field w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-               data-name="temuans[${idx}][nilai_kerugian_negara]" data-value="0">
-    </div>
-</div>
-
-{{-- Nilai Kerugian Daerah --}}
-<div>
-    <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
-        Kerugian Daerah (Rp)
-    </label>
-    <div class="rupiah-wrap relative">
-        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
-        <input type="text" inputmode="numeric" autocomplete="off" placeholder="0"
-               class="rupiah-field w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-               data-name="temuans[${idx}][nilai_kerugian_daerah]" data-value="0">
-    </div>
-</div>
-
-{{-- ✅ BARU: Nilai Kerugian Desa --}}
-<div>
-    <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
-        Kerugian Desa (Rp)
-    </label>
-    <div class="rupiah-wrap relative">
-        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
-        <input type="text" inputmode="numeric" autocomplete="off" placeholder="0"
-               class="rupiah-field w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-               data-name="temuans[${idx}][nilai_kerugian_desa]" data-value="0">
-    </div>
-</div>
-
-{{-- ✅ BARU: Nilai Kerugian BOS/BLUD --}}
-<div>
-    <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
-        Kerugian BOS/BLUD (Rp)
-    </label>
-    <div class="rupiah-wrap relative">
-        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
-        <input type="text" inputmode="numeric" autocomplete="off" placeholder="0"
-               class="rupiah-field w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-               data-name="temuans[${idx}][nilai_kerugian_bos_blud]" data-value="0">
-    </div>
-</div>
-
-            {{-- Total Nilai (computed, read-only) --}}
+            ${['negara', 'daerah', 'desa', 'bos_blud'].map(type => `
+                <div>
+                    <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase">Kerugian ${type.replace('_', '/').toUpperCase()} (Rp)</label>
+                    <div class="rupiah-wrap relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-gray-400">Rp</span>
+                        <input type="text" class="rupiah-field w-full rounded-lg border border-gray-300 py-2.5 pl-9 pr-3 text-sm font-medium dark:bg-gray-700 dark:text-white"
+                               data-name="temuans[${idx}][nilai_kerugian_${type}]" data-value="0">
+                    </div>
+                </div>
+            `).join('')}
             <div class="md:col-span-2">
-                <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
-                    Total Nilai Kerugian (Otomatis)
-                </label>
+                <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase">Total Nilai Kerugian (Otomatis)</label>
                 <div class="flex items-center gap-2 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5 dark:bg-gray-900 dark:border-gray-700">
-                    <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
-                    <span class="text-sm font-bold text-gray-700 dark:text-gray-200 total-nilai-display" id="total-nilai-${idx}">Rp 0</span>
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-200" id="total-nilai-display-${idx}">Rp 0</span>
                     <input type="hidden" name="temuans[${idx}][nilai_temuan]" id="hidden-total-${idx}" value="0">
                 </div>
             </div>
-
         </div>
     `;
 
     document.getElementById('temuan-container').appendChild(row);
 
-    // Init rupiah inputs yang baru dibuat
-    window.RupiahInput.initAll(row);
+    if (window.RupiahInput) window.RupiahInput.initAll(row);
 
-    // Wire-up: hitung total saat nilai berubah
-    const hiddenNegara  = row.querySelector(`[name="temuans[${idx}][nilai_kerugian_negara]"]`);
-    const hiddenDaerah  = row.querySelector(`[name="temuans[${idx}][nilai_kerugian_daerah]"]`);
-    const hiddenDesa    = row.querySelector(`[name="temuans[${idx}][nilai_kerugian_desa]"]`);
-    const hiddenBosBLud = row.querySelector(`[name="temuans[${idx}][nilai_kerugian_bos_blud]"]`);
-
-    const totalDisplay = row.querySelector(`#total-nilai-${idx}`);
+    const fields       = row.querySelectorAll('.rupiah-field');
+    const totalDisplay = row.querySelector(`#total-nilai-display-${idx}`);
     const hiddenTotal  = row.querySelector(`#hidden-total-${idx}`);
 
-    function recalcTotal() {
-    const n = parseInt(hiddenNegara?.value   || '0', 10);
-    const d = parseInt(hiddenDaerah?.value   || '0', 10);
-    const s = parseInt(hiddenDesa?.value     || '0', 10); // desa
-    const b = parseInt(hiddenBosBLud?.value  || '0', 10); // bos/blud
-    const total = n + d + s + b;
-    totalDisplay.textContent = 'Rp\u00a0' + window.RupiahInput.fmt(total);
-    hiddenTotal.value = total;
-}
+    const recalcTotal = () => {
+        let total = 0;
+        row.querySelectorAll(`input[type="hidden"][name^="temuans[${idx}]"]`).forEach(h => {
+            if (h.id !== `hidden-total-${idx}`) total += parseInt(h.value || 0);
+        });
+        totalDisplay.textContent = 'Rp ' + (window.RupiahInput ? window.RupiahInput.fmt(total) : total.toLocaleString('id-ID'));
+        hiddenTotal.value = total;
+    };
 
-    // Override onChange dari RupiahInput (via MutationObserver-lite: pakai event)
-    row.querySelectorAll('.rupiah-field').forEach(field => {
-        field.addEventListener('input', recalcTotal);
-        field.addEventListener('paste', () => setTimeout(recalcTotal, 0));
-    });
+    fields.forEach(f => f.addEventListener('input', () => setTimeout(recalcTotal, 50)));
 
-    // Wire-up: info box untuk kode temuan
-    const kodeSelect = row.querySelector('.kode-temuan-select');
+    const kodeSelect     = row.querySelector('.kode-temuan-select');
+    const handleKodeChange = (val) => {
+        const found   = KODE_TEMUANS.find(k => String(k.id) === String(val));
+        const infoBox = document.getElementById(`kode-info-${idx}`);
+        const infoText= document.getElementById(`kode-info-text-${idx}`);
+        if (found) {
+            infoText.textContent = `[${found.kode}] ${found.nama}${found.deskripsi ? ' — ' + found.deskripsi : ''}`;
+            infoBox.classList.remove('hidden');
+        } else {
+            infoBox.classList.add('hidden');
+        }
+    };
+    if (kodeSelect.tomselect) kodeSelect.tomselect.on('change', handleKodeChange);
+    else kodeSelect.addEventListener('change', e => handleKodeChange(e.target.value));
 
-// ambil instance TomSelect (kalau ada)
-const ts = kodeSelect.tomselect;
-
-// fallback kalau belum ada TomSelect
-const target = ts ? ts : kodeSelect;
-
-// event change (support TomSelect & native)
-target.on ? target.on('change', handleChange) : target.addEventListener('change', handleChange);
-
-function handleChange(value) {
-    // TomSelect kirim value langsung, native kirim event
-    const selectedId = typeof value === 'string'
-        ? parseInt(value, 10)
-        : parseInt(this.value, 10);
-
-    const found = KODE_TEMUANS.find(k => k.id === selectedId);
-
-    const infoBox  = document.getElementById(`kode-info-${idx}`);
-    const infoText = document.getElementById(`kode-info-text-${idx}`);
-
-    if (!infoBox || !infoText) return; // biar gak error
-
-    if (found && found.deskripsi) {
-        infoText.textContent = `[${found.kode}] ${found.nama ?? ''} — ${found.deskripsi}`;
-        infoBox.classList.remove('hidden');
-    } else if (found) {
-        infoText.textContent = `[${found.kode}] ${found.nama ?? ''}`;
-        infoBox.classList.remove('hidden');
-    } else {
-        infoBox.classList.add('hidden');
-    }
-}
-
-    // Update badge & empty state
     const count = document.querySelectorAll('.temuan-row').length;
     updateBadge('badge-temuan', count);
     updateEmpty('temuan-container', 'temuan-empty', count);
-
-    // Smooth scroll ke temuan baru
     row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
@@ -496,82 +459,62 @@ function removeTemuan(btn) {
     btn.closest('.temuan-row').remove();
     const rows = document.querySelectorAll('.temuan-row');
     rows.forEach((r, i) => {
-        const numEl      = r.querySelector('.temuan-num');
-        const badgeEl    = r.querySelector('.temuan-num-badge');
-        if (numEl)   numEl.textContent   = i + 1;
-        if (badgeEl) badgeEl.textContent = i + 1;
+        r.querySelector('.temuan-num').textContent       = i + 1;
+        r.querySelector('.temuan-num-badge').textContent = i + 1;
     });
     updateBadge('badge-temuan', rows.length);
     updateEmpty('temuan-container', 'temuan-empty', rows.length);
 }
 
-/* ─────────────────────────────────────────────────────────
-   LAMPIRAN
-───────────────────────────────────────────────────────── */
+// ── Lampiran Logic ─────────────────────────────────────────────────
+
 document.getElementById('btn-add-lampiran').addEventListener('click', addLampiran);
 
 function addLampiran() {
     const idx = lampiranCount++;
     const row = document.createElement('div');
-    row.className = 'lampiran-row flex items-center gap-4 px-6 py-4';
-    row.dataset.idx = idx;
-
+    row.className = 'lampiran-row flex items-center gap-4 px-6 py-4 border-b border-gray-100 dark:border-gray-700';
     row.innerHTML = `
-        <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700">
-            <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
-            </svg>
-        </div>
         <div class="grid flex-1 grid-cols-1 gap-3 md:grid-cols-2">
-            <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">File (PDF / Gambar)</label>
-                <input type="file" name="attachments[${idx}][file_path]"
-                       accept=".pdf,.jpg,.jpeg,.png"
-                       class="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 file:mr-3 file:rounded-md file:border-0 file:bg-primary-50 file:px-3 file:py-1 file:text-xs file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-            </div>
-            <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Nama File (opsional)</label>
-                <input type="text" name="attachments[${idx}][file_name]"
-                       placeholder="Nama tampilan file..."
-                       class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-            </div>
+            <input type="file" name="attachments[${idx}][file_path]" class="text-sm" accept=".pdf,.jpg,.jpeg,.png">
+            <input type="text" name="attachments[${idx}][file_name]" placeholder="Nama File (opsional)"
+                   class="text-sm rounded border border-gray-300 px-2 py-1.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
         </div>
-        <button type="button" onclick="removeLampiran(this)"
-                class="flex-shrink-0 rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors dark:hover:bg-red-900/20">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-        </button>
+        <button type="button" onclick="this.closest('.lampiran-row').remove(); updateLampiranCount();"
+                class="text-red-400 hover:text-red-600 text-lg font-bold leading-none">×</button>
     `;
-
     document.getElementById('lampiran-container').appendChild(row);
+    updateLampiranCount();
+}
+
+function updateLampiranCount() {
     const count = document.querySelectorAll('.lampiran-row').length;
     updateBadge('badge-lampiran', count);
     updateEmpty('lampiran-container', 'lampiran-empty', count);
 }
 
-function removeLampiran(btn) {
-    btn.closest('.lampiran-row').remove();
-    const count = document.querySelectorAll('.lampiran-row').length;
-    updateBadge('badge-lampiran', count);
-    updateEmpty('lampiran-container', 'lampiran-empty', count);
-}
+// ── Submit Guard ───────────────────────────────────────────────────
 
-/* ─────────────────────────────────────────────────────────
-   FORM SUBMIT GUARD
-───────────────────────────────────────────────────────── */
-document.getElementById('form-lhp').addEventListener('submit', function() {
+// ── Submit Guard ───────────────────────────────────────────────────
+
+document.getElementById('form-lhp').addEventListener('submit', function (e) {
+    // ✅ FIX: pakai preventDefault() agar benar-benar bisa stop submit
+    if (!document.getElementById('hidden-unit-id').value) {
+        e.preventDefault();
+        alert('Pilih Unit Kerja / Objek Audit terlebih dahulu.');
+        return;
+    }
+    if (!document.getElementById('hidden-assignment-id').value) {
+        e.preventDefault();
+        alert('Pilih Penugasan Audit terlebih dahulu.');
+        return;
+    }
     const btn = document.getElementById('btn-submit');
-    const text = document.getElementById('btn-submit-text');
-    btn.disabled = true;
-    text.textContent = 'Menyimpan...';
+    if (btn) {
+        btn.disabled = true;
+        const txt = document.getElementById('btn-submit-text');
+        if (txt) txt.textContent = 'Menyimpan...';
+    }
 });
-
-/* ─────────────────────────────────────────────────────────
-   INISIALISASI AWAL
-───────────────────────────────────────────────────────── */
-// Sembunyikan container saat kosong (karena default display-nya block)
-updateEmpty('temuan-container', 'temuan-empty', 0);
-updateEmpty('lampiran-container', 'lampiran-empty', 0);
 </script>
 @endsection

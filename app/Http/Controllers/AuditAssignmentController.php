@@ -4,302 +4,309 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditAssignment;
 use App\Models\AuditProgram;
+use App\Models\AuditProgramDetail;
 use App\Models\UnitDiperiksa;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class AuditAssignmentController extends Controller
 {
-public function index(Request $request)
-{
-    $query = AuditAssignment::with(['ketuaTim', 'auditProgram', 'unitDiperiksa'])
-        // ✅ Assignment selesai jika sudah punya minimal 1 LHP
-        ->withCount('lhps');
+    // ── Shared view data ──────────────────────────────────────────────
 
-    if ($search = $request->get('search')) {
-        $query->where(function($q) use ($search) {
-            $q->whereHas('auditProgram', fn($q) =>
-                $q->where('nama_program', 'like', "%{$search}%")
-            )->orWhereHas('ketuaTim', fn($q) =>
-                $q->where('name', 'like', "%{$search}%")
-            );
-        });
+    private function sharedViewData($assignmentId = null): array
+    {
+        return [
+            // Filter program yang memiliki detail yang masih tersedia (belum ditugaskan)
+            // Namun jika sedang EDIT, detail yang sedang dipakai tetap harus muncul
+            'programs'        => AuditProgram::orderBy('tahun', 'desc')->get(),
+            'ketuaTim'        => User::orderBy('name')->get(),
+            'members'         => User::orderBy('name')->get(),
+            'kategoriOptions' => UnitDiperiksa::distinct()
+                ->orderBy('kategori')
+                ->pluck('kategori', 'kategori')
+                ->toArray(),
+            'units' => UnitDiperiksa::orderBy('nama_unit')
+                ->get(['id', 'nama_unit as name', 'kategori', 'nama_kecamatan'])
+                ->map(fn($u) => [
+                    'id'             => $u->id,
+                    'name'           => $u->name,
+                    'kategori'       => $u->kategori,
+                    'kecamatan_nama' => $u->nama_kecamatan,
+                ]),
+        ];
     }
 
-    if ($tahun = $request->get('tahun')) {
-        $query->whereYear('tanggal_mulai', $tahun);
-    }
+    // ── index ─────────────────────────────────────────────────────────
 
-    if ($status = $request->get('status')) {
-        $query->where('status', $status);
-    }
-
-    $assignments = $query->latest()->get();
-
-    return view('pages.audit-assignment.index', compact('assignments'));
-}
-
-
-public function edit($id)
-{
-    $data = AuditAssignment::with([
-        'attachments',
-        'unitDiperiksa',
-        'members',
-    ])->findOrFail($id);
-
-    $currentKategori = $data->unitDiperiksa ? strtolower($data->unitDiperiksa->kategori) : '';
-
-    $kategoriOptions = UnitDiperiksa::query()
-        ->select('kategori')
-        ->distinct()
-        ->orderBy('kategori')
-        ->pluck('kategori', 'kategori')
-        ->toArray();
-
-    return view('pages.audit-assignment.edit', [
-        'data'            => $data,
-        'currentKategori' => $currentKategori,
-        'ketuaTim'        => User::orderBy('name')->get(),
-        'members'         => User::orderBy('name')->get(),
-        'programs'        => AuditProgram::orderBy('nama_program')->get(),
-        'kategoriOptions' => $kategoriOptions, // ✅ tambahkan ini
-    ]);
-}
-
-
-public function create()
-{
-    $units = UnitDiperiksa::orderBy('nama_unit')->get();
-    $ketuaTim = User::orderBy('name')->get();
-    $members  = User::orderBy('name')->get();
-
-    $kategoriOptions = UnitDiperiksa::query()
-        ->select('kategori')
-        ->distinct()
-        ->orderBy('kategori')
-        ->pluck('kategori', 'kategori')
-        ->toArray();
-
-    $programs = AuditProgram::orderBy('nama_program')->get();
-
-    return view('pages.audit-assignment.create', compact(
-        'units',
-        'ketuaTim',
-        'members',
-        'kategoriOptions',
-        'programs'
-    ));
-}
-
-public function store(Request $request)
-{
-    $validated = $request->validate([
-        'unit_diperiksa_id' => 'required|exists:unit_diperiksas,id',
-        'tanggal_mulai'     => 'required|date',
-        'jenis_pengawasan'  => ['required', Rule::in(AuditAssignment::listJenisPengawasan())],
-        'tanggal_selesai'   => 'required|date|after_or_equal:tanggal_mulai',
-        'ketua_tim_id'      => 'required|exists:users,id',
-        'nama_tim'          => 'required|string|max:255',
-        'nomor_surat'       => 'required|string|max:255',
-        'audit_program_id'  => 'required|exists:audit_programs,id',
-        'status'            => 'required|in:draft,berjalan,selesai',
-        'members'           => 'nullable|array',
-        'members.*'         => 'exists:users,id',
-        'attachments.*'     => 'nullable|file|max:2048',
-    ]);
-
-    $assignment = AuditAssignment::create(
-        collect($validated)->except('members')->toArray()
-    );
-
-    // ✅ Sync members dengan pivot jabatan_tim = 'anggota'
-    if ($request->filled('members')) {
-        $syncData = collect($request->members)
-            ->mapWithKeys(fn($id) => [$id => ['jabatan_tim' => 'anggota']])
-            ->toArray();
-        $assignment->members()->sync($syncData);
-    }
-
-    if ($request->hasFile('attachments')) {
-        foreach ($request->file('attachments') as $file) {
-            $path = $file->store('attachments/audit', 'public');
-            $assignment->attachments()->create([
-                'file_name'   => $file->getClientOriginalName(),
-                'file_path'   => $path,
-                'file_type'   => $file->getMimeType(),
-                'file_size'   => $file->getSize(),
-                'jenis_bukti' => 'dokumen',
-            ]);
-        }
-    }
-
-    return redirect()
-        ->route('audit-assignment.index')
-        ->with('success', 'Data berhasil ditambahkan');
-}
-
-public function update(Request $request, $id)
-{
-    $data = AuditAssignment::findOrFail($id);
-    $auditProgramIdLama = $data->audit_program_id; // simpan sebelum update
-
-    $validated = $request->validate([
-        'unit_diperiksa_id'    => 'required|exists:unit_diperiksas,id',
-        'tanggal_mulai'        => 'required|date',
-        'tanggal_selesai'      => 'required|date|after_or_equal:tanggal_mulai',
-        'jenis_pengawasan'     => ['required', Rule::in(AuditAssignment::listJenisPengawasan())],
-        'ketua_tim_id'         => 'required|exists:users,id',
-        'nama_tim'             => 'required|string|max:255',
-        'nomor_surat'          => 'required|string|max:255',
-        'audit_program_id'     => 'required|exists:audit_programs,id',
-        'status'               => 'required|in:draft,berjalan,selesai',
-        'members'              => 'nullable|array',
-        'members.*'            => 'exists:users,id',
-        'attachments.*'        => 'nullable|file|max:2048',
-        'delete_attachments'   => 'nullable|array',
-        'delete_attachments.*' => 'exists:attachments,id',
-    ]);
-
-    $data->update(
-        collect($validated)->except(['members', 'delete_attachments'])->toArray()
-    );
-
-    $syncData = collect($request->members ?? [])
-        ->mapWithKeys(fn($id) => [$id => ['jabatan_tim' => 'anggota']])
-        ->toArray();
-    $data->members()->sync($syncData);
-
-    if ($request->filled('delete_attachments')) {
-        foreach ($request->delete_attachments as $idFile) {
-            $file = $data->attachments()->where('id', $idFile)->first();
-            if ($file) $file->delete();
-        }
-    }
-
-    if ($request->hasFile('attachments')) {
-        foreach ($request->file('attachments') as $file) {
-            $path = $file->store('attachments/audit', 'public');
-            $data->attachments()->create([
-                'file_name'   => $file->getClientOriginalName(),
-                'file_path'   => $path,
-                'file_type'   => $file->getMimeType(),
-                'file_size'   => $file->getSize(),
-                'jenis_bukti' => 'dokumen',
-            ]);
-        }
-    }
-
-    // ✅ Sinkronkan status program induk setelah assignment diubah
-    $this->sinkronStatusProgram($validated['audit_program_id']);
-
-    // ✅ Jika program berubah (pindah program), sinkronkan program lama juga
-    if ($auditProgramIdLama !== (int) $validated['audit_program_id']) {
-        $this->sinkronStatusProgram($auditProgramIdLama);
-    }
-
-    return redirect()
-        ->route('audit-assignment.show', $data->id)
-        ->with('success', 'Data berhasil diupdate');
-}
-
-// ── Tambahkan method ini di AuditAssignmentController ──────────────────────
-private function sinkronStatusProgram(int $auditProgramId): void
-{
-    $statuses = \App\Models\AuditAssignment::where('audit_program_id', $auditProgramId)
-        ->pluck('status');
-
-    if ($statuses->isEmpty()) return;
-
-    $statusProgram = match(true) {
-        $statuses->every(fn($s) => $s === 'selesai')                          => 'selesai',
-        $statuses->contains(fn($s) => in_array($s, ['berjalan', 'selesai'])) => 'berjalan',
-        default                                                                 => 'draft',
-    };
-
-    \App\Models\AuditProgram::where('id', $auditProgramId)
-        ->where('status', '!=', $statusProgram)
-        ->update(['status' => $statusProgram]);
-}
-
-public function show($id)
-{
-    $data = AuditAssignment::with([
-        'unitDiperiksa',
-        'auditProgram',
-        'ketuaTim',
-        'attachments'
-    ])->findOrFail($id);
-
-    return view('pages.audit-assignment.show', compact('data'));
-}
-
-public function bulkDelete(Request $request)
-{
-    $ids = $request->input('ids');
-
-    if (!$ids || empty($ids)) {
-        return back()->with('error', 'Pilih minimal satu data untuk dihapus.');
-    }
-
-    \App\Models\AuditAssignment::whereIn('id', $ids)->delete();
-
-    return back()->with('success', count($ids) . ' data berhasil dihapus.');
-}
-
-
-    // =============================
-    // AJAX CASCADE
-    // =============================
-
-   public function getKecamatan($kategori)
-{
-    return response()->json(
-        UnitDiperiksa::where('kategori', $kategori) // ✅ exact match, bukan LOWER
-            ->whereNotNull('nama_kecamatan')
-            ->select('nama_kecamatan')
-            ->distinct()
-            ->orderBy('nama_kecamatan')
-            ->pluck('nama_kecamatan')
-    );
-}
-
-
-    public function getUnit($kecamatan)
-{
-    return response()->json(
-        UnitDiperiksa::where('nama_kecamatan', $kecamatan)
-            ->orderBy('nama_unit')
-            ->get()
-            ->map(fn($item) => [
-                'id'    => $item->id,
-                'label' => $item->label, // ✅ pakai accessor getLabelAttribute()
+    public function index(Request $request)
+    {
+        $assignments = AuditAssignment::query()
+            ->with([
+                'auditProgramDetail.auditProgram',
+                'unitDiperiksas',
+                'ketuaTim',
             ])
-    );
-}
+            ->when($request->tahun, fn($q, $v) =>
+                $q->whereHas('auditProgramDetail.auditProgram', fn($q) => $q->where('tahun', $v))
+            )
+            ->when($request->status, fn($q, $v) => $q->where('status', $v))
+            ->when($request->search, fn($q, $v) =>
+                $q->where(fn($q) => $q
+                    ->where('nomor_surat', 'like', "%{$v}%")
+                    ->orWhereHas('unitDiperiksas', fn($q) =>
+                        $q->where('nama_unit', 'like', "%{$v}%")
+                    )
+                )
+            )
+            ->latest()
+            ->paginate(20);
 
-public function destroy($id)
+        return view('pages.audit-assignment.index', compact('assignments'));
+    }
+
+    // ── create ────────────────────────────────────────────────────────
+
+    public function create()
+    {
+        return view('pages.audit-assignment.create', $this->sharedViewData());
+    }
+
+    // ── store ─────────────────────────────────────────────────────────
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            // Tambahkan unique untuk mencegah duplikasi PKPT di database
+            'audit_program_detail_id' => 'required|exists:audit_program_details,id|unique:audit_assignments,audit_program_detail_id',
+            'unit_diperiksa_ids'      => 'required|array|min:1',
+            'unit_diperiksa_ids.*'    => 'exists:unit_diperiksas,id',
+            'ketua_tim_id'            => 'required|exists:users,id',
+            'nomor_surat'             => 'required|string|max:255|unique:audit_assignments,nomor_surat',
+            'nama_tim'                => 'nullable|string|max:255',
+            'jenis_pengawasan'        => 'required|string|max:255',
+            'tanggal_mulai'           => 'required|date',
+            'tanggal_selesai'         => 'required|date|after_or_equal:tanggal_mulai',
+            'status'                  => 'required|in:draft,berjalan,selesai',
+            'members'                 => 'nullable|array',
+            'members.*'               => 'exists:users,id',
+            'attachments'             => 'nullable|array',
+            'attachments.*'           => 'file|mimes:jpg,jpeg,png,pdf,docx|max:5120',
+        ], [
+            'audit_program_detail_id.unique' => 'PKPT/Detail Program ini sudah pernah dibuatkan penugasannya.'
+        ]);
+
+        DB::transaction(function () use ($validated, $request) {
+            $unitIds = $validated['unit_diperiksa_ids'];
+            $members = $validated['members'] ?? [];
+            unset($validated['unit_diperiksa_ids'], $validated['members']);
+
+            $assignment = AuditAssignment::create([
+                ...$validated,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
+            ]);
+
+            $assignment->unitDiperiksas()->sync($unitIds);
+            $assignment->members()->sync($members);
+
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('audit-assignments/attachments', 'public');
+                    $assignment->attachments()->create([
+                        'file_path' => $path,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_size' => $file->getSize(),
+                        'mime_type' => $file->getMimeType(),
+                    ]);
+                }
+            }
+        });
+
+        return redirect()->route('audit-assignment.index')
+            ->with('success', 'Audit assignment berhasil dibuat.');
+    }
+
+    // ── edit ──────────────────────────────────────────────────────────
+
+    public function edit(AuditAssignment $auditAssignment)
+    {
+        $data = $auditAssignment->load([
+            'members',
+            'attachments',
+            'auditProgramDetail.auditProgram',
+            'unitDiperiksas',
+        ]);
+
+        $viewData = $this->sharedViewData($auditAssignment->id);
+
+        return view('pages.audit-assignment.edit', array_merge($viewData, [
+            'data'             => $data,
+            'preselectedUnits' => $data->unitDiperiksas,
+            'currentProgId'    => $data->auditProgramDetail->audit_program_id ?? '',
+            'currentDetId'     => $data->audit_program_detail_id ?? '',
+        ]));
+    }
+
+    // ── update ────────────────────────────────────────────────────────
+
+    public function update(Request $request, AuditAssignment $auditAssignment)
+    {
+        $validated = $request->validate([
+            // Unique kecuali untuk data yang sedang di-edit itu sendiri
+            'audit_program_detail_id' => 'required|exists:audit_program_details,id|unique:audit_assignments,audit_program_detail_id,' . $auditAssignment->id,
+            'unit_diperiksa_ids'      => 'required|array|min:1',
+            'unit_diperiksa_ids.*'    => 'exists:unit_diperiksas,id',
+            'ketua_tim_id'            => 'required|exists:users,id',
+            'nomor_surat'             => 'required|string|max:255|unique:audit_assignments,nomor_surat,' . $auditAssignment->id,
+            'nama_tim'                => 'nullable|string|max:255',
+            'jenis_pengawasan'        => 'required|string|max:255',
+            'tanggal_mulai'           => 'required|date',
+            'tanggal_selesai'         => 'required|date|after_or_equal:tanggal_mulai',
+            'status'                  => 'required|in:draft,berjalan,selesai',
+            'members'                 => 'nullable|array',
+            'members.*'               => 'exists:users,id',
+            'delete_attachments'      => 'nullable|array',
+            'delete_attachments.*'    => 'exists:audit_attachments,id',
+        ]);
+
+        DB::transaction(function () use ($validated, $request, $auditAssignment) {
+            $unitIds = $validated['unit_diperiksa_ids'];
+            $members = $validated['members'] ?? [];
+            unset($validated['unit_diperiksa_ids'], $validated['members']);
+
+            $auditAssignment->update([
+                ...$validated,
+                'updated_by' => auth()->id(),
+            ]);
+
+            $auditAssignment->unitDiperiksas()->sync($unitIds);
+            $auditAssignment->members()->sync($members);
+
+            if ($request->filled('delete_attachments')) {
+                $toDelete = $auditAssignment->attachments()
+                    ->whereIn('id', $request->delete_attachments)
+                    ->get();
+                foreach ($toDelete as $att) {
+                    Storage::disk('public')->delete($att->file_path);
+                    $att->delete();
+                }
+            }
+
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('audit-assignments/attachments', 'public');
+                    $auditAssignment->attachments()->create([
+                        'file_path' => $path,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_size' => $file->getSize(),
+                        'mime_type' => $file->getMimeType(),
+                    ]);
+                }
+            }
+        });
+
+        return redirect()->route('audit-assignment.index')
+            ->with('success', 'Audit assignment berhasil diperbarui.');
+    }
+
+    // ── AJAX (KUNCI PERBAIKAN DI SINI) ────────────────────────────────
+
+  public function getProgramDetails(Request $request, $programId)
 {
-    $assignment = AuditAssignment::findOrFail($id);
-    $auditProgramId = $assignment->audit_program_id; // simpan sebelum hapus
+    $excludeId = $request->query('exclude_assignment');
 
-    foreach ($assignment->attachments as $file) {
-        \Storage::disk('public')->delete($file->file_path);
-        $file->delete();
-    }
+    // Pastikan menggunakan nama relasi 'assignments' (jamak) sesuai model
+    $details = AuditProgramDetail::where('audit_program_id', $programId)
+        ->where(function ($q) use ($excludeId) {
+            // Tampilkan yang BELUM punya penugasan
+            $q->whereDoesntHave('assignments');
+            
+            // ATAU jika sedang edit, tampilkan yang penugasannya adalah ID ini
+            if ($excludeId) {
+                $q->orWhereHas('assignments', function ($sub) use ($excludeId) {
+                    $sub->where('id', $excludeId);
+                });
+            }
+        })
+        ->orderBy('nama_detail_program')
+        ->get(['id', 'nama_detail_program']);
 
-    $assignment->members()->detach();
-    $assignment->delete();
-
-    // ✅ Sinkronkan program setelah assignment dihapus
-    if ($auditProgramId) {
-        $this->sinkronStatusProgram($auditProgramId);
-    }
-
-    return redirect()
-        ->route('audit-assignment.index')
-        ->with('success', 'Audit Assignment berhasil dihapus');
+    return response()->json($details);
 }
 
+    // ── Sisa fungsi AJAX tetap sama ──────────────────────────────────
+    
+    public function getKecamatan(string $kategori)
+    {
+        $kecamatan = UnitDiperiksa::where('kategori', $kategori)->distinct()->orderBy('nama_kecamatan')->pluck('nama_kecamatan');
+        return response()->json($kecamatan);
+    }
+
+    public function getUnit(string $kecamatan)
+    {
+        $units = UnitDiperiksa::where('nama_kecamatan', trim($kecamatan))->orderBy('nama_unit')->get(['id', 'nama_unit']);
+        return response()->json($units);
+    }
+
+    public function print($id)
+{
+    // Eager load relasi sesuai nama fungsi di Model AuditAssignment
+    $assignment = AuditAssignment::with([
+        'auditProgramDetail.auditProgram',
+        'unitDiperiksas', 
+        'ketuaTim',
+        'members' // Sesuai dengan public function members() di model
+    ])->findOrFail($id);
+
+    return view('pages.audit-assignment.print', compact('assignment'));
+}
+
+  
+    public function show(AuditAssignment $auditAssignment)
+    {
+        // Load semua relasi agar data tampil lengkap di halaman detail
+        $data = $auditAssignment->load([
+            'auditProgramDetail.auditProgram',
+            'unitDiperiksas',
+            'ketuaTim',
+            'members',
+            'attachments',
+            'lhps'
+        ]);
+
+        return view('pages.audit-assignment.show', compact('data'));
+    }
+
+
+    // ── destroy ───────────────────────────────────────────────────────
+
+   public function destroy(AuditAssignment $auditAssignment)
+{
+    try {
+        DB::beginTransaction();
+
+        // 1. Hapus file fisik lampiran (opsional)
+        foreach ($auditAssignment->attachments as $att) {
+            Storage::disk('public')->delete($att->file_path);
+            $att->delete();
+        }
+
+        // 2. Lepaskan relasi pivot (Jika migration tidak pakai cascadeOnDelete)
+        $auditAssignment->unitDiperiksas()->detach();
+        $auditAssignment->members()->detach();
+
+        // 3. Eksekusi Hapus
+$auditAssignment->forceDelete();
+        // $auditAssignment->forceDelete(); // Gunakan ini jika ingin benar-benar hilang dari DB
+
+        DB::commit();
+        return redirect()->back()->with('success', 'Data berhasil dihapus');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->with('error', 'Gagal hapus: ' . $e->getMessage());
+    }
+}
 }

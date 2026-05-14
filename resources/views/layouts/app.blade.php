@@ -9,8 +9,12 @@
 
     
     <title>{{ $title ?? 'Dashboard' }} | Admin</title>
+    
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
+
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 
     <script>
         (function() {
@@ -79,6 +83,7 @@
 
 
     @stack('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
        

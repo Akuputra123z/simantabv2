@@ -22,11 +22,10 @@ class Lhp extends Model
     protected static $logExcept = ['created_by', 'updated_by', 'created_at', 'updated_at', 'deleted_at'];
 
     protected $table      = 'lhps';
-    protected $primaryKey = 'id';
+    protected $primaryKey = 'id';   
 
     protected $fillable = [
-        'audit_assignment_id', 'nomor_lhp', 'tanggal_lhp', 'semester',
-        'jenis_pemeriksaan', 'catatan_umum', 'keterangan', 'irban',
+        'audit_assignment_id', 'nomor_lhp', 'tanggal_lhp','unit_diperiksa_id','catatan_umum', 
         'status_batal_keterangan', 'status_batal_user_id', 'status_batal_at',
         'status', 'created_by', 'updated_by',
     ];
@@ -70,6 +69,10 @@ class Lhp extends Model
             'id'
         )->with('kodeRekomendasi');
     }
+    public function unitDiperiksa(): BelongsTo
+{
+    return $this->belongsTo(UnitDiperiksa::class, 'unit_diperiksa_id');
+}
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
@@ -110,6 +113,11 @@ class Lhp extends Model
             );
     }
 
+
+    public function programDetail()
+    {
+        return $this->belongsTo(AuditProgramDetail::class, 'audit_program_detail_id');
+    }
     // ── Accessors ─────────────────────────────────────────────────────────────
 
     /**
@@ -175,6 +183,19 @@ class Lhp extends Model
     {
         $this->refreshStatistik();
     }
+    public function auditProgramDetail()
+{
+    return $this->hasOneThrough(
+        AuditProgramDetail::class,
+        AuditAssignment::class,
+        'id', // Foreign key di audit_assignments (LHP.audit_assignment_id)
+        'id', // Foreign key di audit_program_details (Assignment.audit_program_detail_id)
+        'audit_assignment_id', // Local key di LHPs
+        'audit_program_detail_id' // Local key di Audit Assignments
+    );
+}
+
+    
 
     // ── Events ────────────────────────────────────────────────────────────────
 

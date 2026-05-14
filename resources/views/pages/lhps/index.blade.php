@@ -115,7 +115,7 @@
                             <div class="text-[10px] text-gray-400 uppercase tracking-tight">Irban: {{ $lhp->irban }}</div>
                         </td>
                         <td class="px-4 py-4 text-gray-600 dark:text-gray-400 max-w-[200px] truncate">
-                            {{ $lhp->auditAssignment?->auditProgram?->nama_program ?? '-' }}
+                           {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
                         </td>
                         <td class="px-4 py-4 whitespace-nowrap text-gray-500">
                             {{ $lhp->tanggal_lhp->format('d/m/Y') }}

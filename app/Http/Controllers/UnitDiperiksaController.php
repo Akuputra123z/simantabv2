@@ -8,24 +8,37 @@ use Illuminate\Validation\Rule;
 
 class UnitDiperiksaController extends Controller
 {
-    public function index(Request $request)
-    {
-        $data = UnitDiperiksa::query()
-            ->when($request->search, function ($q) use ($request) {
-                $q->where('nama_unit', 'like', '%' . $request->search . '%')
-                  ->orWhere('nama_kecamatan', 'like', '%' . $request->search . '%')
-                  ->orWhere('alamat', 'like', '%' . $request->search . '%');
-            })
-            ->when($request->kategori, function ($q) use ($request) {
-                $q->where('kategori', $request->kategori);
-            })
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
+   public function index(Request $request)
+{
+    $query = UnitDiperiksa::query();
 
-        return view('pages.unit-diperiksa.index', compact('data'));
-    }
+    $data = $query
+        ->when($request->search, function ($q) use ($request) {
+            $q->where(function ($sub) use ($request) {
+                $sub->where('nama_unit', 'like', '%' . $request->search . '%')
+                    ->orWhere('nama_kecamatan', 'like', '%' . $request->search . '%')
+                    ->orWhere('alamat', 'like', '%' . $request->search . '%');
+            });
+        })
+        ->when($request->kategori, function ($q) use ($request) {
+            $q->where('kategori', $request->kategori);
+        })
+        ->when($request->kecamatan, function ($q) use ($request) {
+            $q->where('nama_kecamatan', $request->kecamatan);
+        })
+        ->latest()
+        ->paginate(10)
+        ->withQueryString();
 
+    // ✅ ambil list kecamatan unik dari database
+    $kecamatanList = UnitDiperiksa::select('nama_kecamatan')
+        ->whereNotNull('nama_kecamatan')
+        ->distinct()
+        ->orderBy('nama_kecamatan')
+        ->pluck('nama_kecamatan');
+
+    return view('pages.unit-diperiksa.index', compact('data', 'kecamatanList'));
+}
     public function create()
     {
         $kategoriOptions = ['SKPD', 'Sekolah', 'Puskesmas', 'Desa', 'BLUD'];

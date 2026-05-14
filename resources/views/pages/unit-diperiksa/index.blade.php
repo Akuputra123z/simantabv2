@@ -2,6 +2,7 @@
 
 @section('content')
 
+
 @if(session('success'))
     <div class="mb-6 rounded-xl border border-success-500 bg-success-50 p-4 dark:border-success-500/30 dark:bg-success-500/15">
         <div class="flex items-start gap-3">
@@ -19,26 +20,42 @@
 @endif
 
 <div class="space-y-6">
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="rounded-2xl border border-gray-200 bg-white relative overflow-visible dark:border-gray-800 dark:bg-white/[0.03]">
         {{-- Header --}}
-        <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-4 sm:px-6 sm:py-5">
+       <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-4 sm:px-6 sm:py-5 relative overflow-visible">
             <div>
                 <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Daftar Unit</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">Kelola informasi SKPD, Sekolah, dan Desa</p>
             </div>
             <div class="flex items-center gap-3">
-                <form action="{{ route('unit-diperiksa.index') }}" method="GET" class="hidden sm:flex gap-2">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari unit..." 
-                        class="h-10 rounded-lg border border-gray-200 bg-transparent px-4 text-sm text-gray-800 outline-none focus:border-blue-300 focus:ring-3 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">
-                    
-                    <select name="kategori" onchange="this.form.submit()" 
-                        class="h-10 rounded-lg border border-gray-200 bg-transparent px-3 text-sm text-gray-500 outline-none focus:border-blue-300 dark:border-gray-700 dark:bg-gray-900">
-                        <option value="">Kategori</option>
-                        @foreach(['SKPD', 'Sekolah', 'OPD', 'Desa', 'BLUD'] as $cat)
-                            <option value="{{ $cat }}" {{ request('kategori') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
-                        @endforeach
-                    </select>
-                </form>
+                <form action="{{ route('unit-diperiksa.index') }}" method="GET" 
+    class="hidden sm:flex items-center gap-3">
+
+    {{-- Search --}}
+    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari unit..." 
+        class="w-56 h-10 rounded-lg border border-gray-200 bg-transparent px-4 text-sm text-gray-800 outline-none focus:border-blue-300 focus:ring-3 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">
+
+    {{-- Kategori --}}
+    <select id="kategori" name="kategori" class="w-40">
+        <option value="">Kategori</option>
+        @foreach(['SKPD', 'Sekolah', 'OPD', 'Desa', 'BLUD'] as $cat)
+            <option value="{{ $cat }}" {{ request('kategori') == $cat ? 'selected' : '' }}>
+                {{ $cat }}
+            </option>
+        @endforeach
+    </select>
+
+    {{-- Kecamatan --}}
+    <select id="kecamatan" name="kecamatan" class="w-44">
+        <option value="">Kecamatan</option>
+        @foreach($kecamatanList as $kec)
+            <option value="{{ $kec }}" {{ request('kecamatan') == $kec ? 'selected' : '' }}>
+                {{ $kec }}
+            </option>
+        @endforeach
+    </select>
+
+</form>
                 
                 <a href="{{ route('unit-diperiksa.create') }}" class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-all shadow-sm shadow-blue-500/20">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -101,14 +118,36 @@
                 </table>
             </div>
             
-            {{-- Pagination --}}
-            <div class="mt-5 flex items-center justify-between border-t border-gray-50 pt-5 dark:border-gray-800">
-                <p class="text-xs text-gray-500">
-                    Showing {{ $data->firstItem() ?? 0 }} to {{ $data->lastItem() ?? 0 }} of {{ $data->total() }}
-                </p>
-                <div>{{ $data->links() }}</div>
-            </div>
+           {{-- Pagination --}}
+<div class="mt-5 flex items-center justify-between border-t border-gray-100 pt-5 dark:border-gray-800">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+        Showing <span class="font-medium">{{ $data->firstItem() ?? 0 }}</span> to <span class="font-medium">{{ $data->lastItem() ?? 0 }}</span> of <span class="font-medium">{{ $data->total() }}</span> results
+    </p>
+    <div class="flex-1 flex justify-end">
+        {{-- Kita panggil view pagination tailwind khusus --}}
+        {{ $data->onEachSide(1)->links('pagination::tailwind') }}
+    </div>
+</div>
         </div>
     </div>
 </div>
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    new TomSelect('#kategori', {
+        create: false,
+        onChange: function() {
+            this.input.closest('form').submit();
+        }
+    });
+
+    new TomSelect('#kecamatan', {
+        create: false,
+        onChange: function() {
+            this.input.closest('form').submit();
+        }
+    });
+});
+</script>
+@endpush
 @endsection

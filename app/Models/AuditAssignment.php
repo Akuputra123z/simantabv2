@@ -2,130 +2,88 @@
 
 namespace App\Models;
 
-use App\Traits\HasCreatedUpdatedBy;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use App\Traits\HasActivityLog;
-use App\Traits\HasAttachments;
-
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class AuditAssignment extends Model
 {
-    use HasFactory, HasAttachments, SoftDeletes, HasCreatedUpdatedBy;
+    use SoftDeletes;
 
-
+    public const JENIS_PENGAWASAN = [
+        'reguler',
+        'khusus',
+        'investigasi',
+        'reviu',
+        'monitoring',
+    ];
 
     protected $fillable = [
-        'audit_program_id',
-        'unit_diperiksa_id',
+        'audit_program_detail_id',
+        // unit_diperiksa_id DIHAPUS — relasi lewat pivot
+        'ketua_tim_id',
+        'nomor_surat',
+        'nama_tim',
         'jenis_pengawasan',
         'tanggal_mulai',
         'tanggal_selesai',
-        'ketua_tim_id',
-        'nama_tim',
-        'nomor_surat',
         'status',
         'created_by',
         'updated_by',
     ];
 
+    protected $casts = [
+        'tanggal_mulai'   => 'date',
+        'tanggal_selesai' => 'date',
+    ];
 
-    public function attachments()
-{
-    return $this->morphMany(\App\Models\Attachment::class, 'attachable');
-}
-    
+    // ─── Static Helpers ───────────────────────────────────────────────
 
-    protected function casts(): array
+    public static function listJenisPengawasan(): array
     {
-        return [
-            'tanggal_mulai'   => 'date',
-            'tanggal_selesai' => 'date',
-            'deleted_at'      => 'datetime',
-        ];
+        return self::JENIS_PENGAWASAN;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Scopes
-    |--------------------------------------------------------------------------
-    */
-     public static function listJenisPengawasan()
+    // ─── Relations ────────────────────────────────────────────────────
+
+    /** Relasi ke AuditProgramDetail (nama konsisten dipakai di controller & blade) */
+    public function auditProgramDetail(): BelongsTo
     {
-        return [
-            'Audit',
-            'Reviu',
-            'Evaluasi',
-            'Pemantauan TL',
-            'Consulting',
-        ];
+        return $this->belongsTo(AuditProgramDetail::class, 'audit_program_detail_id');
     }
 
-    public function getLabelAttribute(): string
-{
-    return "{$this->unitDiperiksa?->nama_unit} — {$this->nama_tim} | {$this->nomor_surat}";
-}
-
-    
-    public function scopeStatus(Builder $query, string $status): Builder
+    /** Shortcut ke AuditProgram (induk) lewat AuditProgramDetail */
+    public function auditProgram()
     {
-        return $query->where('status', $status);
-    }
-
-    public function scopeBerjalan(Builder $query): Builder
-    {
-        return $query->where('status', 'berjalan');
-    }
-
-    /**
-     * Assignment yang tanggal pemeriksaannya mencakup tanggal tertentu.
-     */
-    public function scopeAktifPada(Builder $query, string $tanggal): Builder
-    {
-        return $query
-            ->whereDate('tanggal_mulai', '<=', $tanggal)
-            ->whereDate('tanggal_selesai', '>=', $tanggal);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
-
-    public function auditProgram(): BelongsTo
-    {
-        return $this->belongsTo(
+        return $this->hasOneThrough(
             AuditProgram::class,
-            'audit_program_id'
+            AuditProgramDetail::class,
+            'id',                      // FK di audit_program_details
+            'id',                      // FK di audit_programs
+            'audit_program_detail_id', // local key di audit_assignments
+            'audit_program_id'         // local key di audit_program_details
         );
     }
 
-    public function unitDiperiksa(): BelongsTo
+    /** Many-to-many ke UnitDiperiksa lewat pivot assignment_unit */
+    public function unitDiperiksas(): BelongsToMany
     {
-        return $this->belongsTo(
+        return $this->belongsToMany(
             UnitDiperiksa::class,
+            'assignment_unit',
+            'audit_assignment_id',
             'unit_diperiksa_id'
-        );
+        )->withTimestamps();
     }
 
     public function ketuaTim(): BelongsTo
     {
-        return $this->belongsTo(
-            User::class,
-            'ketua_tim_id'
-        );
+        return $this->belongsTo(User::class, 'ketua_tim_id');
     }
 
-    /**
-     * Anggota tim audit.
-     */
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -138,24 +96,30 @@ class AuditAssignment extends Model
         ->withTimestamps();
     }
 
-    public function lhps(): HasMany
+    public function attachments(): MorphMany
     {
-        return $this->hasMany(
-            Lhp::class,
-            'audit_assignment_id'
-        );
+        return $this->morphMany(Attachment::class, 'attachable');
     }
 
-    /**
-     * LHP final / ditandatangani untuk assignment ini.
-     */
-    public function lhpFinal(): HasOne
+    public function lhps(): HasMany
     {
-        return $this->hasOne(
-            Lhp::class,
-            'audit_assignment_id'
-        )
-        ->whereIn('status', ['final', 'ditandatangani'])
-        ->latestOfMany();
+        return $this->hasMany(Lhp::class);
     }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+  public function unitDiperiksa(): BelongsTo
+    {
+        // Pastikan 'unit_diperiksa_id' adalah nama kolom di tabel audit_assignments
+        return $this->belongsTo(UnitDiperiksa::class, 'unit_diperiksa_id');
+    }
+    
+    
 }

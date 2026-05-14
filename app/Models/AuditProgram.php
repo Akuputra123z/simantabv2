@@ -2,117 +2,100 @@
 
 namespace App\Models;
 
-use App\Traits\HasCreatedUpdatedBy;
+use App\Models\AuditProgramDetail;
+use App\Models\AuditAssignment;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use App\Traits\HasActivityLog;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AuditProgram extends Model
 {
-    use HasFactory, SoftDeletes, HasCreatedUpdatedBy, HasActivityLog;
-
-    protected static $logExcept = ['created_by', 'updated_by', 'created_at', 'updated_at', 'deleted_at'];
+    use SoftDeletes;
 
     protected $fillable = [
-        'nama_program', 'tahun', 'status',
-        'created_by', 'updated_by', 'target_assignment',
+        'nama_program', // Contoh: PKPT 2026
+        'tahun',
+        'status',
+       
+        'created_by',
+        'updated_by',
     ];
 
-    // ❌ HAPUS $appends — ini penyebab N+1 query
-    // protected $appends = ['realisasi_assignment', 'sudah_lhp', 'sisa_target', 'progress'];
+    protected $casts = [
+        'tahun' => 'integer',
+    ];
 
-    protected function casts(): array
+    // ─── Relations ────────────────────────────────────────────────────────────
+
+    /**
+     * Relasi ke 10 program detail
+     */
+    public function details(): HasMany
     {
-        return [
-            'tahun'             => 'integer',
-            'target_assignment' => 'integer',
-            'deleted_at'        => 'datetime',
-        ];
+        return $this->hasMany(AuditProgramDetail::class);
     }
 
-    // ── Scopes ────────────────────────────────────────────────────────────────
-
-    public function scopeTahun(Builder $query, int $tahun): Builder
-    {
-        return $query->where('tahun', $tahun);
-    }
-
-    public function scopeStatus(Builder $query, string $status): Builder
-    {
-        return $query->where('status', $status);
-    }
-
-    public function scopeBerjalan(Builder $query): Builder
-    {
-        return $query->where('status', 'berjalan');
-    }
-
-    // ── Relationships ─────────────────────────────────────────────────────────
-
-    public function assignments(): HasMany
-    {
-        return $this->hasMany(AuditAssignment::class, 'audit_program_id');
-    }
-
-    public function lhps(): HasManyThrough
+    /**
+     * Relasi tidak langsung ke Assignments melalui Details
+     */
+    public function assignments(): HasManyThrough
     {
         return $this->hasManyThrough(
-            Lhp::class,
             AuditAssignment::class,
-            'audit_program_id',
-            'audit_assignment_id'
+            AuditProgramDetail::class,
+            'audit_program_id',        // Foreign key di tabel audit_program_details
+            'audit_program_detail_id', // Foreign key di tabel audit_assignments
+            'id',                      // Local key di tabel audit_programs
+            'id'                       // Local key di tabel audit_program_details
         );
     }
 
-    // ── Accessors — hanya dipakai saat relasi sudah di-eager load ─────────────
+    // ─── Accessors (Logic Perhitungan Progress Otomatis) ─────────────────────
 
     /**
-     * Total assignment yang terealisasi.
-     * Gunakan withCount('assignments') di controller agar tidak N+1.
+     * Target otomatis dihitung dari total baris penugasan yang sudah diinput
      */
-    public function getRealisasiAssignmentAttribute(): int
+    public function getTargetAssignmentAttribute(): int
     {
-        // ✅ Prioritaskan withCount hasil eager load
-        if (isset($this->attributes['assignments_count'])) {
-            return (int) $this->attributes['assignments_count'];
-        }
         return $this->assignments()->count();
     }
 
     /**
-     * Assignment yang sudah punya LHP.
-     * Gunakan withCount(['assignments as sudah_lhp_count' => ...]) di controller.
+     * Realisasi dihitung dari jumlah penugasan yang statusnya 'selesai' atau 'LHP'
+     * Sesuaikan string status ('selesai'/'lhp') dengan data di database Anda
      */
     public function getSudahLhpAttribute(): int
-    {
-        if (isset($this->attributes['sudah_lhp_count'])) {
-            return (int) $this->attributes['sudah_lhp_count'];
-        }
-        return $this->assignments()->has('lhps')->count();
-    }
+{
+    // Tambahkan nama tabel 'audit_assignments.' sebelum kolom 'status'
+    return $this->assignments()
+        ->where('audit_assignments.status', 'selesai')
+        ->count();
+}
 
-    public function getSisaTargetAttribute(): int
+    /**
+     * Progress Persen: (Penugasan Selesai / Total Penugasan Diinput) * 100
+     */
+    public function getProgressPersenAttribute(): int
     {
-        return max(0, ($this->target_assignment ?? 0) - $this->realisasi_assignment);
+        $total = $this->target_assignment;
+        
+        if ($total <= 0) return 0;
+
+        return (int) min(100, round(($this->sudah_lhp / $total) * 100));
     }
 
     /**
-     * Progress = assignment selesai TL / total assignment (bukan vs target).
-     * Gunakan withCount(['assignments as assignments_selesai_count' => ...]) di controller.
+     * Status Dinamis: Otomatis berubah berdasarkan progress
      */
-    public function getProgressAttribute(): float
+    public function getStatusDinamisAttribute(): string
     {
-        $total = $this->realisasi_assignment;
-        if ($total === 0) return 0.0;
+        $progress = $this->progress_persen;
+        $total = $this->target_assignment;
 
-        $selesai = isset($this->attributes['assignments_selesai_count'])
-            ? (int) $this->attributes['assignments_selesai_count']
-            : $this->assignments()->where('status', 'selesai')->count();
-
-        return round(($selesai / $total) * 100, 1);
+        if ($total === 0) return 'draft';
+        if ($progress >= 100) return 'selesai';
+        
+        return 'berjalan';
     }
 }

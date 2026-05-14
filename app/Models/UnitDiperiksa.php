@@ -14,6 +14,8 @@ class UnitDiperiksa extends Model
 
     protected $table = 'unit_diperiksas';
 
+    protected $appends = ['label'];
+
     protected $fillable = [
         'nama_unit',
         'kategori',

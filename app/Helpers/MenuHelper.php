@@ -33,8 +33,12 @@ class MenuHelper
                         'path' => route('kode-temuan.index', absolute: false),
                     ],
                     [
-                        'name' => 'Unit Diperiksa',
+                        'name' => 'Objek Pemeriksaan',
                         'path' => route('unit-diperiksa.index', absolute: false),
+                    ],
+                    [
+                        'name' => 'Data Pegawai',
+                        'path' => route('users.index', absolute: false),
                     ],
                 ],
             ],
@@ -42,10 +46,10 @@ class MenuHelper
             // ================= AUDIT =================
             [
                 'icon' => 'task',
-                'name' => 'Perencanaan Audit',
+                'name' => 'Program Pengawasan',
                 'subItems' => [
                     [
-                        'name' => 'Audit Program',
+                        'name' => 'Program Kegiatan',
                         'path' => route('audit-program.index', absolute: false),
                     ],
                     [
@@ -92,10 +96,6 @@ class MenuHelper
                 'icon' => 'user-profile',
                 'name' => 'Manajemen Pengguna',
                 'subItems' => [
-                    [
-                        'name' => 'Data Pengguna',
-                        'path' => route('users.index', absolute: false),
-                    ],
                     [
                         'name' => 'Hak Akses',
                         'path' => route('permissions.index', absolute: false),

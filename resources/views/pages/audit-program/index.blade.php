@@ -3,175 +3,283 @@
 @section('content')
 
 @if(session('success'))
-    <div class="mb-6 rounded-xl border border-success-500 bg-success-50 p-4 dark:border-success-500/30 dark:bg-success-500/15">
-        <div class="flex items-start gap-3">
-            <div class="-mt-0.5 text-success-500">
-                <svg class="fill-current" width="24" height="24" viewBox="0 0 24 24" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.70186 12.0001C3.70186 7.41711 7.41711 3.70186 12.0001 3.70186C16.5831 3.70186 20.2984 7.41711 20.2984 12.0001C20.2984 16.5831 16.5831 20.2984 12.0001 20.2984C7.41711 20.2984 3.70186 16.5831 3.70186 12.0001ZM12.0001 1.90186C6.423 1.90186 1.90186 6.423 1.90186 12.0001C1.90186 17.5772 6.423 22.0984 12.0001 22.0984C17.5772 22.0984 22.1494 17.5772 22.0984 12.0001C22.0984 6.423 17.5772 1.90186 12.0001 1.90186ZM15.6197 10.7395C15.9712 10.388 15.9712 9.81819 15.6197 9.46672C15.2683 9.11525 14.6984 9.11525 14.347 9.46672L11.1894 12.6243L9.6533 11.0883C9.30183 10.7368 8.73198 10.7368 8.38051 11.0883C8.02904 11.4397 8.02904 12.0096 8.38051 12.3611L10.553 14.5335C10.7217 14.7023 10.9507 14.7971 11.1894 14.7971C11.428 14.7971 11.657 14.7023 11.8257 14.5335L15.6197 10.7395Z" fill=""/></svg>
-            </div>
-            <div>
-                <h4 class="mb-1 text-sm font-semibold text-gray-800 dark:text-white/90">Berhasil!</h4>
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ session('success') }}</p>
-            </div>
+<div id="alert-success"
+     class="mb-4 rounded-xl border border-green-200 bg-green-50 p-3 dark:border-green-500/20 dark:bg-green-500/10 transition-all duration-300">
+    <div class="flex items-start gap-3">
+        <div class="mt-0.5 text-green-600">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
         </div>
+
+        <div class="flex-1">
+            <h4 class="text-xs font-bold text-green-700 dark:text-green-300">
+                Berhasil
+            </h4>
+
+            <p class="mt-0.5 text-xs text-green-600/80 dark:text-green-400">
+                {{ session('success') }}
+            </p>
+        </div>
+
+        <button onclick="dismissAlert()" class="text-green-500 hover:text-green-700 transition">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
     </div>
+</div>
 @endif
 
-<div class="space-y-6">
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-        {{-- Header PKPT --}}
-        <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-4 sm:px-6 sm:py-5">
+<div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+
+    {{-- FILTER --}}
+    <form method="GET" action="{{ route('audit-program.index') }}">
+        <div class="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 dark:border-gray-800 lg:flex-row lg:items-center lg:justify-between">
+
             <div>
-                <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Program Kerja Pengawasan Tahunan (PKPT)</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Monitoring realisasi dan progress LHP per program</p>
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                    Program Kerja Pengawasan Tahunan
+                </h3>
+
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    Monitoring progres audit dan LHP
+                </p>
             </div>
-            <div class="flex items-center gap-3">
-                <form action="{{ route('audit-program.index') }}" method="GET" class="hidden sm:flex gap-2">
-                    <select name="tahun" onchange="this.form.submit()" 
-                        class="h-10 rounded-lg border border-gray-200 bg-transparent px-3 text-sm text-gray-500 outline-none focus:border-blue-300 dark:border-gray-700 dark:bg-gray-900">
-                        <option value="">Semua Tahun</option>
-                        @foreach(range(date('Y'), date('Y')-3) as $y)
-                            <option value="{{ $y }}" {{ request('tahun') == $y ? 'selected' : '' }}>{{ $y }}</option>
-                        @endforeach
-                    </select>
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari program..." 
-                        class="h-10 rounded-lg border border-gray-200 bg-transparent px-4 text-sm text-gray-800 outline-none focus:border-blue-300 focus:ring-3 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">
-                </form>
-                
-                <a href="{{ route('audit-program.create') }}" class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-all shadow-sm shadow-blue-500/20">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Program Baru
+
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+
+                {{-- Tahun --}}
+                <select name="tahun"
+                        onchange="this.form.submit()"
+                        class="h-9 rounded-lg border border-gray-200 bg-white px-3 text-xs text-gray-700 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                    <option value="">Semua Tahun</option>
+
+                    @foreach(range(date('Y') + 1, 2024) as $y)
+                        <option value="{{ $y }}" {{ request('tahun') == $y ? 'selected' : '' }}>
+                            {{ $y }}
+                        </option>
+                    @endforeach
+                </select>
+
+                {{-- Search --}}
+                <div class="relative">
+                    <input type="text"
+                           name="search"
+                           value="{{ request('search') }}"
+                           placeholder="Cari program..."
+                           class="h-9 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-xs text-gray-700 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white sm:w-52">
+
+                    <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+
+                {{-- Button --}}
+                <a href="{{ route('audit-program.create') }}"
+                   class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Tambah PKPT
                 </a>
             </div>
         </div>
+    </form>
 
-      {{-- Table --}}
-<div class="border-t border-gray-100 p-5 sm:p-6 dark:border-gray-800">
-    <div class="overflow-hidden border border-gray-200 rounded-xl dark:border-gray-800">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/[0.02]">
-                    <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Nama Program & Tahun</th>
-                    <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">Target / Realisasi</th>
-                    <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Progress LHP</th>
-                    <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center">Status</th>
-                    <th class="px-5 py-3 text-right text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Aksi</th>
+    {{-- TABLE --}}
+    <div class="overflow-x-auto">
+        <table class="w-full divide-y divide-gray-100 dark:divide-gray-800">
+
+            <thead class="bg-gray-50/70 dark:bg-gray-900/40">
+                <tr>
+                    <th class="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                        Program
+                    </th>
+
+                    <th class="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                        Sub Program
+                    </th>
+
+                    <th class="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                        Progress
+                    </th>
+
+                    <th class="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                        Status
+                    </th>
+
+                    <th class="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                        Aksi
+                    </th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-sm">
+
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+
                 @forelse($data as $item)
-                <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
-                    {{-- Nama & Tahun --}}
-                    <td class="px-5 py-4">
-                        <span class="block font-semibold text-gray-800 dark:text-white/90">{{ $item->nama_program }}</span>
-                        <span class="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-gray-500">PKPT {{ $item->tahun }}</span>
+
+                @php
+                    $percent = $item->progress_persen ?? 0;
+
+                    $statusClasses = [
+                        'draft' => 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+                        'berjalan' => 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400',
+                        'selesai' => 'bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-400',
+                    ];
+                @endphp
+
+                <tr class="transition hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+
+                    {{-- Program --}}
+                    <td class="px-4 py-3">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                {{ $item->nama_program }}
+                            </p>
+
+                            <p class="mt-0.5 text-[10px] uppercase tracking-wide text-gray-400">
+                                Tahun {{ $item->tahun }}
+                            </p>
+                        </div>
                     </td>
-{{-- Target / Realisasi --}}
-<td class="px-5 py-4 text-center">
-    <div class="text-sm font-bold text-gray-800 dark:text-white">
-        {{ $item->assignments_count ?? 0 }}
-        <span class="text-gray-400 font-normal">/ {{ $item->target_assignment }}</span>
-    </div>
-    <span class="text-[10px] text-gray-400 uppercase">Assignment / Target</span>
-</td>
 
-{{-- Progress --}}
-<td class="px-5 py-4">
-    @php
-        $target          = $item->target_assignment ?? 0;
-        $selesai         = $item->assignments_selesai_count ?? 0;
+                    {{-- Sub Program --}}
+                    <td class="px-4 py-3 text-center">
+                        <span class="text-sm font-bold text-gray-700 dark:text-gray-200">
+                            {{ $item->details_count ?? 0 }}
+                        </span>
+                    </td>
 
-        // ✅ Progress = assignment berstatus selesai / target_assignment
-        $percent = $target > 0
-            ? round(min($selesai / $target, 1.0) * 100)
-            : 0;
-    @endphp
-    <div class="flex items-center gap-3">
-        <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-            <div class="h-full rounded-full transition-all duration-500
-                {{ $percent >= 100 ? 'bg-green-500' : ($percent > 0 ? 'bg-blue-500' : 'bg-gray-300') }}"
-                 style="width: {{ $percent }}%">
-            </div>
-        </div>
-        <span class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ $percent }}%</span>
-    </div>
-    <span class="text-[10px] text-gray-400 mt-1 block">
-        {{ $selesai }} assignment selesai / {{ $target }} target
-    </span>
-</td>
+                    {{-- Progress --}}
+                    <td class="px-4 py-3 min-w-[220px]">
+                        <div class="flex items-center gap-3">
+                            <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                                <div class="h-full rounded-full {{ $percent >= 100 ? 'bg-green-500' : 'bg-blue-500' }}"
+                                     style="width: {{ $percent }}%">
+                                </div>
+                            </div>
 
-{{-- Status --}}
-<td class="px-5 py-4 text-center">
-    @php
-        $total    = $item->assignments_count ?? 0;
-        $selesai  = $item->assignments_selesai_count ?? 0;
-        $berjalan = $item->assignments_berjalan_count ?? 0;
+                            <span class="w-9 text-right text-[11px] font-bold text-gray-600 dark:text-gray-300">
+                                {{ $percent }}%
+                            </span>
+                        </div>
 
-        // ✅ Status = dari assignment, bukan dari kolom DB yang mungkin stale
-        $statusDinamis = match(true) {
-            $target > 0 && $selesai >= $target               => 'selesai',
-            $total > 0 && ($berjalan + $selesai) > 0         => 'berjalan',
-            default                                           => 'draft',
-        };
+                        <p class="mt-1 text-[10px] text-gray-400">
+                            {{ $item->sudah_lhp ?? 0 }} / {{ $item->target_assignment ?? 0 }} target
+                        </p>
+                    </td>
 
-        $statusClasses = [
-            'draft'    => 'bg-gray-100 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400',
-            'berjalan' => 'bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400',
-            'selesai'  => 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400',
-        ];
-    @endphp
-    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full
-                 text-[10px] font-bold uppercase tracking-wider
-                 {{ $statusClasses[$statusDinamis] }}">
-        {{ ucfirst($statusDinamis) }}
-    </span>
-</td>
+                    {{-- Status --}}
+                    <td class="px-4 py-3 text-center">
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide {{ $statusClasses[$item->status] ?? $statusClasses['draft'] }}">
+                            {{ $item->status }}
+                        </span>
+                    </td>
 
+                    {{-- Action --}}
+                    <td class="px-4 py-3">
+                        <div class="flex items-center justify-end gap-2">
 
-
-                  
-
-                    {{-- Aksi --}}
-                    <td class="px-5 py-4 text-right">
-                        <div class="flex justify-end gap-3 text-gray-400">
-                            <a href="{{ route('audit-program.show', $item->id) }}" class="hover:text-gray-800 dark:hover:text-white transition-colors" title="Detail">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <a href="{{ route('audit-program.show', $item->id) }}"
+                               class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition hover:border-blue-200 hover:text-blue-600 dark:border-gray-700">
+                               <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
                             </a>
-                            <a href="{{ route('audit-program.edit', $item->id) }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Edit">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+
+                            <a href="{{ route('audit-program.edit', $item->id) }}"
+                               class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition hover:border-gray-300 hover:text-gray-700 dark:border-gray-700 dark:hover:text-white">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          stroke-width="2"
+                                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/>
+                                    <path stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          stroke-width="2"
+                                          d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
                             </a>
-                            <form action="{{ route('audit-program.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Hapus program ini?')">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Hapus">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+
+                            <form action="{{ route('audit-program.destroy', $item->id) }}"
+                                  method="POST"
+                                  onsubmit="return confirm('Hapus data PKPT ini?')">
+                                @csrf
+                                @method('DELETE')
+
+                                <button type="submit"
+                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition hover:border-red-200 hover:text-red-600 dark:border-gray-700">
+                                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
                                 </button>
                             </form>
+
                         </div>
                     </td>
+
                 </tr>
+
                 @empty
+
                 <tr>
-                    <td colspan="6" class="px-5 py-12 text-center text-gray-400">
-                        <div class="flex flex-col items-center">
-                            <svg class="w-12 h-12 mb-3 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                            <p>Belum ada program kerja pengawasan</p>
+                    <td colspan="5" class="px-6 py-14 text-center">
+                        <div class="flex flex-col items-center justify-center text-gray-400">
+                            <svg class="mb-3 h-8 w-8 opacity-30"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 viewBox="0 0 24 24">
+                                <path stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      stroke-width="2"
+                                      d="M9 17v-6h13M9 5v6h13M5 5h.01M5 12h.01M5 19h.01"/>
+                            </svg>
+
+                            <p class="text-xs font-medium">
+                                Data PKPT belum tersedia
+                            </p>
                         </div>
                     </td>
                 </tr>
+
                 @endforelse
+
             </tbody>
         </table>
     </div>
-    
-    {{-- Pagination --}}
-    <div class="mt-5 flex items-center justify-between border-t border-gray-50 pt-5 dark:border-gray-800">
-        <p class="text-[11px] font-bold text-gray-400 uppercase">
-            Halaman {{ $data->currentPage() }} dari {{ $data->lastPage() }}
-        </p>
-        <div class="flex">
-            {{ $data->links() }}
-        </div>
+
+    {{-- PAGINATION --}}
+    @if($data->hasPages())
+    <div class="border-t border-gray-100 px-4 py-3 dark:border-gray-800">
+        {{ $data->links() }}
     </div>
+    @endif
 </div>
-    </div>
-</div>
+
+<script>
+function dismissAlert() {
+    const el = document.getElementById('alert-success');
+
+    if (el) {
+        el.classList.add('opacity-0', 'scale-95');
+
+        setTimeout(() => {
+            el.remove();
+        }, 300);
+    }
+}
+
+setTimeout(() => {
+    dismissAlert();
+}, 4000);
+</script>
+
 @endsection

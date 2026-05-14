@@ -7,6 +7,7 @@ use App\Models\Temuan;
 use App\Models\Recommendation;
 use App\Models\TindakLanjut;
 use App\Models\LhpStatistik;
+Use App\Models\AuditProgramDetail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -53,7 +54,7 @@ class DashboardController extends Controller
 
         // ── Tabel LHP Terbaru ─────────────────────────────────────────────
         $lhpTerbaru = (clone $lhpQuery)
-            ->with(['auditAssignment.auditProgram', 'statistik'])
+            ->with(['programDetail.auditAssignment.auditProgram', 'statistik'])
             ->latest('tanggal_lhp')
             ->limit(5)
             ->get();

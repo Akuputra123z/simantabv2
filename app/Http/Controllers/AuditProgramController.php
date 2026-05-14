@@ -3,149 +3,142 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditProgram;
+use App\Models\AuditProgramDetail;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\DB;
 
 class AuditProgramController extends Controller
 {
-public function index(Request $request)
-{
-    $query = AuditProgram::query()
-        ->withCount([
-            // Total assignment yang ada
-            'assignments',
+    /**
+     * Menampilkan daftar Induk PKPT
+     */
+    public function index(Request $request)
+    {
+        $query = AuditProgram::query()
+            ->with(['details'])
+            ->withCount(['details', 'assignments']);
 
-            // Assignment yang statusnya 'selesai' → untuk progress program
-            'assignments as assignments_selesai_count' => fn($q) => $q->where('status', 'selesai'),
+        // Logika Filter
+        if ($request->filled('search')) {
+            $query->where('nama_program', 'like', "%{$request->search}%");
+        }
 
-            // Assignment berjalan → untuk status dinamis
-            'assignments as assignments_berjalan_count' => fn($q) => $q->where('status', 'berjalan'),
-        ]);
+        if ($request->filled('tahun')) {
+            $query->where('tahun', $request->tahun);
+        }
 
-    if ($request->filled('search')) {
-        $query->where('nama_program', 'like', '%' . $request->search . '%');
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Sorting berdasarkan tahun terbaru dan ID terbaru
+        $data = $query->latest('tahun')
+            ->latest('id')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('pages.audit-program.index', compact('data'));
     }
 
-    if ($request->filled('tahun')) {
-        $query->where('tahun', $request->tahun);
-    }
-
-    $data = $query->latest()->paginate(10)->withQueryString();
-
-    return view('pages.audit-program.index', compact('data'));
-}
+    /**
+     * Form tambah PKPT Induk
+     */
     public function create()
     {
         return view('pages.audit-program.create');
     }
 
-    // Simpan data baru
-   public function store(Request $request)
-{
+    /**
+     * Simpan PKPT Induk Baru
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'nama_program' => 'required|string|max:255',
+            'tahun'        => 'required|integer|digits:4',
+        ]);
 
-    $validated = $request->validate([
-        'nama_program'      => 'required|string|max:255',
-        'tahun'             => 'required|integer|digits:4',
-        'target_assignment' => 'required|integer|min:1',
-    ]);
+        $program = AuditProgram::create(array_merge($validated, [
+            'status'     => 'draft',
+            'created_by' => auth()->id(),
+            'updated_by' => auth()->id(),
+        ]));
 
-    AuditProgram::create([
-        'nama_program'      => $validated['nama_program'],
-        'tahun'             => $validated['tahun'],
-        'target_assignment' => $validated['target_assignment'],
-        'status'            => 'berjalan',
-        'created_by'        => auth()->id(),
-        'updated_by'        => auth()->id(),
-    ]);
-
-    return redirect()->route('audit-program.index')
-        ->with('success', 'Program Audit berhasil ditambahkan.');
-}
-
-    // Edit data
-    public function edit(AuditProgram $auditProgram)
-{
-    // Rename the variable being passed to the view
-    $program = $auditProgram; 
-    
-    return view('pages.audit-program.edit', compact('program'));
-}
-
-    // Update data
-public function update(Request $request, AuditProgram $auditProgram)
-{
-    $validated = $request->validate([
-        'nama_program'      => 'required|string|max:255',
-        'tahun'             => 'required|integer|digits:4',
-        'target_assignment' => 'required|integer|min:1',
-        'status'            => 'required|in:draft,berjalan,selesai',
-    ]);
-
-    $validated['updated_by'] = auth()->id();
-    $statusLama = $auditProgram->status;
-
-    // Update field non-status dulu
-    $auditProgram->update(collect($validated)->except('status')->toArray());
-
-    if ($statusLama !== $validated['status']) {
-        if ($validated['status'] === 'draft') {
-            // Reset semua assignment ke draft
-            $auditProgram->assignments()->update(['status' => 'draft']);
-
-            // Trigger recalculate semua LHP yang terkait agar
-            // statistik, progress, dan status chain ikut ter-reset
-            $lhpIds = \App\Models\Lhp::whereHas('auditAssignment', function ($q) use ($auditProgram) {
-                $q->where('audit_program_id', $auditProgram->id);
-            })->pluck('id');
-
-            $statistikService = app(\App\Services\LhpStatistikService::class);
-            foreach ($lhpIds as $lhpId) {
-                $statistikService->updateStatistik($lhpId);
-            }
-
-            // Setelah chain recalculate, set status program ke draft secara eksplisit
-            // karena sinkronStatusProgram() di dalam service mungkin override ke 'berjalan'
-            $auditProgram->updateQuietly(['status' => 'draft']);
-
-        } elseif ($validated['status'] === 'selesai') {
-            // Cek apakah semua assignment memang sudah selesai sebelum allow
-            $adaYangBelumSelesai = $auditProgram->assignments()
-                ->where('status', '!=', 'selesai')
-                ->exists();
-
-            if ($adaYangBelumSelesai) {
-                return back()
-                    ->withInput()
-                    ->withErrors([
-                        'status' => 'Program tidak dapat ditandai selesai karena masih ada assignment yang belum selesai.',
-                    ]);
-            }
-
-            $auditProgram->updateQuietly(['status' => 'selesai']);
-
-        } else {
-            // 'berjalan' — sinkronkan dari kondisi aktual assignment
-            $auditProgram->updateQuietly(['status' => $validated['status']]);
-        }
+        return redirect()->route('audit-program.index')
+            ->with('success', 'PKPT Berhasil dibuat.');
     }
 
-    return redirect()->route('audit-program.index')
-        ->with('success', 'Program Audit berhasil diperbarui.');
-}
-
+    /**
+     * Menampilkan Detail Program & List PKPT di bawahnya
+     */
     public function show(AuditProgram $auditProgram)
     {
-        // Eager load relasi assignments dan unitDiperiksa agar tampilan detail cepat
-        $auditProgram->load(['assignments.unitDiperiksa']);
+        $details = $auditProgram->details()
+            ->withCount('assignments')
+            ->paginate(10)
+            ->onEachSide(1);
 
-        return view('pages.audit-program.show', compact('auditProgram'));
+        return view('pages.audit-program.show', compact('auditProgram', 'details'));
     }
 
-    // Hapus data
+    /**
+     * FIXED: Fungsi Edit yang sebelumnya hilang
+     */
+    public function edit(AuditProgram $auditProgram)
+    {
+
+        $program = $auditProgram;
+        return view('pages.audit-program.edit', compact('program'));
+    }
+
+    /**
+     * Update data Induk PKPT
+     */
+    public function update(Request $request, AuditProgram $auditProgram)
+    {
+        $validated = $request->validate([
+            'nama_program' => 'required|string|max:255',
+            'tahun'        => 'required|integer|digits:4',
+            'status'       => 'required|in:draft,active,closed',
+        ]);
+
+        $auditProgram->update(array_merge($validated, [
+            'updated_by' => auth()->id(),
+        ]));
+
+        // Cek jika request datang dari halaman edit atau modal di index/show
+        if ($request->header('referer') == route('audit-program.edit', $auditProgram->id)) {
+            return redirect()->route('audit-program.index')->with('success', 'Data PKPT berhasil diperbarui.');
+        }
+
+        return back()->with('success', 'Data PKPT berhasil diperbarui.');
+    }
+
+    /**
+     * Hapus Program Audit (Hanya jika belum ada penugasan)
+     */
     public function destroy(AuditProgram $auditProgram)
     {
+        if ($auditProgram->assignments()->exists()) {
+            return back()->with('error', 'PKPT tidak bisa dihapus karena sudah ada penugasan yang berjalan.');
+        }
+
         $auditProgram->delete();
+
         return redirect()->route('audit-program.index')
             ->with('success', 'Program Audit berhasil dihapus.');
+    }
+
+    /**
+     * API untuk mengambil detail program (digunakan oleh AJAX di AuditAssignment)
+     */
+    public function getProgramDetails($programId)
+    {
+        $details = AuditProgramDetail::where('audit_program_id', $programId)
+            ->select('id', 'nama_detail_program', 'jenis_kegiatan')
+            ->orderBy('nama_detail_program')
+            ->get();
+            
+        return response()->json($details);
     }
 }

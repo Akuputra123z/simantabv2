@@ -9,10 +9,7 @@
     .dark input[type="date"] {
         color-scheme: dark;
     }
-    input[type="date"]::-webkit-calendar-picker-indicator {
-        cursor: pointer;
-        opacity: 0.7;
-    }
+   
     input[type="date"]::-webkit-calendar-picker-indicator:hover {
         opacity: 1;
     }
@@ -278,6 +275,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+        input.addEventListener('click', function() {
+            this.showPicker(); // Method native browser modern
+        });
+    });
     // Logika Hitung Durasi
     const $mulai   = document.getElementById('tanggal_mulai');
     const $selesai = document.getElementById('tanggal_selesai');

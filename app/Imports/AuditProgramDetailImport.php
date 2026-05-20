@@ -17,6 +17,11 @@ class AuditProgramDetailImport implements ToModel, WithHeadingRow
 
     public function model(array $row)
     {
+        // Skip empty rows or rows without a program name
+        if (!isset($row['nama_detail_program']) || trim((string)$row['nama_detail_program']) === '') {
+            return null;
+        }
+
         $anggaranRaw = $row['anggaran_angka'] ?? 0;
         $anggaranClean = preg_replace('/[^0-9]/', '', (string)$anggaranRaw);
 

@@ -7,6 +7,7 @@ use App\Models\AuditProgram;
 use App\Models\AuditProgramDetail;
 use App\Models\UnitDiperiksa;
 use App\Models\User;
+use App\Services\LhpStatistikService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -97,7 +98,9 @@ class AuditAssignmentController extends Controller
             'audit_program_detail_id.unique' => 'PKPT/Detail Program ini sudah pernah dibuatkan penugasannya.'
         ]);
 
-        DB::transaction(function () use ($validated, $request) {
+        $detailId = null;
+
+        DB::transaction(function () use ($validated, $request, &$detailId) {
             $unitIds = $validated['unit_diperiksa_ids'];
             $members = $validated['members'] ?? [];
             unset($validated['unit_diperiksa_ids'], $validated['members']);
@@ -111,6 +114,8 @@ class AuditAssignmentController extends Controller
             $assignment->unitDiperiksas()->sync($unitIds);
             $assignment->members()->sync($members);
 
+            $detailId = $assignment->audit_program_detail_id;
+
             if ($request->hasFile('attachments')) {
                 foreach ($request->file('attachments') as $file) {
                     $path = $file->store('audit-assignments/attachments', 'public');
@@ -123,6 +128,14 @@ class AuditAssignmentController extends Controller
                 }
             }
         });
+
+        // Sinkron status program setelah assignment dibuat
+        if ($detailId) {
+            $detail = AuditProgramDetail::find($detailId);
+            if ($detail) {
+                app(LhpStatistikService::class)->sinkronStatusProgram($detail->audit_program_id);
+            }
+        }
 
         return redirect()->route('audit-assignment.index')
             ->with('success', 'Audit assignment berhasil dibuat.');
@@ -207,6 +220,15 @@ class AuditAssignmentController extends Controller
             }
         });
 
+        // Sinkron status program setelah assignment diupdate
+        $detailId = $auditAssignment->fresh()->audit_program_detail_id;
+        if ($detailId) {
+            $detail = AuditProgramDetail::find($detailId);
+            if ($detail) {
+                app(LhpStatistikService::class)->sinkronStatusProgram($detail->audit_program_id);
+            }
+        }
+
         return redirect()->route('audit-assignment.index')
             ->with('success', 'Audit assignment berhasil diperbarui.');
     }
@@ -284,24 +306,31 @@ class AuditAssignmentController extends Controller
 
    public function destroy(AuditAssignment $auditAssignment)
 {
+    $detailId = $auditAssignment->audit_program_detail_id;
+
     try {
         DB::beginTransaction();
 
-        // 1. Hapus file fisik lampiran (opsional)
         foreach ($auditAssignment->attachments as $att) {
             Storage::disk('public')->delete($att->file_path);
             $att->delete();
         }
 
-        // 2. Lepaskan relasi pivot (Jika migration tidak pakai cascadeOnDelete)
         $auditAssignment->unitDiperiksas()->detach();
         $auditAssignment->members()->detach();
 
-        // 3. Eksekusi Hapus
-$auditAssignment->forceDelete();
-        // $auditAssignment->forceDelete(); // Gunakan ini jika ingin benar-benar hilang dari DB
+        $auditAssignment->forceDelete();
 
         DB::commit();
+
+        // Sinkron status program setelah assignment dihapus
+        if ($detailId) {
+            $detail = AuditProgramDetail::find($detailId);
+            if ($detail) {
+                app(LhpStatistikService::class)->sinkronStatusProgram($detail->audit_program_id);
+            }
+        }
+
         return redirect()->back()->with('success', 'Data berhasil dihapus');
 
     } catch (\Exception $e) {

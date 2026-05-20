@@ -870,13 +870,15 @@ pre[class*='language-'] {
 }
 
 .ts-control {
-    height: 40px;
+    min-height: 40px;
+    height: auto !important;
     border-radius: 0.5rem;
     border: 1px solid #e5e7eb;
     font-size: 0.875rem;
     display: flex;
     align-items: center;
-    padding: 0 10px;
+    padding: 6px 10px;
+    flex-wrap: wrap;
 }
 
 .dark .ts-control {
@@ -895,6 +897,94 @@ pre[class*='language-'] {
     background-color: #eff6ff;
     color: #2563eb;
 }
+
+.dark .ts-dropdown {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #f3f4f6;
+}
+
+.dark .ts-dropdown .option {
+    color: #d1d5db;
+}
+
+.dark .ts-dropdown .option.active {
+    background-color: #374151;
+    color: #ffffff;
+}
+
+.dark .ts-dropdown .create {
+    color: #d1d5db;
+}
+
+.ts-dropdown .ts-dropdown-content {
+    max-height: 240px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.dark .ts-dropdown .ts-dropdown-content {
+    scrollbar-color: #4b5563 transparent;
+}
+
+.ts-dropdown-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ts-dropdown-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ts-dropdown-content::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 3px;
+}
+
+.dark .ts-dropdown-content::-webkit-scrollbar-thumb {
+    background-color: #4b5563;
+}
+
+.ts-wrapper.disabled .ts-control {
+    background-color: #f3f4f6 !important;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.dark .ts-wrapper.disabled .ts-control {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+    opacity: 0.5;
+}
+
+/* Allow selected text to wrap naturally so the entire description is visible */
+.ts-wrapper.single .ts-control .item {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    max-width: calc(100% - 24px);
+    word-break: break-word;
+    line-height: 1.5;
+    padding: 2px 0;
+}
+
+/* Ensure options wrap text nicely, have adequate padding, and clean separators */
+.ts-dropdown .option {
+    padding: 10px 14px;
+    line-height: 1.5;
+    white-space: normal;
+    word-break: break-word;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.dark .ts-dropdown .option {
+    border-bottom: 1px solid #374151;
+}
+
+.ts-dropdown .option:last-child {
+    border-bottom: none;
+}
+
 .swiper-button-prev, .swiper-button-next {
     svg {
         fill: none !important;

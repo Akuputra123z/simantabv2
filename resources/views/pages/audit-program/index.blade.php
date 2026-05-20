@@ -172,14 +172,17 @@
                         </div>
 
                         <p class="mt-1 text-[10px] text-gray-400">
-                            {{ $item->sudah_lhp ?? 0 }} / {{ $item->target_assignment ?? 0 }} target
+                            {{ $item->sudah_lhp ?? 0 }} selesai / {{ $item->target_assignment ?? 0 }} sub program
                         </p>
                     </td>
 
                     {{-- Status --}}
                     <td class="px-4 py-3 text-center">
-                        <span class="inline-flex rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide {{ $statusClasses[$item->status] ?? $statusClasses['draft'] }}">
-                            {{ $item->status }}
+                        @php
+                            $displayStatus = $item->status_dinamis;
+                        @endphp
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide {{ $statusClasses[$displayStatus] ?? $statusClasses['draft'] }}">
+                            {{ $displayStatus }}
                         </span>
                     </td>
 

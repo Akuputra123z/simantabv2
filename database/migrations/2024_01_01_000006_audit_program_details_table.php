@@ -21,11 +21,11 @@ return new class extends Migration
            $table->text('tujuan')->nullable();
             $table->string('personil', 100)->index();
             $table->decimal('anggaran', 15, 2)->default(0);
-            $table->string('tingkat_resiko', 20);
-            $table->string('laporan_akhir', 20)->nullable();
-            $table->string('jadwal', 20)->nullable();
-            $table->string('tim', 20)->nullable();
-            $table->string('status', 20)->default('draft');
+            $table->string('tingkat_resiko', 50);
+            $table->string('laporan_akhir', 50)->nullable();
+            $table->string('jadwal', 100)->nullable();
+            $table->string('tim', 255)->nullable();
+            $table->string('status', 50)->default('draft');
             $table->timestamps();
         });
     }

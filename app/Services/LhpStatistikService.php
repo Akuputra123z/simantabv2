@@ -25,9 +25,8 @@ class LhpStatistikService
     try {
         DB::transaction(function () use ($lhpId) {
 
-            // ✅ FIX: Satu fresh() dengan SEMUA relasi yang dibutuhkan
             $lhp = Lhp::with([
-                'auditAssignment',  // ← wajib ada, jangan di fresh() terpisah
+                'auditAssignment.auditProgramDetail',
                 'temuans.recommendations.tindakLanjuts.cicilans',
             ])->find($lhpId);
 
@@ -167,7 +166,6 @@ private function sinkronStatusAssignment(Lhp $lhp, float $progresFinal): void
 
     if (! $assignment) return;
 
-    // ── Sinkron status Assignment ──────────────────────────────
     $statusAssignment = match(true) {
         $progresFinal >= 100 => 'selesai',
         $progresFinal > 0    => 'berjalan',
@@ -178,29 +176,47 @@ private function sinkronStatusAssignment(Lhp $lhp, float $progresFinal): void
         $assignment->updateQuietly(['status' => $statusAssignment]);
     }
 
-    // ── Sinkron status AuditProgram ────────────────────────────
-    $this->sinkronStatusProgram($assignment->audit_program_id);
+    $detail = $assignment->relationLoaded('auditProgramDetail')
+        ? $assignment->auditProgramDetail
+        : \App\Models\AuditProgramDetail::find($assignment->audit_program_detail_id);
+
+    $this->sinkronStatusProgram($detail?->audit_program_id);
 }
 
 
-private function sinkronStatusProgram(?int $auditProgramId): void
+public function sinkronStatusProgram(?int $auditProgramId): void
 {
     if (! $auditProgramId) return;
 
-    // Ambil semua status assignment yang terhubung ke program ini
-    $statuses = \App\Models\AuditAssignment::where('audit_program_id', $auditProgramId)
-        ->pluck('status');
+    $program = \App\Models\AuditProgram::find($auditProgramId);
+    if (! $program) return;
 
-    if ($statuses->isEmpty()) return;
+    $totalDetails = $program->details()->count();
+    if ($totalDetails === 0) return;
+
+    $doneDetails = $program->details()
+        ->where(function($q) {
+            $q->whereHas('assignments.lhps', function($q) {
+                $q->whereIn('status', ['final', 'ditandatangani'])
+                  ->whereHas('statistik', function($s) {
+                      $s->where('persen_selesai_gabungan', 100);
+                  });
+            })->orWhereHas('assignments', function($q) {
+                $q->where('status', 'selesai');
+            });
+        })
+        ->count();
+
+    $hasAnyAssignment = $program->details()->whereHas('assignments')->count();
 
     $statusProgram = match(true) {
-        $statuses->every(fn($s) => $s === 'selesai')           => 'selesai',
-        $statuses->contains(fn($s) => in_array($s, ['berjalan', 'selesai'])) => 'berjalan',
-        default                                                  => 'draft',
+        $doneDetails >= $totalDetails => 'selesai',
+        $hasAnyAssignment > 0 => 'berjalan',
+        default => 'draft',
     };
 
     \App\Models\AuditProgram::where('id', $auditProgramId)
-        ->where('status', '!=', $statusProgram) // hanya update jika berbeda
+        ->where('status', '!=', $statusProgram)
         ->update(['status' => $statusProgram]);
 }
 

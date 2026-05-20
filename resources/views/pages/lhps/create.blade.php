@@ -260,12 +260,12 @@ const KODE_TEMUANS    = @json($kodeTemuanData);
 
 // ── Cascade Logic ──────────────────────────────────────────────────
 
-const selProgram    = document.getElementById('select-program');
-const selAssignment = document.getElementById('select-assignment');
-const selUnit       = document.getElementById('select-unit');
+document.addEventListener('DOMContentLoaded', function () {
+    const selProgram    = document.getElementById('select-program');
+    const selAssignment = document.getElementById('select-assignment');
+    const selUnit       = document.getElementById('select-unit');
 
-// Bangun daftar program unik dari ALL_ASSIGNMENTS
-(function buildProgramOptions() {
+    // Bangun daftar program unik dari ALL_ASSIGNMENTS pada element select asli
     const seen = new Set();
     ALL_ASSIGNMENTS.forEach(a => {
         if (!seen.has(a.program_id)) {
@@ -274,66 +274,89 @@ const selUnit       = document.getElementById('select-unit');
             selProgram.add(opt);
         }
     });
-})();
 
-selProgram.addEventListener('change', function () {
-    const programId = this.value;
-
-    // Reset downstream
-    selAssignment.innerHTML = '<option value="">-- Pilih Penugasan --</option>';
-    selUnit.innerHTML        = '<option value="">-- Pilih Penugasan Terlebih Dahulu --</option>';
-    selAssignment.disabled   = true;
-    selUnit.disabled         = true;
-
-    if (!programId) return;
-
-    // Filter assignments berdasarkan program
-    const filtered = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(programId));
-
-    filtered.forEach(a => {
-        const label = a.detail_nama + (a.nomor_surat ? ' — ' + a.nomor_surat : '');
-        selAssignment.add(new Option(label, a.id));
+    // Inisialisasi TomSelect untuk ketiga dropdown
+    const tsProgram = new TomSelect('#select-program', {
+        create: false,
+        placeholder: '-- Pilih Program Kerja --',
+        controlInput: '<input>',
+        maxOptions: null
     });
 
-    selAssignment.disabled = filtered.length === 0;
-});
+    const tsAssignment = new TomSelect('#select-assignment', {
+        create: false,
+        placeholder: '-- Pilih Penugasan --',
+        controlInput: '<input>',
+        maxOptions: null
+    });
+    tsAssignment.disable();
 
-selAssignment.addEventListener('change', function () {
-    const assignmentId = this.value;
+    const tsUnit = new TomSelect('#select-unit', {
+        create: false,
+        placeholder: '-- Pilih Unit Kerja / Objek Audit --',
+        controlInput: '<input>',
+        maxOptions: null
+    });
+    tsUnit.disable();
 
-    // Reset unit dropdown
-    selUnit.innerHTML = '<option value="">-- Pilih Unit --</option>';
-    document.getElementById('hidden-assignment-id').value = assignmentId || '';
-    document.getElementById('hidden-unit-id').value       = '';
+    tsProgram.on('change', function (programId) {
+        // Reset downstream
+        tsAssignment.clear();
+        tsAssignment.clearOptions();
+        tsAssignment.disable();
 
-    if (!assignmentId) {
-        selUnit.disabled = true;
-        return;
-    }
+        tsUnit.clear();
+        tsUnit.clearOptions();
+        tsUnit.disable();
 
-    const assignment = ALL_ASSIGNMENTS.find(a => String(a.id) === String(assignmentId));
+        document.getElementById('hidden-assignment-id').value = '';
+        document.getElementById('hidden-unit-id').value = '';
 
-    if (assignment && assignment.units.length > 0) {
-        assignment.units.forEach(u => {
-            // ✅ FIX: value sekarang adalah ID unit, bukan assignmentId
-            selUnit.add(new Option(u.nama, u.id));
+        if (!programId) return;
+
+        // Filter assignments berdasarkan program
+        const filtered = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(programId));
+
+        filtered.forEach(a => {
+            const label = a.detail_nama + (a.nomor_surat ? ' — ' + a.nomor_surat : '');
+            tsAssignment.addOption({ value: a.id, text: label });
         });
-        selUnit.disabled = false;
 
-        // Jika hanya 1 unit, otomatis pilih dan isi hidden input
-        if (assignment.units.length === 1) {
-            selUnit.selectedIndex = 1;
-            document.getElementById('hidden-unit-id').value = assignment.units[0].id;
+        if (filtered.length > 0) {
+            tsAssignment.enable();
         }
-    } else {
-        selUnit.innerHTML = '<option value="">Tidak ada unit tersedia</option>';
-        selUnit.disabled  = true;
-    }
-});
+    });
 
-// Tangkap perubahan unit → isi hidden input
-selUnit.addEventListener('change', function () {
-    document.getElementById('hidden-unit-id').value = this.value || '';
+    tsAssignment.on('change', function (assignmentId) {
+        // Reset unit dropdown
+        tsUnit.clear();
+        tsUnit.clearOptions();
+        tsUnit.disable();
+
+        document.getElementById('hidden-assignment-id').value = assignmentId || '';
+        document.getElementById('hidden-unit-id').value       = '';
+
+        if (!assignmentId) return;
+
+        const assignment = ALL_ASSIGNMENTS.find(a => String(a.id) === String(assignmentId));
+
+        if (assignment && assignment.units.length > 0) {
+            assignment.units.forEach(u => {
+                tsUnit.addOption({ value: u.id, text: u.nama });
+            });
+            tsUnit.enable();
+
+            // Jika hanya 1 unit, otomatis pilih dan isi hidden input
+            if (assignment.units.length === 1) {
+                tsUnit.setValue(assignment.units[0].id);
+                document.getElementById('hidden-unit-id').value = assignment.units[0].id;
+            }
+        }
+    });
+
+    tsUnit.on('change', function (unitId) {
+        document.getElementById('hidden-unit-id').value = unitId || '';
+    });
 });
 // ── Badge & Empty State ────────────────────────────────────────────
 
@@ -434,7 +457,14 @@ function addTemuan() {
 
     fields.forEach(f => f.addEventListener('input', () => setTimeout(recalcTotal, 50)));
 
-    const kodeSelect     = row.querySelector('.kode-temuan-select');
+    const kodeSelect = row.querySelector('.kode-temuan-select');
+    const tsKode = new TomSelect(kodeSelect, {
+        create: false,
+        placeholder: '-- Pilih Kode Temuan --',
+        controlInput: '<input>',
+        maxOptions: null
+    });
+
     const handleKodeChange = (val) => {
         const found   = KODE_TEMUANS.find(k => String(k.id) === String(val));
         const infoBox = document.getElementById(`kode-info-${idx}`);
@@ -446,8 +476,7 @@ function addTemuan() {
             infoBox.classList.add('hidden');
         }
     };
-    if (kodeSelect.tomselect) kodeSelect.tomselect.on('change', handleKodeChange);
-    else kodeSelect.addEventListener('change', e => handleKodeChange(e.target.value));
+    tsKode.on('change', handleKodeChange);
 
     const count = document.querySelectorAll('.temuan-row').length;
     updateBadge('badge-temuan', count);
@@ -473,15 +502,39 @@ document.getElementById('btn-add-lampiran').addEventListener('click', addLampira
 function addLampiran() {
     const idx = lampiranCount++;
     const row = document.createElement('div');
-    row.className = 'lampiran-row flex items-center gap-4 px-6 py-4 border-b border-gray-100 dark:border-gray-700';
+    row.className = 'lampiran-row flex flex-col md:flex-row md:items-start gap-4 px-6 py-5 border-b border-gray-100 dark:border-gray-700 transition-all hover:bg-gray-50 dark:hover:bg-gray-800/50';
     row.innerHTML = `
-        <div class="grid flex-1 grid-cols-1 gap-3 md:grid-cols-2">
-            <input type="file" name="attachments[${idx}][file_path]" class="text-sm" accept=".pdf,.jpg,.jpeg,.png">
-            <input type="text" name="attachments[${idx}][file_name]" placeholder="Nama File (opsional)"
-                   class="text-sm rounded border border-gray-300 px-2 py-1.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+        <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase">Pilih Berkas</label>
+                <input type="file" name="attachments[${idx}][file_path]" accept=".pdf,.jpg,.jpeg,.png"
+                       class="block w-full text-sm text-gray-500 dark:text-gray-400
+                              file:mr-3 file:py-2.5 file:px-4
+                              file:rounded-lg file:border-0
+                              file:text-sm file:font-semibold
+                              file:bg-blue-50 file:text-blue-700
+                              hover:file:bg-blue-100
+                              dark:file:bg-blue-900/30 dark:file:text-blue-400
+                              dark:hover:file:bg-blue-900/50
+                              focus:outline-none cursor-pointer">
+            </div>
+            <div>
+                <label class="mb-1.5 block text-xs font-semibold text-gray-500 uppercase">Keterangan / Nama File (Opsional)</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    </span>
+                    <input type="text" name="attachments[${idx}][file_name]" placeholder="Cth: Bukti Transfer, Kwitansi..."
+                           class="w-full rounded-lg border border-gray-300 py-2.5 pl-9 pr-3 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                </div>
+            </div>
         </div>
-        <button type="button" onclick="this.closest('.lampiran-row').remove(); updateLampiranCount();"
-                class="text-red-400 hover:text-red-600 text-lg font-bold leading-none">×</button>
+        <div class="flex items-center justify-end md:mt-6">
+            <button type="button" onclick="this.closest('.lampiran-row').remove(); updateLampiranCount();"
+                    class="inline-flex items-center justify-center h-10 w-10 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 focus:outline-none transition-colors dark:hover:bg-red-900/20" title="Hapus Lampiran">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+        </div>
     `;
     document.getElementById('lampiran-container').appendChild(row);
     updateLampiranCount();

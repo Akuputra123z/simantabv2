@@ -58,7 +58,7 @@ class AuditProgram extends Model
      */
     public function getTargetAssignmentAttribute(): int
     {
-        return $this->assignments()->count();
+        return $this->details()->count();
     }
 
     /**
@@ -66,12 +66,20 @@ class AuditProgram extends Model
      * Sesuaikan string status ('selesai'/'lhp') dengan data di database Anda
      */
     public function getSudahLhpAttribute(): int
-{
-    // Tambahkan nama tabel 'audit_assignments.' sebelum kolom 'status'
-    return $this->assignments()
-        ->where('audit_assignments.status', 'selesai')
-        ->count();
-}
+    {
+        return $this->details()
+            ->where(function($q) {
+                $q->whereHas('assignments.lhps', function($q) {
+                    $q->whereIn('status', ['final', 'ditandatangani'])
+                      ->whereHas('statistik', function($s) {
+                          $s->where('persen_selesai_gabungan', 100);
+                      });
+                })->orWhereHas('assignments', function($q) {
+                    $q->where('status', 'selesai');
+                });
+            })
+            ->count();
+    }
 
     /**
      * Progress Persen: (Penugasan Selesai / Total Penugasan Diinput) * 100

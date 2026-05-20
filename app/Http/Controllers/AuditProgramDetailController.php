@@ -65,7 +65,7 @@ class AuditProgramDetailController extends Controller
             'tingkat_resiko'      => 'nullable|in:Tinggi,Sedang,Rendah',
             'jadwal'              => 'nullable|string|max:100',
             'status'              => 'required|in:aktif,rencana',
-            'tim'                 => 'nullable|string|max:100',
+            'tim'                 => 'nullable|string|max:255',
             'laporan_akhir'       => 'nullable|string|max:100',
         ]);
 
@@ -108,7 +108,7 @@ class AuditProgramDetailController extends Controller
             'tingkat_resiko'      => 'nullable|in:Tinggi,Sedang,Rendah',
             'jadwal'              => 'nullable|string|max:100',
             'status'              => 'required|in:aktif,rencana',
-            'tim'                 => 'nullable|string|max:100',
+            'tim'                 => 'nullable|string|max:255',
             'laporan_akhir'       => 'nullable|string|max:100',
         ]);
 

@@ -239,7 +239,7 @@
 
                 <div class="rounded-2xl bg-gray-50 p-4 dark:bg-gray-800/50">
                     <p class="text-lg font-extrabold text-slate-800 dark:text-blue-400">
-                        {{ $detail->jadwal ?? 'Tentatif' }}
+                        {{ App\Helpers\DateHelper::formatJadwal($detail->jadwal) }}
                     </p>
                     <p class="mt-2 text-[10px] font-medium leading-relaxed text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
                         Estimasi durasi pelaksanaan berdasarkan PKPT tahun berjalan.

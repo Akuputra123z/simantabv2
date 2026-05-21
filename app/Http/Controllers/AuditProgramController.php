@@ -75,15 +75,26 @@ class AuditProgramController extends Controller
      */
     public function show(AuditProgram $auditProgram)
     {
+        $search = request('search');
+
         $details = $auditProgram->details()
+            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+                $q->where('nama_detail_program', 'like', "%{$search}%")
+                  ->orWhere('jenis_kegiatan', 'like', "%{$search}%")
+                  ->orWhere('objek_pengawasan', 'like', "%{$search}%")
+                  ->orWhere('ruang_lingkup', 'like', "%{$search}%")
+                  ->orWhere('tim', 'like', "%{$search}%");
+            }))
             ->withCount([
                 'assignments',
                 'assignments as assignments_selesai_count' => fn ($q) => $q->where('status', 'selesai'),
             ])
+            ->latest()
             ->paginate(10)
-            ->onEachSide(1);
+            ->onEachSide(1)
+            ->withQueryString();
 
-        return view('pages.audit-program.show', compact('auditProgram', 'details'));
+        return view('pages.audit-program.show', compact('auditProgram', 'details', 'search'));
     }
 
     /**

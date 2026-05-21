@@ -36,7 +36,7 @@ class DetailProgramExport implements FromCollection, WithHeadings, WithStyles, W
                 'personil' => $d->personil ?? '-',
                 'anggaran' => (float) $d->anggaran,
                 'risiko'   => $d->tingkat_resiko ?? '-',
-                'jadwal'   => $d->jadwal ?? '-',
+                'jadwal'   => \App\Helpers\DateHelper::formatJadwal($d->jadwal),
                 'tim'      => $d->tim ?? '-',
                 'status'   => strtoupper($d->status),
             ];
@@ -131,15 +131,15 @@ class DetailProgramExport implements FromCollection, WithHeadings, WithStyles, W
     {
         return [
             'A' => 5,
-            'B' => 35,
-            'C' => 14,
-            'D' => 20,
-            'E' => 12,
-            'F' => 15,
-            'G' => 12,
-            'H' => 14,
-            'I' => 12,
-            'J' => 12,
+            'B' => 10,
+            'C' => 10,
+            'D' => 24,
+            'E' => 10,
+            'F' => 24,
+            'G' => 14,
+            'H' => 16,
+            'I' => 14,
+            'J' => 10,
         ];
     }
 

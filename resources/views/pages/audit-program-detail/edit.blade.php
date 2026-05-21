@@ -1,6 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    input[type="date"] { color-scheme: light; }
+    .dark input[type="date"] { color-scheme: dark; }
+    input[type="date"]::-webkit-calendar-picker-indicator { display: block; }
+</style>
 <div class="mx-auto max-w-3xl px-4 pb-12">
     
     {{-- Notifikasi Error Validasi --}}
@@ -120,21 +125,21 @@
                     <div>
                         <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Tim Pengawas</label>
                         <select name="tim" class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900">
-                            <option value="">Pilih IRBAN</option>
-                            @foreach(['IRBAN I', 'IRBAN II', 'IRBAN III', 'IRBAN IV', 'IRBAN V', 'IRBAN VI'] as $ir)
+                            <option value="">Pilih Tim</option>
+                            @foreach(['Irban I', 'Irban II', 'Irban III', 'Irban IV', 'Irbansus', 'Semua Irban', 'Sekretariat', 'Tim'] as $ir)
                                 <option value="{{ $ir }}" {{ old('tim', $detail->tim) == $ir ? 'selected' : '' }}>{{ $ir }}</option>
                             @endforeach
                         </select>
                     </div>
                     {{-- Jadwal (Bulan) --}}
+                    @php
+                        use App\Helpers\DateHelper;
+                        $jadwalValue = old('jadwal', DateHelper::toInputDate($detail->jadwal));
+                    @endphp
                     <div>
                         <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Bulan Pelaksanaan</label>
-                        <select name="jadwal" class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900" required>
-                            <option value="">Pilih Bulan</option>
-                            @foreach(['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $bulan)
-                                <option value="{{ $bulan }}" {{ old('jadwal', $detail->jadwal) == $bulan ? 'selected' : '' }}>{{ $bulan }}</option>
-                            @endforeach
-                        </select>
+                        <input type="date" name="jadwal" value="{{ $jadwalValue }}"
+                               class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900" required>
                     </div>
                 </div>
 

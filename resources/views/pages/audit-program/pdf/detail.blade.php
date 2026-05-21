@@ -61,15 +61,15 @@
         <thead>
             <tr>
                 <th style="width:28px;">No</th>
-                <th>Nama Sub-Program</th>
-                <th style="width:60px;">Jenis</th>
-                <th style="width:80px;">Objek</th>
-                <th style="width:50px;">Personil</th>
-                <th style="width:55px;">Anggaran</th>
+                <th style="width:130px;">Nama Sub-Program</th>
+                <th style="width:40px;">Jenis</th>
+                <th style="width:70px;">Objek</th>
+                <th style="width:40px;">Personil</th>
+                <th style="width:65px;" class="text-center">Anggaran</th>
                 <th style="width:40px;">Risiko</th>
-                <th style="width:50px;">Jadwal</th>
-                <th style="width:40px;">Tim</th>
-                <th style="width:45px;">Status</th>
+                <th style="width:60px;">Jadwal</th>
+                <th style="width:50px;">Tim</th>
+                <th style="width:35px;">Status</th>
             </tr>
         </thead>
         <tbody>
@@ -80,9 +80,9 @@
                 <td>{{ $d->jenis_kegiatan ?? '-' }}</td>
                 <td>{{ $d->objek_pengawasan ?? '-' }}</td>
                 <td>{{ $d->personil ?? '-' }}</td>
-                <td class="text-right">Rp {{ number_format($d->anggaran, 0, ',', '.') }}</td>
+                <td class="text-center">Rp {{ number_format($d->anggaran, 0, ',', '.') }}</td>
                 <td>{{ $d->tingkat_resiko ?? '-' }}</td>
-                <td>{{ $d->jadwal ?? '-' }}</td>
+                <td>{{ App\Helpers\DateHelper::formatJadwal($d->jadwal) }}</td>
                 <td>{{ $d->tim ?? '-' }}</td>
                 <td class="text-center">{{ strtoupper($d->status) }}</td>
             </tr>

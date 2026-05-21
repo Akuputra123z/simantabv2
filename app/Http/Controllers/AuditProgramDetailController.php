@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Exports\TemplateAuditDetailExport;
-use App\Imports\AuditProgramDetailImport; // Pastikan ini ada
+use App\Helpers\DateHelper;
+use App\Imports\AuditProgramDetailImport;
 use App\Models\AuditProgram;
 use App\Models\AuditProgramDetail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AuditProgramDetailController extends Controller
@@ -22,32 +24,48 @@ class AuditProgramDetailController extends Controller
             'mode'             => 'required|in:add,replace',
         ]);
 
-        try {
-            $auditProgramId = $request->audit_program_id;
+        $auditProgramId = $request->audit_program_id;
 
-            // Mode Replace: hapus semua data lama sebelum import
+        DB::beginTransaction();
+
+        try {
+            $skippedNames = [];
+            $deletedCount = 0;
+
             if ($request->mode === 'replace') {
-                $hasAssignments = AuditProgramDetail::where('audit_program_id', $auditProgramId)
-                    ->whereHas('assignments')->exists();
-                if ($hasAssignments) {
-                    return back()->with('error', 'Tidak bisa mengganti data karena sudah ada penugasan. Hapus penugasan terlebih dahulu.');
+                $allDetails = AuditProgramDetail::where('audit_program_id', $auditProgramId)->get();
+
+                foreach ($allDetails as $detail) {
+                    if ($detail->assignments()->exists()) {
+                        $skippedNames[] = $detail->nama_detail_program;
+                    } else {
+                        $detail->delete();
+                        $deletedCount++;
+                    }
                 }
-                $count = AuditProgramDetail::where('audit_program_id', $auditProgramId)->count();
-                AuditProgramDetail::where('audit_program_id', $auditProgramId)->delete();
             }
 
-            // Eksekusi Import menggunakan Class Import
             Excel::import(new AuditProgramDetailImport($auditProgramId), $request->file('file'));
 
-            $msg = $request->mode === 'replace'
-                ? ($count > 0 ? "$count data lama diganti dengan data baru." : "Data sub-program berhasil di-import (mode ganti).")
-                : 'Data sub-program berhasil ditambahkan.';
+            DB::commit();
+
+            $importedCount = AuditProgramDetail::where('audit_program_id', $auditProgramId)->count();
+
+            if ($request->mode === 'replace') {
+                $msg = "$deletedCount data lama diganti.";
+                if (!empty($skippedNames)) {
+                    $msg .= ' ' . count($skippedNames) . ' data dilewati (sudah punya penugasan): ' . implode(', ', $skippedNames) . '.';
+                }
+            } else {
+                $msg = "$importedCount data sub-program berhasil ditambahkan.";
+            }
 
             return redirect()
                 ->route('audit-program.show', $auditProgramId)
                 ->with('success', $msg);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             return back()->with('error', 'Gagal mengimport data: ' . $e->getMessage());
         }
     }
@@ -76,7 +94,7 @@ class AuditProgramDetailController extends Controller
             'objek_pengawasan'    => 'nullable|string|max:255',
             'ruang_lingkup'       => 'nullable|string',
             'personil'            => 'nullable|string|max:100',
-            'tujuan'              => 'required|string', 
+            'tujuan'              => 'required|string',
             'anggaran'            => 'required|numeric|min:0',
             'tingkat_resiko'      => 'nullable|in:Tinggi,Sedang,Rendah',
             'jadwal'              => 'nullable|string|max:100',
@@ -84,6 +102,10 @@ class AuditProgramDetailController extends Controller
             'tim'                 => 'nullable|string|max:255',
             'laporan_akhir'       => 'nullable|string|max:100',
         ]);
+
+        if ($request->filled('jadwal')) {
+            $validated['jadwal'] = DateHelper::toStorage($request->jadwal);
+        }
 
         try {
             $detail = AuditProgramDetail::create($validated);
@@ -127,6 +149,10 @@ class AuditProgramDetailController extends Controller
             'tim'                 => 'nullable|string|max:255',
             'laporan_akhir'       => 'nullable|string|max:100',
         ]);
+
+        if ($request->filled('jadwal')) {
+            $validated['jadwal'] = DateHelper::toStorage($request->jadwal);
+        }
 
         try {
             $auditProgramDetail->update($validated);

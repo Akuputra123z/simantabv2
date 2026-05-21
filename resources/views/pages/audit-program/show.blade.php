@@ -88,7 +88,20 @@
                     <div class="mt-1 h-0.5 w-6 rounded-full bg-blue-500"></div>
                 </div>
             </div>
-            <div class="lg:ml-auto flex flex-wrap gap-2">
+            <div class="lg:ml-auto flex flex-wrap items-center gap-3">
+                {{-- Search --}}
+                <form method="GET" action="{{ route('audit-program.show', $auditProgram->id) }}" class="relative">
+                    <input type="text" name="search" value="{{ $search ?? '' }}"
+                           placeholder="Cari sub-program..."
+                           class="w-48 rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-700 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500">
+                    <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    @if(request('search'))
+                        <a href="{{ route('audit-program.show', $auditProgram->id) }}"
+                           class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </a>
+                    @endif
+                </form>
                 {{-- Export --}}
                 <div class="flex gap-1">
                     <a href="{{ route('audit-program.export-pdf', $auditProgram->id) }}" target="_blank"
@@ -219,7 +232,7 @@
                         <td colspan="8" class="px-4 py-16 text-center text-gray-400 italic bg-gray-50/20 dark:bg-transparent">
                             <div class="flex flex-col items-center gap-2">
                                 <svg class="h-10 w-10 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                <span>Belum ada sub-program kerja.</span>
+                                <span>{{ request('search') ? 'Sub-program tidak ditemukan.' : 'Belum ada sub-program kerja.' }}</span>
                             </div>
                         </td>
                     </tr>

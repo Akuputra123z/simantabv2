@@ -29,7 +29,7 @@ class TemplateAuditDetailExport implements FromArray, WithHeadings, WithStyles, 
                 5000000,                                   // anggaran
                 'Tinggi',                                  // tingkat_resiko
                 1,                                         // laporan_akhir
-                'Januari 2026',                            // jadwal
+                '01/01/2026',                          // jadwal
                 'Irban III',                               // tim
                 'aktif'                                    // status
             ],
@@ -43,7 +43,7 @@ class TemplateAuditDetailExport implements FromArray, WithHeadings, WithStyles, 
                 3500000,
                 'Sedang',
                 1,
-                'Februari 2026',
+                '01/02/2026',
                 'Irban I',
                 'rencana'
             ],

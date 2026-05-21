@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditProgram;
 use App\Models\AuditProgramDetail;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AuditProgramController extends Controller
 {
@@ -74,7 +76,10 @@ class AuditProgramController extends Controller
     public function show(AuditProgram $auditProgram)
     {
         $details = $auditProgram->details()
-            ->withCount('assignments')
+            ->withCount([
+                'assignments',
+                'assignments as assignments_selesai_count' => fn ($q) => $q->where('status', 'selesai'),
+            ])
             ->paginate(10)
             ->onEachSide(1);
 
@@ -99,7 +104,7 @@ class AuditProgramController extends Controller
         $validated = $request->validate([
             'nama_program' => 'required|string|max:255',
             'tahun'        => 'required|integer|digits:4',
-            'status'       => 'required|in:draft,active,closed',
+            'status'       => 'required|in:draft,berjalan,selesai',
         ]);
 
         $auditProgram->update(array_merge($validated, [
@@ -127,6 +132,42 @@ class AuditProgramController extends Controller
 
         return redirect()->route('audit-program.index')
             ->with('success', 'Program Audit berhasil dihapus.');
+    }
+
+    /**
+     * Export PDF daftar sub-program
+     */
+    public function exportPdf(AuditProgram $auditProgram)
+    {
+        $details = $auditProgram->details()
+            ->withCount('assignments')
+            ->orderBy('nama_detail_program')
+            ->get();
+
+        $pdf = Pdf::loadView('pages.audit-program.pdf.detail', compact('auditProgram', 'details'))
+            ->setPaper('a4', 'landscape')
+            ->setOptions([
+                'defaultFont'          => 'sans-serif',
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled'      => false,
+            ]);
+
+        $filename = 'sub-program-' . str_replace('/', '-', $auditProgram->nama_program) . '-' . now()->format('Ymd') . '.pdf';
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Export Excel daftar sub-program
+     */
+    public function exportExcel(AuditProgram $auditProgram)
+    {
+        $details = $auditProgram->details()
+            ->withCount('assignments')
+            ->orderBy('nama_detail_program')
+            ->get();
+
+        $filename = 'sub-program-' . str_replace('/', '-', $auditProgram->nama_program) . '-' . now()->format('Ymd') . '.xlsx';
+        return Excel::download(new \App\Exports\DetailProgramExport($auditProgram, $details), $filename);
     }
 
     /**

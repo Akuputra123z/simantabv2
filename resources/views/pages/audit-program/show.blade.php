@@ -89,18 +89,50 @@
                 </div>
             </div>
             <div class="lg:ml-auto flex flex-wrap gap-2">
+                {{-- Export --}}
+                <div class="flex gap-1">
+                    <a href="{{ route('audit-program.export-pdf', $auditProgram->id) }}" target="_blank"
+                       class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-rose-600 transition hover:bg-rose-50 hover:border-rose-200 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-rose-400">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21v-7a1 1 0 00-1-1H8a1 1 0 00-1 1v7"/></svg>
+                        PDF
+                    </a>
+                    <a href="{{ route('audit-program.export-excel', $auditProgram->id) }}"
+                       class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-emerald-600 transition hover:bg-emerald-50 hover:border-emerald-200 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-emerald-400">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Excel
+                    </a>
+                </div>
+
                 <button onclick="openImportModal()" 
                    class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-600 transition hover:bg-gray-50 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                    Import Excel
+                    Import
                 </button>
 
                 <a href="{{ route('audit-program-detail.create', ['audit_program_id' => $auditProgram->id]) }}" 
                    class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm text-white transition hover:bg-blue-700 shadow-sm">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Tambah Sub-Program
+                    Tambah
                 </a>
             </div>
+        </div>
+
+        {{-- Bulk Delete Form --}}
+        <form id="bulk-delete-form" action="{{ route('audit-program-detail.bulk-delete') }}" method="POST">
+            @csrf
+        </form>
+
+        {{-- Bulk Action Bar --}}
+        <div id="bulk-bar" class="hidden flex items-center justify-between gap-4 px-6 py-3 bg-rose-50 border-b border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/20">
+            <div class="flex items-center gap-3">
+                <span class="flex items-center justify-center w-6 h-6 rounded-full bg-rose-200 text-rose-700 text-[11px] font-black dark:bg-rose-500/30 dark:text-rose-300" id="selected-count">0</span>
+                <span class="text-sm font-medium text-rose-700 dark:text-rose-300">sub-program dipilih</span>
+            </div>
+            <button type="button" onclick="confirmBulkDelete()"
+                    class="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 transition-all shadow-sm">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                Hapus Terpilih
+            </button>
         </div>
 
         {{-- Tabel --}}
@@ -108,39 +140,47 @@
             <table class="w-full text-left text-sm">
                 <thead class="bg-gray-50/50 text-[10px] uppercase tracking-[0.15em] text-gray-400 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800">
                     <tr>
-                        <th class="px-6 py-4 w-16 text-center">No</th>
-                        <th class="px-6 py-4">Detail Program</th>
-                        <th class="px-6 py-4">Objek / Jenis</th>
-                        <th class="px-6 py-4 text-right">Anggaran</th>
-                        <th class="px-6 py-4">Penugasan</th>
-                        <th class="px-6 py-4 text-center">Status</th>
-                        <th class="px-6 py-4 text-right">Opsi</th>
+                        <th class="px-4 py-4 w-12 text-center">
+                            <input type="checkbox" id="select-all" 
+                                   class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                        </th>
+                        <th class="px-4 py-4 w-12 text-center">No</th>
+                        <th class="px-4 py-4">Detail Program</th>
+                        <th class="px-4 py-4">Objek / Jenis</th>
+                        <th class="px-4 py-4 text-right">Anggaran</th>
+                        <th class="px-4 py-4">Penugasan</th>
+                        <th class="px-4 py-4 text-center">Status</th>
+                        <th class="px-4 py-4 text-right">Opsi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                     @forelse($details as $index => $detail)
                     @php
                         $totalST = $detail->assignments_count;
-                        $selesaiST = $detail->assignments()->where('status', 'selesai')->count();
+                        $selesaiST = $detail->assignments_selesai_count;
                         $progSub = $totalST > 0 ? round(($selesaiST / $totalST) * 100) : 0;
                     @endphp
                     <tr class="group transition-colors hover:bg-gray-50/50 dark:hover:bg-blue-500/5">
-                        <td class="px-6 py-5 text-center text-gray-400 font-mono">
+                        <td class="px-4 py-5 text-center">
+                            <input type="checkbox" name="ids[]" value="{{ $detail->id }}" form="bulk-delete-form"
+                                   class="row-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                        </td>
+                        <td class="px-4 py-5 text-center text-gray-400 font-mono">
                             {{ $details->firstItem() + $index }}
                         </td>
-                        <td class="px-6 py-5">
+                        <td class="px-4 py-5">
                             <span class="font-medium text-gray-900 dark:text-white">{{ $detail->nama_detail_program }}</span>
                         </td>
-                        <td class="px-6 py-5">
+                        <td class="px-4 py-5">
                             <div class="flex flex-col gap-1">
                                 <div class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{{ $detail->objek_pengawasan ?? '-' }}</div>
                                 <div class="text-[10px] text-blue-500 uppercase font-semibold tracking-wider">{{ $detail->jenis_kegiatan ?? '-' }}</div>
                             </div>
                         </td>
-                        <td class="px-6 py-5 text-right whitespace-nowrap font-mono text-gray-900 dark:text-white">
+                        <td class="px-4 py-5 text-right whitespace-nowrap font-mono text-gray-900 dark:text-white">
                             Rp {{ number_format($detail->anggaran, 0, ',', '.') }}
                         </td>
-                        <td class="px-6 py-5 min-w-[140px]">
+                        <td class="px-4 py-5 min-w-[140px]">
                             <div class="flex flex-col gap-1.5">
                                 <div class="flex items-center justify-between text-[10px] font-medium uppercase">
                                     <span class="text-gray-400">{{ $totalST }} ST</span>
@@ -151,13 +191,13 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-5 text-center">
+                        <td class="px-4 py-5 text-center">
                             <span class="inline-flex rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide 
                                 {{ $detail->status == 'aktif' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20' : 'bg-gray-50 text-gray-400 border border-gray-100 dark:bg-gray-800 dark:border-gray-700' }}">
                                 {{ $detail->status }}
                             </span>
                         </td>
-                        <td class="px-6 py-5">
+                        <td class="px-4 py-5">
                             <div class="flex justify-end gap-1">
                                 <a href="{{ route('audit-program-detail.show', $detail->id) }}" class="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all dark:hover:bg-emerald-500/10">
                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
@@ -176,7 +216,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-16 text-center text-gray-400 italic bg-gray-50/20 dark:bg-transparent">
+                        <td colspan="8" class="px-4 py-16 text-center text-gray-400 italic bg-gray-50/20 dark:bg-transparent">
                             <div class="flex flex-col items-center gap-2">
                                 <svg class="h-10 w-10 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                 <span>Belum ada sub-program kerja.</span>
@@ -241,7 +281,7 @@
     <div class="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
         <div class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" onclick="closeImportModal()"></div>
         
-        <div class="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white p-8 text-left shadow-2xl transition-all dark:bg-gray-900 sm:my-8">
+        <div class="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white p-8 text-left shadow-2xl transition-all dark:bg-gray-900 sm:my-8">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white" id="modal-title">Import Sub-Program</h3>
                 <button onclick="closeImportModal()" class="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800">
@@ -253,7 +293,30 @@
                 @csrf
                 <input type="hidden" name="audit_program_id" value="{{ $auditProgram->id }}">
                 
-                <div class="space-y-4">
+                <div class="space-y-5">
+                    {{-- Mode Import --}}
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-3 font-black">Mode Import</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="flex items-start gap-3 cursor-pointer rounded-xl border-2 p-4 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50 border-gray-200 bg-white hover:border-blue-300 dark:border-gray-700 dark:bg-gray-800 dark:has-[:checked]:bg-blue-500/10">
+                                <input type="radio" name="mode" value="add" checked
+                                       class="mt-0.5 h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <div>
+                                    <p class="text-sm font-bold text-gray-900 dark:text-white">Tambah Data</p>
+                                    <p class="text-[10px] text-gray-500 mt-0.5">Menambahkan data baru tanpa menghapus data yang sudah ada.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-3 cursor-pointer rounded-xl border-2 p-4 transition-all has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50/50 border-gray-200 bg-white hover:border-amber-300 dark:border-gray-700 dark:bg-gray-800 dark:has-[:checked]:bg-amber-500/10">
+                                <input type="radio" name="mode" value="replace"
+                                       class="mt-0.5 h-4 w-4 border-gray-300 text-amber-600 focus:ring-amber-500">
+                                <div>
+                                    <p class="text-sm font-bold text-gray-900 dark:text-white">Ganti Data</p>
+                                    <p class="text-[10px] text-gray-500 mt-0.5">Hapus semua data lama, lalu import data baru dari file.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
                     <label class="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-8 transition-colors hover:border-blue-400 dark:border-gray-700 dark:bg-gray-800/50">
                         <div id="upload-icon" class="text-blue-500">
                             <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
@@ -343,5 +406,48 @@
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && !importModal.classList.contains('hidden')) closeImportModal();
     });
+
+    // ─── Bulk Delete ────────────────────────────────────────────────────────
+    const selectAll = document.getElementById('select-all');
+    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    const bulkBar = document.getElementById('bulk-bar');
+    const selectedCount = document.getElementById('selected-count');
+
+    function updateBulkBar() {
+        const checked = document.querySelectorAll('.row-checkbox:checked').length;
+        if (checked > 0) {
+            selectedCount.textContent = checked;
+            bulkBar.classList.remove('hidden');
+        } else {
+            bulkBar.classList.add('hidden');
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            rowCheckboxes.forEach(cb => cb.checked = this.checked);
+            updateBulkBar();
+        });
+    }
+
+    rowCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkBar);
+    });
+
+    window.confirmBulkDelete = function() {
+        const checked = document.querySelectorAll('.row-checkbox:checked');
+        if (checked.length === 0) return;
+        if (!confirm('Hapus ' + checked.length + ' sub-program terpilih?')) return;
+
+        const form = document.getElementById('bulk-delete-form');
+        checked.forEach(cb => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'ids[]';
+            input.value = cb.value;
+            form.appendChild(input);
+        });
+        form.submit();
+    };
 </script>
 @endsection

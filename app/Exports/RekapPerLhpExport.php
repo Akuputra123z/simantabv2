@@ -50,7 +50,7 @@ class InfoLhpSheet implements FromCollection, WithStyles, WithTitle, WithColumnW
             ['Nomor LHP',        $lhp->nomor_lhp,                                         ''],
             ['Tanggal LHP',      $lhp->tanggal_lhp?->format('d F Y') ?? '-',              ''],
             ['Semester',         'Semester ' . $lhp->semester,                             ''],
-            ['IRBAN',            $lhp->irban,                                              ''],
+            ['IRBAN',            $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-',  ''],
             ['Jenis Pemeriksaan',$lhp->jenis_pemeriksaan ?? '-',                           ''],
             ['Program Audit',    $lhp->auditAssignment?->auditProgram?->nama_program ?? '-',''],
             ['Unit Diperiksa',   $lhp->auditAssignment?->unitDiperiksa?->nama_unit ?? '-', ''],

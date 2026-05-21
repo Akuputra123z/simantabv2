@@ -13,153 +13,39 @@
 <!-- Favicon -->
 <link rel="icon" type="image/png" href="https://insp.rembangkab.go.id/assets/images/logo.png"/>
 
-<!-- Fonts: Replaced Inter with Sora (display) + DM Sans (body) for distinction -->
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<!-- Google Fonts (deferred — non-render-blocking) -->
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
+<noscript>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+</noscript>
 
-<!-- Material Icons (subset only) -->
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<!-- Material Icons (deferred — non-render-blocking) -->
+<link rel="preload" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
+<noscript>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+</noscript>
 
-<!-- Tailwind CDN -->
-<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-
-<script>
-  tailwind.config = {
-    darkMode: "class",
-    theme: {
-      extend: {
-        colors: {
-          primary: "#003366",
-          secondary: "#c5a059",
-          "bg-light": "#f8fafc",
-          "bg-dark": "#020617",
-          "card-light": "#ffffff",
-          "card-dark": "#0f172a",
-          "border-light": "#e2e8f0",
-          "border-dark": "#1e293b",
-        },
-        fontFamily: {
-          display: ["Sora", "sans-serif"],
-          sans: ["DM Sans", "sans-serif"],
-        },
-      },
-    },
-  };
-</script>
+<!-- Tailwind CSS (local build) -->
+<link rel="stylesheet" href="/css/landing.css?v={{ filemtime(public_path('css/landing.css')) }}">
 
 <style>
-  /* =============================================
-     GLOBAL RESET & BASE
-  ============================================= */
-  *, *::before, *::after { box-sizing: border-box; }
-  html { -webkit-font-smoothing: antialiased; }
-
-  /* =============================================
-     MARQUEE ANIMATION
-  ============================================= */
-  @keyframes marquee {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
-  }
-.marquee-track {
-  display: inline-flex;  /* bukan flex — ikuti lebar konten, bukan stretch */
-  white-space: nowrap;
-  animation: marquee 30s linear infinite;
-  will-change: transform;
-}
-  .marquee-track:hover { animation-play-state: paused; }
-
-  /* =============================================
-     TIMELINE CONNECTOR LINE
-  ============================================= */
-  .timeline::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    left: 1.25rem;
-    width: 2px;
-    background: linear-gradient(to bottom, transparent, #e2e8f0, transparent);
-    transform: translateX(-50%);
-  }
-  @media (min-width: 768px) {
-    .timeline::before {
-      left: 50%;
-    }
-  }
-  .dark .timeline::before {
-    background: linear-gradient(to bottom, transparent, #1e293b, transparent);
-  }
-
-  /* =============================================
-     PROGRESS BAR
-  ============================================= */
-  #scroll-progress {
-    position: fixed;
-    top: 0; left: 0;
-    height: 3px;
-    width: 0%;
-    background: linear-gradient(90deg, #003366, #c5a059);
-    z-index: 100;
-    transition: width 100ms linear;
-  }
-
-  /* =============================================
-     HERO GRID PATTERN
-  ============================================= */
-  .hero-grid {
-    background-image:
-      linear-gradient(rgba(0,51,102,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,51,102,0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
-  }
-  .dark .hero-grid {
-    background-image:
-      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-  }
-
-  /* =============================================
-     FADE-IN ANIMATION FOR HERO
-  ============================================= */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .animate-fadeup {
-    opacity: 0;
-    animation: fadeUp 0.7s ease forwards;
-  }
-  .delay-1 { animation-delay: 0.1s; }
-  .delay-2 { animation-delay: 0.25s; }
-  .delay-3 { animation-delay: 0.4s; }
-  .delay-4 { animation-delay: 0.55s; }
-
-  /* =============================================
-     WHATSAPP FLOAT
-  ============================================= */
-  .wa-float {
-    position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    z-index: 50;
-    width: 3.25rem;
-    height: 3.25rem;
-    background: #25d366;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 20px rgba(37,211,102,0.45);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .wa-float:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 28px rgba(37,211,102,0.55);
-  }
-  @keyframes wa-pulse {
-    0%, 100% { box-shadow: 0 4px 20px rgba(37,211,102,0.45), 0 0 0 0 rgba(37,211,102,0.3); }
-    50%       { box-shadow: 0 4px 20px rgba(37,211,102,0.45), 0 0 0 10px rgba(37,211,102,0); }
-  }
-  .wa-float { animation: wa-pulse 2.5s ease infinite; }
+  /* ── Non-Tailwind custom styles ── */
+  @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .marquee-track{display:inline-flex;white-space:nowrap;animation:marquee 30s linear infinite;will-change:transform}
+  .marquee-track:hover{animation-play-state:paused}
+  .timeline::before{content:'';position:absolute;inset:0;left:1.25rem;width:2px;background:linear-gradient(to bottom,transparent,#e2e8f0,transparent);transform:translateX(-50%)}
+  @media(min-width:768px){.timeline::before{left:50%}}
+  .dark .timeline::before{background:linear-gradient(to bottom,transparent,#1e293b,transparent)}
+  #scroll-progress{position:fixed;top:0;left:0;height:3px;width:0%;background:linear-gradient(90deg,#003366,#c5a059);z-index:100;transition:width 100ms linear}
+  .hero-grid{background-image:linear-gradient(rgba(0,51,102,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,51,102,0.04) 1px,transparent 1px);background-size:40px 40px}
+  .dark .hero-grid{background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+  .animate-fadeup{opacity:0;animation:fadeUp .7s ease forwards}
+  .delay-1{animation-delay:.1s}.delay-2{animation-delay:.25s}.delay-3{animation-delay:.4s}.delay-4{animation-delay:.55s}
+  .wa-float{position:fixed;bottom:1.5rem;right:1.5rem;z-index:50;width:3.25rem;height:3.25rem;background:#25d366;border-radius:9999px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,211,102,0.45);transition:transform .2s ease,box-shadow .2s ease}
+  .wa-float:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(37,211,102,0.55)}
+  @keyframes wa-pulse{0%,100%{box-shadow:0 4px 20px rgba(37,211,102,0.45),0 0 0 0 rgba(37,211,102,0.3)}50%{box-shadow:0 4px 20px rgba(37,211,102,0.45),0 0 0 10px rgba(37,211,102,0)}}
+  .wa-float{animation:wa-pulse 2.5s ease infinite}
 </style>
 </head>
 

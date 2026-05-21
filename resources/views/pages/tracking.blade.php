@@ -10,96 +10,49 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
 
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            primary:       "#003366",
-            secondary:     "#c5a059",
-            accent:        "#2563eb",
-            "bg-light":    "#f8fafc",
-            "bg-dark":     "#020617",
-            "border-light":"#e2e8f0",
-            "border-dark": "#1e293b",
-          },
-          fontFamily: {
-            display: ["Sora",   "sans-serif"],
-            sans:    ["DM Sans","sans-serif"],
-          },
-          borderRadius: {
-            "4xl": "2rem",
-            "5xl": "2.5rem",
-          },
-        },
-      },
-    };
-  </script>
+  <!-- Google Fonts (deferred — non-render-blocking) -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet"/>
+  </noscript>
+
+  <!-- Material Icons (deferred — non-render-blocking) -->
+  <link rel="preload" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
+  <noscript>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+  </noscript>
+
+  <!-- Material Symbols (deferred — non-render-blocking) -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"/>
+  </noscript>
+
+  <!-- Tailwind CSS (local build) -->
+  <link rel="stylesheet" href="/css/landing.css?v={{ filemtime(public_path('css/landing.css')) }}">
 
   <style>
-    html { -webkit-font-smoothing: antialiased; }
-
-    /* ── Scroll Progress ── */
-    #scroll-progress {
-      position:fixed; top:0; left:0; height:3px; width:0%;
-      background:linear-gradient(90deg,#003366,#2563eb);
-      z-index:9999; transition:width 150ms ease-out;
-    }
-
-    /* ── Animations ── */
-    @keyframes fadeUp {
-      from { opacity:0; transform:translateY(22px); }
-      to   { opacity:1; transform:translateY(0);    }
-    }
-    .animate-fadeup { opacity:0; animation:fadeUp .6s cubic-bezier(.16,1,.3,1) forwards; }
-    .delay-1 { animation-delay:.08s; }
-    .delay-2 { animation-delay:.18s; }
-    .delay-3 { animation-delay:.28s; }
-    .delay-4 { animation-delay:.38s; }
-    .delay-5 { animation-delay:.48s; }
-
-    @keyframes growBar {
-      from { width:0%; }
-    }
-    .progress-fill { animation:growBar 1.6s cubic-bezier(.25,1,.5,1) forwards; }
-
-    /* ── Card hover ── */
-    .card-lift { transition:transform .25s ease, box-shadow .25s ease; }
-    .card-lift:hover { transform:translateY(-3px); box-shadow:0 20px 40px -10px rgba(0,51,102,.12); }
-
-    /* ── Timeline ── */
-    .timeline-track { position:relative; }
-    .timeline-track::before {
-      content:''; position:absolute; left:.875rem; top:2.2rem;
-      width:2px; height:calc(100% - 2.2rem);
-      background:linear-gradient(to bottom,#e2e8f0,transparent);
-    }
-    .dark .timeline-track::before { background:linear-gradient(to bottom,#1e293b,transparent); }
-
-    /* ── Background blobs ── */
-    .blob { position:absolute; border-radius:9999px; pointer-events:none; }
-    .blob-tr { width:480px; height:480px; top:-120px; right:-120px;
-      background:radial-gradient(circle, rgba(37,99,235,.06) 0%,transparent 70%); }
-    .blob-bl { width:380px; height:380px; bottom:-80px; left:-80px;
-      background:radial-gradient(circle, rgba(0,51,102,.05) 0%,transparent 70%); }
-
-    /* ── Status badges ── */
-    .badge-selesai { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
-    .badge-proses  { background:#fef9c3; color:#a16207; border:1px solid #fde68a; }
-    .badge-belum   { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; }
-
-    /* ── Table row hover ── */
-    .finding-row:hover td { background:rgba(37,99,235,.025); }
-
-    /* ── Truncation & expand ── */
-    .line-clamp-2 { overflow:hidden; display:-webkit-box;
-      -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+    #scroll-progress{position:fixed;top:0;left:0;height:3px;width:0%;background:linear-gradient(90deg,#003366,#2563eb);z-index:9999;transition:width 150ms ease-out}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .animate-fadeup{opacity:0;animation:fadeUp .6s cubic-bezier(.16,1,.3,1) forwards}
+    .delay-1{animation-delay:.08s}.delay-2{animation-delay:.18s}.delay-3{animation-delay:.28s}
+    .delay-4{animation-delay:.38s}.delay-5{animation-delay:.48s}
+    @keyframes growBar{from{width:0%}}
+    .progress-fill{animation:growBar 1.6s cubic-bezier(.25,1,.5,1) forwards}
+    .card-lift{transition:transform .25s ease,box-shadow .25s ease}
+    .card-lift:hover{transform:translateY(-3px);box-shadow:0 20px 40px -10px rgba(0,51,102,.12)}
+    .timeline-track{position:relative}
+    .timeline-track::before{content:'';position:absolute;left:.875rem;top:2.2rem;width:2px;height:calc(100% - 2.2rem);background:linear-gradient(to bottom,#e2e8f0,transparent)}
+    .dark .timeline-track::before{background:linear-gradient(to bottom,#1e293b,transparent)}
+    .blob{position:absolute;border-radius:9999px;pointer-events:none}
+    .blob-tr{width:480px;height:480px;top:-120px;right:-120px;background:radial-gradient(circle,rgba(37,99,235,.06) 0%,transparent 70%)}
+    .blob-bl{width:380px;height:380px;bottom:-80px;left:-80px;background:radial-gradient(circle,rgba(0,51,102,.05) 0%,transparent 70%)}
+    .badge-selesai{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+    .badge-proses{background:#fef9c3;color:#a16207;border:1px solid #fde68a}
+    .badge-belum{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+    .finding-row:hover td{background:rgba(37,99,235,.025)}
+    .line-clamp-2{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   </style>
 </head>
 
@@ -251,19 +204,22 @@
       /* Statistik tambahan (jika relation statistik ter-load) */
       $stat = $lhp->statistik;
 
+      /* Meta assignment */
+      $assignment  = $lhp->auditAssignment;
+
       /* Label status */
       $statusSelesai = in_array($lhp->status, ['final','ditandatangani']);
 
       /* Jenis pemeriksaan */
-      $jenisPemeriksaan = $lhp->jenis_pemeriksaan ?? 'Audit Kinerja';
+      $jenisPemeriksaan = $assignment?->jenis_pengawasan ?? 'Audit Kinerja';
 
-      /* Meta assignment */
-      $assignment  = $lhp->auditAssignment;
-      $unitDiperiksa = $assignment?->unitDiperiksa?->nama ?? '-';
+      $unitDiperiksa = $lhp->unitDiperiksa?->label
+          ?? $assignment?->unitDiperiksas?->pluck('label')->join(', ')
+          ?? '-';
       $namaProgram   = $assignment?->auditProgram?->nama_program ?? 'Pemeriksaan Belanja Daerah';
 
-      /* Penanggung jawab — dari relasi AuditAssignment.tim (string) atau creator */
-      $penanggungJawab = $assignment?->tim ?? $lhp->creator?->name ?? '-';
+      /* Penanggung jawab — dari AuditProgramDetail.tim atau creator */
+      $penanggungJawab = $assignment?->auditProgramDetail?->tim ?? $lhp->creator?->name ?? '-';
 
       /* Tanggal LHP — sudah di-cast ke date di model */
       $tanggalLhp = $lhp->tanggal_lhp?->translatedFormat('d F Y') ?? '-';
@@ -308,9 +264,10 @@
             Semester {{ $lhp->semester }} · {{ $lhp->tanggal_lhp?->year ?? '-' }}
           </span>
 
-          @if($lhp->irban)
+          @php $irban = $lhp->auditAssignment?->auditProgramDetail?->tim; @endphp
+          @if($irban)
           <span class="text-[11px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-full">
-            {{ $lhp->irban }}
+            {{ $irban }}
           </span>
           @endif
         </div>

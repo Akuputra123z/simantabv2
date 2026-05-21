@@ -112,7 +112,7 @@
                         </td>
                         <td class="px-4 py-4">
                             <span class="font-bold text-gray-800 dark:text-white">{{ $lhp->nomor_lhp }}</span>
-                            <div class="text-[10px] text-gray-400 uppercase tracking-tight">Irban: {{ $lhp->irban }}</div>
+                            <div class="text-[10px] text-gray-400 uppercase tracking-tight">Irban: {{ $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-' }}</div>
                         </td>
                         <td class="px-4 py-4 text-gray-600 dark:text-gray-400 max-w-[200px] truncate">
                            {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}

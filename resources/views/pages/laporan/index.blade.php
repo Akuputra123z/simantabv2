@@ -186,7 +186,7 @@
                             {{ $lhp->tanggal_lhp?->format('d/m/Y') ?? '-' }}
                         </td>
                         {{-- Data Semester Dihapus --}}
-                        <td class="px-4 py-3 text-gray-500 text-xs">{{ $lhp->irban }}</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">{{ $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-' }}</td>
                         <td class="px-4 py-3 text-center">
                             <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $statusConf }}">
                                 {{ ucfirst($lhp->status) }}

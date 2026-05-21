@@ -17,19 +17,35 @@ class AuditProgramDetailController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv|max:10240',
+            'file'             => 'required|mimes:xlsx,xls,csv|max:10240',
             'audit_program_id' => 'required|exists:audit_programs,id',
+            'mode'             => 'required|in:add,replace',
         ]);
 
         try {
             $auditProgramId = $request->audit_program_id;
-            
+
+            // Mode Replace: hapus semua data lama sebelum import
+            if ($request->mode === 'replace') {
+                $hasAssignments = AuditProgramDetail::where('audit_program_id', $auditProgramId)
+                    ->whereHas('assignments')->exists();
+                if ($hasAssignments) {
+                    return back()->with('error', 'Tidak bisa mengganti data karena sudah ada penugasan. Hapus penugasan terlebih dahulu.');
+                }
+                $count = AuditProgramDetail::where('audit_program_id', $auditProgramId)->count();
+                AuditProgramDetail::where('audit_program_id', $auditProgramId)->delete();
+            }
+
             // Eksekusi Import menggunakan Class Import
             Excel::import(new AuditProgramDetailImport($auditProgramId), $request->file('file'));
-            
+
+            $msg = $request->mode === 'replace'
+                ? ($count > 0 ? "$count data lama diganti dengan data baru." : "Data sub-program berhasil di-import (mode ganti).")
+                : 'Data sub-program berhasil ditambahkan.';
+
             return redirect()
                 ->route('audit-program.show', $auditProgramId)
-                ->with('success', 'Data sub-program berhasil di-import.');
+                ->with('success', $msg);
 
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal mengimport data: ' . $e->getMessage());
@@ -118,6 +134,41 @@ class AuditProgramDetailController extends Controller
         } catch (\Exception $e) {
             return back()->withInput()->with('error', 'Gagal memperbarui data.');
         }
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array',
+            'ids.*' => 'exists:audit_program_details,id',
+        ]);
+
+        $ids = $request->ids;
+        $auditProgramId = AuditProgramDetail::whereIn('id', $ids)->value('audit_program_id');
+
+        $blocked = AuditProgramDetail::whereIn('id', $ids)->whereHas('assignments')->pluck('id');
+        $allowed = array_diff($ids, $blocked->toArray());
+
+        if (!empty($allowed)) {
+            AuditProgramDetail::whereIn('id', $allowed)->delete();
+        }
+
+        $total = count($ids);
+        $deleted = count($allowed);
+        $skipped = count($blocked);
+
+        if ($skipped > 0 && $deleted === 0) {
+            return redirect()->route('audit-program.show', $auditProgramId)
+                ->with('error', "Tidak dapat menghapus $skipped data karena sudah memiliki penugasan.");
+        }
+
+        $msg = "$deleted data berhasil dihapus.";
+        if ($skipped > 0) {
+            $msg .= " $skipped data dilewati karena sudah memiliki penugasan.";
+        }
+
+        return redirect()->route('audit-program.show', $auditProgramId)
+            ->with('success', $msg);
     }
 
     public function destroy(AuditProgramDetail $auditProgramDetail)

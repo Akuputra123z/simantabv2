@@ -47,7 +47,7 @@ class RekapSemuaLhpSheet implements FromCollection, WithHeadings, WithStyles, Wi
                 'unit_diperiksa'   => $lhp->auditAssignment?->unitDiperiksa?->nama_unit ?? '-',
                 'tanggal_lhp'      => $lhp->tanggal_lhp?->format('d/m/Y') ?? '-',
                 'semester'         => 'Semester ' . $lhp->semester,
-                'irban'            => $lhp->irban,
+                'irban'            => $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-',
                 'status'           => ucfirst(str_replace('_', ' ', $lhp->status)),
                 'total_temuan'     => $stat?->total_temuan ?? 0,
                 'total_rekom'      => $stat?->total_rekomendasi ?? 0,

@@ -391,13 +391,16 @@ public function tracking(Request $request)
 
     if ($search) {
         $lhp = Lhp::with([
-                'auditAssignment.unitDiperiksa',
+                'unitDiperiksa',
+                'auditAssignment.unitDiperiksas',
                 'auditAssignment.auditProgram',
+                'auditAssignment.auditProgramDetail',
                 'temuans.kodeTemuan',
                 'temuans.recommendations.tindakLanjuts',
-                'statistik'
+                'statistik',
+                'creator',
             ])
-            ->withCount('temuans') // ✅ FIX: biar tidak pakai count() di blade
+            ->withCount('temuans')
             ->where('nomor_lhp', $search)
             ->first();
 

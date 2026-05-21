@@ -54,7 +54,7 @@
                     $infoRows = [
                         ['Tanggal LHP',      $lhp->tanggal_lhp?->translatedFormat('d F Y') ?? '-'],
                         ['Semester',         'Semester ' . $lhp->semester],
-                        ['IRBAN',            $lhp->irban],
+                        ['IRBAN',            $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-'],
                         ['Jenis Pemeriksaan',$lhp->jenis_pemeriksaan ?? '-'],
                         ['Unit Diperiksa',   $lhp->auditAssignment?->unitDiperiksa?->nama_unit ?? '-'],
                         ['Dibuat Oleh',      $lhp->creator?->name ?? '-'],

@@ -52,17 +52,6 @@
             </div>
 
             <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                {{-- Target Assignment --}}
-                <div class="space-y-2">
-                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Target Assignment (Unit)</label>
-                    <input 
-                        type="number" 
-                        name="target_assignment" 
-                        value="{{ old('target_assignment', $program->target_assignment) }}"
-                        class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:text-white">
-                    @error('target_assignment') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-
                 {{-- Status --}}
                 <div class="space-y-2">
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Status Program</label>

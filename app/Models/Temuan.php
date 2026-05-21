@@ -142,7 +142,9 @@ class Temuan extends Model
         $this->nilai_kerugian_desa     = $this->nilai_kerugian_desa ?? 0;
         $this->nilai_kerugian_bos_blud = $this->nilai_kerugian_bos_blud ?? 0;
 
-        $allRekom = $this->recommendations()->get();
+        $allRekom = $this->relationLoaded('recommendations')
+            ? $this->recommendations
+            : $this->recommendations()->get();
         $total    = $allRekom->count();
         $selesai  = $allRekom->where('status', 'selesai')->count();
         $proses   = $allRekom->whereIn('status', ['proses'])->count();

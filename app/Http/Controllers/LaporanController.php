@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Lhp;
 use App\Models\LhpStatistik;
+use App\Models\AuditProgramDetail;
 use App\Exports\RekapSemuaLhpExport;
 use App\Exports\RekapPerLhpExport;
 use Illuminate\Http\Request;
@@ -19,21 +20,29 @@ class LaporanController extends Controller
     {
         $user = auth()->user();
 
-        $query = Lhp::with(['statistik', 'auditAssignment.auditProgram', 'auditAssignment.unitDiperiksa'])
+        $query = Lhp::with(['statistik', 'auditAssignment.auditProgram', 'auditAssignment.unitDiperiksa', 'auditAssignment.auditProgramDetail'])
             ->forUser($user);
 
         $this->applyFilters($query, $request);
 
+        $lhpIds    = (clone $query)->withoutEagerLoads()->pluck('id');
+        $ringkasan = $this->hitungRingkasan($lhpIds);
+
         $lhps = $query->orderBy('tanggal_lhp', 'desc')->paginate(15)->withQueryString();
 
-        // Ringkasan aggregate untuk header
-        $lhpIds     = $query->pluck('id');
-        $ringkasan  = $this->hitungRingkasan($lhpIds);
-
-        $tahunList  = Lhp::forUser($user)->selectRaw('YEAR(tanggal_lhp) as tahun')
+        $tahunList = Lhp::forUser($user)->selectRaw('YEAR(tanggal_lhp) as tahun')
             ->distinct()->orderByDesc('tahun')->pluck('tahun');
 
-        $irbanList  = Lhp::forUser($user)->distinct()->orderBy('irban')->pluck('irban');
+        $irbanList = AuditProgramDetail::whereHas('assignments.lhps', function ($q) use ($user) {
+                if (!$user->hasRole('super_admin')) {
+                    $q->where('ketua_tim_id', $user->id)
+                      ->orWhereHas('members', fn($q2) => $q2->where('user_id', $user->id));
+                }
+            })
+            ->whereNotNull('tim')
+            ->distinct()
+            ->orderBy('tim')
+            ->pluck('tim');
 
         return view('pages.laporan.index', compact(
             'lhps', 'ringkasan', 'tahunList', 'irbanList'
@@ -66,6 +75,10 @@ class LaporanController extends Controller
             'statistik',
             'auditAssignment.auditProgram',
             'auditAssignment.unitDiperiksa',
+            'auditAssignment.auditProgramDetail',
+            'temuans.kodeTemuan',
+            'temuans.recommendations.tindakLanjuts.cicilans',
+            'temuans.recommendations.kodeRekomendasi',
         ])->forUser($user);
 
         $this->applyFilters($query, $request);
@@ -94,6 +107,7 @@ class LaporanController extends Controller
             'statistik',
             'auditAssignment.auditProgram',
             'auditAssignment.unitDiperiksa',
+            'auditAssignment.auditProgramDetail',
             'temuans.kodeTemuan',
             'temuans.recommendations.tindakLanjuts',
             'temuans.recommendations.kodeRekomendasi',
@@ -121,6 +135,10 @@ class LaporanController extends Controller
             'statistik',
             'auditAssignment.auditProgram',
             'auditAssignment.unitDiperiksa',
+            'auditAssignment.auditProgramDetail',
+            'temuans.kodeTemuan',
+            'temuans.recommendations.tindakLanjuts.cicilans',
+            'temuans.recommendations.kodeRekomendasi',
         ])->forUser($user);
 
         $this->applyFilters($query, $request);
@@ -138,9 +156,11 @@ class LaporanController extends Controller
             'statistik',
             'auditAssignment.auditProgram',
             'auditAssignment.unitDiperiksa',
+            'auditAssignment.auditProgramDetail',
             'temuans.kodeTemuan',
-            'temuans.recommendations.tindakLanjuts',
+            'temuans.recommendations.tindakLanjuts.cicilans',
             'temuans.recommendations.kodeRekomendasi',
+            'creator',
         ]);
 
         $filename = 'rekap-lhp-' . str_replace('/', '-', $lhp->nomor_lhp) . '-' . now()->format('Ymd') . '.xlsx';
@@ -158,7 +178,9 @@ class LaporanController extends Controller
             $query->where('semester', $request->semester);
         }
         if ($request->filled('irban')) {
-            $query->where('irban', $request->irban);
+            $query->whereHas('auditAssignment.auditProgramDetail', function ($q) use ($request) {
+                $q->where('tim', $request->irban);
+            });
         }
         if ($request->filled('status')) {
             $query->where('status', $request->status);

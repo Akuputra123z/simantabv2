@@ -17,8 +17,6 @@ return new class extends Migration
                   ->constrained('users')
                   ->restrictOnDelete();
             $table->string('nomor_surat', 255)->unique();
-            $table->string('nama_tim', 255)->nullable();
-            $table->string('jenis_pengawasan', 255)->index();
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');
             $table->string('status', 20)->default('draft');

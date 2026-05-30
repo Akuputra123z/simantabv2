@@ -18,7 +18,18 @@ class AuditProgramController extends Controller
     {
         $query = AuditProgram::query()
             ->with(['details'])
-            ->withCount(['details', 'assignments']);
+            ->withCount([
+                'details',
+                'assignments',
+                'details as sudah_lhp_count' => function ($q) {
+                    $q->where(function ($q) {
+                        $q->whereHas('assignments.lhps', function ($q) {
+                            $q->whereIn('status', ['final', 'ditandatangani'])
+                              ->whereHas('statistik', fn ($s) => $s->where('persen_selesai_gabungan', 100));
+                        })->orWhereHas('assignments', fn ($q) => $q->where('status', 'selesai'));
+                    });
+                },
+            ]);
 
         // Logika Filter
         if ($request->filled('search')) {
@@ -75,6 +86,18 @@ class AuditProgramController extends Controller
      */
     public function show(AuditProgram $auditProgram)
     {
+        $auditProgram->loadCount([
+            'details',
+            'details as sudah_lhp_count' => function ($q) {
+                $q->where(function ($q) {
+                    $q->whereHas('assignments.lhps', function ($q) {
+                        $q->whereIn('status', ['final', 'ditandatangani'])
+                          ->whereHas('statistik', fn ($s) => $s->where('persen_selesai_gabungan', 100));
+                    })->orWhereHas('assignments', fn ($q) => $q->where('status', 'selesai'));
+                });
+            },
+        ]);
+
         $search = request('search');
 
         $details = $auditProgram->details()

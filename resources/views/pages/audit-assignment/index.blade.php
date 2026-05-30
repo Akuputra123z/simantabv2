@@ -98,6 +98,18 @@
                         <div class="text-[10px] text-blue-500 font-medium mt-1 uppercase italic">
                             {{ $item->auditProgramDetail->nama_detail_program ?? '-' }}
                         </div>
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            @if($item->auditProgramDetail?->jenis_kegiatan)
+                                <span class="px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-900/20 text-[9px] font-semibold text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30">
+                                    {{ $item->auditProgramDetail->jenis_kegiatan }}
+                                </span>
+                            @endif
+                            @if($item->auditProgramDetail?->tim)
+                                <span class="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-[9px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30">
+                                    Tim: {{ $item->auditProgramDetail->tim }}
+                                </span>
+                            @endif
+                        </div>
                     </td>
 
                     {{-- Unit Diperiksa (Pivot Many-to-Many) --}}

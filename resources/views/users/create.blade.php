@@ -100,9 +100,15 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Unit Kerja</label>
-                            <input type="text" name="unit_kerja" value="{{ old('unit_kerja') }}"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Sub Unit Organisasi</label>
+                            <select name="unit_kerja"
+                                    class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer @error('unit_kerja') border-red-500 @enderror">
+                                <option value="">-- Pilih Sub Unit --</option>
+                                @foreach($unitKerjaOptions as $opt)
+                                    <option value="{{ $opt }}" {{ old('unit_kerja') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                @endforeach
+                            </select>
+                            @error('unit_kerja') <p class="text-xs text-red-500 mt-1.5 font-medium">{{ $message }}</p> @enderror
                         </div>
 
                         {{-- Keamanan --}}

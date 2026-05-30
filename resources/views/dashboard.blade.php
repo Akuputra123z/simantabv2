@@ -3,7 +3,6 @@
 @section('content')
 @php
     $user = auth()->user();
-    $totalRekom = ($rekomBelum + $rekomProses + $rekomSelesai) ?: 1;
 @endphp
 
 <main class="min-h-screen bg-gray-50 dark:bg-[#1a222c]">
@@ -33,11 +32,11 @@
                         </svg>
                     </div>
                     <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
-                        {{ $lhpFinal }} Final
+                        {{ $lhpFinal ?? 0 }} Final
                     </span>
                 </div>
                 <div class="mt-auto pt-4">
-                    <h4 class="text-3xl font-bold text-slate-800 dark:text-white">{{ $totalLhp }}</h4>
+                    <h4 class="text-3xl font-bold text-slate-800 dark:text-white">{{ $totalLhp ?? 0 }}</h4>
                     <p class="mt-0.5 text-sm font-medium text-slate-500">Total LHP</p>
                 </div>
             </div>
@@ -51,11 +50,11 @@
                         </svg>
                     </div>
                     <span class="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-500 dark:bg-orange-900/20 dark:text-orange-400">
-                        {{ $temuanProses }} Proses
+                        {{ $temuanProses ?? 0 }} Proses
                     </span>
                 </div>
                 <div class="mt-auto pt-4">
-                    <h4 class="text-3xl font-bold text-slate-800 dark:text-white">{{ $totalTemuan }}</h4>
+                    <h4 class="text-3xl font-bold text-slate-800 dark:text-white">{{ $totalTemuan ?? 0 }}</h4>
                     <p class="mt-0.5 text-sm font-medium text-slate-500">Total Temuan</p>
                 </div>
             </div>
@@ -69,16 +68,16 @@
                         </svg>
                     </div>
                     <span class="text-[10px] font-bold uppercase tracking-wide text-emerald-500">
-                        {{ round($rekomSelesai / $totalRekom * 100) }}%
+                        {{ $totalRekom > 0 ? round(($rekomSelesai ?? 0) / $totalRekom * 100) : 0 }}%
                     </span>
                 </div>
                 <div class="mt-auto pt-4">
-                    <h4 class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{{ $rekomSelesai }}</h4>
+                    <h4 class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{{ $rekomSelesai ?? 0 }}</h4>
                     <p class="mt-0.5 text-sm font-medium text-slate-500">Selesai TL</p>
                 </div>
                 <div class="mt-3 h-1 w-full rounded-full bg-gray-100 dark:bg-white/10">
                     <div class="h-full rounded-full bg-emerald-500"
-                         style="width: {{ min(100, round($rekomSelesai / $totalRekom * 100)) }}%"></div>
+                         style="width: {{ $totalRekom > 0 ? min(100, round(($rekomSelesai ?? 0) / $totalRekom * 100)) : 0 }}%"></div>
                 </div>
             </div>
 
@@ -138,7 +137,9 @@
             {{-- Line Chart --}}
             <div class="col-span-12 xl:col-span-8 rounded-2xl border border-gray-200 bg-white px-5 pt-7.5 pb-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] sm:px-7.5">
                 <h4 class="mb-4 text-xl font-bold text-slate-800 dark:text-white">Tren Penyelesaian (%)</h4>
-                <div id="chartLineProgress"></div>
+                <div class="overflow-x-auto">
+                    <div id="chartLineProgress" class="min-w-[600px]"></div>
+                </div>
             </div>
 
             {{-- Donut Chart --}}
@@ -171,10 +172,104 @@
             </div>
 
         </div>
+
+        {{-- ================= LHP TERBARU ================= --}}
+        @if(isset($lhpTerbaru) && $lhpTerbaru->count())
+        <div class="mt-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] md:mt-6">
+            <div class="flex items-center justify-between mb-4">
+                <h4 class="text-lg font-bold text-slate-800 dark:text-white">LHP Terbaru</h4>
+                <span class="text-xs text-slate-400">{{ $lhpTerbaru->count() }} data</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="border-b border-gray-100 dark:border-gray-800 text-[10px] uppercase tracking-widest text-gray-400 font-bold">
+                        <tr>
+                            <th class="pb-3 pr-4">No. LHP</th>
+                            <th class="pb-3 pr-4">Tanggal</th>
+                            <th class="pb-3 pr-4">Status</th>
+                            <th class="pb-3 text-right">Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50 dark:divide-gray-800/50">
+                        @foreach($lhpTerbaru as $lhp)
+                        <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                            <td class="py-3 pr-4 font-medium text-gray-800 dark:text-white">{{ $lhp->nomor_lhp ?? '-' }}</td>
+                            <td class="py-3 pr-4 text-gray-500">{{ $lhp->tanggal_lhp?->translatedFormat('d M Y') ?? '-' }}</td>
+                            <td class="py-3 pr-4">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $lhp->status === 'final' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800' }}">
+                                    {{ $lhp->status ?? '-' }}
+                                </span>
+                            </td>
+                            <td class="py-3 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <div class="h-1.5 w-20 rounded-full bg-gray-100 dark:bg-white/10">
+                                        <div class="h-full rounded-full bg-blue-500" style="width: {{ $lhp->persen_selesai }}%"></div>
+                                    </div>
+                                    <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">{{ number_format($lhp->persen_selesai, 0) }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
+        {{-- ================= TL JATUH TEMPO ================= --}}
+        @if(isset($tlJatuhTempo) && $tlJatuhTempo->count())
+        <div class="mt-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] md:mt-6">
+            <div class="flex items-center justify-between mb-4">
+                <h4 class="text-lg font-bold text-slate-800 dark:text-white">TL Jatuh Tempo (30 Hari)</h4>
+                <span class="text-xs text-slate-400">{{ $tlJatuhTempo->count() }} data</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="border-b border-gray-100 dark:border-gray-800 text-[10px] uppercase tracking-widest text-gray-400 font-bold">
+                        <tr>
+                            <th class="pb-3 pr-4">Uraian</th>
+                            <th class="pb-3 pr-4">Jatuh Tempo</th>
+                            <th class="pb-3 pr-4">Nilai</th>
+                            <th class="pb-3 text-right">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50 dark:divide-gray-800/50">
+                        @foreach($tlJatuhTempo as $tl)
+                        <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                            <td class="py-3 pr-4 max-w-[250px]">
+                                <p class="truncate font-medium text-gray-800 dark:text-white">{{ $tl->recommendation?->uraian_rekom ?? '-' }}</p>
+                            </td>
+                            <td class="py-3 pr-4">
+                                <span class="text-sm {{ $tl->tanggal_jatuh_tempo && $tl->tanggal_jatuh_tempo->isPast() ? 'text-red-600 font-bold' : 'text-gray-500' }}">
+                                    {{ $tl->tanggal_jatuh_tempo?->translatedFormat('d M Y') ?? '-' }}
+                                </span>
+                            </td>
+                            <td class="py-3 pr-4 text-sm text-gray-600 dark:text-gray-400">
+                                Rp {{ number_format($tl->recommendation?->nilai_rekom ?? 0, 0, ',', '.') }}
+                            </td>
+                            <td class="py-3 text-right">
+                                @php
+                                    $tlBadge = match($tl->status_verifikasi) {
+                                        'lunas' => 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400',
+                                        'berjalan' => 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400',
+                                        default => 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400',
+                                    };
+                                @endphp
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $tlBadge }}">
+                                    {{ str_replace('_', ' ', $tl->status_verifikasi ?? '-') }}
+                                </span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
     </div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const isDark = document.documentElement.classList.contains('dark');
@@ -191,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     new ApexCharts(document.querySelector("#chartDonutRekom"), {
         series: [{{ $rekomBelum ?? 0 }}, {{ $rekomProses ?? 0 }}, {{ $rekomSelesai ?? 0 }}],
-        chart: { type: "donut", width: 320 },
+        chart: { type: "donut", width: "100%" },
         colors: ["#ef4444", "#f59e0b", "#10b981"],
         labels: ["Belum TL", "Proses", "Selesai"],
         legend: { show: false },
@@ -202,14 +297,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     new ApexCharts(document.querySelector("#chartLineProgress"), {
         series: [{ name: "Progress", data: @json($bulanPersen ?? []) }],
-        chart: { type: "area", height: 350, width: "100%", toolbar: { show: false } },
+        chart: { type: "line", height: 350, toolbar: { show: false }, zoom: { enabled: false } },
         colors: ["#3b82f6"],
         dataLabels: { enabled: false },
         stroke: { curve: "smooth", width: 3 },
-        fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [20, 100] } },
-        xaxis: { categories: @json($bulanLabels ?? ["Jan", "Feb", "Mar"]), tooltip: { enabled: false } },
+        markers: { size: 5, strokeWidth: 2, strokeColors: "#fff", hover: { size: 7 } },
+        xaxis: { categories: @json($bulanLabels ?? []), axisBorder: { show: false }, axisTicks: { show: false } },
+        yaxis: { min: 0, max: 100, labels: { formatter: (v) => v + "%" } },
         grid: { strokeDashArray: 5, borderColor: isDark ? "#333d4a" : "#e2e8f0" },
-        yaxis: { labels: { formatter: (v) => v + "%" } }
+        tooltip: { y: { formatter: (v) => v + "%" } }
     }).render();
 });
 </script>

@@ -112,17 +112,7 @@
                         </select>
                     </div>
 
-                    {{-- Jenis Pengawasan --}}
-                    <div class="space-y-1.5">
-                        <label for="jenis_pengawasan" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Jenis Pengawasan <span class="text-red-400">*</span></label>
-                        <select name="jenis_pengawasan" id="jenis_pengawasan" required
-                            class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
-                            <option value="">Pilih jenis</option>
-                            @foreach(\App\Models\AuditAssignment::listJenisPengawasan() as $jenis)
-                                <option value="{{ $jenis }}" @selected(old('jenis_pengawasan') == $jenis)>{{ ucfirst(str_replace('_', ' ', $jenis)) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    
 
                     {{-- Nomor Surat --}}
                     <div class="space-y-1.5">
@@ -132,13 +122,8 @@
                             class="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all" required>
                     </div>
 
-                    {{-- Nama Tim --}}
-                    <div class="space-y-1.5 lg:col-span-2">
-                        <label for="nama_tim" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Nama Tim Audit <span class="ml-1 text-gray-300 font-normal lowercase">(opsional)</span></label>
-                        <input type="text" name="nama_tim" id="nama_tim" value="{{ old('nama_tim') }}"
-                            placeholder="Contoh: Tim Audit Desa Wilayah Timur 2026"
-                            class="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
-                    </div>
+                
+                   
                 </div>
 
                 {{-- Unit Diperiksa --}}

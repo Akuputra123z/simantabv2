@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. PKPT CUSTOM SEARCHABLE DROPDOWN
     // ══════════════════════════════════════════════════════════════════
     let pkptOptions = [];
+    let pkptDetailMap = {};
     let pkptIsOpen  = false;
 
     const pkptWrapper = document.createElement('div');
@@ -91,6 +92,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pkptIsOpen && !pkptWrapper.contains(e.target)) pkptClose();
     });
 
+    function pkptUpdateInfo(value) {
+        const $info = document.getElementById('pkpt-info');
+        if (!$info) return;
+        const data = pkptDetailMap[value] || {};
+        const jenis = data.jenis_kegiatan || '';
+        const tim = data.tim || '';
+        if (jenis || tim) {
+            $info.innerHTML = `
+                <div class="flex flex-wrap gap-3 mt-2 text-xs">
+                    ${jenis ? `<span class="inline-flex items-center gap-1 rounded-md bg-purple-50 dark:bg-purple-900/20 px-2 py-1 text-purple-700 dark:text-purple-300 font-medium"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg> Kegiatan: ${esc(jenis)}</span>` : ''}
+                    ${tim ? `<span class="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-900/20 px-2 py-1 text-blue-700 dark:text-blue-300 font-medium"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg> Tim: ${esc(tim)}</span>` : ''}
+                </div>`;
+            $info.classList.remove('hidden');
+        } else {
+            $info.classList.add('hidden');
+        }
+    }
+
     function pkptSetValue(value, label) {
         Array.from($detSelect.options).forEach(o => $detSelect.removeChild(o));
         if (value) {
@@ -107,6 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
             $label.textContent = 'Pilih detail setelah memilih program';
             $label.className   = 'truncate flex-1 mr-2 text-gray-400 dark:text-gray-500';
         }
+
+        pkptUpdateInfo(value);
     }
 
     function pkptRenderList(query) {
@@ -122,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         $pkptList.innerHTML = filtered.map(o => {
             const isSel = o.value === $detSelect.value;
             const labelHtml = q ? esc(o.label).replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark class="bg-yellow-100 dark:bg-yellow-800/40 not-italic font-semibold rounded px-0.5">$1</mark>') : esc(o.label);
-            return `<div class="pkpt-opt px-4 py-3 cursor-pointer text-sm leading-snug transition-colors ${isSel ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/[0.04]'}" data-value="${o.value}" data-label="${esc(o.label)}">${labelHtml}</div>`;
+            return `<div class="pkpt-opt px-4 py-3 cursor-pointer text-sm leading-snug transition-colors ${isSel ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/[0.04]'}" data-value="${o.value}" data-label="${esc(o.label)}" data-jenis-kegiatan="${esc(o.jenis_kegiatan)}" data-tim="${esc(o.tim)}">${labelHtml}</div>`;
         }).join('');
 
         $pkptList.querySelectorAll('.pkpt-opt').forEach(el => {
@@ -170,10 +191,19 @@ async function loadProgramDetails(programId, selectedDetailId = null) {
 
         const opts = details.map(d => ({
             value: String(d.id),
-            // Menggunakan nama_detail_program sesuai migration dan model
             label: (d.nama_detail_program || 'Tanpa Nama'),
+            jenis_kegiatan: d.jenis_kegiatan || '',
+            tim: d.tim || '',
             disabled: false,
         }));
+        
+        pkptDetailMap = {};
+        details.forEach(d => {
+            pkptDetailMap[String(d.id)] = {
+                jenis_kegiatan: d.jenis_kegiatan || '',
+                tim: d.tim || '',
+            };
+        });
         
         pkptSetOptions(opts);
         

@@ -30,8 +30,6 @@ class AuditProgramDetail extends Model
         'anggaran' => 'decimal:2',
     ];
 
-    protected $appends = ['progress'];
-
     /**
      * Relasi ke Program Kerja Utama (PKPT)
      */
@@ -49,14 +47,20 @@ class AuditProgramDetail extends Model
     }
 
     /**
-     * Accessor Progress Otomatis
+     * Accessor Progress Otomatis — pakai assignments_count bila sudah di-load
      */
     public function getProgressAttribute(): float
     {
-        $total = $this->assignments()->count();
+        $total = array_key_exists('assignments_count', $this->attributes)
+            ? (int) $this->attributes['assignments_count']
+            : $this->assignments()->count();
+
         if ($total === 0) return 0;
 
-        $selesai = $this->assignments()->where('status', 'selesai')->count();
+        $selesai = array_key_exists('assignments_selesai_count', $this->attributes)
+            ? (int) $this->attributes['assignments_selesai_count']
+            : $this->assignments()->where('status', 'selesai')->count();
+
         return round(($selesai / $total) * 100, 2);
     }
     public function auditProgram()

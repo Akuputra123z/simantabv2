@@ -72,23 +72,20 @@
         </div>
 
         <div>
-            <dt class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Jenis Pengawasan</dt>
-            <dd class="mt-1">
-                <span class="rounded bg-purple-50 px-2 py-0.5 text-xs font-bold uppercase text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
-                    {{ str_replace('_', ' ', $data->jenis_pengawasan) }}
-                </span>
+            <dt class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Tim</dt>
+            <dd class="mt-1 text-sm font-semibold text-gray-800 dark:text-white">
+                {{ $data->auditProgramDetail?->tim ?? '-' }}
             </dd>
         </div>
+
+       
 
         <div>
             <dt class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Nomor Surat</dt>
             <dd class="mt-1 text-sm font-mono font-medium text-blue-600 dark:text-blue-400">{{ $data->nomor_surat }}</dd>
         </div>
 
-        <div>
-            <dt class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Nama Tim</dt>
-            <dd class="mt-1 text-sm font-semibold text-gray-800 dark:text-white">{{ $data->nama_tim ?? '-' }}</dd>
-        </div>
+       
 
         {{-- ── UNIT DIPERIKSA (OPTIMIZED) ── --}}
         <div class="sm:col-span-2 lg:col-span-3 mt-4">
@@ -269,6 +266,16 @@
                 <dd class="mt-1 text-sm text-gray-800 dark:text-white">{{ $data->auditProgramDetail->tujuan }}</dd>
             </div>
             @endif
+            <div>
+                <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Jenis Kegiatan</dt>
+                <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">{{ $data->auditProgramDetail->jenis_kegiatan ?? '-' }}</dd>
+            </div>
+
+            <div>
+                <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Tim</dt>
+                <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">{{ $data->auditProgramDetail->tim ?? '-' }}</dd>
+            </div>
+
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Personil</dt>
                 <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">{{ $data->auditProgramDetail->personil ?? '-' }}</dd>

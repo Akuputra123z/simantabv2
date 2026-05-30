@@ -60,7 +60,8 @@ class UserController extends Controller
     public function create(): View
     {
         $roles = Role::orderBy('name')->get(['id', 'name']);
-        return view('users.create', compact('roles'));
+        $unitKerjaOptions = User::UNIT_KERJA_OPTIONS;
+        return view('users.create', compact('roles', 'unitKerjaOptions'));
     }
 
     // ── Store ─────────────────────────────────────────────────────────────────
@@ -76,17 +77,18 @@ class UserController extends Controller
             'password'  => ['required', Password::min(8)->letters()->numbers()],
             'role'      => ['required', 'string', 'exists:roles,name'],
             'is_active' => ['boolean'],
-            // Turnstile sudah dipastikan tidak ada di sini
+            'unit_kerja' => ['nullable', 'string', Rule::in(User::UNIT_KERJA_OPTIONS)],
         ]);
 
         $user = User::create([
-            'name'      => $validated['name'],
-            'email'     => $validated['email'],
-            'nip'       => $validated['nip'] ?? null,
-            'jabatan'   => $validated['jabatan'] ?? null,
-            'phone'     => $validated['phone'] ?? null,
-            'password'  => Hash::make($validated['password']),
-            'is_active' => $request->boolean('is_active', true),
+            'name'       => $validated['name'],
+            'email'      => $validated['email'],
+            'nip'        => $validated['nip'] ?? null,
+            'jabatan'    => $validated['jabatan'] ?? null,
+            'unit_kerja' => $validated['unit_kerja'] ?? null,
+            'phone'      => $validated['phone'] ?? null,
+            'password'   => Hash::make($validated['password']),
+            'is_active'  => $request->boolean('is_active', true),
         ]);
 
         $user->assignRole($validated['role']);
@@ -110,7 +112,8 @@ class UserController extends Controller
     {
         $user->load('roles');
         $roles = Role::orderBy('name')->get(['id', 'name']);
-        return view('users.edit', compact('user', 'roles'));
+        $unitKerjaOptions = User::UNIT_KERJA_OPTIONS;
+        return view('users.edit', compact('user', 'roles', 'unitKerjaOptions'));
     }
 
     // ── Update ────────────────────────────────────────────────────────────────
@@ -126,6 +129,7 @@ class UserController extends Controller
             'password'  => ['nullable', Password::min(8)->letters()->numbers()],
             'role'      => ['required', 'string', 'exists:roles,name'],
             'is_active' => ['boolean'],
+            'unit_kerja' => ['nullable', 'string', Rule::in(User::UNIT_KERJA_OPTIONS)],
         ]);
 
         if ($user->id === auth()->id() && ! $request->boolean('is_active')) {
@@ -133,12 +137,13 @@ class UserController extends Controller
         }
 
         $user->update([
-            'name'      => $validated['name'],
-            'email'     => $validated['email'],
-            'nip'       => $validated['nip'] ?? null,
-            'jabatan'   => $validated['jabatan'] ?? null,
-            'phone'     => $validated['phone'] ?? null,
-            'is_active' => $request->boolean('is_active', true),
+            'name'       => $validated['name'],
+            'email'      => $validated['email'],
+            'nip'        => $validated['nip'] ?? null,
+            'jabatan'    => $validated['jabatan'] ?? null,
+            'unit_kerja' => $validated['unit_kerja'] ?? null,
+            'phone'      => $validated['phone'] ?? null,
+            'is_active'  => $request->boolean('is_active', true),
         ]);
 
         if (! empty($validated['password'])) {

@@ -93,8 +93,13 @@
                                 <input type="text" name="jabatan" value="{{ old('jabatan', $user->jabatan) }}" class="form-input-styled">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Kerja</label>
-                                <input type="text" name="unit_kerja" value="{{ old('unit_kerja', $user->unit_kerja) }}" class="form-input-styled">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sub Unit Organisasi</label>
+                                <select name="unit_kerja" class="form-input-styled">
+                                    <option value="">-- Pilih Sub Unit --</option>
+                                    @foreach($unitKerjaOptions as $opt)
+                                        <option value="{{ $opt }}" {{ old('unit_kerja', $user->unit_kerja) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
                     </div>

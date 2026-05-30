@@ -27,7 +27,7 @@ Route::get('/tracking', function () {
     return view('pages.tracking', ['search' => null, 'lhp' => null]);
 })->name('tracking.public');
 
-Route::post('/tracking', [LhpController::class, 'tracking'])->name('tracking.public');
+Route::post('/tracking', [LhpController::class, 'tracking'])->name('tracking.public.post');
 
 // --- GRUP 1: Akses untuk Semua User (Login & Aktif) ---
 Route::middleware(['auth', 'active'])->group(function () {

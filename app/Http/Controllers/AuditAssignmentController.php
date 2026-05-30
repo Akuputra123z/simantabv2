@@ -85,8 +85,6 @@ class AuditAssignmentController extends Controller
             'unit_diperiksa_ids.*'    => 'exists:unit_diperiksas,id',
             'ketua_tim_id'            => 'required|exists:users,id',
             'nomor_surat'             => 'required|string|max:255|unique:audit_assignments,nomor_surat',
-            'nama_tim'                => 'nullable|string|max:255',
-            'jenis_pengawasan'        => 'required|string|max:255',
             'tanggal_mulai'           => 'required|date',
             'tanggal_selesai'         => 'required|date|after_or_equal:tanggal_mulai',
             'status'                  => 'required|in:draft,berjalan,selesai',
@@ -253,7 +251,7 @@ class AuditAssignmentController extends Controller
             }
         })
         ->orderBy('nama_detail_program')
-        ->get(['id', 'nama_detail_program']);
+        ->get(['id', 'nama_detail_program', 'jenis_kegiatan', 'tim']);
 
     return response()->json($details);
 }

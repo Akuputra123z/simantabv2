@@ -58,6 +58,9 @@ class AuditProgram extends Model
      */
     public function getTargetAssignmentAttribute(): int
     {
+        if (array_key_exists('details_count', $this->attributes)) {
+            return (int) $this->attributes['details_count'];
+        }
         return $this->details()->count();
     }
 
@@ -67,6 +70,9 @@ class AuditProgram extends Model
      */
     public function getSudahLhpAttribute(): int
     {
+        if (array_key_exists('sudah_lhp_count', $this->attributes)) {
+            return (int) $this->attributes['sudah_lhp_count'];
+        }
         return $this->details()
             ->where(function($q) {
                 $q->whereHas('assignments.lhps', function($q) {

@@ -49,6 +49,16 @@ class User extends Authenticatable
     public const ROLE_ANGGOTA            = 'anggota';
     public const ROLE_STAFF_INSPEKTORAT  = 'staff_inspektorat';
 
+    public const UNIT_KERJA_OPTIONS = [
+        'Inspektur',
+        'Sekretariat',
+        'Irban I',
+        'Irban II',
+        'Irban III',
+        'Irban IV',
+        'Irban Sus',
+    ];
+
     public const ROLES = [
         self::ROLE_SUPER_ADMIN        => 'Super Admin',
         self::ROLE_KEPALA_INSPEKTORAT => 'Kepala Inspektorat',

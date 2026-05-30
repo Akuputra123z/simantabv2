@@ -69,7 +69,7 @@
                     </div>
 
                     <div>
-                        <p class="text-gray-400 text-xs mb-1">Unit Kerja</p>
+                        <p class="text-gray-400 text-xs mb-1">Sub Unit Organisasi</p>
                         <p class="font-medium text-gray-800 dark:text-gray-200">
                             {{ $user->unit_kerja ?: '—' }}
                         </p>

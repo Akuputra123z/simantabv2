@@ -61,9 +61,17 @@ use Illuminate\Support\Facades\Storage;
         ->latest()
         ->get();
 
+    // Map (assignment_id → [unit_diperiksa_id]) yang sudah punya LHP non-dibatalkan
+    $usedUnitMap = Lhp::whereIn('audit_assignment_id', $assignments->pluck('id'))
+        ->where('status', '!=', 'dibatalkan')
+        ->select('audit_assignment_id', 'unit_diperiksa_id')
+        ->get()
+        ->groupBy('audit_assignment_id')
+        ->map(fn($items) => $items->pluck('unit_diperiksa_id')->toArray());
+
     $kodeTemuans = KodeTemuan::orderBy('kode')->get();
 
-    return view('pages.lhps.create', compact('assignments', 'kodeTemuans'));
+    return view('pages.lhps.create', compact('assignments', 'kodeTemuans', 'usedUnitMap'));
 }
         // Contoh di Controller yang menghandle API /lhp/{id}/temuans
 public function getTemuans($lhpId) {
@@ -361,7 +369,7 @@ public function update(Request $request, Lhp $lhp)
                 return back()->with('error', 'Pilih data dulu.');
             }
 
-            Lhp::whereIn('id', $request->ids)->get()->each(function ($lhp) {
+            Lhp::whereIn('id', $request->ids)->with('attachments')->get()->each(function ($lhp) {
                 foreach ($lhp->attachments as $file) {
                     Storage::disk('public')->delete($file->file_path);
                 }

@@ -257,6 +257,7 @@
 
 const ALL_ASSIGNMENTS = @json($assignmentData);
 const KODE_TEMUANS    = @json($kodeTemuanData);
+const USED_UNIT_MAP   = @json($usedUnitMap);
 
 // ── Cascade Logic ──────────────────────────────────────────────────
 
@@ -339,17 +340,28 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!assignmentId) return;
 
         const assignment = ALL_ASSIGNMENTS.find(a => String(a.id) === String(assignmentId));
+        const usedIds    = USED_UNIT_MAP[assignmentId] || [];
 
         if (assignment && assignment.units.length > 0) {
-            assignment.units.forEach(u => {
+            const available = assignment.units.filter(u => !usedIds.includes(u.id));
+
+            if (available.length === 0) {
+                tsUnit.addOption({
+                    value: '',
+                    text: '-- Semua unit sudah dibuatkan LHP --',
+                });
+                return;
+            }
+
+            available.forEach(u => {
                 tsUnit.addOption({ value: u.id, text: u.nama });
             });
             tsUnit.enable();
 
-            // Jika hanya 1 unit, otomatis pilih dan isi hidden input
-            if (assignment.units.length === 1) {
-                tsUnit.setValue(assignment.units[0].id);
-                document.getElementById('hidden-unit-id').value = assignment.units[0].id;
+            // Jika hanya 1 unit tersedia, otomatis pilih
+            if (available.length === 1) {
+                tsUnit.setValue(available[0].id);
+                document.getElementById('hidden-unit-id').value = available[0].id;
             }
         }
     });

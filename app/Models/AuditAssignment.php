@@ -26,8 +26,6 @@ class AuditAssignment extends Model
         // unit_diperiksa_id DIHAPUS — relasi lewat pivot
         'ketua_tim_id',
         'nomor_surat',
-        'nama_tim',
-        'jenis_pengawasan',
         'tanggal_mulai',
         'tanggal_selesai',
         'status',

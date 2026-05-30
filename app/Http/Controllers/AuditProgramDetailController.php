@@ -33,10 +33,12 @@ class AuditProgramDetailController extends Controller
             $deletedCount = 0;
 
             if ($request->mode === 'replace') {
-                $allDetails = AuditProgramDetail::where('audit_program_id', $auditProgramId)->get();
+                $allDetails = AuditProgramDetail::where('audit_program_id', $auditProgramId)
+                    ->withExists('assignments')
+                    ->get();
 
                 foreach ($allDetails as $detail) {
-                    if ($detail->assignments()->exists()) {
+                    if ($detail->assignments_exists) {
                         $skippedNames[] = $detail->nama_detail_program;
                     } else {
                         $detail->delete();

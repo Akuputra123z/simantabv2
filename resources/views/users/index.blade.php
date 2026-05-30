@@ -90,7 +90,7 @@
                             <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase">User</th>
                             <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase">NIP / Jabatan</th>
                             <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase">Role</th>
-                            <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase text-center">Status</th>
+                            <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase">Sub Unit</th>
                             <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase text-right">Aksi</th>
                         </tr>
                     </thead>
@@ -125,20 +125,48 @@
                                 </span>
                             </td>
 
-                            {{-- Status --}}
-                            <td class="px-5 py-4 text-center">
-                                <span class="px-2 py-1 text-xs rounded
-                                    {{ $user->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                    {{ $user->is_active ? 'Aktif' : 'Nonaktif' }}
-                                </span>
+                            {{-- Sub Unit --}}
+                            <td class="px-5 py-4">
+                                <span class="text-xs font-medium text-gray-700">{{ $user->unit_kerja ?: '-' }}</span>
                             </td>
 
                             {{-- Aksi --}}
-                            <td class="px-5 py-4 text-right">
-                                <div class="flex justify-end gap-2">
-                                    <a href="{{ route('users.show', $user) }}" class="text-gray-500 hover:text-indigo-600">Detail</a>
+                            <td class="px-5 py-4">
+                                <div class="flex items-center justify-end gap-2">
+                                    @can('user.view')
+                                    <a href="{{ route('users.show', $user) }}"
+                                       class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition hover:border-blue-200 hover:text-blue-600 dark:border-gray-700"
+                                       title="Detail">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </a>
+                                    @endcan
+
                                     @can('user.edit')
-                                        <a href="{{ route('users.edit', $user) }}" class="text-blue-500">Edit</a>
+                                    <a href="{{ route('users.edit', $user) }}"
+                                       class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition hover:border-gray-300 hover:text-gray-700 dark:border-gray-700"
+                                       title="Edit">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </a>
+                                    @endcan
+
+                                    @can('user.delete')
+                                    <form action="{{ route('users.destroy', $user) }}" method="POST"
+                                          onsubmit="return confirm('Hapus user {{ $user->name }}?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit"
+                                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition hover:border-red-200 hover:text-red-600 dark:border-gray-700"
+                                                title="Hapus">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </form>
                                     @endcan
                                 </div>
                             </td>

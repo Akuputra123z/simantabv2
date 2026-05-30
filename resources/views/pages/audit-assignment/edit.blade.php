@@ -94,24 +94,7 @@
                                 <option value="">Pilih detail setelah memilih program</option>
                             @endif
                         </select>
-                    </div>
-
-                    {{-- Jenis Pengawasan --}}
-                    <div class="space-y-1.5">
-                        <label for="jenis_pengawasan" class="block text-xs font-medium text-gray-500 dark:text-gray-400">
-                            Jenis pengawasan <span class="text-red-400">*</span>
-                        </label>
-                        <select name="jenis_pengawasan" id="jenis_pengawasan" required
-                            class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm
-                                   focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none
-                                   dark:bg-gray-900 dark:border-gray-700 dark:text-white">
-                            <option value="">Pilih jenis</option>
-                            @foreach(\App\Models\AuditAssignment::listJenisPengawasan() as $jenis)
-                                <option value="{{ $jenis }}" @selected(old('jenis_pengawasan', $data->jenis_pengawasan) == $jenis)>
-                                    {{ ucfirst(str_replace('_', ' ', $jenis)) }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div id="pkpt-info" class="hidden"></div>
                     </div>
 
                     {{-- Nomor Surat --}}
@@ -128,18 +111,7 @@
                             required>
                     </div>
 
-                    {{-- Nama Tim --}}
-                    <div class="space-y-1.5 md:col-span-2">
-                        <label for="nama_tim" class="block text-xs font-medium text-gray-500 dark:text-gray-400">
-                            Nama tim audit <span class="ml-1 text-gray-300 font-normal">(opsional)</span>
-                        </label>
-                        <input type="text" name="nama_tim" id="nama_tim"
-                            value="{{ old('nama_tim', $data->nama_tim) }}"
-                            placeholder="Contoh: Tim Audit Laweyan 2026"
-                            class="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm
-                                   focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none
-                                   dark:bg-gray-900 dark:border-gray-700 dark:text-white">
-                    </div>
+                   
                 </div>
 
                 {{-- Unit Diperiksa --}}

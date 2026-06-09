@@ -119,7 +119,7 @@ class AuditProgramDetailController extends Controller
 
     public function show($id)
     {
-        $detail = AuditProgramDetail::with(['parentProgram', 'assignments.ketuaTim', 'assignments.unitDiperiksa'])->findOrFail($id);
+        $detail = AuditProgramDetail::with(['parentProgram', 'assignments.ketuaTim', 'assignments.unitDiperiksas'])->findOrFail($id);
         $assignments = $detail->assignments;
         return view('pages.audit-program-detail.show', compact('detail', 'assignments'));
     }

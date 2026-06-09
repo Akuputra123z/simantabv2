@@ -232,7 +232,7 @@
                     </div>
 
                     <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300">
-                        {!! $t->kondisi ?? '<span class="text-gray-400 italic">Tidak ada keterangan</span>' !!}
+                        {{ $t->kondisi ?? 'Tidak ada keterangan' }}
                     </div>
 
                     @if ($t->nilai_temuan > 0)

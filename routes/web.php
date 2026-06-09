@@ -36,9 +36,9 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Fitur Audit & LHP
+    Route::delete('lhps/bulk-delete', [LhpController::class, 'bulkDelete'])->name('lhps.bulkDelete');
     Route::resource('lhps', LhpController::class);
     Route::post('/lhps/{lhp}/refresh', [LhpController::class, 'refresh'])->name('lhps.refresh');
-    Route::delete('lhps/bulk-delete', [LhpController::class, 'bulkDelete'])->name('lhps.bulkDelete');
 
     Route::resource('temuan', TemuanController::class);
     Route::resource('recommendations', RecommendationController::class);
@@ -62,8 +62,6 @@ Route::prefix('audit-program-detail')->name('audit-program-detail.')->group(func
         ->name('import');
     Route::post('/bulk-delete', [AuditProgramDetailController::class, 'bulkDelete'])
         ->name('bulk-delete');
-
-    Route::get('/get-program-details/{programId}', [AuditProgramController::class, 'getDetails']);
 
     // 2. Rute dengan parameter/wildcard diletakkan di bawah
     Route::get('/create/{audit_program_id}', [AuditProgramDetailController::class, 'create'])->name('create');
@@ -123,7 +121,7 @@ Route::middleware(['auth', 'active', 'role:super_admin'])->group(function () {
 });
 
 // --- GRUP 3: Laporan ---
-Route::prefix('laporan')->name('laporan.')->group(function () {
+Route::middleware(['auth', 'active'])->prefix('laporan')->name('laporan.')->group(function () {
     Route::get('/', [LaporanController::class, 'index'])->name('index');
     Route::get('/{lhp}/rekap', [LaporanController::class, 'rekapPerLhp'])->name('rekap-per-lhp');
     Route::get('/download/pdf/semua', [LaporanController::class, 'downloadPdfSemua'])->name('download-pdf-semua');

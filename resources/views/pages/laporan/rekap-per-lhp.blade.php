@@ -56,7 +56,7 @@
                         ['Semester',         'Semester ' . $lhp->semester],
                         ['IRBAN',            $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-'],
                         ['Jenis Pemeriksaan',$lhp->jenis_pemeriksaan ?? '-'],
-                        ['Unit Diperiksa',   $lhp->auditAssignment?->unitDiperiksa?->nama_unit ?? '-'],
+                        ['Unit Diperiksa',   $lhp->unitDiperiksa?->nama_unit ?? '-'],
                         ['Dibuat Oleh',      $lhp->creator?->name ?? '-'],
                         ['Status',           ucfirst(str_replace('_', ' ', $lhp->status))],
                     ];

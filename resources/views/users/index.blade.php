@@ -55,26 +55,29 @@
                    placeholder="Cari nama, email, NIP..."
                    class="h-10 flex-1 min-w-48 px-4 text-sm border rounded-lg">
 
-            <select name="role" class="h-10 px-3 text-sm border rounded-lg">
-                <option value="">Semua Role</option>
-                @foreach($roles as $role)
-                    <option value="{{ $role }}" {{ request('role') === $role ? 'selected' : '' }}>
-                        {{ \App\Models\User::ROLES[$role] ?? ucfirst(str_replace('_', ' ', $role)) }}
+            <select name="unit_kerja" class="h-10 px-3 text-sm border rounded-lg">
+                <option value="">Sub Unit Organisasi</option>
+                @foreach($unitKerjaOptions as $option)
+                    <option value="{{ $option }}" {{ request('unit_kerja') === $option ? 'selected' : '' }}>
+                        {{ $option }}
                     </option>
                 @endforeach
             </select>
 
-            <select name="status" class="h-10 px-3 text-sm border rounded-lg">
-                <option value="">Semua Status</option>
-                <option value="aktif" {{ request('status') === 'aktif' ? 'selected' : '' }}>Aktif</option>
-                <option value="nonaktif" {{ request('status') === 'nonaktif' ? 'selected' : '' }}>Nonaktif</option>
+            <select name="jabatan" class="h-10 px-3 text-sm border rounded-lg">
+                <option value="">Pilih Jabatan</option>
+                @foreach($jabatanOptions as $option)
+                    <option value="{{ $option }}" {{ request('jabatan') === $option ? 'selected' : '' }}>
+                        {{ $option }}
+                    </option>
+                @endforeach
             </select>
 
             <button type="submit" class="h-10 px-4 text-sm bg-indigo-600 text-white rounded-lg">
                 Filter
             </button>
 
-            @if(request()->hasAny(['search', 'role', 'status']))
+            @if(request()->hasAny(['search', 'unit_kerja', 'jabatan']))
                 <a href="{{ route('users.index') }}" class="h-10 px-4 text-sm border rounded-lg flex items-center">
                     Reset
                 </a>

@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\LhpStatistikService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 
 class AuditAssignmentController extends Controller
@@ -87,6 +88,8 @@ class AuditAssignmentController extends Controller
             'nomor_surat'             => 'required|string|max:255|unique:audit_assignments,nomor_surat',
             'tanggal_mulai'           => 'required|date',
             'tanggal_selesai'         => 'required|date|after_or_equal:tanggal_mulai',
+            'nama_tim'                => 'nullable|string|max:255',
+            'jenis_pengawasan'        => ['nullable', 'string', Rule::in(AuditAssignment::JENIS_PENGAWASAN)],
             'status'                  => 'required|in:draft,berjalan,selesai',
             'members'                 => 'nullable|array',
             'members.*'               => 'exists:users,id',
@@ -333,7 +336,8 @@ class AuditAssignmentController extends Controller
 
     } catch (\Exception $e) {
         DB::rollBack();
-        return redirect()->back()->with('error', 'Gagal hapus: ' . $e->getMessage());
+        \Log::error('Gagal hapus AuditAssignment: ' . $e->getMessage());
+        return redirect()->back()->with('error', 'Gagal menghapus data. Silakan coba lagi.');
     }
 }
 }

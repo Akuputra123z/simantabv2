@@ -23,6 +23,8 @@ class AuditAssignment extends Model
 
     protected $fillable = [
         'audit_program_detail_id',
+        'nama_tim',
+        'jenis_pengawasan',
         // unit_diperiksa_id DIHAPUS — relasi lewat pivot
         'ketua_tim_id',
         'nomor_surat',
@@ -113,11 +115,4 @@ class AuditAssignment extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
-  public function unitDiperiksa(): BelongsTo
-    {
-        // Pastikan 'unit_diperiksa_id' adalah nama kolom di tabel audit_assignments
-        return $this->belongsTo(UnitDiperiksa::class, 'unit_diperiksa_id');
-    }
-    
-    
 }

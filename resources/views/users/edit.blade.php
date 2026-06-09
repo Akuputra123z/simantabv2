@@ -90,7 +90,12 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jabatan</label>
-                                <input type="text" name="jabatan" value="{{ old('jabatan', $user->jabatan) }}" class="form-input-styled">
+                                <select name="jabatan" class="form-input-styled">
+                                    <option value="">-- Pilih Jabatan --</option>
+                                    @foreach($jabatanOptions as $opt)
+                                        <option value="{{ $opt }}" {{ old('jabatan', $user->jabatan) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sub Unit Organisasi</label>

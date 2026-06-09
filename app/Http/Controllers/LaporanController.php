@@ -20,7 +20,7 @@ class LaporanController extends Controller
     {
         $user = auth()->user();
 
-        $query = Lhp::with(['statistik', 'auditAssignment.auditProgram', 'auditAssignment.unitDiperiksa', 'auditAssignment.auditProgramDetail'])
+        $query = Lhp::with(['statistik', 'auditAssignment.auditProgram', 'unitDiperiksa', 'auditAssignment.auditProgramDetail'])
             ->forUser($user);
 
         $this->applyFilters($query, $request);
@@ -56,7 +56,7 @@ class LaporanController extends Controller
         $lhp->load([
             'statistik',
             'auditAssignment.auditProgram',
-            'auditAssignment.unitDiperiksa',
+            'unitDiperiksa',
             'temuans.kodeTemuan',
             'temuans.recommendations.tindakLanjuts',
             'temuans.recommendations.kodeRekomendasi',
@@ -74,7 +74,7 @@ class LaporanController extends Controller
         $query = Lhp::with([
             'statistik',
             'auditAssignment.auditProgram',
-            'auditAssignment.unitDiperiksa',
+            'unitDiperiksa',
             'auditAssignment.auditProgramDetail',
             'temuans.kodeTemuan',
             'temuans.recommendations.tindakLanjuts.cicilans',
@@ -106,7 +106,7 @@ class LaporanController extends Controller
         $lhp->load([
             'statistik',
             'auditAssignment.auditProgram',
-            'auditAssignment.unitDiperiksa',
+            'unitDiperiksa',
             'auditAssignment.auditProgramDetail',
             'temuans.kodeTemuan',
             'temuans.recommendations.tindakLanjuts',
@@ -134,7 +134,7 @@ class LaporanController extends Controller
         $query = Lhp::with([
             'statistik',
             'auditAssignment.auditProgram',
-            'auditAssignment.unitDiperiksa',
+            'unitDiperiksa',
             'auditAssignment.auditProgramDetail',
             'temuans.kodeTemuan',
             'temuans.recommendations.tindakLanjuts.cicilans',
@@ -155,7 +155,7 @@ class LaporanController extends Controller
         $lhp->load([
             'statistik',
             'auditAssignment.auditProgram',
-            'auditAssignment.unitDiperiksa',
+            'unitDiperiksa',
             'auditAssignment.auditProgramDetail',
             'temuans.kodeTemuan',
             'temuans.recommendations.tindakLanjuts.cicilans',

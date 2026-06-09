@@ -218,7 +218,7 @@
                             @if($indexRekom == 0 && $indexRow == 0)
                                 <td class="text-center">{{ $no++ }}</td>
                                 <td>
-                                    <strong>{{ $lhp->auditAssignment?->unitDiperiksa?->nama_unit ?? 'TIDAK ADA UNIT' }}</strong><br>
+                                    <strong>{{ $lhp->unitDiperiksa?->nama_unit ?? 'TIDAK ADA UNIT' }}</strong><br>
                                     {{ $lhp->nomor_lhp }}
                                 </td>
                                 <td>{{ $temuan->kondisi }}</td>
@@ -257,7 +257,7 @@
                             @if($indexRekom == 0)
                                 <td class="text-center">{{ $no++ }}</td>
                                 <td>
-                                    <strong>{{ $lhp->auditAssignment?->unitDiperiksa?->nama_unit ?? 'TIDAK ADA UNIT' }}</strong><br>
+                                    <strong>{{ $lhp->unitDiperiksa?->nama_unit ?? 'TIDAK ADA UNIT' }}</strong><br>
                                     {{ $lhp->nomor_lhp }}
                                 </td>
                                 <td>{{ $temuan->kondisi }}</td>

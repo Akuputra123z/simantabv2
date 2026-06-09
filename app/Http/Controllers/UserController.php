@@ -26,17 +26,18 @@ class UserController extends Controller
                           ->orWhere('nip', 'like', "%{$request->search}%");
                 });
             })
-            ->when($request->filled('role'), fn ($q) =>
-                $q->role($request->role)
+            ->when($request->filled('unit_kerja'), fn ($q) =>
+                $q->where('unit_kerja', $request->unit_kerja)
             )
-            ->when($request->filled('status'), fn ($q) =>
-                $q->where('is_active', $request->status === 'aktif')
+            ->when($request->filled('jabatan'), fn ($q) =>
+                $q->where('jabatan', $request->jabatan)
             )
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
-        $roles = Role::orderBy('name')->pluck('name');
+        $unitKerjaOptions = User::UNIT_KERJA_OPTIONS;
+        $jabatanOptions = User::JABATAN_OPTIONS;
 
         $stats = User::selectRaw("
                 COUNT(*) as total,
@@ -46,7 +47,8 @@ class UserController extends Controller
 
         return view('users.index', [
             'users' => $users,
-            'roles' => $roles,
+            'unitKerjaOptions' => $unitKerjaOptions,
+            'jabatanOptions' => $jabatanOptions,
             'stats' => [
                 'total' => $stats->total ?? 0,
                 'aktif' => $stats->aktif ?? 0,
@@ -61,7 +63,8 @@ class UserController extends Controller
     {
         $roles = Role::orderBy('name')->get(['id', 'name']);
         $unitKerjaOptions = User::UNIT_KERJA_OPTIONS;
-        return view('users.create', compact('roles', 'unitKerjaOptions'));
+        $jabatanOptions = User::JABATAN_OPTIONS;
+        return view('users.create', compact('roles', 'unitKerjaOptions', 'jabatanOptions'));
     }
 
     // ── Store ─────────────────────────────────────────────────────────────────
@@ -69,26 +72,32 @@ class UserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'      => ['required', 'string', 'max:255'],
-            'email'     => ['required', 'email', 'max:255', 'unique:users,email'],
-            'nip'       => ['nullable', 'string', 'max:30', 'unique:users,nip'],
-            'jabatan'   => ['nullable', 'string', 'max:100'],
-            'phone'     => ['nullable', 'string', 'max:20'],
-            'password'  => ['required', Password::min(8)->letters()->numbers()],
-            'role'      => ['required', 'string', 'exists:roles,name'],
-            'is_active' => ['boolean'],
-            'unit_kerja' => ['nullable', 'string', Rule::in(User::UNIT_KERJA_OPTIONS)],
+            'name'                => ['required', 'string', 'max:255'],
+            'email'               => ['required', 'email', 'max:255', 'unique:users,email'],
+            'nip'                 => ['nullable', 'string', 'max:30', 'unique:users,nip'],
+            'jabatan'             => ['nullable', 'string', Rule::in(User::JABATAN_OPTIONS)],
+            'phone'               => ['nullable', 'string', 'max:20'],
+            'password'            => ['required', Password::min(8)->letters()->numbers()],
+            'role'                => ['required', 'string', 'exists:roles,name'],
+            'is_active'           => ['boolean'],
+            'unit_kerja'          => ['nullable', 'string', Rule::in(User::UNIT_KERJA_OPTIONS)],
+            'jenis_kelamin'       => ['nullable', 'string', Rule::in(['L', 'P'])],
+            'pendidikan_terakhir' => ['nullable', 'string', 'max:100'],
+            'pangkat_gol'         => ['nullable', 'string', 'max:50'],
         ]);
 
         $user = User::create([
-            'name'       => $validated['name'],
-            'email'      => $validated['email'],
-            'nip'        => $validated['nip'] ?? null,
-            'jabatan'    => $validated['jabatan'] ?? null,
-            'unit_kerja' => $validated['unit_kerja'] ?? null,
-            'phone'      => $validated['phone'] ?? null,
-            'password'   => Hash::make($validated['password']),
-            'is_active'  => $request->boolean('is_active', true),
+            'name'                => $validated['name'],
+            'email'               => $validated['email'],
+            'nip'                 => $validated['nip'] ?? null,
+            'jabatan'             => $validated['jabatan'] ?? null,
+            'unit_kerja'          => $validated['unit_kerja'] ?? null,
+            'phone'               => $validated['phone'] ?? null,
+            'password'            => Hash::make($validated['password']),
+            'is_active'           => $request->boolean('is_active', true),
+            'jenis_kelamin'       => $validated['jenis_kelamin'] ?? null,
+            'pendidikan_terakhir' => $validated['pendidikan_terakhir'] ?? null,
+            'pangkat_gol'         => $validated['pangkat_gol'] ?? null,
         ]);
 
         $user->assignRole($validated['role']);
@@ -113,7 +122,8 @@ class UserController extends Controller
         $user->load('roles');
         $roles = Role::orderBy('name')->get(['id', 'name']);
         $unitKerjaOptions = User::UNIT_KERJA_OPTIONS;
-        return view('users.edit', compact('user', 'roles', 'unitKerjaOptions'));
+        $jabatanOptions = User::JABATAN_OPTIONS;
+        return view('users.edit', compact('user', 'roles', 'unitKerjaOptions', 'jabatanOptions'));
     }
 
     // ── Update ────────────────────────────────────────────────────────────────
@@ -121,15 +131,18 @@ class UserController extends Controller
     public function update(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate([
-            'name'      => ['required', 'string', 'max:255'],
-            'email'     => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'nip'       => ['nullable', 'string', 'max:30', Rule::unique('users')->ignore($user->id)],
-            'jabatan'   => ['nullable', 'string', 'max:100'],
-            'phone'     => ['nullable', 'string', 'max:20'],
-            'password'  => ['nullable', Password::min(8)->letters()->numbers()],
-            'role'      => ['required', 'string', 'exists:roles,name'],
-            'is_active' => ['boolean'],
-            'unit_kerja' => ['nullable', 'string', Rule::in(User::UNIT_KERJA_OPTIONS)],
+            'name'                => ['required', 'string', 'max:255'],
+            'email'               => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'nip'                 => ['nullable', 'string', 'max:30', Rule::unique('users')->ignore($user->id)],
+            'jabatan'             => ['nullable', 'string', Rule::in(User::JABATAN_OPTIONS)],
+            'phone'               => ['nullable', 'string', 'max:20'],
+            'password'            => ['nullable', Password::min(8)->letters()->numbers()],
+            'role'                => ['required', 'string', 'exists:roles,name'],
+            'is_active'           => ['boolean'],
+            'unit_kerja'          => ['nullable', 'string', Rule::in(User::UNIT_KERJA_OPTIONS)],
+            'jenis_kelamin'       => ['nullable', 'string', Rule::in(['L', 'P'])],
+            'pendidikan_terakhir' => ['nullable', 'string', 'max:100'],
+            'pangkat_gol'         => ['nullable', 'string', 'max:50'],
         ]);
 
         if ($user->id === auth()->id() && ! $request->boolean('is_active')) {
@@ -137,13 +150,16 @@ class UserController extends Controller
         }
 
         $user->update([
-            'name'       => $validated['name'],
-            'email'      => $validated['email'],
-            'nip'        => $validated['nip'] ?? null,
-            'jabatan'    => $validated['jabatan'] ?? null,
-            'unit_kerja' => $validated['unit_kerja'] ?? null,
-            'phone'      => $validated['phone'] ?? null,
-            'is_active'  => $request->boolean('is_active', true),
+            'name'                => $validated['name'],
+            'email'               => $validated['email'],
+            'nip'                 => $validated['nip'] ?? null,
+            'jabatan'             => $validated['jabatan'] ?? null,
+            'unit_kerja'          => $validated['unit_kerja'] ?? null,
+            'phone'               => $validated['phone'] ?? null,
+            'is_active'           => $request->boolean('is_active', true),
+            'jenis_kelamin'       => $validated['jenis_kelamin'] ?? null,
+            'pendidikan_terakhir' => $validated['pendidikan_terakhir'] ?? null,
+            'pangkat_gol'         => $validated['pangkat_gol'] ?? null,
         ]);
 
         if (! empty($validated['password'])) {

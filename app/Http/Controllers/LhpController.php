@@ -179,7 +179,8 @@ public function getTemuans($lhpId) {
     } catch (\Throwable $e) {
         DB::rollBack();
         // Log error jika diperlukan: \Log::error($e->getMessage());
-        return back()->withInput()->with('error', 'Gagal menyimpan: ' . $e->getMessage());
+        \Log::error('Gagal menyimpan LHP: ' . $e->getMessage());
+        return back()->withInput()->with('error', 'Gagal menyimpan LHP. Silakan coba lagi.');
     }
 }
        public function show(Lhp $lhp)
@@ -349,7 +350,8 @@ public function update(Request $request, Lhp $lhp)
 
     } catch (\Throwable $e) {
         DB::rollBack();
-        return back()->withInput()->with('error', 'Gagal update: ' . $e->getMessage());
+        \Log::error('Gagal update LHP: ' . $e->getMessage());
+        return back()->withInput()->with('error', 'Gagal memperbarui LHP. Silakan coba lagi.');
     }
 }
         public function destroy(Lhp $lhp)

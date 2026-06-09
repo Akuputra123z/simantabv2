@@ -86,7 +86,8 @@ class TindakLanjutCicilanController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Gagal menyimpan cicilan: ' . $e->getMessage());
+            \Log::error('Gagal menyimpan cicilan: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal menyimpan cicilan. Silakan coba lagi.');
         }
     }
 
@@ -155,7 +156,8 @@ class TindakLanjutCicilanController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Gagal memperbarui cicilan: ' . $e->getMessage());
+            \Log::error('Gagal memperbarui cicilan: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal memperbarui cicilan. Silakan coba lagi.');
         }
     }
 
@@ -186,7 +188,8 @@ class TindakLanjutCicilanController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            return back()->with('error', 'Gagal memverifikasi cicilan: ' . $e->getMessage());
+            \Log::error('Gagal memverifikasi cicilan: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memverifikasi cicilan. Silakan coba lagi.');
         }
     }
 

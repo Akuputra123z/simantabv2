@@ -95,8 +95,14 @@
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Jabatan</label>
-                            <input type="text" name="jabatan" value="{{ old('jabatan') }}"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all">
+                            <select name="jabatan"
+                                    class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer @error('jabatan') border-red-500 @enderror">
+                                <option value="">-- Pilih Jabatan --</option>
+                                @foreach($jabatanOptions as $opt)
+                                    <option value="{{ $opt }}" {{ old('jabatan') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                @endforeach
+                            </select>
+                            @error('jabatan') <p class="text-xs text-red-500 mt-1.5 font-medium">{{ $message }}</p> @enderror
                         </div>
 
                         <div>

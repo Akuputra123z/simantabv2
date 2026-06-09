@@ -18,7 +18,8 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        $data = Cache::remember('dashboard:user:' . $user->id, 600, function () use ($user) {
+        $cacheKey = 'dashboard:user:' . $user->id . ':' . $user->updated_at->timestamp;
+        $data = Cache::remember($cacheKey, 300, function () use ($user) {
             // ── Base query LHP sesuai role ─────────────────────────────────────
             $lhpQuery = Lhp::forUser($user);
 

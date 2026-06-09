@@ -56,9 +56,10 @@ class TindakLanjutController extends Controller
         $recommendations = Recommendation::with(['temuan.lhp'])
             ->where('status', '!=', Recommendation::STATUS_SELESAI)
             ->latest()
+            ->limit(100)
             ->get();
 
-        $users = User::orderBy('name')->get();
+        $users = User::orderBy('name')->limit(100)->get();
 
         return view('pages.tindak-lanjuts.create', compact('recommendations', 'users'));
     }

@@ -59,6 +59,7 @@ use Illuminate\Support\Facades\Storage;
               ->orWhereHas('members', fn($q2) => $q2->where('user_id', $user->id));
         })
         ->latest()
+        ->limit(100)
         ->get();
 
     // Map (assignment_id → [unit_diperiksa_id]) yang sudah punya LHP non-dibatalkan
@@ -371,11 +372,13 @@ public function update(Request $request, Lhp $lhp)
                 return back()->with('error', 'Pilih data dulu.');
             }
 
-            Lhp::whereIn('id', $request->ids)->with('attachments')->get()->each(function ($lhp) {
-                foreach ($lhp->attachments as $file) {
-                    Storage::disk('public')->delete($file->file_path);
+            Lhp::whereIn('id', $request->ids)->with('attachments')->chunk(50, function ($lhps) {
+                foreach ($lhps as $lhp) {
+                    foreach ($lhp->attachments as $file) {
+                        Storage::disk('public')->delete($file->file_path);
+                    }
+                    $lhp->delete();
                 }
-                $lhp->delete();
             });
 
             return redirect()->route('lhps.index')

@@ -8,6 +8,7 @@ use App\Models\AuditProgramDetail;
 use App\Exports\RekapSemuaLhpExport;
 use App\Exports\RekapPerLhpExport;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
@@ -30,19 +31,23 @@ class LaporanController extends Controller
 
         $lhps = $query->orderBy('tanggal_lhp', 'desc')->paginate(15)->withQueryString();
 
-        $tahunList = Lhp::forUser($user)->selectRaw('YEAR(tanggal_lhp) as tahun')
-            ->distinct()->orderByDesc('tahun')->pluck('tahun');
+        $tahunList = Cache::remember('laporan:tahunList:' . $user->id, 600, function () use ($user) {
+            return Lhp::forUser($user)->selectRaw('YEAR(tanggal_lhp) as tahun')
+                ->distinct()->orderByDesc('tahun')->pluck('tahun');
+        });
 
-        $irbanList = AuditProgramDetail::whereHas('assignments.lhps', function ($q) use ($user) {
-                if (!$user->hasRole('super_admin')) {
-                    $q->where('ketua_tim_id', $user->id)
-                      ->orWhereHas('members', fn($q2) => $q2->where('user_id', $user->id));
-                }
-            })
-            ->whereNotNull('tim')
-            ->distinct()
-            ->orderBy('tim')
-            ->pluck('tim');
+        $irbanList = Cache::remember('laporan:irbanList:' . $user->id, 600, function () use ($user) {
+            return AuditProgramDetail::whereHas('assignments.lhps', function ($q) use ($user) {
+                    if (!$user->hasRole('super_admin')) {
+                        $q->where('ketua_tim_id', $user->id)
+                          ->orWhereHas('members', fn($q2) => $q2->where('user_id', $user->id));
+                    }
+                })
+                ->whereNotNull('tim')
+                ->distinct()
+                ->orderBy('tim')
+                ->pluck('tim');
+        });
 
         return view('pages.laporan.index', compact(
             'lhps', 'ringkasan', 'tahunList', 'irbanList'

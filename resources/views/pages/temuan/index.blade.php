@@ -74,7 +74,7 @@
                                 {{ Str::limit($temuan->kondisi, 60) }}
                             </div>
                             <div class="flex gap-2 mt-1">
-                                <span class="text-[10px] text-gray-400 italic">Rekomendasi: {{ $temuan->recommendations->count() }}</span>
+                                <span class="text-[10px] text-gray-400 italic">Rekomendasi: {{ $temuan->recommendations_count }}</span>
                             </div>
                         </td>
                         <td class="px-6 py-4 text-right font-mono font-bold text-gray-900 dark:text-white">

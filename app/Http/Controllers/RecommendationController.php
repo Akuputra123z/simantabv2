@@ -50,13 +50,14 @@ class RecommendationController extends Controller
    public function create()
 {
     // ✅ LHP muncul selama punya minimal 1 temuan (apapun status rekomnya)
-    $lhps = Lhp::query()
-        ->select('id', 'nomor_lhp', 'tanggal_lhp')
-        ->has('temuans') // cukup pastikan ada temuan
-        ->orderByDesc('tanggal_lhp')
-        ->get();
+        $lhps = Lhp::query()
+            ->select('id', 'nomor_lhp', 'tanggal_lhp')
+            ->has('temuans')
+            ->orderByDesc('tanggal_lhp')
+            ->limit(100)
+            ->get();
 
-    $kodeRekoms = KodeRekomendasi::query()
+        $kodeRekoms = KodeRekomendasi::query()
         ->select('id', 'kode', 'deskripsi', 'kode_numerik')
         ->active()
         ->orderBy('kode')

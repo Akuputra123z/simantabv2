@@ -104,16 +104,16 @@
                 </form>
                 {{-- Export --}}
                 <div class="flex gap-1">
-                    <a href="{{ route('audit-program.export-pdf', $auditProgram->id) }}" target="_blank"
-                       class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-rose-600 transition hover:bg-rose-50 hover:border-rose-200 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-rose-400">
+                    <button type="button" data-export="pdf"
+                            class="btn-export inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-rose-600 transition hover:bg-rose-50 hover:border-rose-200 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-rose-400">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21v-7a1 1 0 00-1-1H8a1 1 0 00-1 1v7"/></svg>
                         PDF
-                    </a>
-                    <a href="{{ route('audit-program.export-excel', $auditProgram->id) }}"
-                       class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-emerald-600 transition hover:bg-emerald-50 hover:border-emerald-200 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-emerald-400">
+                    </button>
+                    <button type="button" data-export="excel"
+                            class="btn-export inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-emerald-600 transition hover:bg-emerald-50 hover:border-emerald-200 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-emerald-400">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         Excel
-                    </a>
+                    </button>
                 </div>
 
                 <button onclick="openImportModal()" 
@@ -132,6 +132,11 @@
 
         {{-- Bulk Delete Form --}}
         <form id="bulk-delete-form" action="{{ route('audit-program-detail.bulk-delete') }}" method="POST">
+            @csrf
+        </form>
+
+        {{-- Export Form --}}
+        <form id="export-form" method="POST" class="hidden">
             @csrf
         </form>
 
@@ -462,5 +467,49 @@
         });
         form.submit();
     };
+
+    // ─── Export (PDF / Excel) ──────────────────────────────────────────────
+    const exportForm = document.getElementById('export-form');
+    const searchInput = document.querySelector('input[name="search"]');
+
+    document.querySelectorAll('.btn-export').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const type = this.dataset.export;
+            const checked = document.querySelectorAll('.row-checkbox:checked');
+            const search = searchInput ? searchInput.value.trim() : '';
+
+            // Bersihkan form dari input sebelumnya
+            exportForm.innerHTML = '';
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = '_token';
+            csrf.value = '{{ csrf_token() }}';
+            exportForm.appendChild(csrf);
+
+            if (checked.length > 0) {
+                checked.forEach(cb => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = cb.value;
+                    exportForm.appendChild(input);
+                });
+            } else if (search) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'search';
+                input.value = search;
+                exportForm.appendChild(input);
+            }
+
+            const action = type === 'pdf'
+                ? '{{ route("audit-program.export-pdf", $auditProgram->id) }}'
+                : '{{ route("audit-program.export-excel", $auditProgram->id) }}';
+
+            exportForm.action = action;
+            exportForm.target = type === 'pdf' ? '_blank' : '';
+            exportForm.submit();
+        });
+    });
 </script>
 @endsection

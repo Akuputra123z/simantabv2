@@ -173,10 +173,7 @@ class AuditProgramController extends Controller
      */
     public function exportPdf(AuditProgram $auditProgram)
     {
-        $details = $auditProgram->details()
-            ->withCount('assignments')
-            ->orderBy('nama_detail_program')
-            ->get();
+        $details = $this->getFilteredDetails($auditProgram);
 
         $pdf = Pdf::loadView('pages.audit-program.pdf.detail', compact('auditProgram', 'details'))
             ->setPaper('a4', 'landscape')
@@ -195,13 +192,35 @@ class AuditProgramController extends Controller
      */
     public function exportExcel(AuditProgram $auditProgram)
     {
-        $details = $auditProgram->details()
-            ->withCount('assignments')
-            ->orderBy('nama_detail_program')
-            ->get();
+        $details = $this->getFilteredDetails($auditProgram);
 
         $filename = 'sub-program-' . str_replace('/', '-', $auditProgram->nama_program) . '-' . now()->format('Ymd') . '.xlsx';
         return Excel::download(new \App\Exports\DetailProgramExport($auditProgram, $details), $filename);
+    }
+
+    /**
+     * Ambil detail terfilter berdasarkan request (ids / search)
+     */
+    private function getFilteredDetails(AuditProgram $auditProgram)
+    {
+        $ids    = request('ids');
+        $search = request('search');
+
+        $query = $auditProgram->details()->withCount('assignments');
+
+        if (!empty($ids)) {
+            $query->whereIn('id', (array) $ids);
+        } elseif ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_detail_program', 'like', "%{$search}%")
+                  ->orWhere('jenis_kegiatan', 'like', "%{$search}%")
+                  ->orWhere('objek_pengawasan', 'like', "%{$search}%")
+                  ->orWhere('ruang_lingkup', 'like', "%{$search}%")
+                  ->orWhere('tim', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->orderBy('nama_detail_program')->get();
     }
 
     /**

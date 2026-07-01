@@ -114,8 +114,8 @@ Route::middleware(['auth', 'active', 'role:super_admin'])->group(function () {
     Route::resource('kode-temuan', KodeTemuanController::class);
     Route::resource('unit-diperiksa', UnitDiperiksaController::class);
     Route::resource('audit-program', AuditProgramController::class);
-    Route::get('/audit-program/{auditProgram}/export-pdf', [AuditProgramController::class, 'exportPdf'])->name('audit-program.export-pdf');
-    Route::get('/audit-program/{auditProgram}/export-excel', [AuditProgramController::class, 'exportExcel'])->name('audit-program.export-excel');
+    Route::match(['GET', 'POST'], '/audit-program/{auditProgram}/export-pdf', [AuditProgramController::class, 'exportPdf'])->name('audit-program.export-pdf');
+    Route::match(['GET', 'POST'], '/audit-program/{auditProgram}/export-excel', [AuditProgramController::class, 'exportExcel'])->name('audit-program.export-excel');
     Route::resource('kode-rekomendasi', KodeRekomendasiController::class);
     Route::patch('kode-rekomendasi/{kodeRekomendasi}/toggle', [KodeRekomendasiController::class, 'toggleStatus'])->name('kode-rekomendasi.toggle');
 });

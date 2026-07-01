@@ -2,106 +2,122 @@
 
 @section('content')
 
-
 @if(session('success'))
-    <div class="mb-6 rounded-xl border border-success-500 bg-success-50 p-4 dark:border-success-500/30 dark:bg-success-500/15">
-        <div class="flex items-start gap-3">
-            <div class="-mt-0.5 text-success-500">
-                <svg class="fill-current" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M3.70186 12.0001C3.70186 7.41711 7.41711 3.70186 12.0001 3.70186C16.5831 3.70186 20.2984 7.41711 20.2984 12.0001C20.2984 16.5831 16.5831 20.2984 12.0001 20.2984C7.41711 20.2984 3.70186 16.5831 3.70186 12.0001ZM12.0001 1.90186C6.423 1.90186 1.90186 6.423 1.90186 12.0001C1.90186 17.5772 6.423 22.0984 12.0001 22.0984C17.5772 22.0984 22.1494 17.5772 22.0984 12.0001C22.0984 6.423 17.5772 1.90186 12.0001 1.90186ZM15.6197 10.7395C15.9712 10.388 15.9712 9.81819 15.6197 9.46672C15.2683 9.11525 14.6984 9.11525 14.347 9.46672L11.1894 12.6243L9.6533 11.0883C9.30183 10.7368 8.73198 10.7368 8.38051 11.0883C8.02904 11.4397 8.02904 12.0096 8.38051 12.3611L10.553 14.5335C10.7217 14.7023 10.9507 14.7971 11.1894 14.7971C11.428 14.7971 11.657 14.7023 11.8257 14.5335L15.6197 10.7395Z" fill=""/>
-                </svg>
-            </div>
-            <div>
-                <h4 class="mb-1 text-sm font-semibold text-gray-800 dark:text-white/90">Berhasil!</h4>
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ session('success') }}</p>
-            </div>
+<div class="mb-6 rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-500/30 dark:bg-green-500/15">
+    <div class="flex items-start gap-3">
+        <svg class="mt-0.5 h-5 w-5 shrink-0 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+            <p class="text-sm font-semibold text-gray-800 dark:text-white/90">Berhasil!</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">{{ session('success') }}</p>
         </div>
     </div>
+</div>
 @endif
 
 <div class="space-y-6">
-    <div class="rounded-2xl border border-gray-200 bg-white relative overflow-visible dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="relative overflow-visible rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+
         {{-- Header --}}
-       <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-4 sm:px-6 sm:py-5 relative overflow-visible">
-            <div>
-                <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Daftar Unit</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Kelola informasi SKPD, Sekolah, dan Desa</p>
+        <div class="border-b border-gray-100 px-5 py-5 dark:border-gray-800">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Daftar Unit</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Kelola informasi BUMD, Sekolah, dan Desa</p>
+                </div>
+                <div>
+                    <a href="{{ route('unit-diperiksa.create') }}"
+                       class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-blue-500/20 transition-all hover:bg-blue-700 sm:w-auto">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                        Tambah Unit
+                    </a>
+                </div>
             </div>
-            <div class="flex items-center gap-3">
-                <form action="{{ route('unit-diperiksa.index') }}" method="GET" 
-    class="hidden sm:flex items-center gap-3">
 
-    {{-- Search --}}
-    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari unit..." 
-        class="w-56 h-10 rounded-lg border border-gray-200 bg-transparent px-4 text-sm text-gray-800 outline-none focus:border-blue-300 focus:ring-3 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">
+            {{-- Filter --}}
+            <form id="filterForm" action="{{ route('unit-diperiksa.index') }}" method="GET" class="mt-5 border-t border-gray-100 pt-4 dark:border-gray-800/60">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-12">
 
-    {{-- Kategori --}}
-    <select id="kategori" name="kategori" class="w-40">
-        <option value="">Kategori</option>
-        @foreach(['SKPD', 'Sekolah', 'OPD', 'Desa', 'BLUD'] as $cat)
-            <option value="{{ $cat }}" {{ request('kategori') == $cat ? 'selected' : '' }}>
-                {{ $cat }}
-            </option>
-        @endforeach
-    </select>
+                    <div class="relative sm:col-span-6 lg:col-span-5">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </span>
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari unit..."
+                               class="h-10 w-full rounded-lg border border-gray-200 bg-transparent pl-9 pr-4 text-sm text-gray-800 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">
+                    </div>
 
-    {{-- Kecamatan --}}
-    <select id="kecamatan" name="kecamatan" class="w-44">
-        <option value="">Kecamatan</option>
-        @foreach($kecamatanList as $kec)
-            <option value="{{ $kec }}" {{ request('kecamatan') == $kec ? 'selected' : '' }}>
-                {{ $kec }}
-            </option>
-        @endforeach
-    </select>
+                    <div class="sm:col-span-3 lg:col-span-3">
+                        <select id="kategori" name="kategori">
+                            <option value="">Semua Kategori</option>
+                            @foreach(['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'] as $cat)
+                            <option value="{{ $cat }}" {{ request('kategori') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-</form>
-                
-                <a href="{{ route('unit-diperiksa.create') }}" class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-all shadow-sm shadow-blue-500/20">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Tambah Unit
-                </a>
-            </div>
+                    <div class="sm:col-span-3 lg:col-span-4">
+                        <select id="kecamatan" name="kecamatan">
+                            <option value="">Semua Kecamatan</option>
+                            @foreach($kecamatanList as $kec)
+                            <option value="{{ $kec }}" {{ request('kecamatan') == $kec ? 'selected' : '' }}>{{ $kec }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="mt-4 flex items-center gap-3">
+                    <button type="submit"
+                            class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-blue-700">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        Cari
+                    </button>
+                    @if(request()->anyFilled(['search', 'kategori', 'kecamatan']))
+                    <a href="{{ route('unit-diperiksa.index') }}"
+                       class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 text-xs font-semibold text-gray-500 transition-all hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Reset
+                    </a>
+                    @endif
+                </div>
+            </form>
         </div>
 
         {{-- Table --}}
-        <div class="border-t border-gray-100 p-5 sm:p-6 dark:border-gray-800">
-            <div class="overflow-hidden border border-gray-200 rounded-xl dark:border-gray-800">
-                <table class="w-full text-left border-collapse">
+        <div class="p-5 sm:p-6">
+            <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+                <table class="min-w-[600px] w-full border-collapse text-left">
                     <thead>
-                        <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/[0.02]">
-                            <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Nama Unit</th>
-                            <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Kategori</th>
-                            <th class="px-5 py-3 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Kecamatan</th>
-                            <th class="px-5 py-3 text-right text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Aksi</th>
+                        <tr class="border-b border-gray-100 bg-gray-50/50 dark:border-gray-800 dark:bg-white/[0.02]">
+                            <th class="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Nama Unit</th>
+                            <th class="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Kategori</th>
+                            <th class="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Kecamatan</th>
+                            <th class="px-5 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-sm">
+                    <tbody class="divide-y divide-gray-100 text-sm dark:divide-gray-800">
                         @forelse($data as $item)
-                        <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
-                            <td class="px-5 py-4 font-semibold text-gray-800 dark:text-white/90">
-                                {{ $item->nama_unit }}
-                            </td>
+                        <tr class="transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.01]">
+                            <td class="px-5 py-4 font-semibold text-gray-800 dark:text-white/90">{{ $item->nama_unit }}</td>
                             <td class="px-5 py-4">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 ring-1 ring-inset ring-indigo-600/10">
+                                <span class="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 ring-1 ring-inset ring-indigo-600/10 dark:bg-indigo-500/10 dark:text-indigo-400">
                                     {{ $item->kategori }}
                                 </span>
                             </td>
-                            <td class="px-5 py-4 text-gray-500 dark:text-gray-400">
-                                {{ $item->nama_kecamatan ?? '-' }}
-                            </td>
+                            <td class="px-5 py-4 text-gray-500 dark:text-gray-400">{{ $item->nama_kecamatan ?? '-' }}</td>
                             <td class="px-5 py-4 text-right">
                                 <div class="flex justify-end gap-3 text-gray-400">
-                                    <a href="{{ route('unit-diperiksa.show', $item->id) }}" class="hover:text-gray-800 dark:hover:text-white transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <a href="{{ route('unit-diperiksa.show', $item->id) }}" class="transition-colors hover:text-gray-800 dark:hover:text-white" title="Detail">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     </a>
-                                    <a href="{{ route('unit-diperiksa.edit', $item->id) }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    <a href="{{ route('unit-diperiksa.edit', $item->id) }}" class="transition-colors hover:text-blue-600 dark:hover:text-blue-400" title="Edit">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </a>
-                                    <form action="{{ route('unit-diperiksa.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Hapus data ini?')">
+                                    <form action="{{ route('unit-diperiksa.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Hapus data ini?')" class="inline">
                                         @csrf @method('DELETE')
-                                        <button type="submit" class="hover:text-red-600 dark:hover:text-red-400 transition-colors">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        <button type="submit" class="transition-colors hover:text-red-600 dark:hover:text-red-400" title="Hapus">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                     </form>
                                 </div>
@@ -109,43 +125,42 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="4" class="px-5 py-12 text-center text-gray-400">
-                                Tidak ada data ditemukan.
-                            </td>
+                            <td colspan="4" class="px-5 py-12 text-center text-gray-400">Tidak ada data ditemukan.</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            
-           {{-- Pagination --}}
-<div class="mt-5 flex items-center justify-between border-t border-gray-100 pt-5 dark:border-gray-800">
-    <p class="text-sm text-gray-600 dark:text-gray-400">
-        Showing <span class="font-medium">{{ $data->firstItem() ?? 0 }}</span> to <span class="font-medium">{{ $data->lastItem() ?? 0 }}</span> of <span class="font-medium">{{ $data->total() }}</span> results
-    </p>
-    <div class="flex-1 flex justify-end">
-        {{-- Kita panggil view pagination tailwind khusus --}}
-        {{ $data->onEachSide(1)->links('pagination::tailwind') }}
-    </div>
-</div>
+
+            {{-- Pagination --}}
+            @if($data->hasPages())
+            <div class="mt-5 flex flex-col gap-4 border-t border-gray-100 pt-5 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-center text-sm text-gray-600 dark:text-gray-400 sm:text-left">
+                    Menampilkan <span class="font-medium">{{ $data->firstItem() ?? 0 }}</span> hingga <span class="font-medium">{{ $data->lastItem() ?? 0 }}</span> dari <span class="font-medium">{{ $data->total() }}</span>
+                </p>
+                <div class="flex justify-center sm:justify-end">
+                    {{ $data->onEachSide(1)->links('pagination::tailwind') }}
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 </div>
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('filterForm');
+
     new TomSelect('#kategori', {
         create: false,
-        onChange: function() {
-            this.input.closest('form').submit();
-        }
+        controlInput: null,
+        onChange: () => form.submit()
     });
 
     new TomSelect('#kecamatan', {
         create: false,
-        onChange: function() {
-            this.input.closest('form').submit();
-        }
+        onChange: () => form.submit()
     });
 });
 </script>

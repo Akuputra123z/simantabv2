@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\UnitDiperiksa;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class UnitDiperiksaController extends Controller
 {
@@ -41,7 +40,7 @@ class UnitDiperiksaController extends Controller
 }
     public function create()
     {
-        $kategoriOptions = ['SKPD', 'Sekolah', 'Puskesmas', 'Desa', 'BLUD'];
+        $kategoriOptions = ['BUMD', 'Sekolah', 'Puskesmas', 'Desa', 'BLUD'];
         return view('pages.unit-diperiksa.create', compact('kategoriOptions'));
     }
 
@@ -70,7 +69,7 @@ class UnitDiperiksaController extends Controller
 
     public function edit(UnitDiperiksa $unitDiperiksa)
     {
-        $kategoriOptions = ['SKPD', 'Sekolah', 'Puskesmas', 'Desa', 'BLUD'];
+        $kategoriOptions = ['BUMD', 'Sekolah', 'Puskesmas', 'Desa', 'BLUD'];
         return view('pages.unit-diperiksa.edit', [
             'data' => $unitDiperiksa,
             'kategoriOptions' => $kategoriOptions

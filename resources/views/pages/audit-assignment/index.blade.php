@@ -141,7 +141,7 @@
                     {{-- Jenis --}}
                     <td class="px-4 py-4 text-center">
                         <span class="px-2 py-1 rounded text-[10px] font-bold uppercase bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
-                            {{ $item->jenis_pengawasan }}
+                            {{ $item->auditProgramDetail?->jenis_kegiatan ?? '-' }}
                         </span>
                     </td>
 

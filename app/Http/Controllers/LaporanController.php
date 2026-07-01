@@ -131,6 +131,33 @@ class LaporanController extends Controller
         return $pdf->download(str_replace('/', '-', $filename));
     }
 
+    // ── Preview PDF: Rekap Per LHP (stream inline) ─────────────────────────
+
+    public function previewPdfPerLhp(Request $request, Lhp $lhp)
+    {
+        $lhp->load([
+            'statistik',
+            'auditAssignment.auditProgram',
+            'unitDiperiksa',
+            'auditAssignment.auditProgramDetail',
+            'temuans.kodeTemuan',
+            'temuans.recommendations.tindakLanjuts',
+            'temuans.recommendations.kodeRekomendasi',
+            'creator',
+        ]);
+
+        $pdf = Pdf::loadView('pages.laporan.pdf.rekap-per-lhp', compact('lhp'))
+            ->setPaper('a4', 'portrait')
+            ->setOptions([
+                'defaultFont'   => 'sans-serif',
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled'      => false,
+            ]);
+
+        $filename = 'rekap-lhp-' . $lhp->nomor_lhp . '-' . now()->format('Ymd') . '.pdf';
+        return $pdf->stream(str_replace('/', '-', $filename));
+    }
+
     // ── Download Excel: Rekap Semua LHP ───────────────────────────────────
 
     public function downloadExcelSemua(Request $request)

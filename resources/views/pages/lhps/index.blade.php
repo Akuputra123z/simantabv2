@@ -157,16 +157,13 @@
                                     </svg>
                                 </a>
 
-                                {{-- Tombol refresh statistik manual --}}
-                                <form action="{{ route('lhps.refresh', $lhp->id) }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit" class="hover:text-green-500 transition-colors" title="Refresh statistik">
-                                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <polyline points="23 4 23 10 17 10"></polyline>
-                                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                                        </svg>
-                                    </button>
-                                </form>
+
+                                <a href="{{ route('laporan.preview-pdf-per-lhp', $lhp->id) }}" target="_blank"
+                                   class="hover:text-blue-500 transition-colors" title="Unduh / Preview PDF">
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                    </svg>
+                                </a>
 
                                 <button type="button" onclick="openDeleteModal('single', '{{ $lhp->id }}')"
                                     class="hover:text-red-500 transition-colors" title="Hapus">

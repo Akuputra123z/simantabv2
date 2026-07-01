@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pkptTrigger.className = 'flex items-center justify-between h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm cursor-pointer select-none transition-all duration-150 hover:border-blue-400 dark:bg-gray-900 dark:border-gray-700';
     pkptTrigger.innerHTML = `
         <span id="pkpt-label" class="truncate text-gray-400 dark:text-gray-500 flex-1 mr-2">Pilih detail setelah memilih program</span>
+        <span id="pkpt-anggaran" class="shrink-0 text-[11px] font-semibold text-green-600 dark:text-green-400 mr-2 hidden"></span>
         <svg id="pkpt-arrow" class="h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
         </svg>`;
@@ -92,6 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pkptIsOpen && !pkptWrapper.contains(e.target)) pkptClose();
     });
 
+    function fmtRupiah(n) {
+        return 'Rp ' + Number(n).toLocaleString('id-ID');
+    }
+
     function pkptUpdateInfo(value) {
         const $info = document.getElementById('pkpt-info');
         if (!$info) return;
@@ -110,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function pkptSetValue(value, label) {
+    function pkptSetValue(value, label, anggaran) {
         Array.from($detSelect.options).forEach(o => $detSelect.removeChild(o));
         if (value) {
             $detSelect.add(new Option(label, value, true, true));
@@ -119,12 +124,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const $label = document.getElementById('pkpt-label');
+        const $anggaran = document.getElementById('pkpt-anggaran');
         if (value) {
             $label.textContent = label;
             $label.className   = 'truncate flex-1 mr-2 text-gray-800 dark:text-white';
+            if ($anggaran && Number(anggaran) > 0) {
+                $anggaran.textContent = fmtRupiah(anggaran);
+                $anggaran.classList.remove('hidden');
+            } else if ($anggaran) {
+                $anggaran.classList.add('hidden');
+            }
         } else {
             $label.textContent = 'Pilih detail setelah memilih program';
             $label.className   = 'truncate flex-1 mr-2 text-gray-400 dark:text-gray-500';
+            if ($anggaran) $anggaran.classList.add('hidden');
         }
 
         pkptUpdateInfo(value);
@@ -143,12 +156,13 @@ document.addEventListener('DOMContentLoaded', () => {
         $pkptList.innerHTML = filtered.map(o => {
             const isSel = o.value === $detSelect.value;
             const labelHtml = q ? esc(o.label).replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark class="bg-yellow-100 dark:bg-yellow-800/40 not-italic font-semibold rounded px-0.5">$1</mark>') : esc(o.label);
-            return `<div class="pkpt-opt px-4 py-3 cursor-pointer text-sm leading-snug transition-colors ${isSel ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/[0.04]'}" data-value="${o.value}" data-label="${esc(o.label)}" data-jenis-kegiatan="${esc(o.jenis_kegiatan)}" data-tim="${esc(o.tim)}">${labelHtml}</div>`;
+            const anggaranHtml = Number(o.anggaran) > 0 ? `<span class="shrink-0 text-[11px] font-semibold text-green-600 dark:text-green-400 ml-auto">${fmtRupiah(o.anggaran)}</span>` : '';
+            return `<div class="pkpt-opt flex items-center gap-2 px-4 py-3 cursor-pointer text-sm leading-snug transition-colors ${isSel ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/[0.04]'}" data-value="${o.value}" data-label="${esc(o.label)}" data-jenis-kegiatan="${esc(o.jenis_kegiatan)}" data-tim="${esc(o.tim)}" data-anggaran="${o.anggaran || 0}"><span class="truncate">${labelHtml}</span>${anggaranHtml}</div>`;
         }).join('');
 
         $pkptList.querySelectorAll('.pkpt-opt').forEach(el => {
             el.addEventListener('click', () => {
-                pkptSetValue(el.dataset.value, el.dataset.label);
+                pkptSetValue(el.dataset.value, el.dataset.label, el.dataset.anggaran);
                 pkptClose();
             });
         });
@@ -194,6 +208,7 @@ async function loadProgramDetails(programId, selectedDetailId = null) {
             label: (d.nama_detail_program || 'Tanpa Nama'),
             jenis_kegiatan: d.jenis_kegiatan || '',
             tim: d.tim || '',
+            anggaran: Number(d.anggaran) || 0,
             disabled: false,
         }));
         
@@ -202,6 +217,7 @@ async function loadProgramDetails(programId, selectedDetailId = null) {
             pkptDetailMap[String(d.id)] = {
                 jenis_kegiatan: d.jenis_kegiatan || '',
                 tim: d.tim || '',
+                anggaran: d.anggaran || 0,
             };
         });
         
@@ -210,7 +226,7 @@ async function loadProgramDetails(programId, selectedDetailId = null) {
         // Jika dalam mode edit, pasang kembali nilai yang sudah terpilih sebelumnya
         if (selectedDetailId) {
             const match = opts.find(o => o.value === String(selectedDetailId));
-            if (match) pkptSetValue(match.value, match.label);
+            if (match) pkptSetValue(match.value, match.label, match.anggaran);
         }
     } catch (err) {
         console.error('PKPT load error:', err);

@@ -45,8 +45,15 @@ class TemuanController extends Controller
         $lhp   = Lhp::findOrFail($lhpId);
 
         $kodeTemuans = KodeTemuan::orderBy('kode', 'asc')->get();
+        $kodeTemuanOptions = $kodeTemuans->map(fn($k) => [
+            'id'          => $k->id,
+            'kode'        => $k->kode,
+            'kelompok'    => $k->kelompok,
+            'subKelompok' => $k->sub_kelompok,
+            'deskripsi'   => $k->deskripsi,
+        ])->values();
 
-        return view('pages.temuan.create', compact('lhp', 'kodeTemuans'));
+        return view('pages.temuan.create', compact('lhp', 'kodeTemuans', 'kodeTemuanOptions'));
     }
 
     public function store(Request $request)
@@ -141,6 +148,7 @@ public function update(Request $request, Temuan $temuan)
         'lokasi_barang'           => 'nullable|string',
         'attachments.*.file'      => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         'attachments.*.name'      => 'nullable|string',
+        'new_attachments.*'       => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
     ]);
 
     try {
@@ -195,6 +203,36 @@ public function update(Request $request, Temuan $temuan)
 
         if ($request->has('attachments')) {
             $this->uploadAttachments($temuan, $request->attachments);
+        }
+
+        // Hapus attachment yang dicentang
+        if ($request->has('delete_attachments')) {
+            $deletes = \App\Models\Attachment::whereIn('id', $request->delete_attachments)
+                ->where('attachable_id', $temuan->id)
+                ->where('attachable_type', get_class($temuan))
+                ->get();
+            foreach ($deletes as $att) {
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($att->file_path)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($att->file_path);
+                }
+                $att->delete();
+            }
+        }
+
+        // Upload file baru
+        if ($request->hasFile('new_attachments')) {
+            $existingCount = $temuan->attachments()->count();
+            foreach ($request->file('new_attachments') as $i => $file) {
+                if ($file && $file->isValid()) {
+                    $path = $file->store('attachments/temuan', 'public');
+                    $temuan->attachments()->create([
+                        'file_path'   => $path,
+                        'file_name'   => $file->getClientOriginalName(),
+                        'jenis_bukti' => 'temuan',
+                        'urutan'      => $existingCount + $i,
+                    ]);
+                }
+            }
         }
 
         DB::commit();

@@ -93,7 +93,7 @@ Route::prefix('audit-program-detail')->name('audit-program-detail.')->group(func
    Route::get('/get-program-details/{programId}', [AuditAssignmentController::class, 'getProgramDetails'])->name('get-program-details'); // TAMBAHKAN INI
 Route::get('/get-kecamatan/{kategori}', [AuditAssignmentController::class, 'getKecamatan'])->name('get-kecamatan');
 Route::get('/get-unit/{kecamatan}', [AuditAssignmentController::class, 'getUnit'])->name('get-unit');
-Route::get('/audit-assignment/{id}/print', [AuditAssignmentController::class, 'print'])->name('audit-assignment.print');
+Route::get('/audit-assignment/{id}/print', [AuditAssignmentController::class, 'printPdf'])->name('audit-assignment.print');
 
     // Permissions Management
     Route::resource('permissions', PermissionController::class)
@@ -126,6 +126,7 @@ Route::middleware(['auth', 'active'])->prefix('laporan')->name('laporan.')->grou
     Route::get('/{lhp}/rekap', [LaporanController::class, 'rekapPerLhp'])->name('rekap-per-lhp');
     Route::get('/download/pdf/semua', [LaporanController::class, 'downloadPdfSemua'])->name('download-pdf-semua');
     Route::get('/download/pdf/{lhp}', [LaporanController::class, 'downloadPdfPerLhp'])->name('download-pdf-per-lhp');
+    Route::get('/preview/pdf/{lhp}', [LaporanController::class, 'previewPdfPerLhp'])->name('preview-pdf-per-lhp');
     Route::get('/download/excel/semua', [LaporanController::class, 'downloadExcelSemua'])->name('download-excel-semua');
     Route::get('/download/excel/{lhp}', [LaporanController::class, 'downloadExcelPerLhp'])->name('download-excel-per-lhp');
 });

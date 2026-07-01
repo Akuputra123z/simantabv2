@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<style>[x-cloak] { display: none !important; }</style>
 @php
     $totalTemuan   = $lhp->temuans->count();
     $totalKerugian = $lhp->temuans->sum('nilai_temuan');
@@ -185,6 +186,21 @@
                     <p class="mt-1.5 text-sm font-medium text-gray-900 dark:text-white">{{ $lhp->auditAssignment?->nomor_surat ?? '-' }}</p>
                 </div>
 
+                <div class="px-6 py-4">
+                    <p class="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-black dark:text-gray-500">Lampiran</p>
+                    <div class="mt-2 space-y-2">
+                        @forelse($lhp->attachments as $att)
+                        <a href="{{ Storage::url($att->file_path) }}" target="_blank"
+                           class="group flex items-center gap-2.5 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 text-xs transition hover:border-blue-200 hover:bg-blue-50 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10">
+                            <svg class="h-4 w-4 shrink-0 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span class="truncate text-gray-700 group-hover:text-blue-700 dark:text-gray-300 dark:group-hover:text-blue-300">{{ $att->file_name }}</span>
+                        </a>
+                        @empty
+                        <p class="text-xs text-gray-400 italic">Tidak ada lampiran</p>
+                        @endforelse
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -211,76 +227,127 @@
                         'dalam_proses' => 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',
                         default        => 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400',
                     };
+
+                    $kerugianItems = [
+                        'Negara'  => $t->nilai_kerugian_negara ?? 0,
+                        'Daerah'  => $t->nilai_kerugian_daerah ?? 0,
+                        'Desa'    => $t->nilai_kerugian_desa ?? 0,
+                        'BOS/BLUD' => $t->nilai_kerugian_bos_blud ?? 0,
+                    ];
+                    $hasRincian = collect($kerugianItems)->sum() > 0;
                 @endphp
 
-                <div class="border-b border-gray-100 p-6 last:border-b-0 dark:border-gray-800/60">
+                <div x-data="{ open: false }" class="border-b border-gray-100 last:border-b-0 dark:border-gray-800/60">
 
-                    <div class="mb-4 flex flex-wrap items-center gap-2">
-                        <span class="text-xs font-bold text-gray-300 dark:text-gray-600">#{{ $i + 1 }}</span>
+                    {{-- ── HEADER (clickable) ── --}}
+                    <div @click="open = !open"
+                         class="flex cursor-pointer items-center gap-3 px-6 py-4 transition hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+
+                        <span class="flex h-5 w-5 shrink-0 items-center justify-center text-[10px] text-gray-400 transition-transform"
+                              :class="{ 'rotate-90': open }">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                        </span>
+
+                        <span class="text-xs font-bold text-gray-300 dark:text-gray-600 shrink-0">#{{ $i + 1 }}</span>
+
                         @if ($t->kodeTemuan)
-                        <span class="rounded-lg bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{{ $t->kodeTemuan->kode }}</span>
+                        <span class="shrink-0 rounded-lg bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{{ $t->kodeTemuan->kode }}</span>
                         @endif
-                        <span class="rounded-lg px-2 py-0.5 text-[11px] font-bold uppercase {{ $tlBadge }}">{{ str_replace('_', ' ', $t->status_tl ?? 'Belum TL') }}</span>
-                        <div class="ml-auto flex items-center gap-3">
-                            <a href="{{ route('temuan.edit', $t->id) }}" class="text-xs font-semibold text-gray-400 hover:text-blue-600 transition-colors">Edit</a>
+
+                        <span class="shrink-0 rounded-lg px-2 py-0.5 text-[11px] font-bold uppercase {{ $tlBadge }}">{{ str_replace('_', ' ', $t->status_tl ?? 'Belum TL') }}</span>
+
+                        <span class="ml-auto hidden truncate text-xs text-gray-400 sm:block max-w-[200px]" x-show="!open">
+                            {{ Str::limit(strip_tags($t->kondisi ?? ''), 50) }}
+                        </span>
+
+                        <span class="shrink-0 text-xs font-semibold text-gray-900 dark:text-white">
+                            Rp {{ number_format($t->nilai_temuan, 0, ',', '.') }}
+                        </span>
+
+                        <div class="flex shrink-0 items-center gap-2" @click.stop>
+                            <a href="{{ route('temuan.edit', $t->id) }}"
+                               class="rounded-lg px-2 py-1 text-[11px] font-bold text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-all dark:hover:bg-blue-500/10">Edit</a>
                             <form action="{{ route('temuan.destroy', $t->id) }}" method="POST" class="contents"
                                   onsubmit="return confirm('Hapus temuan ini?')">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="text-xs font-semibold text-gray-400 hover:text-red-500 transition-colors">Hapus</button>
+                                <button type="submit"
+                                        class="rounded-lg px-2 py-1 text-[11px] font-bold text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all dark:hover:bg-red-500/10">Hapus</button>
                             </form>
                         </div>
                     </div>
 
-                    <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300">
-                        {{ $t->kondisi ?? 'Tidak ada keterangan' }}
-                    </div>
+                    {{-- ── BODY (expand) ── --}}
+                    <div x-show="open" x-cloak class="border-t border-gray-50 px-6 pb-6 pt-4 dark:border-gray-800/50">
 
-                    @if ($t->nilai_temuan > 0)
-                    <div class="mt-4 inline-flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-2.5 dark:bg-gray-800/50">
-                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Nilai Temuan</span>
-                        <span class="text-sm font-semibold text-gray-900 dark:text-white">
-                            Rp {{ number_format($t->nilai_temuan, 0, ',', '.') }}
-                        </span>
-                    </div>
-                    @endif
+                        {{-- Kondisi --}}
+                        <div class="mb-4">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500 mb-1.5">Kondisi</p>
+                            <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300">
+                                {{ $t->kondisi ?? 'Tidak ada keterangan' }}
+                            </div>
+                        </div>
 
-                    <div class="mt-5">
-                        <p class="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
-                            Rekomendasi
-                            @if ($t->recommendations->count())
-                            <span class="ml-1 text-gray-300 dark:text-gray-600">({{ $t->recommendations->count() }})</span>
-                            @endif
-                        </p>
-                        @forelse ($t->recommendations as $r)
-                        @php
-                            $rColor = match($r->status) {
-                                'selesai'               => 'text-green-600 dark:text-green-400',
-                                'proses', 'dalam_proses' => 'text-amber-600 dark:text-amber-400',
-                                default                 => 'text-gray-400 dark:text-gray-500',
-                            };
-                        @endphp
-                        <div class="mb-2 flex items-start justify-between gap-4 rounded-xl border border-gray-100 bg-gray-50/70 px-4 py-3 dark:border-gray-700/50 dark:bg-gray-800/30">
-                            <div class="min-w-0 flex-1">
-                                <p class="text-xs leading-relaxed text-gray-700 dark:text-gray-300">{{ $r->uraian_rekom ?? '-' }}</p>
-                                <div class="mt-1.5 flex items-center gap-2">
-                                    <span class="text-[11px] font-bold uppercase {{ $rColor }}">{{ str_replace('_', ' ', $r->status ?? 'Belum TL') }}</span>
-                                    @if ($r->isUang() && $r->nilai_rekom > 0)
-                                    <span class="text-gray-300 dark:text-gray-600">·</span>
-                                    <span class="text-[11px] text-gray-500 dark:text-gray-400">
-                                        Rp {{ number_format($r->nilai_tl_selesai, 0, ',', '.') }}
-                                        / {{ number_format($r->nilai_rekom, 0, ',', '.') }}
-                                    </span>
-                                    @endif
+                        {{-- Rincian Kerugian --}}
+                        @if ($hasRincian)
+                        <div class="mb-4">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500 mb-1.5">Rincian Kerugian</p>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach ($kerugianItems as $label => $val)
+                                @if ($val > 0)
+                                <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-1.5 dark:border-gray-700 dark:bg-gray-800/30">
+                                    <span class="text-[10px] font-bold uppercase text-gray-400">{{ $label }}</span>
+                                    <span class="ml-1.5 text-xs font-semibold text-gray-900 dark:text-white">Rp {{ number_format($val, 0, ',', '.') }}</span>
+                                </div>
+                                @endif
+                                @endforeach
+                                <div class="rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 dark:border-blue-500/20 dark:bg-blue-500/10">
+                                    <span class="text-[10px] font-bold uppercase text-blue-500">Total</span>
+                                    <span class="ml-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300">Rp {{ number_format($t->nilai_temuan, 0, ',', '.') }}</span>
                                 </div>
                             </div>
-                            <a href="{{ route('recommendations.show', $r->id) }}"
-                               class="shrink-0 text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-                                Detail →
-                            </a>
                         </div>
-                        @empty
-                        <p class="text-xs italic text-gray-400 dark:text-gray-500">Belum ada rekomendasi.</p>
-                        @endforelse
+                        @endif
+
+                        {{-- Rekomendasi --}}
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500 mb-2">
+                                Rekomendasi
+                                @if ($t->recommendations->count())
+                                <span class="ml-1 text-gray-300 dark:text-gray-600">({{ $t->recommendations->count() }})</span>
+                                @endif
+                            </p>
+                            @forelse ($t->recommendations as $r)
+                            @php
+                                $rColor = match($r->status) {
+                                    'selesai'               => 'text-green-600 dark:text-green-400',
+                                    'proses', 'dalam_proses' => 'text-amber-600 dark:text-amber-400',
+                                    default                 => 'text-gray-400 dark:text-gray-500',
+                                };
+                            @endphp
+                            <div class="mb-2 flex items-start justify-between gap-4 rounded-xl border border-gray-100 bg-gray-50/70 px-4 py-3 dark:border-gray-700/50 dark:bg-gray-800/30">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-xs leading-relaxed text-gray-700 dark:text-gray-300">{{ $r->uraian_rekom ?? '-' }}</p>
+                                    <div class="mt-1.5 flex items-center gap-2">
+                                        <span class="text-[11px] font-bold uppercase {{ $rColor }}">{{ str_replace('_', ' ', $r->status ?? 'Belum TL') }}</span>
+                                        @if ($r->isUang() && $r->nilai_rekom > 0)
+                                        <span class="text-gray-300 dark:text-gray-600">·</span>
+                                        <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                                            Rp {{ number_format($r->nilai_tl_selesai, 0, ',', '.') }}
+                                            / {{ number_format($r->nilai_rekom, 0, ',', '.') }}
+                                        </span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <a href="{{ route('recommendations.show', $r->id) }}"
+                                   class="shrink-0 text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                                    Detail →
+                                </a>
+                            </div>
+                            @empty
+                            <p class="text-xs italic text-gray-400 dark:text-gray-500">Belum ada rekomendasi.</p>
+                            @endforelse
+                        </div>
+
                     </div>
 
                 </div>

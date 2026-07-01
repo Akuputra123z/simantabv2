@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AuditAssignmentController extends Controller
 {
@@ -254,7 +255,7 @@ class AuditAssignmentController extends Controller
             }
         })
         ->orderBy('nama_detail_program')
-        ->get(['id', 'nama_detail_program', 'jenis_kegiatan', 'tim']);
+        ->get(['id', 'nama_detail_program', 'jenis_kegiatan', 'tim', 'anggaran']);
 
     return response()->json($details);
 }
@@ -286,7 +287,29 @@ class AuditAssignmentController extends Controller
     return view('pages.audit-assignment.print', compact('assignment'));
 }
 
-  
+    // ── Print PDF (stream) ────────────────────────────────────────────────
+
+    public function printPdf($id)
+    {
+        $assignment = AuditAssignment::with([
+            'auditProgramDetail.auditProgram',
+            'unitDiperiksas',
+            'ketuaTim',
+            'members',
+        ])->findOrFail($id);
+
+        $pdf = Pdf::loadView('pages.audit-assignment.print-pdf', compact('assignment'))
+            ->setPaper('a4', 'portrait')
+            ->setOptions([
+                'defaultFont'   => 'sans-serif',
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled'      => false,
+            ]);
+
+        $filename = 'surat-tugas-' . $assignment->nomor_surat . '-' . now()->format('Ymd') . '.pdf';
+        return $pdf->stream(str_replace('/', '-', $filename));
+    }
+    
     public function show(AuditAssignment $auditAssignment)
     {
         // Load semua relasi agar data tampil lengkap di halaman detail

@@ -41,7 +41,7 @@
     </div>
     @endif
 
-    <form action="{{ route('temuan.update', $temuan) }}" method="POST" id="form-temuan">
+    <form action="{{ route('temuan.update', $temuan) }}" method="POST" id="form-temuan" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -171,6 +171,54 @@
             </div>
         </div>
 
+        {{-- Card: Lampiran --}}
+        <div class="mt-6 rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+                <h2 class="text-base font-semibold text-gray-900 dark:text-white">Lampiran</h2>
+            </div>
+            <div class="p-6">
+                @php $existingAtt = $temuan->attachments ?? collect([]); @endphp
+
+                @if($existingAtt->isNotEmpty())
+                <div class="mb-5 space-y-2">
+                    <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">File Saat Ini</p>
+                    @foreach($existingAtt as $att)
+                    <div class="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/50">
+                        <a href="{{ Storage::url($att->file_path) }}" target="_blank"
+                           class="flex items-center gap-3 text-sm text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">
+                            <svg class="h-5 w-5 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span class="truncate max-w-[300px]">{{ $att->file_name }}</span>
+                        </a>
+                        <label class="flex cursor-pointer items-center gap-1.5 text-xs text-red-600 hover:text-red-700 dark:text-red-400">
+                            <input type="checkbox" name="delete_attachments[]" value="{{ $att->id }}"
+                                   class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500">
+                            Hapus
+                        </label>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Tambah File Baru</label>
+                    <p class="mb-3 text-xs text-gray-400">PDF, JPG, JPEG, PNG. Maks 10MB per file.</p>
+                    <div id="new-attachments-container" class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <input type="file" name="new_attachments[]"
+                                   onchange="this.nextElementSibling.textContent = this.files[0]?.name || ''"
+                                   class="block w-full text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-500/10 dark:file:text-blue-400">
+                            <span class="text-xs text-gray-400 truncate max-w-[160px]"></span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="addFileInput()"
+                            class="mt-3 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                        Tambah file lain
+                    </button>
+                </div>
+            </div>
+        </div>
+
         {{-- Footer --}}
         <div class="mt-6 flex items-center justify-end gap-3 rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <a href="{{ route('lhps.show', $temuan->lhp_id) }}"
@@ -245,6 +293,20 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.disabled = true;
         txt.textContent = 'Menyimpan...';
     });
+
+    // Lampiran: tambah input file
+    window.addFileInput = function () {
+        const container = document.getElementById('new-attachments-container');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center gap-3';
+        wrapper.innerHTML = `
+            <input type="file" name="new_attachments[]"
+                   onchange="this.nextElementSibling.textContent = this.files[0]?.name || ''"
+                   class="block w-full text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-500/10 dark:file:text-blue-400">
+            <span class="text-xs text-gray-400 truncate max-w-[160px]"></span>
+        `;
+        container.appendChild(wrapper);
+    };
 });
 </script>
 @endsection

@@ -1,129 +1,84 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="mx-auto max-w-3xl px-4">
-
-    {{-- Header --}}
+<div class="mx-auto max-w-3xl">
     <div class="mb-6">
-        <a href="{{ route('unit-diperiksa.show', $data->id) }}" 
-           class="inline-flex items-center text-xs text-gray-400 hover:text-blue-500 transition mb-2">
-            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor">
-                <path stroke-width="1.5" d="M15 19l-7-7 7-7"/>
-            </svg>
+        <a href="{{ route('unit-diperiksa.show', $data->id) }}"
+           class="group mb-2 inline-flex items-center text-[10px] font-bold uppercase tracking-widest text-gray-400 transition-colors hover:text-blue-600">
+            <svg class="mr-2 h-3 w-3 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
             Kembali
         </a>
-
-        <h2 class="text-xl font-semibold text-gray-800 dark:text-white">
-            Edit Unit
-        </h2>
-        <p class="text-sm text-gray-400">
-            Perbarui informasi unit atau instansi
-        </p>
+        <h2 class="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Edit Unit</h2>
+        <p class="text-sm text-gray-400">Perbarui informasi unit atau instansi</p>
     </div>
 
     <form action="{{ route('unit-diperiksa.update', $data->id) }}" method="POST">
         @csrf
         @method('PUT')
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 
-        <div class="rounded-2xl border border-gray-100 bg-white/80 backdrop-blur p-6 shadow-sm">
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-
-                {{-- Nama Unit --}}
                 <div class="sm:col-span-2">
-                    <label class="block text-sm text-gray-500 mb-1">
-                        Nama Unit / Instansi
-                    </label>
-                    <input type="text" name="nama_unit"
-                        value="{{ old('nama_unit', $data->nama_unit) }}"
-                        required
-                        class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-2.5 text-sm 
-                               focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 
-                               outline-none transition dark:bg-white/5 dark:border-gray-700 dark:text-white">
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Nama Unit / Instansi</label>
+                    <input type="text" name="nama_unit" value="{{ old('nama_unit', $data->nama_unit) }}" required
+                           class="h-11 w-full rounded-xl border border-gray-200 bg-transparent px-4 text-sm outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">
+                    @error('nama_unit') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Kategori --}}
                 <div>
-                    <label class="block text-sm text-gray-500 mb-1">
-                        Kategori
-                    </label>
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Kategori</label>
                     <select name="kategori" required
-                        class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-2.5 text-sm
-                               focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
-                               outline-none transition dark:bg-white/5 dark:border-gray-700 dark:text-white">
+                            class="h-11 w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                         @foreach($kategoriOptions as $opt)
-                            <option value="{{ $opt }}" 
-                                {{ old('kategori', $data->kategori) == $opt ? 'selected' : '' }}>
-                                {{ $opt }}
-                            </option>
+                            <option value="{{ $opt }}" {{ old('kategori', $data->kategori) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                         @endforeach
                     </select>
+                    @error('kategori') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Kecamatan --}}
                 <div>
-                    <label class="block text-sm text-gray-500 mb-1">
-                        Kecamatan
-                    </label>
-                    <input type="text" name="nama_kecamatan"
-                        value="{{ old('nama_kecamatan', $data->nama_kecamatan) }}"
-                        class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-2.5 text-sm
-                               focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
-                               outline-none transition dark:bg-white/5 dark:border-gray-700 dark:text-white">
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Kecamatan</label>
+                    <select name="nama_kecamatan" required
+                            class="h-11 w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                        <option value="" disabled {{ old('nama_kecamatan', $data->nama_kecamatan) ? '' : 'selected' }}>Pilih Kecamatan</option>
+                        @foreach($kecamatanList as $kec)
+                            <option value="{{ $kec }}" {{ old('nama_kecamatan', $data->nama_kecamatan) == $kec ? 'selected' : '' }}>{{ $kec }}</option>
+                        @endforeach
+                    </select>
+                    @error('nama_kecamatan') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Telepon --}}
                 <div>
-                    <label class="block text-sm text-gray-500 mb-1">
-                        Nomor Telepon
-                    </label>
-                    <input type="text" name="telepon"
-                        value="{{ old('telepon', $data->telepon) }}"
-                        class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-2.5 text-sm
-                               focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
-                               outline-none transition dark:bg-white/5 dark:border-gray-700 dark:text-white">
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Nomor Telepon</label>
+                    <input type="text" name="telepon" value="{{ old('telepon', $data->telepon) }}"
+                           class="h-11 w-full rounded-xl border border-gray-200 bg-transparent px-4 text-sm outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">
+                    @error('telepon') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Alamat --}}
                 <div class="sm:col-span-2">
-                    <label class="block text-sm text-gray-500 mb-1">
-                        Alamat Lengkap
-                    </label>
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Alamat Lengkap</label>
                     <textarea name="alamat" rows="2"
-                        class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-2.5 text-sm
-                               focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
-                               outline-none transition dark:bg-white/5 dark:border-gray-700 dark:text-white">{{ old('alamat', $data->alamat) }}</textarea>
+                              class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">{{ old('alamat', $data->alamat) }}</textarea>
+                    @error('alamat') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Keterangan --}}
                 <div class="sm:col-span-2">
-                    <label class="block text-sm text-gray-500 mb-1">
-                        Keterangan Tambahan
-                    </label>
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Keterangan Tambahan</label>
                     <textarea name="keterangan" rows="3"
-                        class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-2.5 text-sm
-                               focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
-                               outline-none transition dark:bg-white/5 dark:border-gray-700 dark:text-white">{{ old('keterangan', $data->keterangan) }}</textarea>
+                              class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">{{ old('keterangan', $data->keterangan) }}</textarea>
+                    @error('keterangan') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
             </div>
 
-            {{-- Actions --}}
-            <div class="mt-8 flex items-center justify-between border-t border-gray-100 pt-5">
-                <a href="{{ route('unit-diperiksa.show', $data->id) }}" 
-                   class="text-sm text-gray-400 hover:text-gray-600 transition">
-                    Batal
-                </a>
-
-                <x-ui.button 
-                    type="submit" 
-                    variant="primary"
-                    class="rounded-xl px-5 py-2 text-sm shadow-sm hover:shadow-md transition"
-                >
+            <div class="mt-8 flex items-center justify-between border-t border-gray-100 pt-5 dark:border-gray-800">
+                <a href="{{ route('unit-diperiksa.show', $data->id) }}"
+                   class="text-xs font-bold uppercase tracking-widest text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300">Batal</a>
+                <button type="submit"
+                        class="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700 active:scale-95">
                     Simpan Perubahan
-                </x-ui.button>
+                </button>
             </div>
-
         </div>
     </form>
 </div>

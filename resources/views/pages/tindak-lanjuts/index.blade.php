@@ -1,5 +1,54 @@
 @extends('layouts.app')
 
+@php
+$tlAttachments = $tindakLanjuts->mapWithKeys(fn($tl) => [
+    $tl->id => $tl->attachments->map(fn($a) => [
+        'id'   => $a->id,
+        'name' => $a->file_name,
+        'url'  => Storage::url($a->file_path),
+        'is_image' => $a->isImage(),
+    ]),
+]);
+@endphp
+
+@push('scripts')
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.store('lampiran', {
+        open: false,
+        attachments: [],
+        selectedIndex: 0,
+
+        openLampiran(tlId) {
+            this.attachments = window.__tlAttachments[tlId] ?? [];
+            this.selectedIndex = 0;
+            this.open = true;
+        },
+
+        close() {
+            this.open = false;
+            this.attachments = [];
+            this.selectedIndex = 0;
+        },
+
+        get selected() {
+            return this.attachments[this.selectedIndex] ?? null;
+        },
+
+        selectFile(index) {
+            this.selectedIndex = index;
+        },
+
+        get hasMultiple() {
+            return this.attachments.length > 1;
+        }
+    });
+});
+
+window.__tlAttachments = @json($tlAttachments);
+</script>
+@endpush
+
 @section('content')
 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
@@ -172,6 +221,15 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                     </svg>
                                 </a>
+                                <button type="button"
+                                        x-on:click="$store.lampiran.openLampiran({{ $tl->id }})"
+                                        x-show="{{ $tl->attachments->isNotEmpty() ? 'true' : 'false' }}"
+                                        class="rounded-lg p-1.5 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400 transition-colors"
+                                        title="Lampiran">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                                    </svg>
+                                </button>
                                 <a href="{{ route('tindak-lanjuts.edit', $tl->id) }}"
                                    class="rounded-lg p-1.5 text-gray-400 hover:bg-yellow-50 hover:text-yellow-600 dark:hover:bg-yellow-900/20 dark:hover:text-yellow-400 transition-colors"
                                    title="Edit">
@@ -291,4 +349,67 @@
     </div>
 
 </div>
+
+{{-- Lampiran Modal --}}
+<template x-teleport="body">
+    <div x-show="$store.lampiran.open"
+         class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 p-4"
+         x-cloak>
+        <div class="flex w-full max-w-5xl flex-col rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
+             style="height: 90vh;"
+             @click.outside="$store.lampiran.close()">
+            {{-- Header --}}
+            <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-gray-800">
+                <h3 class="text-base font-semibold text-gray-900 dark:text-white">Lampiran</h3>
+                <button @click="$store.lampiran.close()"
+                        class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <template x-if="$store.lampiran.attachments.length === 0">
+                <div class="flex flex-1 items-center justify-center">
+                    <p class="text-sm text-gray-400">Tidak ada file.</p>
+                </div>
+            </template>
+
+            <template x-if="$store.lampiran.attachments.length > 0">
+                <div class="flex flex-1 flex-col overflow-hidden">
+                    {{-- File tabs --}}
+                    <div x-show="$store.lampiran.hasMultiple"
+                         class="flex gap-2 overflow-x-auto border-b border-gray-100 px-6 py-3 dark:border-gray-800">
+                        <template x-for="(att, idx) in $store.lampiran.attachments" :key="att.id">
+                            <button @click="$store.lampiran.selectFile(idx)"
+                                    :class="idx === $store.lampiran.selectedIndex
+                                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'"
+                                    class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors truncate max-w-[200px]">
+                                <span x-text="att.name"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    {{-- Preview area --}}
+                    <div class="flex flex-1 items-center justify-center bg-gray-100 dark:bg-gray-800/50">
+                        <iframe :src="$store.lampiran.selected?.url"
+                                class="h-full w-full"
+                                frameborder="0">
+                        </iframe>
+                    </div>
+
+                    {{-- Footer with link --}}
+                    <div class="flex items-center justify-between border-t border-gray-100 px-6 py-3 dark:border-gray-800">
+                        <span class="truncate text-sm text-gray-500 dark:text-gray-400" x-text="$store.lampiran.selected?.name"></span>
+                        <a :href="$store.lampiran.selected?.url" target="_blank"
+                           class="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            Buka di tab baru
+                        </a>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>
+
 @endsection

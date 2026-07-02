@@ -2,71 +2,81 @@
 
 @section('content')
 <div class="mx-auto max-w-3xl">
-    <div class="mb-8">
-        <a href="{{ route('unit-diperiksa.index') }}" class="group inline-flex items-center text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-colors mb-2">
-            <svg class="mr-2 h-3 w-3 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    <div class="mb-6">
+        <a href="{{ route('unit-diperiksa.index') }}"
+           class="group mb-2 inline-flex items-center text-[10px] font-bold uppercase tracking-widest text-gray-400 transition-colors hover:text-blue-600">
+            <svg class="mr-2 h-3 w-3 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
             Kembali
         </a>
-        <h2 class="text-3xl font-black tracking-tighter text-gray-900 dark:text-white">Tambah Unit Diperiksa</h2>
+        <h2 class="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Tambah Unit Diperiksa</h2>
     </div>
 
     <form action="{{ route('unit-diperiksa.store') }}" method="POST">
         @csrf
-        <div class="rounded-3xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.02]">
-            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
                 <div class="sm:col-span-2">
-                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400">Nama Unit / Instansi</label>
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Nama Unit / Instansi</label>
                     <input type="text" name="nama_unit" value="{{ old('nama_unit') }}" required placeholder="Contoh: SMPN 1 Rembang"
-                        class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm focus:border-blue-500 outline-none dark:border-gray-700 dark:text-white">
+                           class="h-11 w-full rounded-xl border border-gray-200 bg-transparent px-4 text-sm outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">
+                    @error('nama_unit') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400">Kategori</label>
-                    <select name="kategori" required class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm focus:border-blue-500 outline-none dark:border-gray-700 dark:text-white">
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Kategori</label>
+                    <select name="kategori" required
+                            class="h-11 w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                         <option value="" disabled {{ old('kategori') ? '' : 'selected' }}>Pilih Kategori</option>
                         @foreach($kategoriOptions as $opt)
                             <option value="{{ $opt }}" {{ old('kategori') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                         @endforeach
                     </select>
+                    @error('kategori') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400">Kecamatan</label>
-                    {{-- Mengubah Input menjadi Select --}}
-                    <select name="nama_kecamatan" required class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm focus:border-blue-500 outline-none dark:border-gray-700 dark:text-white">
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Kecamatan</label>
+                    <select name="nama_kecamatan" required
+                            class="h-11 w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                         <option value="" disabled {{ old('nama_kecamatan') ? '' : 'selected' }}>Pilih Kecamatan</option>
-                        @php
-                            $kecamatans = [
-                                'Bulu', 'Gunem', 'Kaliori', 'Kragan', 'Lasem', 'Pancur', 'Rembang', 
-                                'Sale', 'Sarang', 'Sedan', 'Sluke', 'Sulang', 'Sumber', 'Pamotan'
-                            ];
-                        @endphp
-                        @foreach($kecamatans as $kec)
+                        @foreach($kecamatanList as $kec)
                             <option value="{{ $kec }}" {{ old('nama_kecamatan') == $kec ? 'selected' : '' }}>{{ $kec }}</option>
                         @endforeach
                     </select>
+                    @error('nama_kecamatan') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400">Nomor Telepon</label>
-                    <input type="text" name="telepon" value="{{ old('telepon') }}" placeholder="08..."
-                        class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm focus:border-blue-500 outline-none dark:border-gray-700 dark:text-white">
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Nomor Telepon</label>
+                    <input type="text" name="telepon" value="{{ old('telepon') }}" placeholder="08xxxxxxxxxx"
+                           class="h-11 w-full rounded-xl border border-gray-200 bg-transparent px-4 text-sm outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">
+                    @error('telepon') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="sm:col-span-2">
-                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400">Alamat Lengkap</label>
-                    <textarea name="alamat" rows="2" class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm focus:border-blue-500 outline-none dark:border-gray-700 dark:text-white">{{ old('alamat') }}</textarea>
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Alamat Lengkap</label>
+                    <textarea name="alamat" rows="2"
+                              class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">{{ old('alamat') }}</textarea>
+                    @error('alamat') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="sm:col-span-2">
-                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400">Keterangan Tambahan</label>
-                    <textarea name="keterangan" rows="3" class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm focus:border-blue-500 outline-none dark:border-gray-700 dark:text-white">{{ old('keterangan') }}</textarea>
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Keterangan Tambahan</label>
+                    <textarea name="keterangan" rows="3"
+                              class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:text-white">{{ old('keterangan') }}</textarea>
+                    @error('keterangan') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
+
             </div>
 
-            <div class="mt-10 flex items-center gap-3 pt-6 border-t border-gray-50 dark:border-gray-800">
-                <x-ui.button type="submit" variant="primary">Simpan Unit Baru</x-ui.button>
-                <a href="{{ route('unit-diperiksa.index') }}" class="text-xs font-bold uppercase tracking-widest text-gray-400">Batal</a>
+            <div class="mt-8 flex items-center justify-between border-t border-gray-100 pt-5 dark:border-gray-800">
+                <a href="{{ route('unit-diperiksa.index') }}"
+                   class="text-xs font-bold uppercase tracking-widest text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300">Batal</a>
+                <button type="submit"
+                        class="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700 active:scale-95">
+                    Simpan Unit Baru
+                </button>
             </div>
         </div>
     </form>

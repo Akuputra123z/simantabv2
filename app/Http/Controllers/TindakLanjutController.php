@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\TindakLanjut;
 use App\Models\Recommendation;
 use App\Models\User;
+use App\Models\Attachment;
 use App\Services\LhpStatistikService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class TindakLanjutController extends Controller
 {
@@ -25,7 +27,8 @@ class TindakLanjutController extends Controller
             ->with([
                 'recommendation.temuan.lhp',
                 'recommendation',
-                'creator'
+                'creator',
+                'attachments',
             ]);
 
         // 2. Terapkan Filter (Scope yang kita buat di Model)
@@ -74,7 +77,7 @@ class TindakLanjutController extends Controller
             'tanggal_mulai_cicilan'   => 'nullable|date',
             'tanggal_jatuh_tempo'     => 'required|date',
             'status_verifikasi'       => 'required|in:menunggu_verifikasi,berjalan,lunas',
-            'diverifikasi_oleh'       => 'nullable|exists:users,id',
+            'diverifikasi_oleh'       => 'nullable|integer|exists:users,id',
             'catatan_tl'              => 'nullable|string|max:1000',
             'hambatan'                => 'nullable|string|max:1000',
         ]);
@@ -96,6 +99,22 @@ class TindakLanjutController extends Controller
        try {
         DB::beginTransaction();
         $tindakLanjut = TindakLanjut::create($validated);
+
+        // Simpan lampiran
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $i => $file) {
+                if ($file && $file->isValid()) {
+                    $path = $file->store('attachments/tindak-lanjut', 'public');
+                    $tindakLanjut->attachments()->create([
+                        'file_path'   => $path,
+                        'file_name'   => $file->getClientOriginalName(),
+                        'jenis_bukti' => 'tindak_lanjut',
+                        'urutan'      => $i,
+                    ]);
+                }
+            }
+        }
+
         DB::commit();
 
         // ✅ Sync status Recommendation DULU sebelum hitung statistik LHP
@@ -121,6 +140,7 @@ class TindakLanjutController extends Controller
             'verifikator',
             'creator',
             'cicilans',
+            'attachments',
         ]);
 
         return view('pages.tindak-lanjuts.show', compact('tindakLanjut'));
@@ -128,7 +148,7 @@ class TindakLanjutController extends Controller
 
     public function edit(TindakLanjut $tindakLanjut)
     {
-        $tindakLanjut->load(['recommendation.temuan.lhp']);
+        $tindakLanjut->load(['recommendation.temuan.lhp', 'attachments']);
 
         $recommendations = Recommendation::with(['temuan.lhp'])
             ->where(function ($q) use ($tindakLanjut) {
@@ -153,7 +173,7 @@ class TindakLanjutController extends Controller
             'tanggal_mulai_cicilan'   => 'nullable|date',
             'tanggal_jatuh_tempo'     => 'required|date',
             'status_verifikasi'       => 'required|in:menunggu_verifikasi,berjalan,lunas',
-            'diverifikasi_oleh'       => 'nullable|exists:users,id',
+            'diverifikasi_oleh'       => 'nullable|integer|exists:users,id',
             'catatan_tl'              => 'nullable|string|max:1000',
             'hambatan'                => 'nullable|string|max:1000',
         ]);
@@ -176,28 +196,74 @@ class TindakLanjutController extends Controller
         }
 
         try {
-        DB::beginTransaction();
-        $tindakLanjut->update($validated);
-        DB::commit();
+            DB::beginTransaction();
 
-        // ✅ Sync status Recommendation DULU sebelum hitung statistik LHP
-        $this->syncRekomendasi($tindakLanjut);
-        $this->updateStatistik($tindakLanjut);
+            $tindakLanjut->update($validated);
+
+            // Hapus lampiran yang dicentang
+            if ($request->has('delete_attachments')) {
+                $deletes = Attachment::whereIn('id', (array) $request->delete_attachments)
+                    ->where('attachable_id', $tindakLanjut->id)
+                    ->where('attachable_type', get_class($tindakLanjut))
+                    ->get();
+                foreach ($deletes as $att) {
+                    Storage::disk('public')->delete($att->file_path);
+                    $att->delete();
+                }
+            }
+
+            // Upload lampiran baru
+            if ($request->hasFile('new_attachments')) {
+                $existingCount = $tindakLanjut->attachments()->count();
+                foreach ($request->file('new_attachments') as $i => $file) {
+                    if ($file && $file->isValid()) {
+                        $path = $file->store('attachments/tindak-lanjut', 'public');
+                        $tindakLanjut->attachments()->create([
+                            'file_path'   => $path,
+                            'file_name'   => $file->getClientOriginalName(),
+                            'jenis_bukti' => 'tindak_lanjut',
+                            'urutan'      => $existingCount + $i,
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('TindakLanjut update error: ' . $e->getMessage());
+
+            $errMsg = app()->isLocal()
+                ? 'Gagal memperbarui data. Error: ' . $e->getMessage()
+                : 'Gagal memperbarui data.';
+
+            return back()->withInput()->with('error', $errMsg);
+        }
+
+        // Sync parent status outside the atomic transaction so a failure here
+        // doesn't lose the user's data — log & continue silently.
+        try {
+            $this->syncRekomendasi($tindakLanjut);
+            $this->updateStatistik($tindakLanjut);
+        } catch (\Throwable $e) {
+            Log::error('TindakLanjut sync error after update: ' . $e->getMessage());
+        }
 
         return redirect()
             ->route('tindak-lanjuts.index')
             ->with('success', 'Tindak lanjut diperbarui.');
-
-    } catch (\Throwable $e) {
-        DB::rollBack();
-        Log::error('TindakLanjut update error: ' . $e->getMessage());
-        return back()->withInput()->with('error', 'Gagal memperbarui data.');
-    }
     }
 
     public function destroy(TindakLanjut $tindakLanjut)
 {
     $lhpId = $tindakLanjut->recommendation?->temuan?->lhp_id;
+    
+    // Hapus file lampiran dari storage
+    foreach ($tindakLanjut->attachments as $att) {
+        Storage::disk('public')->delete($att->file_path);
+        $att->delete();
+    }
     
     // Simpan recommendation sebelum TL dihapus untuk sync setelahnya
     $recommendation = $tindakLanjut->recommendation;

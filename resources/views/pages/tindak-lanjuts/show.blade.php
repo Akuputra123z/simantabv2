@@ -33,8 +33,17 @@
         <div class="flex items-center gap-3">
             <a href="{{ route('tindak-lanjuts.edit', $tindakLanjut->id) }}" class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                Edit Data
+                Edit
             </a>
+            <form action="{{ route('tindak-lanjuts.destroy', $tindakLanjut->id) }}" method="POST"
+                  onsubmit="return confirm('Yakin ingin menghapus tindak lanjut ini?')" class="inline">
+                @csrf @method('DELETE')
+                <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-5 py-2.5 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-50">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Hapus
+                </button>
+            </form>
             <a href="{{ route('tindak-lanjuts.index') }}" class="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-gray-800">
                 Tutup
             </a>
@@ -144,6 +153,24 @@
             </p>
         </div>
     </div>
+
+    {{-- LAMPIRAN --}}
+    @if($tindakLanjut->attachments->isNotEmpty())
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+        <div class="px-5 py-4 sm:px-6 sm:py-5">
+            <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Lampiran</h3>
+        </div>
+        <div class="space-y-6 border-t border-gray-100 p-5 sm:p-6 dark:border-gray-800">
+            @foreach($tindakLanjut->attachments as $att)
+            <a href="{{ Storage::url($att->file_path) }}" target="_blank"
+               class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300 dark:hover:text-blue-400">
+                <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span class="truncate">{{ $att->file_name }}</span>
+            </a>
+            @endforeach
+        </div>
+    </div>
+    @endif
 </div>
 
         {{-- RIGHT COLUMN: SLIM METRICS & INFO --}}

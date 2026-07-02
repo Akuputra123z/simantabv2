@@ -50,44 +50,18 @@
 
         <div class="space-y-6">
 
-            {{-- CARD 0: REFERENSI PENUGASAN + LAMPIRAN TERSIMPAN --}}
+            {{-- CARD 0: REFERENSI PENUGASAN --}}
             <div class="rounded-2xl border border-gray-200 bg-gray-50/50 p-5 dark:border-gray-800 dark:bg-white/[0.02]">
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-
-                    {{-- Referensi Penugasan --}}
-                    <div>
-                        <h3 class="mb-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">Referensi Penugasan</h3>
-                        <div class="flex items-start gap-3">
-                            <div class="mt-1 rounded-md bg-brand-50 p-2 text-brand-600 dark:bg-brand-900/20">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                            </div>
-                            <div class="min-w-0">
-                                <p class="text-[11px] font-medium text-gray-500 uppercase">Program Audit</p>
-                                <p class="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white truncate">
-                                  {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
-                                </p>
-                            </div>
-                        </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 rounded-md bg-brand-50 p-2 text-brand-600 dark:bg-brand-900/20">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     </div>
-
-                    {{-- Lampiran Tersimpan --}}
-                    <div>
-                        <h3 class="mb-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">Lampiran Tersimpan</h3>
-                        <div class="space-y-2">
-                            @forelse ($lhp->attachments as $att)
-                                <div class="group flex items-center justify-between rounded-lg border border-gray-100 p-2.5 dark:border-gray-700 hover:border-brand-200 transition-colors bg-white dark:bg-white/[0.03]">
-                                    <div class="flex items-center gap-2 min-w-0">
-                                        <svg class="h-4 w-4 text-gray-400 group-hover:text-brand-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                                        <span class="truncate text-xs text-gray-600 dark:text-gray-400">{{ $att->file_name ?? basename($att->file_path) }}</span>
-                                    </div>
-                                    <a href="{{ Storage::url($att->file_path) }}" target="_blank" class="text-[10px] font-bold text-brand-500 hover:text-brand-600 uppercase shrink-0 ml-2">Lihat</a>
-                                </div>
-                            @empty
-                                <p class="text-center text-xs text-gray-400 py-2 italic">Belum ada file terlampir</p>
-                            @endforelse
-                        </div>
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-medium text-gray-500 uppercase">Program Audit</p>
+                        <p class="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white truncate">
+                          {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
+                        </p>
                     </div>
-
                 </div>
             </div>
 
@@ -274,35 +248,62 @@
                 </div>
             </div>
 
-            {{-- CARD 3: LAMPIRAN BARU --}}
+            {{-- CARD 3: LAMPIRAN BARU (new upload first, existing below) --}}
             <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
                 <div class="border-b border-gray-100 px-6 py-4 dark:border-gray-800 flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <span class="flex h-6 w-6 items-center justify-center rounded-full bg-brand-50 text-[11px] font-bold text-brand-600 dark:bg-brand-900/30">3</span>
-                        <h2 class="text-sm font-bold text-gray-800 dark:text-white/90">Lampiran Baru</h2>
+                        <h2 class="text-sm font-bold text-gray-800 dark:text-white/90">Lampiran</h2>
                     </div>
                     <button type="button" @click="addLampiran()" class="text-[10px] font-bold text-brand-500 hover:text-brand-600 uppercase tracking-widest border border-brand-200 px-3 py-1.5 rounded-lg hover:bg-brand-50 transition-all">+ Tambah File</button>
                 </div>
-                <div class="p-6 space-y-4">
-                    <template x-for="(file, index) in attachments" :key="file.key">
-                        <div class="flex flex-col gap-4 rounded-xl border border-dashed border-gray-200 p-4 dark:border-gray-700 md:flex-row md:items-end bg-gray-50/30 dark:bg-white/[0.01]">
-                            <div class="flex-1">
-                                <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase">Pilih File</label>
-                                <input type="file" :name="`attachments[${index}][file_path]`"
-                                       class="w-full text-xs text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-[10px] file:font-bold file:text-brand-700 dark:file:bg-brand-900/20">
+                <div class="p-6 space-y-6">
+                    {{-- Upload file baru (ditampilkan pertama) --}}
+                    <div>
+                        <h3 class="mb-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">Tambah File Baru</h3>
+                        <div class="space-y-4">
+                            <template x-for="(file, index) in attachments" :key="file.key">
+                                <div class="flex flex-col gap-4 rounded-xl border border-dashed border-gray-200 p-4 dark:border-gray-700 md:flex-row md:items-end bg-gray-50/30 dark:bg-white/[0.01]">
+                                    <div class="flex-1">
+                                        <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase">Pilih File</label>
+                                        <input type="file" :name="`attachments[${index}][file_path]`"
+                                               class="w-full text-xs text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-[10px] file:font-bold file:text-brand-700 dark:file:bg-brand-900/20">
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase">Label File</label>
+                                        <input type="text" :name="`attachments[${index}][file_name]`" placeholder="Nama Dokumen"
+                                               class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                    </div>
+                                    <button type="button" @click="removeLampiran(index)" class="mb-1 text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-colors">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </div>
+                            </template>
+                            <div x-show="attachments.length === 0" class="text-center py-4">
+                                <p class="text-xs text-gray-400 italic">Tambahkan file pendukung jika diperlukan (PDF/Gambar).</p>
                             </div>
-                            <div class="flex-1">
-                                <label class="mb-1 block text-[10px] font-bold text-gray-400 uppercase">Label File</label>
-                                <input type="text" :name="`attachments[${index}][file_name]`" placeholder="Nama Dokumen"
-                                       class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                            </div>
-                            <button type="button" @click="removeLampiran(index)" class="mb-1 text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-colors">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                            </button>
                         </div>
-                    </template>
-                    <div x-show="attachments.length === 0" class="text-center py-4">
-                        <p class="text-xs text-gray-400 italic">Tambahkan file pendukung jika diperlukan (PDF/Gambar).</p>
+                    </div>
+
+                    {{-- Lampiran Tersimpan (ditampilkan kedua) --}}
+                    <div>
+                        <h3 class="mb-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">Lampiran Tersimpan</h3>
+                        @php $existingAtt = $lhp->attachments ?? collect([]); @endphp
+                        @if($existingAtt->isNotEmpty())
+                            <div class="space-y-2">
+                                @foreach($existingAtt as $att)
+                                    <div class="group flex items-center justify-between rounded-lg border border-gray-100 p-2.5 dark:border-gray-700 hover:border-brand-200 transition-colors bg-white dark:bg-white/[0.03]">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <svg class="h-4 w-4 text-gray-400 group-hover:text-brand-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                            <span class="truncate text-xs text-gray-600 dark:text-gray-400">{{ $att->file_name ?? basename($att->file_path) }}</span>
+                                        </div>
+                                        <a href="{{ Storage::url($att->file_path) }}" target="_blank" class="text-[10px] font-bold text-brand-500 hover:text-brand-600 uppercase shrink-0 ml-2">Lihat</a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="text-center text-xs text-gray-400 py-2 italic">Belum ada file terlampir</p>
+                        @endif
                     </div>
                 </div>
             </div>

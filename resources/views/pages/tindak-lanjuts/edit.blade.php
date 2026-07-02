@@ -51,7 +51,7 @@
                     </p>
                 </div>
 
-                <form action="{{ route('tindak-lanjuts.update', $tindakLanjut->id) }}" method="POST" id="edit-form">
+                <form action="{{ route('tindak-lanjuts.update', $tindakLanjut->id) }}" method="POST" id="edit-form" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -202,6 +202,61 @@
                                 class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:bg-gray-900 dark:border-gray-700 dark:text-white">{{ old('hambatan', $tindakLanjut->hambatan) }}</textarea>
                         </div>
 
+                        {{-- Lampiran --}}
+                        <div class="w-full px-2.5">
+                            <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+                                <div class="flex items-center justify-between px-5 py-4 sm:px-6 sm:py-5">
+                                    <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Lampiran</h3>
+                                    <button type="button" onclick="addEditFileInput()"
+                                        class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-blue-700 transition-all">
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                        TAMBAH FILE
+                                    </button>
+                                </div>
+                                <div class="space-y-6 border-t border-gray-100 p-5 sm:p-6 dark:border-gray-800">
+                                    @php $existingAtt = $tindakLanjut->attachments ?? collect([]); @endphp
+
+                                    {{-- Tambah File Baru (ditampilkan pertama) --}}
+                                    <div>
+                                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tambah File Baru</label>
+                                        <div id="edit-attachments-container" class="space-y-3">
+                                            <div class="flex items-center gap-3">
+                                                <input type="file" name="new_attachments[]"
+                                                       onchange="this.nextElementSibling.textContent = this.files[0]?.name || ''"
+                                                       class="focus:border-ring-brand-300 shadow-theme-xs focus:file:ring-brand-300 h-11 w-full overflow-hidden rounded-lg border border-gray-300 bg-transparent text-sm text-gray-500 transition-colors file:mr-5 file:border-collapse file:cursor-pointer file:rounded-l-lg file:border-0 file:border-r file:border-solid file:border-gray-200 file:bg-gray-50 file:py-3 file:pr-3 file:pl-3.5 file:text-sm file:text-gray-700 placeholder:text-gray-400 hover:file:bg-gray-100 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:text-white/90 dark:file:border-gray-800 dark:file:bg-white/[0.03] dark:file:text-gray-400 dark:placeholder:text-gray-400">
+                                                <span class="text-xs text-gray-400 truncate max-w-[140px]"></span>
+                                                <button type="button" onclick="this.parentElement.remove()"
+                                                        class="shrink-0 text-red-500 hover:text-red-700 transition-colors">
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- File Saat Ini (ditampilkan kedua) --}}
+                                    @if($existingAtt->isNotEmpty())
+                                    <div class="space-y-2">
+                                        <p class="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-400">File Saat Ini</p>
+                                        @foreach($existingAtt as $att)
+                                        <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-2.5 dark:border-gray-700 dark:bg-gray-800/50">
+                                            <a href="{{ Storage::url($att->file_path) }}" target="_blank"
+                                               class="flex items-center gap-2 text-sm text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 truncate">
+                                                <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                <span class="truncate max-w-[250px]">{{ $att->file_name }}</span>
+                                            </a>
+                                            <label class="flex cursor-pointer items-center gap-1 text-xs text-red-600 hover:text-red-700 dark:text-red-400">
+                                                <input type="checkbox" name="delete_attachments[]" value="{{ $att->id }}"
+                                                       class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500">
+                                                Hapus
+                                            </label>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
                         {{-- Info kalkulasi otomatis --}}
                         <div class="w-full px-2.5">
                             <div class="rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
@@ -215,19 +270,30 @@
                             </div>
                         </div>
 
-                        {{-- Action Buttons --}}
-                        <div class="w-full px-2.5 mt-4 flex items-center justify-end gap-3 border-t border-gray-100 pt-6 dark:border-gray-800">
-                            <a href="{{ route('tindak-lanjuts.index') }}"
-                                class="flex h-11 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-transparent dark:text-gray-300">
-                                Batal
-                            </a>
-                            <button type="submit" id="submit-btn"
-                                class="flex h-11 items-center justify-center rounded-lg bg-brand-500 px-8 text-sm font-medium text-white transition-all hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
-                                <span id="btn-text">Simpan Perubahan</span>
-                            </button>
-                        </div>
-
                     </div>
+                </form>
+
+                {{-- Action Buttons --}}
+                <div class="w-full mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-6 dark:border-gray-800">
+                    <button type="button" onclick="confirmDelete()"
+                            class="flex h-11 items-center justify-center rounded-lg border border-red-200 bg-white px-5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-800 dark:bg-transparent">
+                        Hapus
+                    </button>
+                    <div class="flex gap-3">
+                        <a href="{{ route('tindak-lanjuts.index') }}"
+                            class="flex h-11 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-transparent dark:text-gray-300">
+                            Batal
+                        </a>
+                        <button type="submit" form="edit-form" id="submit-btn"
+                            class="flex h-11 items-center justify-center rounded-lg bg-brand-500 px-8 text-sm font-medium text-white transition-all hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+                            <span id="btn-text">Simpan Perubahan</span>
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Standalone delete form (hidden) --}}
+                <form id="delete-form" action="{{ route('tindak-lanjuts.destroy', $tindakLanjut->id) }}" method="POST" class="hidden">
+                    @csrf @method('DELETE')
                 </form>
             </div>
         </div>
@@ -305,6 +371,31 @@ document.addEventListener('DOMContentLoaded', function () {
             if (this.value < 0) this.value = 0;
         });
     });
+
+    // ── Delete confirmation ──────────────────────────────────
+    window.confirmDelete = function () {
+        if (confirm('Yakin ingin menghapus tindak lanjut ini?')) {
+            document.getElementById('delete-form').submit();
+        }
+    };
+
+    // ── Lampiran edit: tambah input file baru ───────────────
+    window.addEditFileInput = function () {
+        const container = document.getElementById('edit-attachments-container');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center gap-3 group';
+        wrapper.innerHTML = `
+            <input type="file" name="new_attachments[]"
+                   onchange="this.nextElementSibling.textContent = this.files[0]?.name || ''"
+                   class="focus:border-ring-brand-300 shadow-theme-xs focus:file:ring-brand-300 h-11 w-full overflow-hidden rounded-lg border border-gray-300 bg-transparent text-sm text-gray-500 transition-colors file:mr-5 file:border-collapse file:cursor-pointer file:rounded-l-lg file:border-0 file:border-r file:border-solid file:border-gray-200 file:bg-gray-50 file:py-3 file:pr-3 file:pl-3.5 file:text-sm file:text-gray-700 placeholder:text-gray-400 hover:file:bg-gray-100 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:text-white/90 dark:file:border-gray-800 dark:file:bg-white/[0.03] dark:file:text-gray-400 dark:placeholder:text-gray-400">
+            <span class="text-xs text-gray-400 truncate max-w-[140px]"></span>
+            <button type="button" onclick="this.parentElement.remove()"
+                    class="shrink-0 text-red-500 hover:text-red-700 transition-colors">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        `;
+        container.appendChild(wrapper);
+    };
 });
 </script>
 @endsection

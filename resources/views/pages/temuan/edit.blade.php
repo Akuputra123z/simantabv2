@@ -179,8 +179,28 @@
             <div class="p-6">
                 @php $existingAtt = $temuan->attachments ?? collect([]); @endphp
 
+                {{-- Tambah File Baru (ditampilkan pertama) --}}
+                <div class="mb-6">
+                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Tambah File Baru</label>
+                    <p class="mb-3 text-xs text-gray-400">PDF, JPG, JPEG, PNG. Maks 10MB per file.</p>
+                    <div id="new-attachments-container" class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <input type="file" name="new_attachments[]"
+                                   onchange="this.nextElementSibling.textContent = this.files[0]?.name || ''"
+                                   class="block w-full text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-500/10 dark:file:text-blue-400">
+                            <span class="text-xs text-gray-400 truncate max-w-[160px]"></span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="addFileInput()"
+                            class="mt-3 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                        Tambah file lain
+                    </button>
+                </div>
+
+                {{-- File Saat Ini (ditampilkan kedua) --}}
                 @if($existingAtt->isNotEmpty())
-                <div class="mb-5 space-y-2">
+                <div class="space-y-2">
                     <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">File Saat Ini</p>
                     @foreach($existingAtt as $att)
                     <div class="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/50">
@@ -198,24 +218,6 @@
                     @endforeach
                 </div>
                 @endif
-
-                <div>
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Tambah File Baru</label>
-                    <p class="mb-3 text-xs text-gray-400">PDF, JPG, JPEG, PNG. Maks 10MB per file.</p>
-                    <div id="new-attachments-container" class="space-y-3">
-                        <div class="flex items-center gap-3">
-                            <input type="file" name="new_attachments[]"
-                                   onchange="this.nextElementSibling.textContent = this.files[0]?.name || ''"
-                                   class="block w-full text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-500/10 dark:file:text-blue-400">
-                            <span class="text-xs text-gray-400 truncate max-w-[160px]"></span>
-                        </div>
-                    </div>
-                    <button type="button" onclick="addFileInput()"
-                            class="mt-3 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                        Tambah file lain
-                    </button>
-                </div>
             </div>
         </div>
 

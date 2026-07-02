@@ -40,8 +40,13 @@ class UnitDiperiksaController extends Controller
 }
     public function create()
     {
-        $kategoriOptions = ['BUMD', 'Sekolah', 'Puskesmas', 'Desa', 'BLUD'];
-        return view('pages.unit-diperiksa.create', compact('kategoriOptions'));
+        $kategoriOptions = ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'];
+        $kecamatanList = UnitDiperiksa::select('nama_kecamatan')
+            ->whereNotNull('nama_kecamatan')
+            ->distinct()
+            ->orderBy('nama_kecamatan')
+            ->pluck('nama_kecamatan');
+        return view('pages.unit-diperiksa.create', compact('kategoriOptions', 'kecamatanList'));
     }
 
     public function store(Request $request)
@@ -69,10 +74,16 @@ class UnitDiperiksaController extends Controller
 
     public function edit(UnitDiperiksa $unitDiperiksa)
     {
-        $kategoriOptions = ['BUMD', 'Sekolah', 'Puskesmas', 'Desa', 'BLUD'];
+        $kategoriOptions = ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'];
+        $kecamatanList = UnitDiperiksa::select('nama_kecamatan')
+            ->whereNotNull('nama_kecamatan')
+            ->distinct()
+            ->orderBy('nama_kecamatan')
+            ->pluck('nama_kecamatan');
         return view('pages.unit-diperiksa.edit', [
             'data' => $unitDiperiksa,
-            'kategoriOptions' => $kategoriOptions
+            'kategoriOptions' => $kategoriOptions,
+            'kecamatanList' => $kecamatanList,
         ]);
     }
 

@@ -29,7 +29,7 @@
         
         /* List Angka Custom Kedinasan */
         ol.list-dinas { margin: 0; padding-left: 25px; }
-        ol.list-dinas li { margin-bottom: 8px; text-align: justify; padding-left: 5px; }
+        ol.list-dinas li { margin-bottom: 4px; text-align: justify; padding-left: 5px; }
         
         .memerintahkan { text-align: center; font-weight: bold; letter-spacing: 4px; margin: 25px 0; font-size: 13pt; }
         
@@ -40,16 +40,17 @@
         table.tim tr:last-child td { border-bottom: 1px solid black; }
 
         /* Unit Kerja di dalam Poin Untuk */
-        .list-unit { margin: 5px 0 10px 20px; font-weight: bold; font-style: italic; list-style-type: none; padding: 0; }
-        .list-unit li { margin-bottom: 3px; }
+        .list-unit { margin: 2px 0 4px 20px; font-weight: bold; font-style: italic; list-style-type: none; padding: 0; }
+        .list-unit li { margin-bottom: 1px; }
 
         /* Blok Tanda Tangan */
         .ttd-wrapper { width: 100%; margin-top: 40px; display: block; clear: both; }
-        .ttd-container { float: right; width: 320px; }
+        .ttd-container { float: right; width: 420px; max-width: 100%; }
         .table-ttd-meta { width: 100%; font-size: 11pt; margin-bottom: 15px; }
-        .table-ttd-meta td { padding: 1px 0; vertical-align: top; }
+        .table-ttd-meta td { padding: 1px 0; vertical-align: top; white-space: nowrap; }
+        .table-ttd-meta td:last-child { white-space: normal; }
         .ttd-jabatan { text-align: center; font-weight: bold; line-height: 1.3; margin-bottom: 65px; text-transform: uppercase; }
-        .ttd-nama { text-align: center; font-weight: bold; text-decoration: underline; margin: 0; }
+        .ttd-nama { text-align: center; font-weight: bold; text-decoration: underline; margin: 0 0 3px 0; word-wrap: break-word; }
         .ttd-nip { text-align: center; margin: 0; font-size: 11pt; line-height: 1.2; }
 
         /* Catatan Kaki */
@@ -145,7 +146,7 @@
                         <ul class="list-unit">
                             @if($assignment->unitDiperiksas && $assignment->unitDiperiksas->isNotEmpty())
                                 @foreach($assignment->unitDiperiksas as $unit)
-                                    <li>➤ {{ $unit->nama_unit }} ({{ $unit->nama_kecamatan }})</li>
+                                    <li>- {{ $unit->nama_unit }} ({{ $unit->nama_kecamatan }})</li>
                                 @endforeach
                             @else
                                 <li>-</li>
@@ -182,6 +183,7 @@
                 <p class="ttd-nip">Pembina<br>NIP. 197411281999032003</p>
             </div>
         </div>
+        <br>
 
         <div class="footer-note">
             Dilarang meminta dan atau menerima pemberian dalam bentuk apapun dari siapapun.

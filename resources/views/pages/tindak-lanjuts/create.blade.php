@@ -37,7 +37,7 @@
                     </div>
                 @endif
 
-                <form action="{{ route('tindak-lanjuts.store') }}" method="POST" id="main-form">
+                <form action="{{ route('tindak-lanjuts.store') }}" method="POST" id="main-form" enctype="multipart/form-data">
                     @csrf
                     <div class="-mx-2.5 flex flex-wrap gap-y-5">
 
@@ -254,6 +254,28 @@
                                 class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:bg-gray-900 dark:border-gray-700 dark:text-white">{{ old('hambatan') }}</textarea>
                         </div>
 
+                        {{-- Lampiran --}}
+                        <div class="w-full px-2.5">
+                            <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+                                <div class="flex items-center justify-between px-5 py-4 sm:px-6 sm:py-5">
+                                    <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Lampiran</h3>
+                                    <button type="button" onclick="addFileInput()"
+                                        class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-blue-700 transition-all">
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                        TAMBAH FILE
+                                    </button>
+                                </div>
+                                <div class="space-y-6 border-t border-gray-100 p-5 sm:p-6 dark:border-gray-800">
+                                    <div id="attachments-container" class="space-y-3">
+                                        <div class="flex flex-col items-center justify-center py-6 text-center" id="empty-attachments">
+                                            <svg class="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                                            <p class="text-xs font-medium text-gray-400">Belum ada lampiran</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {{-- Action Buttons --}}
                         <div class="w-full px-2.5 mt-4 flex items-center justify-end gap-3 border-t border-gray-100 pt-6 dark:border-gray-800">
                             <a href="{{ route('tindak-lanjuts.index') }}"
@@ -452,6 +474,26 @@ document.addEventListener('DOMContentLoaded', function () {
         submitBtn.disabled = true;
         btnText.innerText  = 'Menyimpan...';
     });
+    // ── Lampiran: tambah input file ──────────────────────────
+    window.addFileInput = function () {
+        const container = document.getElementById('attachments-container');
+        const empty = document.getElementById('empty-attachments');
+        if (empty) empty.remove();
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center gap-3 group';
+        wrapper.innerHTML = `
+            <input type="file" name="attachments[]"
+                   onchange="this.nextElementSibling.textContent = this.files[0]?.name || ''"
+                   class="focus:border-ring-brand-300 shadow-theme-xs focus:file:ring-brand-300 h-11 w-full overflow-hidden rounded-lg border border-gray-300 bg-transparent text-sm text-gray-500 transition-colors file:mr-5 file:border-collapse file:cursor-pointer file:rounded-l-lg file:border-0 file:border-r file:border-solid file:border-gray-200 file:bg-gray-50 file:py-3 file:pr-3 file:pl-3.5 file:text-sm file:text-gray-700 placeholder:text-gray-400 hover:file:bg-gray-100 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:text-white/90 dark:file:border-gray-800 dark:file:bg-white/[0.03] dark:file:text-gray-400 dark:placeholder:text-gray-400">
+            <span class="text-xs text-gray-400 truncate max-w-[160px]"></span>
+            <button type="button" onclick="this.parentElement.remove()"
+                    class="shrink-0 text-red-500 hover:text-red-700 transition-colors">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        `;
+        container.appendChild(wrapper);
+    };
 });
 </script>
 @endsection

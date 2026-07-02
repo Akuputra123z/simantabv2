@@ -26,10 +26,7 @@ class AuditAssignmentController extends Controller
             'programs'        => AuditProgram::orderBy('tahun', 'desc')->get(),
             'ketuaTim'        => User::orderBy('name')->get(),
             'members'         => User::orderBy('name')->get(),
-            'kategoriOptions' => UnitDiperiksa::distinct()
-                ->orderBy('kategori')
-                ->pluck('kategori', 'kategori')
-                ->toArray(),
+            'kategoriOptions' => ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'],
             'units' => UnitDiperiksa::orderBy('nama_unit')
                 ->get(['id', 'nama_unit as name', 'kategori', 'nama_kecamatan'])
                 ->map(fn($u) => [

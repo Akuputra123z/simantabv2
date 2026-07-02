@@ -143,7 +143,7 @@
                             <label class="text-[10px] font-bold uppercase text-gray-400 tracking-tighter">Filter Kategori</label>
                             <select id="filter_kategori" class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-xs dark:bg-gray-900 dark:border-gray-700 dark:text-white">
                                 <option value="">Semua Kategori</option>
-                                @foreach($kategoriOptions as $k => $v) <option value="{{ $k }}">{{ $v }}</option> @endforeach
+                                @foreach($kategoriOptions as $cat) <option value="{{ $cat }}">{{ $cat }}</option> @endforeach
                             </select>
                         </div>
                         <div class="space-y-1.5">

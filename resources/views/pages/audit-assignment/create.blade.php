@@ -52,8 +52,7 @@
             </span>
             <span class="text-gray-300 dark:text-gray-600 px-1">›</span>
             <span class="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-gray-400">2. Jadwal & Tim</span>
-            <span class="text-gray-300 dark:text-gray-600 px-1">›</span>
-            <span class="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-gray-400">3. Lampiran</span>
+
         </div>
     </div>
 
@@ -104,15 +103,25 @@
                         </select>
                     </div>
 
-                    {{-- PKPT --}}
-                    <div class="space-y-1.5">
-                        <label for="audit_program_detail_id" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">PKPT / Detail Program <span class="text-red-400">*</span></label>
-                        <select id="audit_program_detail_id" name="audit_program_detail_id" required>
-                            <option value="">Pilih detail setelah memilih program</option>
-                        </select>
+                    {{-- PKPT + Anggaran Disetujui (grouped) --}}
+                    <div class="space-y-3">
+                        <div class="space-y-1.5">
+                            <label for="audit_program_detail_id" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">PKPT / Detail Program <span class="text-red-400">*</span></label>
+                            <select id="audit_program_detail_id" name="audit_program_detail_id" required>
+                                <option value="">Pilih detail setelah memilih program</option>
+                            </select>
+                            <div id="pkpt-info" class="hidden"></div>
+                        </div>
+                        <div class="pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">Rp</span>
+                                <input type="text" name="anggaran_disetujui" id="anggaran_disetujui" inputmode="numeric"
+                                    value="{{ old('anggaran_disetujui', '0') }}"
+                                    placeholder="0"
+                                    class="h-11 w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
+                            </div>
+                        </div>
                     </div>
-
-                    
 
                     {{-- Nomor Surat --}}
                     <div class="space-y-1.5">
@@ -170,7 +179,7 @@
                         
                         <div id="select-all-row" class="flex cursor-pointer items-center gap-3 border-b border-gray-100 bg-gray-50/50 px-5 py-3 hover:bg-blue-50 transition-colors select-none dark:bg-gray-800/50">
                             <div id="cb-all" class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 border-gray-300 bg-white dark:bg-gray-900"></div>
-                            <span class="text-[11px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest">Pilih Semua Desa yang Tampil</span>
+                            <span class="text-[11px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest">Pilih Semua yang Tampil</span>
                         </div>
 
                         {{-- Grid Layout untuk Desa --}}
@@ -241,8 +250,7 @@
             </div>
         </div>
 
-        {{-- ══ SECTION 3: Lampiran ══ --}}
-        @include('pages.audit-assignment.partials._dropzone')
+    
 
         {{-- Actions --}}
         <div class="flex items-center justify-between border-t border-gray-100 pt-8 dark:border-gray-800">

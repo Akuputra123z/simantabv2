@@ -20,21 +20,20 @@
         .label { width: 95px; font-weight: bold; display: table-cell; vertical-align: top; }
         .content { display: table-cell; vertical-align: top; text-align: justify; }
         ol.list-dinas { margin: 0; padding-left: 25px; }
-        ol.list-dinas li { margin-bottom: 4px; text-align: justify; padding-left: 5px; }
+        ol.list-dinas li { margin-bottom: 8px; text-align: justify; padding-left: 5px; }
         .memerintahkan { text-align: center; font-weight: bold; letter-spacing: 4px; margin: 25px 0; font-size: 12pt; }
         table.tim { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 10px; }
         table.tim th { border-top: 1px solid black; border-bottom: 1px solid black; text-align: left; padding: 6px 8px; font-size: 10pt; text-transform: uppercase; font-weight: bold; }
         table.tim td { padding: 8px; vertical-align: top; border-bottom: 1px solid #ccc; }
         table.tim tr:last-child td { border-bottom: 1px solid black; }
-        .list-unit { margin: 2px 0 4px 20px; font-weight: bold; font-style: italic; list-style-type: none; padding: 0; }
-        .list-unit li { margin-bottom: 1px; }
-        .ttd-wrapper { width: 100%; margin-top: 40px; display: block; clear: both; }
-        .ttd-container { float: right; width: 420px; max-width: 100%; }
+        .list-unit { margin: 5px 0 10px 20px; font-weight: bold; font-style: italic; list-style-type: none; padding: 0; }
+        .list-unit li { margin-bottom: 3px; }
+        .ttd-wrapper { width: 100%; margin-top: 40px; }
+        .ttd-container { float: right; width: 320px; }
         .table-ttd-meta { width: 100%; font-size: 10pt; margin-bottom: 15px; }
-        .table-ttd-meta td { padding: 1px 0; vertical-align: top; white-space: nowrap; }
-        .table-ttd-meta td:last-child { white-space: normal; }
+        .table-ttd-meta td { padding: 1px 0; vertical-align: top; }
         .ttd-jabatan { text-align: center; font-weight: bold; line-height: 1.3; margin-bottom: 65px; text-transform: uppercase; }
-        .ttd-nama { text-align: center; font-weight: bold; text-decoration: underline; margin: 0 0 3px 0; word-wrap: break-word; }
+        .ttd-nama { text-align: center; font-weight: bold; text-decoration: underline; margin: 0; }
         .ttd-nip { text-align: center; margin: 0; font-size: 10pt; line-height: 1.2; }
         .footer-note { border: 1px dashed black; padding: 8px; text-align: center; font-style: italic; font-size: 8.5pt; margin-top: 60px; clear: both; font-weight: bold; }
     </style>
@@ -120,7 +119,7 @@
                         <ul class="list-unit">
                             @if($assignment->unitDiperiksas && $assignment->unitDiperiksas->isNotEmpty())
                                 @foreach($assignment->unitDiperiksas as $unit)
-                                    <li>- {{ $unit->nama_unit }} ({{ $unit->nama_kecamatan }})</li>
+                                    <li> ➤ {{ $unit->nama_unit }} ({{ $unit->nama_kecamatan }})</li>
                                 @endforeach
                             @else
                                 <li>-</li>
@@ -150,7 +149,7 @@
                 </table>
 
                 <div class="ttd-jabatan">
-                    INSPEKTUR DAERAH<br>KABUPATEN REMBANG
+                    INSPEKTUR DAERAH<br>KABUPATEN REMBANGbbg
                 </div>
 
                 <p class="ttd-nama">IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE</p>

@@ -323,5 +323,40 @@ async function loadProgramDetails(programId, selectedDetailId = null) {
 
     updateKecOptions();
     renderUnits();
+
+    // ══════════════════════════════════════════════════════════════════
+    // 6. FORMAT RUPIAH Anggaran Disetujui
+    // ══════════════════════════════════════════════════════════════════
+    const $anggaran = document.getElementById('anggaran_disetujui');
+    if ($anggaran) {
+        const raw = v => String(v).replace(/[^0-9]/g, '');
+        const fmt = v => {
+            const n = parseInt(raw(v), 10) || 0;
+            return n ? n.toLocaleString('id-ID') : '';
+        };
+
+        $anggaran.value = fmt($anggaran.value);
+
+        $anggaran.addEventListener('input', function () {
+            const pos = this.selectionStart;
+            const before = this.value.slice(0, pos);
+            const dotsBefore = (before.match(/\./g) || []).length;
+            const rawVal = raw(this.value);
+            this.value = fmt(rawVal);
+            const dotsAfter = (this.value.slice(0, pos).match(/\./g) || []).length;
+            this.setSelectionRange(pos + (dotsAfter - dotsBefore), pos + (dotsAfter - dotsBefore));
+        });
+
+        $anggaran.addEventListener('blur', function () {
+            this.value = fmt(raw(this.value) || '0');
+        });
+
+        const form = $anggaran.closest('form');
+        if (form) {
+            form.addEventListener('submit', function () {
+                $anggaran.value = raw($anggaran.value) || '0';
+            });
+        }
+    }
 });
 </script>

@@ -88,18 +88,17 @@ class AuditAssignmentController extends Controller
             'tanggal_selesai'         => 'required|date|after_or_equal:tanggal_mulai',
             'nama_tim'                => 'nullable|string|max:255',
             'jenis_pengawasan'        => ['nullable', 'string', Rule::in(AuditAssignment::JENIS_PENGAWASAN)],
+            'anggaran_disetujui'      => 'nullable|numeric|min:0',
             'status'                  => 'required|in:draft,berjalan,selesai',
             'members'                 => 'nullable|array',
             'members.*'               => 'exists:users,id',
-            'attachments'             => 'nullable|array',
-            'attachments.*'           => 'file|mimes:jpg,jpeg,png,pdf,docx|max:5120',
         ], [
             'audit_program_detail_id.unique' => 'PKPT/Detail Program ini sudah pernah dibuatkan penugasannya.'
         ]);
 
         $detailId = null;
 
-        DB::transaction(function () use ($validated, $request, &$detailId) {
+        DB::transaction(function () use ($validated, &$detailId) {
             $unitIds = $validated['unit_diperiksa_ids'];
             $members = $validated['members'] ?? [];
             unset($validated['unit_diperiksa_ids'], $validated['members']);
@@ -114,18 +113,6 @@ class AuditAssignmentController extends Controller
             $assignment->members()->sync($members);
 
             $detailId = $assignment->audit_program_detail_id;
-
-            if ($request->hasFile('attachments')) {
-                foreach ($request->file('attachments') as $file) {
-                    $path = $file->store('audit-assignments/attachments', 'public');
-                    $assignment->attachments()->create([
-                        'file_path' => $path,
-                        'file_name' => $file->getClientOriginalName(),
-                        'file_size' => $file->getSize(),
-                        'mime_type' => $file->getMimeType(),
-                    ]);
-                }
-            }
         });
 
         // Sinkron status program setelah assignment dibuat
@@ -146,7 +133,6 @@ class AuditAssignmentController extends Controller
     {
         $data = $auditAssignment->load([
             'members',
-            'attachments',
             'auditProgramDetail.auditProgram',
             'unitDiperiksas',
         ]);
@@ -174,16 +160,15 @@ class AuditAssignmentController extends Controller
             'nomor_surat'             => 'required|string|max:255|unique:audit_assignments,nomor_surat,' . $auditAssignment->id,
             'nama_tim'                => 'nullable|string|max:255',
             'jenis_pengawasan'        => 'required|string|max:255',
+            'anggaran_disetujui'      => 'nullable|numeric|min:0',
             'tanggal_mulai'           => 'required|date',
             'tanggal_selesai'         => 'required|date|after_or_equal:tanggal_mulai',
             'status'                  => 'required|in:draft,berjalan,selesai',
             'members'                 => 'nullable|array',
             'members.*'               => 'exists:users,id',
-            'delete_attachments'      => 'nullable|array',
-            'delete_attachments.*'    => 'exists:audit_attachments,id',
         ]);
 
-        DB::transaction(function () use ($validated, $request, $auditAssignment) {
+        DB::transaction(function () use ($validated, $auditAssignment) {
             $unitIds = $validated['unit_diperiksa_ids'];
             $members = $validated['members'] ?? [];
             unset($validated['unit_diperiksa_ids'], $validated['members']);
@@ -195,28 +180,6 @@ class AuditAssignmentController extends Controller
 
             $auditAssignment->unitDiperiksas()->sync($unitIds);
             $auditAssignment->members()->sync($members);
-
-            if ($request->filled('delete_attachments')) {
-                $toDelete = $auditAssignment->attachments()
-                    ->whereIn('id', $request->delete_attachments)
-                    ->get();
-                foreach ($toDelete as $att) {
-                    Storage::disk('public')->delete($att->file_path);
-                    $att->delete();
-                }
-            }
-
-            if ($request->hasFile('attachments')) {
-                foreach ($request->file('attachments') as $file) {
-                    $path = $file->store('audit-assignments/attachments', 'public');
-                    $auditAssignment->attachments()->create([
-                        'file_path' => $path,
-                        'file_name' => $file->getClientOriginalName(),
-                        'file_size' => $file->getSize(),
-                        'mime_type' => $file->getMimeType(),
-                    ]);
-                }
-            }
         });
 
         // Sinkron status program setelah assignment diupdate

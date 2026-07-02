@@ -294,6 +294,12 @@
                 </dd>
             </div>
             <div>
+                <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Anggaran Disetujui</dt>
+                <dd class="mt-1 text-sm font-medium text-blue-600 dark:text-blue-400">
+                    Rp {{ number_format($data->anggaran_disetujui ?? 0, 0, ',', '.') }}
+                </dd>
+            </div>
+            <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Tingkat Risiko</dt>
                 <dd class="mt-1">
                     @php

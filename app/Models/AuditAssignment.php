@@ -25,19 +25,20 @@ class AuditAssignment extends Model
         'audit_program_detail_id',
         'nama_tim',
         'jenis_pengawasan',
-        // unit_diperiksa_id DIHAPUS — relasi lewat pivot
         'ketua_tim_id',
         'nomor_surat',
         'tanggal_mulai',
         'tanggal_selesai',
         'status',
+        'anggaran_disetujui',
         'created_by',
         'updated_by',
     ];
 
     protected $casts = [
-        'tanggal_mulai'   => 'date',
-        'tanggal_selesai' => 'date',
+        'tanggal_mulai'       => 'date',
+        'tanggal_selesai'     => 'date',
+        'anggaran_disetujui'  => 'integer',
     ];
 
     // ─── Static Helpers ───────────────────────────────────────────────

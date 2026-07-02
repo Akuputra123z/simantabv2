@@ -149,6 +149,7 @@ window.__tlAttachments = @json($tlAttachments);
                     <tr class="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
                         <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400">Rekomendasi / LHP</th>
                         <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400">Jenis</th>
+                        <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400">Dalnis</th>
                         <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400 text-right">Nilai TL</th>
                         <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center">Status</th>
                         <th class="px-6 py-3.5 text-xs   uppercase tracking-wide text-gray-500 dark:text-gray-400 text-right">Aksi</th>
@@ -180,6 +181,11 @@ window.__tlAttachments = @json($tlAttachments);
                             <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold {{ $jenisCls }}">
                                 {{ ucfirst($tl->jenis_penyelesaian) }}
                             </span>
+                        </td>
+
+                        {{-- Pengendali Teknis --}}
+                        <td class="px-6 py-4">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ $tl->pengendali_teknis ?: '-' }}</span>
                         </td>
 
                         {{-- Nilai TL --}}
@@ -253,7 +259,7 @@ window.__tlAttachments = @json($tlAttachments);
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-16 text-center">
+                        <td colspan="6" class="px-6 py-16 text-center">
                             <div class="flex flex-col items-center gap-2">
                                 <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
                                     <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

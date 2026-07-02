@@ -92,6 +92,10 @@
                         {{ $tindakLanjut->verifikator->name ?? '-' }}
                     </p>
                 </div>
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Pengendali Teknis</p>
+                    <p class="mt-0.5 text-sm font-bold text-gray-900">{{ $tindakLanjut->pengendali_teknis ?: '-' }}</p>
+                </div>
             </div>
         </div>
     </div>

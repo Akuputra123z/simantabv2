@@ -202,6 +202,20 @@
                                 class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:bg-gray-900 dark:border-gray-700 dark:text-white">{{ old('hambatan', $tindakLanjut->hambatan) }}</textarea>
                         </div>
 
+                        {{-- Pengendali Teknis --}}
+                        <div class="w-full px-2.5 xl:w-1/2">
+                            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                                Pengendali Teknis (Dalnis)
+                            </label>
+                            <input type="text" name="pengendali_teknis"
+                                value="{{ old('pengendali_teknis', $tindakLanjut->pengendali_teknis) }}"
+                                placeholder="Nama pengendali teknis..."
+                                class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                            @error('pengendali_teknis')
+                                <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                            @enderror
+                        </div>
+
                         {{-- Lampiran --}}
                         <div class="w-full px-2.5">
                             <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">

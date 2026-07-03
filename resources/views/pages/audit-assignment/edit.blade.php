@@ -132,6 +132,7 @@
                             placeholder="700/001/INSPEKTORAT/2026"
                             class="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all" required>
                     </div>
+
                 </div>
 
                 {{-- Unit Diperiksa --}}
@@ -235,7 +236,7 @@
                     </span>
                 </div>
 
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <div class="space-y-1.5">
                         <label for="ketua_tim_id" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Ketua Tim <span class="text-red-400">*</span></label>
                         <select name="ketua_tim_id" id="ketua_tim_id" required
@@ -245,11 +246,23 @@
                         </select>
                     </div>
 
-                    @include('pages.audit-assignment.partials._member_picker', [
-                        'members' => $members,
-                        'preselected' => old('members', $data->members->pluck('id')->toArray())
-                    ])
+                    {{-- Pengendali Teknis --}}
+                    <div class="space-y-1.5">
+                        <label for="pengendali_teknis" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pengendali Teknis (Dalnis)</label>
+                        <input type="text" name="pengendali_teknis" id="pengendali_teknis" value="{{ old('pengendali_teknis', $data->pengendali_teknis) }}"
+                            placeholder="Nama pengendali teknis..."
+                            class="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
+                        @error('pengendali_teknis')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
+
+                {{-- Member Picker --}}
+                @include('pages.audit-assignment.partials._member_picker', [
+                    'members' => $members,
+                    'preselected' => old('members', $data->members->pluck('id')->toArray())
+                ])
             </div>
         </div>
 

@@ -22,7 +22,7 @@ class TindakLanjut extends Model
         'recommendation_id', 'jenis_penyelesaian', 'is_cicilan', 'nilai_tindak_lanjut',
         'jumlah_cicilan_rencana', 'tanggal_mulai_cicilan', 'tanggal_jatuh_tempo',
         'nilai_per_cicilan_rencana', 'jumlah_cicilan_realisasi', 'total_terbayar',
-        'sisa_belum_bayar', 'catatan_tl', 'hambatan', 'pengendali_teknis', 'status_verifikasi',
+        'sisa_belum_bayar', 'catatan_tl', 'hambatan', 'status_verifikasi',
         'diverifikasi_oleh', 'diverifikasi_pada', 'catatan_verifikasi',
         'created_by', 'updated_by',
     ];

@@ -31,6 +31,7 @@ class AuditAssignment extends Model
         'tanggal_selesai',
         'status',
         'anggaran_disetujui',
+        'pengendali_teknis',
         'created_by',
         'updated_by',
     ];

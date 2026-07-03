@@ -80,7 +80,6 @@ class TindakLanjutController extends Controller
             'diverifikasi_oleh'       => 'nullable|integer|exists:users,id',
             'catatan_tl'              => 'nullable|string|max:1000',
             'hambatan'                => 'nullable|string|max:1000',
-            'pengendali_teknis'       => 'nullable|string|max:150',
         ]);
 
         $rekom    = Recommendation::findOrFail($validated['recommendation_id']);
@@ -177,7 +176,6 @@ class TindakLanjutController extends Controller
             'diverifikasi_oleh'       => 'nullable|integer|exists:users,id',
             'catatan_tl'              => 'nullable|string|max:1000',
             'hambatan'                => 'nullable|string|max:1000',
-            'pengendali_teknis'       => 'nullable|string|max:150',
         ]);
 
         $rekom          = Recommendation::findOrFail($validated['recommendation_id']);

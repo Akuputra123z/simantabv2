@@ -65,38 +65,28 @@
         <table class="w-full text-left border-collapse">
             <thead class="bg-gray-50/50 dark:bg-gray-900/50 text-[10px] uppercase tracking-widest text-gray-400 font-bold border-b border-gray-100 dark:border-gray-800">
                 <tr>
-                    <th class="px-6 py-4">Ketua Tim</th>
-                    <th class="px-4 py-4">Program & No. Surat</th>
-                    <th class="px-4 py-4">Unit Diperiksa</th>
-                    <th class="px-4 py-4">Jadwal</th>
-                    <th class="px-4 py-4 text-center">Jenis</th>
-                    <th class="px-4 py-4 text-center">Status</th>
-                    <th class="px-6 py-4 text-right">Aksi</th>
+                    <th class="px-5 py-4 w-[35%]">Program & No. Surat</th>
+                    <th class="px-4 py-4 w-[18%]">Unit Diperiksa</th>
+                    <th class="px-4 py-4 w-[18%]">Jadwal</th>
+                    <th class="px-4 py-4 w-[10%] text-center">Jenis</th>
+                    <th class="px-4 py-4 w-[10%] text-center">Status</th>
+                    <th class="px-5 py-4 w-[9%] text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                 @forelse($assignments as $item)
                 <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                    {{-- Ketua Tim --}}
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[10px] font-bold text-blue-600">
-                                {{ strtoupper(substr($item->ketuaTim->name ?? '?', 0, 2)) }}
-                            </div>
-                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ $item->ketuaTim->name ?? '-' }}</span>
-                        </div>
-                    </td>
-
                     {{-- Program & Surat --}}
-                    <td class="px-4 py-4">
+                    <td class="px-5 py-4">
                         <div class="text-sm font-bold text-gray-900 dark:text-white">
-                            {{ $item->auditProgramDetail->auditProgram->nama_program ?? '-' }}
+                             {{ $item->auditProgramDetail->nama_detail_program ?? '-' }}
+                            
                         </div>
                         <div class="text-[11px] text-gray-400 mt-0.5">
                             {{ $item->nomor_surat }}
                         </div>
                         <div class="text-[10px] text-blue-500 font-medium mt-1 uppercase italic">
-                            {{ $item->auditProgramDetail->nama_detail_program ?? '-' }}
+                           {{ $item->auditProgramDetail->auditProgram->nama_program ?? '-' }}
                         </div>
                         <div class="flex flex-wrap gap-1 mt-1">
                             @if($item->auditProgramDetail?->jenis_kegiatan)
@@ -160,7 +150,7 @@
                     </td>
 
                     {{-- Aksi --}}
-                    <td class="px-6 py-4 text-right">
+                    <td class="px-5 py-4 text-right">
                         <div class="flex justify-end gap-2">
                            <a href="{{ route('audit-assignment.print', $item->id) }}" target="_blank" class="p-1.5 text-gray-400 hover:text-green-600 transition-colors" title="Cetak Surat Tugas">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -184,7 +174,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-20 text-center">
+                    <td colspan="6" class="px-5 py-20 text-center">
                         <div class="flex flex-col items-center gap-3">
                             <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-full text-gray-300">
                                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-width="1.5"/></svg>

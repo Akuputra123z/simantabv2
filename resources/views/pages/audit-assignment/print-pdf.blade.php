@@ -90,11 +90,11 @@
         table.unit-list td { padding: 3px 12px; vertical-align: top; width: 50%; }
         table.unit-list td:first-child { border-right: 1px solid #ccc; }
         .ttd-wrapper { width: 100%; margin-top: 30px; text-align: right; }
-        .ttd-container { display: inline-block; text-align: left; width: 320px; }
+        .ttd-container { display: inline-block; text-align: left; width: 400px; }
         .table-ttd-meta { width: 100%; font-size: 10pt; margin-bottom: 10px; }
         .table-ttd-meta td { padding: 1px 0; vertical-align: top; }
         .ttd-jabatan { text-align: center; font-weight: bold; line-height: 1.3; margin-bottom: 50px; text-transform: uppercase; }
-        .ttd-nama { text-align: center; font-weight: bold; text-decoration: underline; margin: 0; font-size: 11pt; }
+        .ttd-nama { text-align: center; font-weight: bold; text-decoration: underline; margin: 0; font-size: 10.5pt; white-space: nowrap; }
         .ttd-nip { text-align: center; margin: 0; font-size: 10pt; line-height: 1.2; }
         .footer-note { border: 1px dashed black; padding: 6px; text-align: center; font-style: italic; font-size: 8.5pt; margin-top: 40px; font-weight: bold; page-break-inside: avoid; }
     </style>

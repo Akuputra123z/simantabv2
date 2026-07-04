@@ -91,6 +91,12 @@
             <dd class="mt-1 text-sm font-mono font-medium text-blue-600 dark:text-blue-400">{{ $data->nomor_surat }}</dd>
         </div>
 
+        @if($data->pengendali_teknis)
+        <div>
+            <dt class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Pengendali Teknis (Dalnis)</dt>
+            <dd class="mt-1 text-sm font-semibold text-gray-800 dark:text-white">{{ $data->pengendali_teknis }}</dd>
+        </div>
+        @endif
        
 
         {{-- ── UNIT DIPERIKSA (OPTIMIZED) ── --}}

@@ -236,7 +236,7 @@
                     </span>
                 </div>
 
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div class="space-y-1.5">
                         <label for="ketua_tim_id" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Ketua Tim <span class="text-red-400">*</span></label>
                         <select name="ketua_tim_id" id="ketua_tim_id" required

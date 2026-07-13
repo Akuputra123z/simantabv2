@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -48,6 +49,7 @@ class User extends Authenticatable
     public const ROLE_KETUA_TIM          = 'ketua_tim';
     public const ROLE_ANGGOTA            = 'anggota';
     public const ROLE_STAFF_INSPEKTORAT  = 'staff_inspektorat';
+    public const ROLE_OPD               = 'opd';
 
     public const JABATAN_OPTIONS = [
         'Inspektur',
@@ -78,6 +80,7 @@ class User extends Authenticatable
         self::ROLE_KETUA_TIM         => 'Ketua Tim',
         self::ROLE_ANGGOTA           => 'Anggota',
         self::ROLE_STAFF_INSPEKTORAT => 'Staff Inspektorat',
+        self::ROLE_OPD               => 'OPD',
     ];
 
     // ── Scopes ────────────────────────────────────────────────────────────────
@@ -134,5 +137,20 @@ class User extends Authenticatable
             self::ROLE_KEPALA_INSPEKTORAT,
             self::ROLE_KETUA_TIM,
         ]);
+    }
+
+    public function isOpd(): bool
+    {
+        return $this->hasRole(self::ROLE_OPD);
+    }
+
+    public function opdUnits(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            UnitDiperiksa::class,
+            'opd_user_units',
+            'user_id',
+            'unit_diperiksa_id'
+        )->withTimestamps();
     }
 }

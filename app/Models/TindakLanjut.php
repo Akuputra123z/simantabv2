@@ -24,6 +24,8 @@ class TindakLanjut extends Model
         'nilai_per_cicilan_rencana', 'jumlah_cicilan_realisasi', 'total_terbayar',
         'sisa_belum_bayar', 'catatan_tl', 'hambatan', 'status_verifikasi',
         'diverifikasi_oleh', 'diverifikasi_pada', 'catatan_verifikasi',
+        'keterangan_pendukung_opd', 'upload_opd_oleh',
+        'status_opd', 'dikirim_pada', 'alasan_tolak_opd',
         'created_by', 'updated_by',
     ];
 
@@ -40,6 +42,7 @@ class TindakLanjut extends Model
             'total_terbayar'            => 'decimal:2',
             'sisa_belum_bayar'          => 'decimal:2',
             'diverifikasi_pada'         => 'datetime',
+            'dikirim_pada'              => 'datetime',
         ];
     }
 
@@ -72,6 +75,11 @@ class TindakLanjut extends Model
         return $this->cicilans()->where('status', 'diterima');
     }
 
+    public function uploadOpdOleh(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'upload_opd_oleh');
+    }
+
     // ── Scopes ────────────────────────────────────────────────────────────────
 
     public function scopeForUser($query, $user)
@@ -86,6 +94,36 @@ class TindakLanjut extends Model
                   $q2->where('audit_assignment_members.user_id', $user->id);
               });
         });
+    }
+
+    // ── Scopes ────────────────────────────────────────────────────────────────
+
+    public function scopeForOpd($query, $user)
+    {
+        $unitIds = $user->opdUnits()->pluck('unit_diperiksas.id');
+
+        if ($unitIds->isEmpty()) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        return $query->whereHas('recommendation.temuan.lhp', function ($q) use ($unitIds) {
+            $q->whereIn('unit_diperiksa_id', $unitIds);
+        });
+    }
+
+    public function scopeOpdDraft($query)
+    {
+        return $query->where('status_opd', 'draft');
+    }
+
+    public function scopeOpdDikirim($query)
+    {
+        return $query->where('status_opd', 'dikirim');
+    }
+
+    public function scopeOpdBelumUpload($query)
+    {
+        return $query->whereNull('status_opd');
     }
 
     // ── Scopes ────────────────────────────────────────────────────────────────

@@ -45,6 +45,14 @@ class RoleAndPermissionSeeder extends Seeder
 
             // Laporan
             'laporan.view', 'laporan.export',
+
+            // OPD
+            'tindak-lanjut.opd-view',
+            'tindak-lanjut.opd-upload',
+
+            // Admin/IRBAN
+            'tindak-lanjut.buka-kunci-opd',
+            'tindak-lanjut.tolak-opd',
         ];
 
         foreach ($permissions as $permission) {
@@ -102,6 +110,13 @@ class RoleAndPermissionSeeder extends Seeder
             'tindak-lanjut.view', 'tindak-lanjut.create', 'tindak-lanjut.edit',
             'cicilan.view', 'cicilan.create', 'cicilan.edit',
             'laporan.view',
+        ]);
+
+        // OPD — hanya bisa melihat & mengupload bukti tindak lanjut untuk unitnya
+        $opd = Role::firstOrCreate(['name' => User::ROLE_OPD]);
+        $opd->syncPermissions([
+            'tindak-lanjut.opd-view',
+            'tindak-lanjut.opd-upload',
         ]);
 
         // ── 3. Buat akun Super Admin default (hanya jika belum ada) ───────────

@@ -128,11 +128,18 @@ window.__tlAttachments = @json($tlAttachments);
                 <option value="berjalan"            {{ request('status') == 'berjalan'            ? 'selected' : '' }}>Berjalan</option>
                 <option value="menunggu_verifikasi" {{ request('status') == 'menunggu_verifikasi' ? 'selected' : '' }}>Menunggu Verifikasi</option>
             </select>
+            <select name="status_opd"
+                    class="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 w-full sm:w-44">
+                <option value="">Semua OPD</option>
+                <option value="belum_upload" {{ request('status_opd') == 'belum_upload' ? 'selected' : '' }}>Belum Upload</option>
+                <option value="draft" {{ request('status_opd') == 'draft' ? 'selected' : '' }}>Draft</option>
+                <option value="dikirim" {{ request('status_opd') == 'dikirim' ? 'selected' : '' }}>Terkirim</option>
+            </select>
             <button type="submit"
                     class="h-10 rounded-lg bg-gray-900 px-5 text-sm font-medium text-white hover:bg-gray-700 transition-colors dark:bg-blue-600 dark:hover:bg-blue-700">
                 Filter
             </button>
-            @if(request()->filled('search') || request()->filled('status'))
+            @if(request()->filled('search') || request()->filled('status') || request()->filled('status_opd'))
                 <a href="{{ route('tindak-lanjuts.index') }}"
                    class="inline-flex h-10 items-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5">
                     Reset
@@ -152,6 +159,7 @@ window.__tlAttachments = @json($tlAttachments);
 
                         <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400 text-right">Nilai TL</th>
                         <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center">Status</th>
+                        <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center">OPD</th>
                         <th class="px-6 py-3.5 text-xs   uppercase tracking-wide text-gray-500 dark:text-gray-400 text-right">Aksi</th>
                     </tr>
                 </thead>
@@ -211,6 +219,21 @@ window.__tlAttachments = @json($tlAttachments);
                             </span>
                         </td>
 
+                        {{-- Status OPD --}}
+                        <td class="px-6 py-4 text-center">
+                            @php
+                                $opdCls = match($tl->status_opd) {
+                                    'dikirim' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                                    'draft' => 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+                                    default => 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
+                                };
+                                $opdLabel = $tl->status_opd === 'dikirim' ? 'Terkirim' : ($tl->status_opd === 'draft' ? 'Draft' : '-');
+                            @endphp
+                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide {{ $opdCls }}">
+                                {{ $opdLabel }}
+                            </span>
+                        </td>
+
                         {{-- Aksi --}}
                         <td class="px-6 py-4">
                             <div class="flex items-center justify-end gap-1">
@@ -254,7 +277,7 @@ window.__tlAttachments = @json($tlAttachments);
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-16 text-center">
+                        <td colspan="6" class="px-6 py-16 text-center">
                             <div class="flex flex-col items-center gap-2">
                                 <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
                                     <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

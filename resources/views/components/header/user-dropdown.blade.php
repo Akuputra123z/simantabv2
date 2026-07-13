@@ -70,7 +70,9 @@
                                 fill="currentColor"
                             />
                         </svg>',
-                        'path' => route('settings.profile.edit'),
+                        'path' => Auth::user()->isOpd()
+                            ? route('opd.profile.edit')
+                            : route('settings.profile.edit'),
                     ],
                 ];
             @endphp

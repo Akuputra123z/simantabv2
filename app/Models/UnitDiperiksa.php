@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -43,6 +44,16 @@ class UnitDiperiksa extends Model
     public function auditAssignments(): HasMany
     {
         return $this->hasMany(AuditAssignment::class, 'unit_diperiksa_id');
+    }
+
+    public function opdUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'opd_user_units',
+            'unit_diperiksa_id',
+            'user_id'
+        )->withTimestamps();
     }
 
     public function getLabelAttribute(): string

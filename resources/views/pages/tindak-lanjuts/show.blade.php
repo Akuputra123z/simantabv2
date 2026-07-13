@@ -172,6 +172,159 @@
         </div>
     </div>
     @endif
+
+    {{-- UPLOAD DARI OPD --}}
+    @php $opdFiles = $tindakLanjut->attachments->where('jenis_bukti', 'opd_upload'); @endphp
+    @if($tindakLanjut->keterangan_pendukung_opd || $opdFiles->isNotEmpty())
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-widest text-gray-900">Upload dari OPD</h3>
+            @php
+                $opdBadgeColors = [
+                    'dikirim' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/10',
+                    'draft' => 'bg-yellow-50 text-yellow-700 ring-yellow-600/10',
+                ];
+                $opdBadgeColor = $opdBadgeColors[$tindakLanjut->status_opd] ?? 'bg-gray-50 text-gray-700 ring-gray-600/10';
+                $opdLabel = $tindakLanjut->status_opd === 'dikirim' ? 'Terkirim' : ($tindakLanjut->status_opd === 'draft' ? 'Draft' : 'Belum Upload');
+            @endphp
+            <span class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset {{ $opdBadgeColor }}">
+                {{ $opdLabel }}
+            </span>
+        </div>
+
+        @if($tindakLanjut->alasan_tolak_opd)
+            <div class="mb-4 rounded-xl bg-red-50 border border-red-200 p-4">
+                <div class="flex items-start gap-3">
+                    <svg class="h-5 w-5 shrink-0 text-red-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                    <div>
+                        <p class="text-xs font-bold text-red-700 uppercase">Ditolak</p>
+                        <p class="text-sm text-red-600 mt-1">{{ $tindakLanjut->alasan_tolak_opd }}</p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if($tindakLanjut->keterangan_pendukung_opd)
+            <div class="mb-3">
+                <p class="text-[10px] font-bold uppercase text-gray-400 mb-1">Keterangan Pendukung</p>
+                <p class="text-sm text-gray-700 italic bg-gray-50 rounded-lg p-3 border border-gray-100">
+                    {{ $tindakLanjut->keterangan_pendukung_opd }}
+                </p>
+            </div>
+        @endif
+
+        @if($opdFiles->isNotEmpty())
+            <div class="mb-3">
+                <p class="text-[10px] font-bold uppercase text-gray-400 mb-2">File Lampiran OPD</p>
+                <div class="space-y-2">
+                    @foreach($opdFiles as $att)
+                        <a href="{{ $att->file_url }}" target="_blank"
+                           class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                            <svg class="h-4 w-4 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span class="truncate">{{ $att->file_name }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        @if($tindakLanjut->uploadOpdOleh)
+            <p class="text-xs text-gray-400">
+                Diupload oleh: <span class="font-semibold">{{ $tindakLanjut->uploadOpdOleh->name }}</span>
+                @if($tindakLanjut->dikirim_pada)
+                    &middot; Dikirim {{ $tindakLanjut->dikirim_pada->format('d M Y H:i') }}
+                @elseif($tindakLanjut->updated_at)
+                    &middot; {{ $tindakLanjut->updated_at->format('d M Y H:i') }}
+                @endif
+            </p>
+        @endif
+
+        @if($tindakLanjut->status_opd === 'dikirim' && auth()->user()->can('tolakOpd', $tindakLanjut))
+            <div class="mt-4 border-t border-gray-100 pt-4 flex items-center gap-3">
+                <button type="button"
+                        x-on:click="$store.tolakModal.open()"
+                        class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-red-700">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    Tolak
+                </button>
+                @can('bukaKunciOpd', $tindakLanjut)
+                <form action="{{ route('tindak-lanjuts.buka-kunci-opd', $tindakLanjut) }}" method="POST"
+                      onsubmit="return confirm('Buka kunci OPD? OPD dapat mengirim ulang tindak lanjut.')">
+                    @csrf @method('PATCH')
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-gray-600 shadow-sm transition hover:bg-gray-50">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                        </svg>
+                        Buka Kunci
+                    </button>
+                </form>
+                @endcan
+            </div>
+        @elseif($tindakLanjut->status_opd === 'dikirim' && auth()->user()->can('bukaKunciOpd', $tindakLanjut))
+            <div class="mt-4 border-t border-gray-100 pt-4">
+                <form action="{{ route('tindak-lanjuts.buka-kunci-opd', $tindakLanjut) }}" method="POST"
+                      onsubmit="return confirm('Buka kunci OPD? OPD dapat mengirim ulang tindak lanjut.')">
+                    @csrf @method('PATCH')
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-bold text-red-600 shadow-sm transition hover:bg-red-50">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                        </svg>
+                        Buka Kunci OPD
+                    </button>
+                </form>
+            </div>
+        @endif
+    </div>
+    @endif
+
+    {{-- MODAL TOLAK OPD --}}
+    <template x-teleport="body">
+        <div x-show="$store.tolakModal.open"
+             class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 p-4"
+             x-cloak>
+            <div class="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-xl"
+                 @click.outside="$store.tolakModal.close()">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-gray-900">Tolak Bukti OPD</h3>
+                    <button @click="$store.tolakModal.close()"
+                            class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 transition-colors">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <form action="{{ route('tindak-lanjuts.tolak-opd', $tindakLanjut) }}" method="POST">
+                    @csrf
+                    <div class="mb-4">
+                        <label for="alasan_tolak" class="block text-sm font-bold text-gray-700 mb-1.5">
+                            Alasan Penolakan
+                        </label>
+                        <textarea name="alasan_tolak" id="alasan_tolak" rows="4" required
+                                  class="block w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                                  placeholder="Jelaskan alasan penolakan..."></textarea>
+                    </div>
+                    <div class="flex items-center justify-end gap-3">
+                        <button type="button" @click="$store.tolakModal.close()"
+                                class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">
+                            Batal
+                        </button>
+                        <button type="submit"
+                                class="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-red-700">
+                            Tolak & Kirim Alasan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </template>
 </div>
 
         {{-- RIGHT COLUMN: SLIM METRICS & INFO --}}
@@ -266,4 +419,22 @@
         background-color: #fcfcfd;
     }
 </style>
+
+@push('scripts')
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.store('tolakModal', {
+        open: false,
+
+        open() {
+            this.open = true;
+        },
+
+        close() {
+            this.open = false;
+        }
+    });
+});
+</script>
+@endpush
 @endsection

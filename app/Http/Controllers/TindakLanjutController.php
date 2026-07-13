@@ -7,6 +7,7 @@ use App\Models\Recommendation;
 use App\Models\User;
 use App\Models\Attachment;
 use App\Services\LhpStatistikService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -29,12 +30,24 @@ class TindakLanjutController extends Controller
                 'recommendation',
                 'creator',
                 'attachments',
+                'uploadOpdOleh',
             ]);
 
         // 2. Terapkan Filter (Scope yang kita buat di Model)
         $query->filter($request->only(['search', 'status']));
 
-        // 3. Ambil data paginated
+        // 3. Filter status OPD
+        $query->when($request->status_opd, function ($q, $statusOpd) {
+            if ($statusOpd === 'belum_upload') {
+                $q->whereNull('status_opd');
+            } elseif ($statusOpd === 'draft') {
+                $q->where('status_opd', 'draft');
+            } elseif ($statusOpd === 'dikirim') {
+                $q->where('status_opd', 'dikirim');
+            }
+        });
+
+        // 4. Ambil data paginated
         $tindakLanjuts = $query->latest()->paginate(15)->withQueryString();
 
         // 4. Hitung Statistik (Menyesuaikan dengan filter yang sedang aktif)
@@ -80,7 +93,11 @@ class TindakLanjutController extends Controller
             'diverifikasi_oleh'       => 'nullable|integer|exists:users,id',
             'catatan_tl'              => 'nullable|string|max:1000',
             'hambatan'                => 'nullable|string|max:1000',
+            'attachments'             => 'nullable|array',
+            'attachments.*'           => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
+
+        $rekom = Recommendation::findOrFail($validated['recommendation_id']);
 
         $rekom    = Recommendation::findOrFail($validated['recommendation_id']);
         $nilaiTl  = (float) ($validated['nilai_tindak_lanjut'] ?? 0);
@@ -141,6 +158,7 @@ class TindakLanjutController extends Controller
             'creator',
             'cicilans',
             'attachments',
+            'uploadOpdOleh',
         ]);
 
         return view('pages.tindak-lanjuts.show', compact('tindakLanjut'));
@@ -176,6 +194,8 @@ class TindakLanjutController extends Controller
             'diverifikasi_oleh'       => 'nullable|integer|exists:users,id',
             'catatan_tl'              => 'nullable|string|max:1000',
             'hambatan'                => 'nullable|string|max:1000',
+            'new_attachments'         => 'nullable|array',
+            'new_attachments.*'       => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
         $rekom          = Recommendation::findOrFail($validated['recommendation_id']);
@@ -285,6 +305,54 @@ class TindakLanjutController extends Controller
         ->route('tindak-lanjuts.index')
         ->with('success', 'Tindak lanjut dihapus.');
 }
+
+    public function bukaKunciOpd(TindakLanjut $tindakLanjut): RedirectResponse
+    {
+        $this->authorize('bukaKunciOpd', $tindakLanjut);
+
+        $tindakLanjut->update([
+            'status_opd'   => null,
+            'dikirim_pada' => null,
+        ]);
+
+        activity()
+            ->causedBy(auth()->user())
+            ->performedOn($tindakLanjut)
+            ->withProperties(['status_opd' => 'dibuka_kunci'])
+            ->log('Admin membuka kunci OPD untuk revisi');
+
+        return redirect()
+            ->route('tindak-lanjuts.show', $tindakLanjut)
+            ->with('success', 'Kunci OPD berhasil dibuka. OPD dapat mengirim ulang.');
+    }
+
+    public function tolakOpd(Request $request, TindakLanjut $tindakLanjut): RedirectResponse
+    {
+        $this->authorize('tolakOpd', $tindakLanjut);
+
+        $validated = $request->validate([
+            'alasan_tolak' => 'required|string|max:2000',
+        ]);
+
+        $tindakLanjut->update([
+            'status_opd'      => 'draft',
+            'dikirim_pada'    => null,
+            'alasan_tolak_opd' => $validated['alasan_tolak'],
+        ]);
+
+        activity()
+            ->causedBy(auth()->user())
+            ->performedOn($tindakLanjut)
+            ->withProperties([
+                'status_opd' => 'ditolak',
+                'alasan'     => $validated['alasan_tolak'],
+            ])
+            ->log('Admin menolak bukti tindak lanjut OPD');
+
+        return redirect()
+            ->route('tindak-lanjuts.show', $tindakLanjut)
+            ->with('success', 'Bukti OPD ditolak. Alasan sudah dicatat dan OPD dapat mengirim ulang.');
+    }
 
 private function syncRekomendasi(TindakLanjut $tl): void
 {

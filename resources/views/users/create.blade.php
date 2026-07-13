@@ -124,7 +124,7 @@
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Role Akses *</label>
-                            <select name="role" required
+                            <select name="role" id="role-select" required
                                     class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer">
                                 <option value="">-- Pilih Role --</option>
                                 @foreach($roles as $role)
@@ -133,6 +133,27 @@
                                     </option>
                                 @endforeach
                             </select>
+                        </div>
+
+                        <div id="opd-unit-section" class="md:col-span-2 hidden">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Unit OPD <span class="text-xs text-gray-400 font-normal">(pilih unit yang bisa diakses)</span>
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 rounded-xl border border-gray-200 bg-gray-50">
+                                @forelse($opdUnits as $unit)
+                                <label class="flex items-start gap-3 p-2 rounded-lg hover:bg-white transition-colors cursor-pointer">
+                                    <input type="checkbox" name="opd_unit_ids[]" value="{{ $unit->id }}"
+                                           {{ in_array($unit->id, old('opd_unit_ids', [])) ? 'checked' : '' }}
+                                           class="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-800">{{ $unit->nama_unit }}</p>
+                                        <p class="text-xs text-gray-400">{{ $unit->nama_kecamatan ? 'Kec. ' . $unit->nama_kecamatan : '-' }}</p>
+                                    </div>
+                                </label>
+                                @empty
+                                <p class="text-sm text-gray-400 col-span-2">Belum ada data unit.</p>
+                                @endforelse
+                            </div>
                         </div>
 
                         <div>
@@ -181,12 +202,23 @@
         const label = document.getElementById('btn-label');
         const icon = document.getElementById('btn-icon');
 
-        // Tambahkan efek loading
         btn.disabled = true;
         label.innerText = 'Sedang Menyimpan...';
-        icon.classList.add('hidden'); // Sembunyikan centang saat loading
-        
-        // Opsional: tambahkan spinner jika mau
+        icon.classList.add('hidden');
     });
+
+    const roleSelect = document.getElementById('role-select');
+    const opdSection = document.getElementById('opd-unit-section');
+
+    function toggleOpdSection() {
+        if (roleSelect.value === 'opd') {
+            opdSection.classList.remove('hidden');
+        } else {
+            opdSection.classList.add('hidden');
+        }
+    }
+
+    roleSelect.addEventListener('change', toggleOpdSection);
+    toggleOpdSection();
 </script>
 @endsection

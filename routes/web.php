@@ -9,6 +9,9 @@ use App\Http\Controllers\KodeRekomendasiController;
 use App\Http\Controllers\KodeTemuanController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LhpController;
+use App\Http\Controllers\OpdDashboardController;
+use App\Http\Controllers\OpdProfileController;
+use App\Http\Controllers\OpdTindakLanjutController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\TemuanController;
@@ -43,6 +46,10 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::resource('temuan', TemuanController::class);
     Route::resource('recommendations', RecommendationController::class);
     Route::resource('tindak-lanjuts', TindakLanjutController::class);
+    Route::patch('/tindak-lanjuts/{tindakLanjut}/buka-kunci-opd', [TindakLanjutController::class, 'bukaKunciOpd'])
+        ->name('tindak-lanjuts.buka-kunci-opd');
+    Route::post('/tindak-lanjuts/{tindakLanjut}/tolak-opd', [TindakLanjutController::class, 'tolakOpd'])
+        ->name('tindak-lanjuts.tolak-opd');
     
     // Audit Assignment
     Route::resource('audit-assignment', AuditAssignmentController::class);
@@ -130,5 +137,26 @@ Route::middleware(['auth', 'active'])->prefix('laporan')->name('laporan.')->grou
     Route::get('/download/excel/semua', [LaporanController::class, 'downloadExcelSemua'])->name('download-excel-semua');
     Route::get('/download/excel/{lhp}', [LaporanController::class, 'downloadExcelPerLhp'])->name('download-excel-per-lhp');
 });
+
+// --- GRUP 4: OPD (User Eksternal) ---
+Route::middleware(['auth', 'active', 'role:opd'])
+    ->prefix('opd')
+    ->name('opd.')
+    ->group(function () {
+        Route::get('/tindak-lanjut', [OpdTindakLanjutController::class, 'index'])
+            ->name('tindak-lanjut.index');
+        Route::get('/tindak-lanjut/{tindakLanjut}', [OpdTindakLanjutController::class, 'show'])
+            ->name('tindak-lanjut.show');
+        Route::post('/tindak-lanjut/{tindakLanjut}/upload', [OpdTindakLanjutController::class, 'upload'])
+            ->name('tindak-lanjut.upload');
+        Route::post('/tindak-lanjut/{tindakLanjut}/kirim', [OpdTindakLanjutController::class, 'kirim'])
+            ->name('tindak-lanjut.kirim');
+        Route::delete('/tindak-lanjut/{tindakLanjut}/lampiran/{attachment}', [OpdTindakLanjutController::class, 'hapusLampiran'])
+            ->name('tindak-lanjut.hapus-lampiran');
+
+        Route::get('/dashboard', [OpdDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/profile', [OpdProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [OpdProfileController::class, 'update'])->name('profile.update');
+    });
 
 require __DIR__.'/auth.php';

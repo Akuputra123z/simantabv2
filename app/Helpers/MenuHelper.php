@@ -6,11 +6,16 @@ class MenuHelper
 {
     public static function getMainNavItems(): array
     {
+        $user = auth()->user();
+        $dashboardRoute = $user?->hasRole('opd')
+            ? route('opd.dashboard', absolute: false)
+            : route('dashboard', absolute: false);
+
         return [
             [
                 'icon' => 'dashboard',
                 'name' => 'Dashboard',
-                'path' => route('dashboard', absolute: false),
+                'path' => $dashboardRoute,
             ],
         ];
     }
@@ -119,6 +124,21 @@ class MenuHelper
 
     public static function getMenuGroups(): array
     {
+        $user = auth()->user();
+
+        if ($user && $user->hasRole('opd')) {
+            return [
+                [
+                    'title' => 'Menu',
+                    'items' => self::getMainNavItems(),
+                ],
+                [
+                    'title' => 'Tindak Lanjut',
+                    'items' => self::getOpdItems(),
+                ],
+            ];
+        }
+
         return [
             [
                 'title' => 'Menu',
@@ -127,6 +147,32 @@ class MenuHelper
             [
                 'title' => 'Administration',
                 'items' => self::getAdministrationItems(),
+            ],
+        ];
+    }
+
+    public static function getOpdItems(): array
+    {
+        return [
+            [
+                'icon' => 'task',
+                'name' => 'Tindak Lanjut',
+                'subItems' => [
+                    [
+                        'name' => 'Tindak Lanjut Saya',
+                        'path' => route('opd.tindak-lanjut.index', absolute: false),
+                    ],
+                ],
+            ],
+            [
+                'icon' => 'user-profile',
+                'name' => 'Akun',
+                'subItems' => [
+                    [
+                        'name' => 'Profil Saya',
+                        'path' => route('opd.profile.edit', absolute: false),
+                    ],
+                ],
             ],
         ];
     }

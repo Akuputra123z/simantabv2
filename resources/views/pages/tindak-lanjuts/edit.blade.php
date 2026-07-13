@@ -159,26 +159,55 @@
                         </div>
 
                         {{-- Verifikator --}}
-                        <div class="w-full px-2.5 xl:w-1/2">
+                        @php $verifikatorUsers = $users->map(fn($u) => ['id' => $u->id, 'name' => $u->name])->values(); @endphp
+                        <div class="w-full px-2.5 xl:w-1/2"
+                             x-data='verifikatorSelect(@json($verifikatorUsers), @json(old("diverifikasi_oleh", $tindakLanjut->diverifikasi_oleh)))'>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                                 Verifikator
                             </label>
                             <div class="relative">
-                                <select name="diverifikasi_oleh"
-                                    class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:bg-gray-900 dark:border-gray-700 dark:text-white">
-                                    <option value="">-- Pilih Verifikator --</option>
-                                    @foreach($users as $user)
-                                        <option value="{{ $user->id }}"
-                                            {{ old('diverifikasi_oleh', $tindakLanjut->diverifikasi_oleh) == $user->id ? 'selected' : '' }}>
-                                            {{ $user->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <span class="absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 pointer-events-none">
-                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-                                        <path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <input type="hidden" name="diverifikasi_oleh" x-model="selectedId">
+                                <button type="button" @click="open = !open" @keydown.escape="open = false"
+                                    class="flex h-11 w-full items-center rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                    :class="open ? 'border-brand-300 ring-3 ring-brand-500/10' : ''">
+                                    <span class="flex-1 text-left truncate"
+                                          :class="selectedId ? 'text-gray-900 dark:text-white' : 'text-gray-400'"
+                                          x-text="selectedId ? (users.find(u => u.id == selectedId)?.name ?? '-- Pilih Verifikator --') : '-- Pilih Verifikator --'">
+                                    </span>
+                                    <svg class="h-4 w-4 text-gray-500 transition-transform" :class="{'rotate-180': open}"
+                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                     </svg>
-                                </span>
+                                </button>
+                                <div x-show="open" x-cloak @click.outside="open = false"
+                                     style="max-height: 15rem; overflow-y: auto;"
+                                     class="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                                    <div class="sticky top-0 bg-white dark:bg-gray-900 p-2 border-b border-gray-100 dark:border-gray-700">
+                                        <input type="text" x-model="search" @input="open = true"
+                                               placeholder="Cari verifikator..."
+                                               class="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm outline-none focus:border-brand-300 focus:ring-1 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500">
+                                    </div>
+                                    <ul class="py-1">
+                                        <template x-for="user in filteredUsers" :key="user.id">
+                                            <li>
+                                                <button type="button" @click="select(user.id)"
+                                                    class="flex w-full items-center px-4 py-2.5 text-sm transition-colors"
+                                                    :class="selectedId == user.id
+                                                        ? 'bg-brand-50 text-brand-700 font-semibold dark:bg-brand-900/20 dark:text-brand-300'
+                                                        : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'">
+                                                    <svg x-show="selectedId == user.id" class="mr-2 h-4 w-4 shrink-0 text-brand-600"
+                                                         fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    <span x-text="user.name"></span>
+                                                </button>
+                                            </li>
+                                        </template>
+                                        <li x-show="filteredUsers.length === 0">
+                                            <p class="px-4 py-3 text-xs text-gray-400 text-center">Tidak ada verifikator ditemukan</p>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
 
@@ -396,6 +425,32 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
         container.appendChild(wrapper);
     };
+});
+</script>
+
+<style>
+[x-cloak] { display: none !important; }
+</style>
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('verifikatorSelect', (users, oldId) => ({
+        users: users,
+        selectedId: oldId || '',
+        search: '',
+        open: false,
+
+        get filteredUsers() {
+            if (!this.search) return this.users;
+            const q = this.search.toLowerCase();
+            return this.users.filter(u => u.name.toLowerCase().includes(q));
+        },
+
+        select(id) {
+            this.selectedId = id;
+            this.search = '';
+            this.open = false;
+        }
+    }));
 });
 </script>
 @endsection

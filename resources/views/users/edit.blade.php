@@ -117,13 +117,34 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role Akses <span class="text-red-500">*</span></label>
-                                <select name="role" required class="form-input-styled">
+                                <select name="role" id="role-select" required class="form-input-styled">
                                     @foreach($roles as $role)
                                     <option value="{{ $role->name }}" {{ old('role', $user->getRoleNames()->first()) === $role->name ? 'selected' : '' }}>
                                         {{ \App\Models\User::ROLES[$role->name] ?? $role->name }}
                                     </option>
                                     @endforeach
                                 </select>
+                            </div>
+
+                            <div id="opd-unit-section" class="md:col-span-2 hidden">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    Unit OPD <span class="text-xs text-gray-400 font-normal">(pilih unit yang bisa diakses)</span>
+                                </label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
+                                    @forelse($opdUnits as $unit)
+                                    <label class="flex items-start gap-3 p-2 rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-colors cursor-pointer">
+                                        <input type="checkbox" name="opd_unit_ids[]" value="{{ $unit->id }}"
+                                               {{ $user->opdUnits->contains($unit->id) ? 'checked' : '' }}
+                                               class="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ $unit->nama_unit }}</p>
+                                            <p class="text-xs text-gray-400">{{ $unit->nama_kecamatan ? 'Kec. ' . $unit->nama_kecamatan : '-' }}</p>
+                                        </div>
+                                    </label>
+                                    @empty
+                                    <p class="text-sm text-gray-400 col-span-2">Belum ada data unit.</p>
+                                    @endforelse
+                                </div>
                             </div>
 
                             <div>
@@ -161,6 +182,22 @@
         </div>
     </div>
 </div>
+
+<script>
+    const roleSelect = document.getElementById('role-select');
+    const opdSection = document.getElementById('opd-unit-section');
+
+    function toggleOpdSection() {
+        if (roleSelect.value === 'opd') {
+            opdSection.classList.remove('hidden');
+        } else {
+            opdSection.classList.add('hidden');
+        }
+    }
+
+    roleSelect.addEventListener('change', toggleOpdSection);
+    toggleOpdSection();
+</script>
 
 <style>
 /* Modern Input Styling */

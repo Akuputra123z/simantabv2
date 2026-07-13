@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\UnitDiperiksa;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -64,7 +65,8 @@ class UserController extends Controller
         $roles = Role::orderBy('name')->get(['id', 'name']);
         $unitKerjaOptions = User::UNIT_KERJA_OPTIONS;
         $jabatanOptions = User::JABATAN_OPTIONS;
-        return view('users.create', compact('roles', 'unitKerjaOptions', 'jabatanOptions'));
+        $opdUnits = UnitDiperiksa::orderBy('nama_unit')->get(['id', 'nama_unit', 'nama_kecamatan']);
+        return view('users.create', compact('roles', 'unitKerjaOptions', 'jabatanOptions', 'opdUnits'));
     }
 
     // ── Store ─────────────────────────────────────────────────────────────────
@@ -102,6 +104,10 @@ class UserController extends Controller
 
         $user->assignRole($validated['role']);
 
+        if ($validated['role'] === User::ROLE_OPD && $request->has('opd_unit_ids')) {
+            $user->opdUnits()->sync((array) $request->opd_unit_ids);
+        }
+
         return redirect()
             ->route('users.index')
             ->with('success', "User {$user->name} berhasil ditambahkan.");
@@ -123,7 +129,9 @@ class UserController extends Controller
         $roles = Role::orderBy('name')->get(['id', 'name']);
         $unitKerjaOptions = User::UNIT_KERJA_OPTIONS;
         $jabatanOptions = User::JABATAN_OPTIONS;
-        return view('users.edit', compact('user', 'roles', 'unitKerjaOptions', 'jabatanOptions'));
+        $opdUnits = UnitDiperiksa::orderBy('nama_unit')->get(['id', 'nama_unit', 'nama_kecamatan']);
+        $user->load('opdUnits');
+        return view('users.edit', compact('user', 'roles', 'unitKerjaOptions', 'jabatanOptions', 'opdUnits'));
     }
 
     // ── Update ────────────────────────────────────────────────────────────────
@@ -169,6 +177,12 @@ class UserController extends Controller
         }
 
         $user->syncRoles([$validated['role']]);
+
+        if ($validated['role'] === User::ROLE_OPD && $request->has('opd_unit_ids')) {
+            $user->opdUnits()->sync((array) $request->opd_unit_ids);
+        } elseif ($user->hasRole(User::ROLE_OPD)) {
+            $user->opdUnits()->sync([]);
+        }
 
         return redirect()
             ->route('users.index')

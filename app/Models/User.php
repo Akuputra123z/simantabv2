@@ -95,6 +95,22 @@ class User extends Authenticatable
         return $query->role($role); // Spatie scope
     }
 
+    public function scopeInspektorat($query)
+    {
+        return $query->role([
+            self::ROLE_SUPER_ADMIN,
+            self::ROLE_KEPALA_INSPEKTORAT,
+            self::ROLE_KETUA_TIM,
+            self::ROLE_ANGGOTA,
+            self::ROLE_STAFF_INSPEKTORAT,
+        ]);
+    }
+
+    public function scopeOpd($query)
+    {
+        return $query->role(self::ROLE_OPD);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /**

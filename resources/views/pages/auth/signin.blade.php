@@ -6,7 +6,7 @@
 <title>Login - E-AUDIT INSPEKTORAT</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/css/landing.css?v=1">
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script id="tailwind-config">
     tailwind.config = {
@@ -155,7 +155,7 @@
             <div class="w-full max-w-[400px] mb-40">
                 <div class="w-full max-w-[400px]">
                     <a href="{{ route('home') }}" class="group inline-flex items-center text-[13px] font-medium text-gray-400 hover:text-primary transition-all duration-300">
-                        <span class="material-symbols-outlined text-[18px] mr-2 group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                        <x-heroicon-o-arrow-left class="w-[18px] h-[18px] mr-2 group-hover:-translate-x-1 transition-transform" aria-hidden="true" />
                         Kembali ke Beranda
                     </a>
                 </div>
@@ -206,7 +206,7 @@
                         <label class="block text-[13px] font-medium text-gray-700 mb-1.5" for="email">Email</label>
                         <div class="relative group">
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                <span class="material-symbols-outlined text-gray-400 group-focus-within:text-[#1d61d1] transition-colors duration-300 text-[20px]">mail</span>
+                                <x-heroicon-o-envelope class="w-5 h-5 text-gray-400 group-focus-within:text-[#1d61d1] transition-colors duration-300" aria-hidden="true" />
                             </div>
                             <input
                                 class="w-full pl-10 pr-4 py-[11px] rounded-xl border {{ $errors->has('email') ? 'border-red-400 bg-red-50/30' : 'border-gray-200 bg-gray-50/50' }} text-gray-900 focus:bg-white focus:ring-4 focus:ring-[#1d61d1]/10 focus:border-[#1d61d1] transition-all duration-300 text-[14px] font-light placeholder:text-gray-400 outline-none"
@@ -222,7 +222,7 @@
                         </div>
                         @error('email')
                             <p class="text-red-500 text-[12px] mt-1.5 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[14px]">error</span>
+                                <x-heroicon-o-exclamation-circle class="w-[14px] h-[14px]" aria-hidden="true" />
                                 {{ $message }}
                             </p>
                         @enderror
@@ -233,7 +233,7 @@
                         <label class="block text-[13px] font-medium text-gray-700 mb-1.5" for="password">Password</label>
                         <div class="relative group">
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                <span class="material-symbols-outlined text-gray-400 group-focus-within:text-[#1d61d1] transition-colors duration-300 text-[20px]">lock</span>
+                                <x-heroicon-o-lock-closed class="w-5 h-5 text-gray-400 group-focus-within:text-[#1d61d1] transition-colors duration-300" aria-hidden="true" />
                             </div>
                             <input
                                 :type="show ? 'text' : 'password'"
@@ -246,13 +246,14 @@
                             />
                             <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center">
                                 <button type="button" @click="show = !show" class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none">
-                                    <span class="material-symbols-outlined text-[20px]" x-text="show ? 'visibility_off' : 'visibility'">visibility</span>
+                                    <x-heroicon-o-eye class="w-5 h-5" x-show="!show" aria-hidden="true" />
+                                    <x-heroicon-o-eye-slash class="w-5 h-5" x-show="show" aria-hidden="true" />
                                 </button>
                             </div>
                         </div>
                         @error('password')
                             <p class="text-red-500 text-[12px] mt-1.5 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[14px]">error</span>
+                                <x-heroicon-o-exclamation-circle class="w-[14px] h-[14px]" aria-hidden="true" />
                                 {{ $message }}
                             </p>
                         @enderror
@@ -272,13 +273,13 @@
                     <!-- Global error alert -->
                     @if ($errors->any() && !$errors->has('email') && !$errors->has('password'))
                         <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2.5 text-red-600 text-[13px]">
-                            <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+                            <x-heroicon-o-exclamation-circle class="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
                             Email atau password salah
                         </div>
                     @endif
                     @if ($errors->has('email') || $errors->has('password'))
                         <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2.5 text-red-600 text-[13px]">
-                            <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+                            <x-heroicon-o-exclamation-circle class="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
                             Email atau password salah. Silakan coba lagi.
                         </div>
                     @endif
@@ -287,7 +288,7 @@
 
                    <div>
     <button type="submit" class="w-full flex justify-center items-center py-[13px] px-6 border border-transparent rounded-xl shadow-lg shadow-[#1d61d1]/20 text-[14px] font-semibold text-white smooth-gradient smooth-gradient-hover transition-all duration-300 ease-out focus:outline-none focus:ring-4 focus:ring-[#1d61d1]/30 active:scale-[0.98]">
-        <span class="material-symbols-outlined mr-2 text-[20px]">lock_open</span>
+        <x-heroicon-o-lock-open class="w-5 h-5 mr-2" aria-hidden="true" />
         Masuk ke Sistem
     </button>
 </div>
@@ -351,21 +352,21 @@
                             <div class="flex gap-4">
                                 <div class="flex-1 rounded-xl bg-white/[0.02] border border-white/5 p-4 hover:bg-white/[0.05] transition-colors duration-300">
                                     <div class="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-                                        <span class="material-symbols-outlined text-blue-400 text-[18px]">monitoring</span>
+                                        <x-heroicon-o-presentation-chart-bar class="w-[18px] h-[18px] text-blue-400" aria-hidden="true" />
                                     </div>
                                     <div class="w-1/2 h-2 bg-white/20 rounded-full mb-2"></div>
                                     <div class="w-3/4 h-2 bg-white/10 rounded-full"></div>
                                 </div>
                                 <div class="flex-1 rounded-xl bg-white/[0.02] border border-white/5 p-4 hover:bg-white/[0.05] transition-colors duration-300">
                                     <div class="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(34,197,94,0.2)]">
-                                        <span class="material-symbols-outlined text-green-400 text-[18px]">task_alt</span>
+                                        <x-heroicon-o-check-badge class="w-[18px] h-[18px] text-green-400" aria-hidden="true" />
                                     </div>
                                     <div class="w-1/2 h-2 bg-white/20 rounded-full mb-2"></div>
                                     <div class="w-3/4 h-2 bg-white/10 rounded-full"></div>
                                 </div>
                                 <div class="flex-1 rounded-xl bg-white/[0.02] border border-white/5 p-4 hover:bg-white/[0.05] transition-colors duration-300">
                                     <div class="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-                                        <span class="material-symbols-outlined text-purple-400 text-[18px]">description</span>
+                                        <x-heroicon-o-document-text class="w-[18px] h-[18px] text-purple-400" aria-hidden="true" />
                                     </div>
                                     <div class="w-1/2 h-2 bg-white/20 rounded-full mb-2"></div>
                                     <div class="w-3/4 h-2 bg-white/10 rounded-full"></div>
@@ -389,7 +390,7 @@
                     <!-- Badge: Data Terenkripsi -->
                     <div class="absolute -right-6 xl:-right-8 top-14 p-4 glass-panel rounded-2xl flex items-center gap-3.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] float-badge-right z-20 border border-white/10 min-w-[180px]">
                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#1d61d1]/30 to-blue-500/10 flex items-center justify-center border border-blue-400/20 shadow-[0_0_15px_rgba(29,97,209,0.3)] shrink-0">
-                            <span class="material-symbols-outlined text-blue-300 text-[22px]" style="font-variation-settings:'FILL' 1;">security</span>
+                            <x-heroicon-o-shield-check class="w-[22px] h-[22px] text-blue-300" aria-hidden="true" />
                         </div>
                         <div>
                             <div class="text-[13px] text-white font-medium tracking-wide">Data Terenkripsi</div>
@@ -400,7 +401,7 @@
                     <!-- Badge: Audit Real-time -->
                     <div class="absolute -left-6 xl:-left-8 bottom-16 p-4 glass-panel rounded-2xl flex items-center gap-3.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] float-badge-left z-20 border border-white/10 min-w-[180px]">
                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-500/20 to-green-400/5 flex items-center justify-center border border-green-400/20 shadow-[0_0_15px_rgba(34,197,94,0.2)] shrink-0">
-                            <span class="material-symbols-outlined text-green-400 text-[22px]" style="font-variation-settings:'FILL' 1;">fact_check</span>
+                            <x-heroicon-o-clipboard-document-check class="w-[22px] h-[22px] text-green-400" aria-hidden="true" />
                         </div>
                         <div>
                             <div class="text-[13px] text-white font-medium tracking-wide">Audit Real-time</div>
@@ -414,7 +415,7 @@
             <div class="z-10 w-full max-w-[500px] glass-panel p-5 rounded-2xl flex items-start gap-4 mb-2 hover:bg-white/[0.05] transition-all duration-500 border border-white/5 shadow-xl relative overflow-hidden shimmer-group">
                 <div class="shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none"></div>
                 <div class="bg-gradient-to-br from-blue-500/20 to-[#1d61d1]/10 p-3 rounded-xl shrink-0 border border-blue-400/20">
-                    <span class="material-symbols-outlined text-blue-300 text-[24px]" style="font-variation-settings:'FILL' 1;">verified_user</span>
+                    <x-heroicon-o-check-circle class="w-6 h-6 text-blue-300" aria-hidden="true" />
                 </div>
                 <div class="pt-0.5">
                     <h4 class="text-[15px] font-semibold text-white mb-1.5 tracking-wide">Keamanan Sistem Terjamin</h4>

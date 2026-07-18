@@ -12,13 +12,15 @@ use App\Http\Controllers\LhpController;
 use App\Http\Controllers\OpdDashboardController;
 use App\Http\Controllers\OpdProfileController;
 use App\Http\Controllers\OpdTindakLanjutController;
+use App\Http\Controllers\PegawaiController;
+use App\Http\Controllers\PegawaiInspektoratController;
+use App\Http\Controllers\PegawaiOpdController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\TemuanController;
 use App\Http\Controllers\TindakLanjutCicilanController;
 use App\Http\Controllers\TindakLanjutController;
 use App\Http\Controllers\UnitDiperiksaController;
-use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Public Route
@@ -113,9 +115,29 @@ Route::get('/audit-assignment/{id}/print', [AuditAssignmentController::class, 'p
 // --- GRUP 2: Khusus Super Admin (Manajemen User & Master Data) ---
 Route::middleware(['auth', 'active', 'role:super_admin'])->group(function () {
     
-    // User Management
-    Route::resource('users', UserController::class);
-    Route::patch('users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
+    // ── Pegawai Inspektorat ──
+    Route::prefix('pegawai/inspektorat')->name('pegawai.inspektorat.')->group(function () {
+        Route::get('/', [PegawaiInspektoratController::class, 'index'])->name('index');
+        Route::get('/create', [PegawaiController::class, 'create'])->name('create');
+        Route::post('/', [PegawaiController::class, 'store'])->name('store');
+        Route::get('{user}', [PegawaiInspektoratController::class, 'show'])->name('show');
+        Route::get('{user}/edit', [PegawaiController::class, 'edit'])->name('edit');
+        Route::put('{user}', [PegawaiController::class, 'update'])->name('update');
+        Route::delete('{user}', [PegawaiController::class, 'destroy'])->name('destroy');
+        Route::patch('{user}/toggle-active', [PegawaiController::class, 'toggleActive'])->name('toggle-active');
+    });
+
+    // ── Pegawai OPD ──
+    Route::prefix('pegawai/opd')->name('pegawai.opd.')->group(function () {
+        Route::get('/', [PegawaiOpdController::class, 'index'])->name('index');
+        Route::get('/create', [PegawaiController::class, 'create'])->name('create');
+        Route::post('/', [PegawaiController::class, 'store'])->name('store');
+        Route::get('{user}', [PegawaiOpdController::class, 'show'])->name('show');
+        Route::get('{user}/edit', [PegawaiController::class, 'edit'])->name('edit');
+        Route::put('{user}', [PegawaiController::class, 'update'])->name('update');
+        Route::delete('{user}', [PegawaiController::class, 'destroy'])->name('destroy');
+        Route::patch('{user}/toggle-active', [PegawaiController::class, 'toggleActive'])->name('toggle-active');
+    });
 
     // Master Data & Audit Program Utama
     Route::resource('kode-temuan', KodeTemuanController::class);

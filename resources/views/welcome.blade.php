@@ -19,11 +19,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 </noscript>
 
-<!-- Material Icons (deferred — non-render-blocking) -->
-<link rel="preload" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
-<noscript>
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
-</noscript>
+<!-- No external icon font needed — using Blade Heroicons -->
 
 <!-- Tailwind CSS (local build) -->
 <link rel="stylesheet" href="/css/landing.css?v={{ filemtime(public_path('css/landing.css')) }}">
@@ -87,8 +83,8 @@
             class="p-2 rounded-full border border-border-light dark:border-border-dark hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors"
             aria-label="Toggle dark mode"
           >
-            <span class="material-icons-round text-sm block dark:hidden" aria-hidden="true">dark_mode</span>
-            <span class="material-icons-round text-sm hidden dark:block" aria-hidden="true">light_mode</span>
+            <x-heroicon-o-moon class="w-5 h-5 block dark:hidden" aria-hidden="true" />
+            <x-heroicon-o-sun class="w-5 h-5 hidden dark:block" aria-hidden="true" />
           </button>
 
           <a href="/login" class="bg-blue-600 dark:bg-blue-500 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-400 transition-all text-xs tracking-wider uppercase">
@@ -100,11 +96,12 @@
       <!-- Mobile Controls -->
       <div class="md:hidden flex items-center gap-1">
         <button onclick="toggleDark()" class="p-2 text-slate-600 dark:text-slate-400" aria-label="Toggle dark mode">
-          <span class="material-icons-round block dark:hidden" aria-hidden="true">dark_mode</span>
-          <span class="material-icons-round hidden dark:block" aria-hidden="true">light_mode</span>
+          <x-heroicon-o-moon class="w-5 h-5 block dark:hidden" aria-hidden="true" />
+          <x-heroicon-o-sun class="w-5 h-5 hidden dark:block" aria-hidden="true" />
         </button>
         <button onclick="toggleMenu()" class="p-2 text-slate-600 dark:text-slate-400" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-menu" id="menu-btn">
-          <span class="material-icons-round" id="menu-icon" aria-hidden="true">menu</span>
+          <x-heroicon-o-bars-3 class="w-6 h-6" id="menu-icon-open" aria-hidden="true" />
+          <x-heroicon-o-x-mark class="w-6 h-6 hidden" id="menu-icon-close" aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -151,12 +148,12 @@
       <a href="/login"
          class="w-full sm:w-auto px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-500/25 hover:bg-blue-700 dark:hover:bg-blue-400 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
         Akses Portal Audit
-        <span class="material-icons-round text-xs" aria-hidden="true">login</span>
+        <x-heroicon-o-arrow-right-on-rectangle class="w-4 h-4" aria-hidden="true" />
       </a>
       <a href="#panduan"
          class="w-full sm:w-auto px-6 py-3 border border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400 text-sm font-semibold rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 flex items-center justify-center gap-2">
         Unduh Panduan
-        <span class="material-icons-round text-xs" aria-hidden="true">download</span>
+        <x-heroicon-o-arrow-down-tray class="w-4 h-4" aria-hidden="true" />
       </a>
     </div>
   </div>
@@ -223,13 +220,13 @@
       <!-- Step 1 -->
       <li class="relative flex items-start justify-between md:justify-normal md:odd:flex-row-reverse group">
         <div class="flex items-center justify-center w-10 h-10 rounded-full border border-border-light dark:border-border-dark bg-bg-light dark:bg-bg-dark text-slate-400 group-hover:text-primary dark:group-hover:text-white transition-colors shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 mt-1">
-          <span class="material-icons-round text-sm" aria-hidden="true">assignment</span>
+          <x-heroicon-o-clipboard-document class="w-5 h-5" aria-hidden="true" />
         </div>
         <div class="w-[calc(100%-3.5rem)] md:w-[calc(50%-2.5rem)] p-6 rounded-2xl border border-border-light dark:border-border-dark hover:border-slate-300 dark:hover:border-slate-700 transition-colors bg-card-light dark:bg-card-dark">
           <p class="text-xs font-semibold text-primary dark:text-blue-400 mb-1 uppercase tracking-wide">Tahap Inisiasi</p>
           <h3 class="font-display font-bold text-lg mb-1">Perencanaan &amp; Risk Assessment</h3>
           <p class="flex items-center gap-1.5 text-xs text-slate-400 mb-3">
-            <span class="material-icons-round text-xs" aria-hidden="true">settings_input_component</span> Integrasi Data SIPD
+            <x-heroicon-o-cog-6-tooth class="w-4 h-4" aria-hidden="true" /> Integrasi Data SIPD
           </p>
           <p class="text-sm text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">Identifikasi area berisiko tinggi melalui analisis data otomatis untuk menentukan fokus pemeriksaan yang lebih akurat.</p>
           <div class="flex flex-wrap gap-2">
@@ -243,13 +240,13 @@
       <!-- Step 2 -->
       <li class="relative flex items-start justify-between md:justify-normal md:odd:flex-row-reverse group">
         <div class="flex items-center justify-center w-10 h-10 rounded-full border border-border-light dark:border-border-dark bg-bg-light dark:bg-bg-dark text-slate-400 group-hover:text-primary dark:group-hover:text-white transition-colors shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 mt-1">
-          <span class="material-icons-round text-sm" aria-hidden="true">analytics</span>
+          <x-heroicon-o-chart-bar-square class="w-5 h-5" aria-hidden="true" />
         </div>
         <div class="w-[calc(100%-3.5rem)] md:w-[calc(50%-2.5rem)] p-6 rounded-2xl border border-border-light dark:border-border-dark hover:border-slate-300 dark:hover:border-slate-700 transition-colors bg-card-light dark:bg-card-dark">
           <p class="text-xs font-semibold text-primary dark:text-blue-400 mb-1 uppercase tracking-wide">Tahap Eksekusi</p>
           <h3 class="font-display font-bold text-lg mb-1">Pelaksanaan Audit Lapangan</h3>
           <p class="flex items-center gap-1.5 text-xs text-slate-400 mb-3">
-            <span class="material-icons-round text-xs" aria-hidden="true">verified_user</span> Real-time Verification
+            <x-heroicon-o-shield-check class="w-4 h-4" aria-hidden="true" /> Real-time Verification
           </p>
           <p class="text-sm text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">Pengumpulan bukti audit secara elektronik, pengujian substantif, dan verifikasi dokumen langsung melalui portal E-Audit.</p>
           <div class="flex flex-wrap gap-2">
@@ -263,13 +260,13 @@
       <!-- Step 3 -->
       <li class="relative flex items-start justify-between md:justify-normal md:odd:flex-row-reverse group">
         <div class="flex items-center justify-center w-10 h-10 rounded-full border border-border-light dark:border-border-dark bg-bg-light dark:bg-bg-dark text-slate-400 group-hover:text-primary dark:group-hover:text-white transition-colors shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 mt-1">
-          <span class="material-icons-round text-sm" aria-hidden="true">description</span>
+          <x-heroicon-o-document-text class="w-5 h-5" aria-hidden="true" />
         </div>
         <div class="w-[calc(100%-3.5rem)] md:w-[calc(50%-2.5rem)] p-6 rounded-2xl border border-border-light dark:border-border-dark hover:border-slate-300 dark:hover:border-slate-700 transition-colors bg-card-light dark:bg-card-dark">
           <p class="text-xs font-semibold text-primary dark:text-blue-400 mb-1 uppercase tracking-wide">Tahap Finalisasi</p>
           <h3 class="font-display font-bold text-lg mb-1">Pelaporan &amp; Tindak Lanjut</h3>
           <p class="flex items-center gap-1.5 text-xs text-slate-400 mb-3">
-            <span class="material-icons-round text-xs" aria-hidden="true">check_circle</span> LHP Digital Ready
+            <x-heroicon-o-check-circle class="w-4 h-4" aria-hidden="true" /> LHP Digital Ready
           </p>
           <p class="text-sm text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">Penyusunan Laporan Hasil Pemeriksaan (LHP) otomatis dan pemantauan tindak lanjut rekomendasi secara daring.</p>
           <div class="flex flex-wrap gap-2">
@@ -374,10 +371,12 @@
   // ── Mobile menu ──
   function toggleMenu() {
     const menu = document.getElementById('mobile-menu');
-    const icon = document.getElementById('menu-icon');
+    const iconOpen = document.getElementById('menu-icon-open');
+    const iconClose = document.getElementById('menu-icon-close');
     const btn  = document.getElementById('menu-btn');
     const open = menu.classList.toggle('hidden');
-    icon.innerText = open ? 'menu' : 'close';
+    iconOpen?.classList.toggle('hidden');
+    iconClose?.classList.toggle('hidden');
     btn.setAttribute('aria-expanded', String(!open));
   }
 

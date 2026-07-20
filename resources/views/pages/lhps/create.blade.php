@@ -65,7 +65,7 @@
     <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
         Program Kerja (PKPT) <span class="text-red-500">*</span>
     </label>
-    <select id="select-program"
+    <select id="select-program" data-no-ts
             class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
         <option value="">-- Pilih Program Kerja --</option>
     </select>
@@ -76,7 +76,7 @@
     <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
         Penugasan Audit <span class="text-red-500">*</span>
     </label>
-    <select id="select-assignment" disabled
+    <select id="select-assignment" data-no-ts disabled
             class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 focus:border-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
         <option value="">-- Pilih Program Terlebih Dahulu --</option>
     </select>
@@ -89,7 +89,7 @@
     <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
         Unit Kerja / Objek Audit <span class="text-red-500">*</span>
     </label>
-    <select id="select-unit" disabled
+    <select id="select-unit" data-no-ts disabled
             class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3.5 py-2.5 text-sm
                    text-gray-900 focus:border-primary-500 dark:border-gray-600 
                    dark:bg-gray-800 dark:text-white 

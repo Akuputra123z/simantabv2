@@ -13,9 +13,12 @@ class AuditProgram extends Model
 {
     use SoftDeletes;
 
+    const KATEGORI = ['PKPT', 'BPK', 'BPKP', 'ITPROV', 'ITDA', 'LAINNYA'];
+
     protected $fillable = [
-        'nama_program', // Contoh: PKPT 2026
+        'nama_program',
         'tahun',
+        'kategori',
         'status',
        
         'created_by',

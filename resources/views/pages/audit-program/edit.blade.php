@@ -46,8 +46,8 @@
                            class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder-gray-500">
                 </div>
 
-                {{-- Grid 2 Kolom --}}
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                {{-- Grid 2 Kolom + Kategori --}}
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
 
                     {{-- Tahun --}}
                     <div>
@@ -56,6 +56,17 @@
                                 class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                             @foreach(range(date('Y') + 1, date('Y') - 2) as $y)
                                 <option value="{{ $y }}" {{ old('tahun', $program->tahun) == $y ? 'selected' : '' }}>{{ $y }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Kategori --}}
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black dark:text-gray-500">Kategori</label>
+                        <select name="kategori"
+                                class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                            @foreach($kategoriOptions as $opt)
+                                <option value="{{ $opt }}" {{ old('kategori', $program->kategori) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                             @endforeach
                         </select>
                     </div>

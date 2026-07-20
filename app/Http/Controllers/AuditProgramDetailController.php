@@ -80,7 +80,8 @@ class AuditProgramDetailController extends Controller
     public function create($audit_program_id)
     {
         $auditProgram = AuditProgram::findOrFail($audit_program_id);
-        return view('pages.audit-program-detail.create', compact('auditProgram'));
+        $kategori = $auditProgram->kategori;
+        return view('pages.audit-program-detail.create', compact('auditProgram', 'kategori'));
     }
 
     public function store(Request $request)
@@ -127,8 +128,9 @@ class AuditProgramDetailController extends Controller
     public function edit(AuditProgramDetail $auditProgramDetail)
     {
         $detail = $auditProgramDetail;
-        $auditProgram = $detail->parentProgram; 
-        return view('pages.audit-program-detail.edit', compact('detail', 'auditProgram'));
+        $auditProgram = $detail->parentProgram;
+        $kategori = $auditProgram->kategori;
+        return view('pages.audit-program-detail.edit', compact('detail', 'auditProgram', 'kategori'));
     }
 
     public function update(Request $request, AuditProgramDetail $auditProgramDetail)

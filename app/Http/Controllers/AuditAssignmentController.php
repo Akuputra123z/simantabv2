@@ -51,6 +51,9 @@ class AuditAssignmentController extends Controller
             ->when($request->tahun, fn($q, $v) =>
                 $q->whereHas('auditProgramDetail.auditProgram', fn($q) => $q->where('tahun', $v))
             )
+            ->when($request->kategori, fn($q, $v) =>
+                $q->whereHas('auditProgramDetail.auditProgram', fn($q) => $q->where('kategori', $v))
+            )
             ->when($request->status, fn($q, $v) => $q->where('status', $v))
             ->when($request->search, fn($q, $v) =>
                 $q->where(fn($q) => $q
@@ -63,7 +66,8 @@ class AuditAssignmentController extends Controller
             ->latest()
             ->paginate(20);
 
-        return view('pages.audit-assignment.index', compact('assignments'));
+        $kategoriOptions = AuditProgram::KATEGORI;
+        return view('pages.audit-assignment.index', compact('assignments', 'kategoriOptions'));
     }
 
     // ── create ────────────────────────────────────────────────────────

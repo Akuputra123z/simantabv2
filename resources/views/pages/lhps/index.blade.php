@@ -51,8 +51,8 @@
 
             <div class="flex items-center gap-3">
                 <div class="hidden sm:flex gap-2">
-                    <select name="tahun" form="filter-form" onchange="this.form.submit()"
-                        class="h-10 rounded-lg border border-gray-200 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-gray-400">
+                    <select name="tahun" form="filter-form" data-auto-submit
+                        class="h-10 rounded-lg border border-gray-200 bg-transparent px-3 w-36 text-sm dark:border-gray-700 dark:text-gray-400">
                         <option value="">Semua Tahun</option>
                         @foreach(range(date('Y'), date('Y')-3) as $y)
                             <option value="{{ $y }}" {{ request('tahun') == $y ? 'selected' : '' }}>{{ $y }}</option>

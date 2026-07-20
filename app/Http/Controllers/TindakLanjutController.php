@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditProgram;
 use App\Models\TindakLanjut;
 use App\Models\Recommendation;
 use App\Models\User;
@@ -22,9 +23,18 @@ class TindakLanjutController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Query Dasar dengan Scope forUser (Keamanan) & eager loading
         $query = TindakLanjut::query()
-            ->forUser(auth()->user()) 
+            ->select([
+                'tindak_lanjuts.*',
+                'ap.kategori',
+            ])
+            ->leftJoin('recommendations', 'tindak_lanjuts.recommendation_id', '=', 'recommendations.id')
+            ->leftJoin('temuans', 'recommendations.temuan_id', '=', 'temuans.id')
+            ->leftJoin('lhps', 'temuans.lhp_id', '=', 'lhps.id')
+            ->leftJoin('audit_assignments', 'lhps.audit_assignment_id', '=', 'audit_assignments.id')
+            ->leftJoin('audit_program_details', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
+            ->leftJoin('audit_programs as ap', 'audit_program_details.audit_program_id', '=', 'ap.id')
+            ->forUser(auth()->user())
             ->with([
                 'recommendation.temuan.lhp',
                 'recommendation',
@@ -33,10 +43,10 @@ class TindakLanjutController extends Controller
                 'uploadOpdOleh',
             ]);
 
-        // 2. Terapkan Filter (Scope yang kita buat di Model)
         $query->filter($request->only(['search', 'status']));
 
-        // 3. Filter status OPD
+        $query->when($request->filled('kategori'), fn($q) => $q->where('ap.kategori', $request->kategori));
+
         $query->when($request->status_opd, function ($q, $statusOpd) {
             if ($statusOpd === 'belum_upload') {
                 $q->whereNull('status_opd');
@@ -47,14 +57,11 @@ class TindakLanjutController extends Controller
             }
         });
 
-        // 4. Ambil data paginated
-        $tindakLanjuts = $query->latest()->paginate(15)->withQueryString();
+        $tindakLanjuts = $query->latest('tindak_lanjuts.created_at')->paginate(15)->withQueryString();
 
-        // 4. Hitung Statistik (Menyesuaikan dengan filter yang sedang aktif)
-        // Gunakan query clone agar tidak merusak query utama pagination
         $statsQuery = TindakLanjut::query()
             ->forUser(auth()->user())
-            ->filter($request->only(['search'])); // Filter stats berdasarkan search saja, bukan status select
+            ->filter($request->only(['search']));
 
         $stats = $statsQuery->selectRaw("
                 SUM(CASE WHEN status_verifikasi = 'lunas' THEN 1 ELSE 0 END) AS total_lunas,
@@ -63,21 +70,44 @@ class TindakLanjutController extends Controller
             ")
             ->first();
 
-        return view('pages.tindak-lanjuts.index', compact('tindakLanjuts', 'stats'));
+        $kategoris = AuditProgram::KATEGORI;
+
+        return view('pages.tindak-lanjuts.index', compact('tindakLanjuts', 'stats', 'kategoris'));
     }
 
     public function create()
     {
-        // Hanya tampilkan rekomendasi yang belum selesai (masih ada sisa)
-        $recommendations = Recommendation::with(['temuan.lhp'])
-            ->where('status', '!=', Recommendation::STATUS_SELESAI)
-            ->latest()
-            ->limit(100)
+        $auditPrograms = AuditProgram::query()
+            ->select('id', 'nama_program', 'tahun')
+            ->orderBy('tahun', 'desc')
+            ->orderBy('nama_program')
             ->get();
 
         $users = User::orderBy('name')->limit(100)->get();
 
-        return view('pages.tindak-lanjuts.create', compact('recommendations', 'users'));
+        return view('pages.tindak-lanjuts.create', compact('auditPrograms', 'users'));
+    }
+
+    public function getRekomendasisByProgram($programId)
+    {
+        $recommendations = Recommendation::with(['temuan.lhp:id,nomor_lhp'])
+            ->select('id', 'temuan_id', 'uraian_rekom', 'nilai_rekom', 'nilai_sisa', 'jenis_rekomendasi')
+            ->where('status', '!=', Recommendation::STATUS_SELESAI)
+            ->whereHas('temuan.lhp.auditAssignment.auditProgramDetail', fn($q) => $q->where('audit_program_id', $programId))
+            ->latest()
+            ->limit(100)
+            ->get()
+            ->map(fn($r) => [
+                'id'    => $r->id,
+                'sisa'  => (int) $r->nilai_sisa,
+                'rekom' => (int) $r->nilai_rekom,
+                'jenis' => $r->jenis_rekomendasi,
+                'label' => '[' . ($r->temuan?->lhp?->nomor_lhp ?? 'LHP') . '] '
+                    . \Str::limit($r->uraian_rekom, 80)
+                    . ' — (Sisa: Rp' . number_format($r->nilai_sisa, 0, ',', '.') . ')',
+            ]);
+
+        return response()->json($recommendations);
     }
 
     public function store(Request $request)

@@ -12,7 +12,7 @@
     <div class="mb-6 flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Buat Rekomendasi Baru</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Pilih LHP dan Temuan untuk menambahkan rekomendasi.</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Pilih Program, LHP, dan Temuan untuk menambahkan rekomendasi.</p>
         </div>
         <a href="{{ route('recommendations.index') }}"
            class="text-sm font-medium text-brand-500 hover:text-brand-600 transition-colors dark:text-brand-400">
@@ -53,23 +53,20 @@
                 @csrf
                 <div class="-mx-2.5 flex flex-wrap gap-y-5">
 
-                    {{-- ── PILIH LHP ── --}}
-                    <div class="w-full px-2.5 xl:w-1/2">
+                    {{-- ── PILIH PROGRAM AUDIT ── --}}
+                    <div class="w-full px-2.5">
                         <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                            Nomor LHP <span class="text-red-500">*</span>
+                            Program Audit <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
-                            <select name="lhp_id"
-                                    x-model="lhpId"
-                                    @change="onLhpChange()"
+                            <select name="audit_program_id" data-no-ts
+                                    x-model="programId"
+                                    @change="onProgramChange()"
                                     required
                                     class="shadow-theme-xs h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                                <option value="">-- Pilih Nomor LHP --</option>
-                                @foreach($lhps as $lhp)
-                                    <option value="{{ $lhp->id }}"
-                                        {{ old('lhp_id') == $lhp->id ? 'selected' : '' }}>
-                                        {{ $lhp->nomor_lhp }} ({{ $lhp->tanggal_lhp->format('Y') }})
-                                    </option>
+                                <option value="">-- Pilih Program Audit --</option>
+                                @foreach($auditPrograms as $p)
+                                    <option value="{{ $p->id }}">{{ $p->nama_program }} ({{ $p->tahun }})</option>
                                 @endforeach
                             </select>
                             <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-500">
@@ -80,8 +77,43 @@
                         </div>
                     </div>
 
+                    {{-- ── PILIH LHP ── --}}
+                    <div class="w-full px-2.5">
+                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                            Nomor LHP <span class="text-red-500">*</span>
+                        </label>
+
+                        {{-- Loading skeleton --}}
+                        <div x-show="loadingLhp" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800 animate-pulse flex items-center px-4">
+                            <span class="text-xs text-gray-400">Memuat data LHP...</span>
+                        </div>
+
+                        <div x-show="!loadingLhp" class="relative">
+                            <select name="lhp_id" data-no-ts
+                                    x-model="lhpId"
+                                    @change="onLhpChange()"
+                                    :disabled="!programId || lhps.length === 0"
+                                    required
+                                    class="shadow-theme-xs h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500/10 disabled:bg-gray-100 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:disabled:bg-white/5">
+                                <option value="">
+                                    <template x-if="!programId">Pilih Program terlebih dahulu</template>
+                                    <template x-if="programId && lhps.length === 0">Tidak ada LHP tersedia</template>
+                                    <template x-if="programId && lhps.length > 0">-- Pilih Nomor LHP --</template>
+                                </option>
+                                <template x-for="l in lhps" :key="l.id">
+                                    <option :value="l.id" x-text="l.label"></option>
+                                </template>
+                            </select>
+                            <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-500">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                    <path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+
                     {{-- ── PILIH TEMUAN ── --}}
-                    <div class="w-full px-2.5 xl:w-1/2">
+                    <div class="w-full px-2.5">
                         <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                             Pilih Temuan <span class="text-red-500">*</span>
                         </label>
@@ -93,7 +125,7 @@
 
                         {{-- Select temuan --}}
                         <div x-show="!loading" class="relative">
-                            <select name="temuan_id"
+                            <select name="temuan_id" data-no-ts
                                     x-model="temuanId"
                                     @change="onTemuanChange()"
                                     :disabled="!lhpId || temuans.length === 0"
@@ -140,12 +172,12 @@
                     </div>
 
                     {{-- ── KODE REKOMENDASI ── --}}
-                    <div class="w-full px-2.5 xl:w-1/2">
+                    <div class="w-full px-2.5">
                         <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                             Kode Rekomendasi <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
-                            <select name="kode_rekomendasi_id"
+                            <select name="kode_rekomendasi_id" data-no-ts
                                     x-model="kodeRekId"
                                     @change="onKodeRekChange()"
                                     required
@@ -169,12 +201,12 @@
                     </div>
 
                     {{-- ── JENIS REKOMENDASI ── --}}
-                    <div class="w-full px-2.5 xl:w-1/2">
+                    <div class="w-full px-2.5">
                         <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                             Jenis Rekomendasi <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
-                            <select name="jenis_rekomendasi"
+                            <select name="jenis_rekomendasi" data-no-ts
                                     x-model="jenis"
                                     required
                                     class="shadow-theme-xs h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
@@ -237,7 +269,7 @@
                     </div>
 
                     {{-- ── BATAS WAKTU ── --}}
-                    <div class="w-full px-2.5 xl:w-1/2">
+                    <div class="w-full px-2.5">
                         <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                             Batas Waktu <span class="text-red-500">*</span>
                         </label>
@@ -277,6 +309,7 @@
 function rekomendasiForm() {
     return {
         /* ── State ── */
+        programId  : '{{ old("audit_program_id", "") }}',
         lhpId      : '{{ old("lhp_id", "") }}',
         temuanId   : '{{ old("temuan_id", "") }}',
         jenis      : '{{ old("jenis_rekomendasi", "uang") }}',
@@ -284,12 +317,14 @@ function rekomendasiForm() {
         nilaiRupiah: {{ old('nilai_rekom', 0) }},
         plafon     : 0,
         loading    : false,
+        loadingLhp : false,
         fetchError : null,
 
         /* Master data dari Blade (tidak berubah) */
         masterKodeRekoms : @json($kodeRekoms),
 
         /* Data dinamis dari API */
+        lhps             : [],
         temuans          : [],
         filteredKodeRekoms: @json($kodeRekoms),
 
@@ -308,12 +343,66 @@ function rekomendasiForm() {
 
         /* ── Methods ── */
 
+        /** Dipanggil saat Program Audit berubah */
+        onProgramChange() {
+            this.lhps    = [];
+            this.lhpId   = '';
+            this.temuans = [];
+            this.temuanId = '';
+            this.plafon  = 0;
+            this.filteredKodeRekoms = this.masterKodeRekoms;
+            this.fetchError = null;
+
+            if (!this.programId) return;
+
+            this.fetchLhps();
+        },
+
+        async fetchLhps() {
+            this.loadingLhp = true;
+            this.fetchError = null;
+
+            try {
+                const url      = `/lhps-by-program/${this.programId}`;
+                const response = await fetch(url, {
+                    method : 'GET',
+                    headers: {
+                        'Accept'           : 'application/json',
+                        'X-Requested-With' : 'XMLHttpRequest',
+                        'X-CSRF-TOKEN'     : document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                    },
+                });
+
+                if (!response.ok) {
+                    let errMsg = `HTTP ${response.status}`;
+                    try { const errJson = await response.json(); errMsg = errJson.message ?? errMsg; } catch (_) {}
+                    throw new Error(errMsg);
+                }
+
+                const data = await response.json();
+                this.lhps = data;
+
+                const oldLhpId = '{{ old("lhp_id", "") }}';
+                if (oldLhpId && this.lhps.find(l => String(l.id) === oldLhpId)) {
+                    this.lhpId = oldLhpId;
+                    this.onLhpChange();
+                }
+
+            } catch (err) {
+                console.error('[fetchLhps]', err);
+                this.fetchError = err.message ?? 'Gagal memuat data LHP.';
+                this.lhps  = [];
+                this.lhpId = '';
+            } finally {
+                this.loadingLhp = false;
+            }
+        },
+
         /**
          * Dipanggil saat LHP berubah.
          * Reset state temuan dulu, baru fetch.
          */
         onLhpChange() {
-            /* Reset semua state yang bergantung pada LHP */
             this.temuans           = [];
             this.temuanId          = '';
             this.plafon            = 0;
@@ -325,16 +414,12 @@ function rekomendasiForm() {
             this.fetchTemuans();
         },
 
-        /**
-         * Fetch temuan dari route web Laravel.
-         * Gunakan route('lhps.temuans', lhpId) yang harus didefinisikan di web.php.
-         */
         async fetchTemuans() {
             this.loading    = true;
             this.fetchError = null;
 
             try {
-                const url      = `/lhp/${this.lhpId}/temuans`; // sesuaikan dengan route web.php Anda
+                const url      = `/lhp/${this.lhpId}/temuans`;
                 const response = await fetch(url, {
                     method : 'GET',
                     headers: {
@@ -345,30 +430,23 @@ function rekomendasiForm() {
                 });
 
                 if (!response.ok) {
-                    /* Coba baca pesan error dari server */
                     let errMsg = `HTTP ${response.status}`;
-                    try {
-                        const errJson = await response.json();
-                        errMsg = errJson.message ?? errMsg;
-                    } catch (_) {}
+                    try { const errJson = await response.json(); errMsg = errJson.message ?? errMsg; } catch (_) {}
                     throw new Error(errMsg);
                 }
 
                 const data = await response.json();
 
-                /* Mapping data dari controller RecommendationController@getTemuans */
                 this.temuans = data.map(t => ({
                     id          : String(t.id),
-                    kondisi_full: t.kondisi ?? '',                        // teks penuh untuk preview
+                    kondisi_full: t.kondisi ?? '',
                     nilai_temuan: parseFloat(t.nilai_temuan ?? 0),
                     alternatif_rekom: Array.isArray(t.alternatif_rekom) ? t.alternatif_rekom.map(String) : [],
                     kode_label  : t.kode_label ?? null,
-                    /* Label untuk <option> — ikut format yang dikembalikan controller */
                     label       : (t.kode_label ? `[${t.kode_label}] ` : '') +
                                   (t.kondisi    ? t.kondisi.substring(0, 100) + (t.kondisi.length > 100 ? '...' : '') : '(tanpa kondisi)'),
                 }));
 
-                /* Jika old('temuan_id') ada & masih valid, pertahankan; jika tidak, reset */
                 const oldTemuanId = '{{ old("temuan_id", "") }}';
                 if (oldTemuanId && this.temuans.find(t => t.id === oldTemuanId)) {
                     this.temuanId = oldTemuanId;
@@ -376,7 +454,6 @@ function rekomendasiForm() {
                     this.temuanId = '';
                 }
 
-                /* Jalankan onTemuanChange untuk update plafon & filter kode */
                 this.onTemuanChange();
 
             } catch (err) {
@@ -389,16 +466,11 @@ function rekomendasiForm() {
             }
         },
 
-        /** Dipanggil saat select temuan berubah */
         onTemuanChange() {
             this.updatePlafon();
             this.filterKodeRekoms();
         },
 
-        /**
-         * Filter kode rekomendasi berdasarkan alternatif_rekom temuan terpilih.
-         * Jika temuan tidak membatasi, tampilkan semua kode.
-         */
         filterKodeRekoms() {
             const temuan = this.selectedTemuan;
 
@@ -406,7 +478,6 @@ function rekomendasiForm() {
                 this.filteredKodeRekoms = this.masterKodeRekoms.filter(k =>
                     temuan.alternatif_rekom.includes(String(k.kode_numerik))
                 );
-                /* Reset kodeRekId jika pilihan sebelumnya tidak ada di filter baru */
                 if (this.kodeRekId && !this.filteredKodeRekoms.find(k => String(k.id) === String(this.kodeRekId))) {
                     this.kodeRekId = '';
                 }
@@ -415,7 +486,6 @@ function rekomendasiForm() {
             }
         },
 
-        /** Update plafon & auto-isi field nilai dari nilai_temuan */
         updatePlafon() {
             const temuan   = this.selectedTemuan;
             this.plafon    = temuan?.nilai_temuan ?? 0;
@@ -424,7 +494,6 @@ function rekomendasiForm() {
                 const hiddenEl  = document.querySelector('input[name="nilai_rekom"]');
                 const displayEl = document.getElementById('display-nilai-rekom');
 
-                /* Auto-fill hanya jika nilai masih 0 / kosong */
                 if (hiddenEl && (!hiddenEl.value || parseInt(hiddenEl.value, 10) === 0)) {
                     hiddenEl.value          = this.plafon;
                     this.nilaiRupiah        = this.plafon;
@@ -435,9 +504,7 @@ function rekomendasiForm() {
             }
         },
 
-        onKodeRekChange() {
-            /* Computed selectedKodeRek otomatis terupdate — tidak perlu action manual */
-        },
+        onKodeRekChange() {},
 
         formatRupiah(number) {
             return new Intl.NumberFormat('id-ID', {
@@ -445,13 +512,10 @@ function rekomendasiForm() {
             }).format(number ?? 0);
         },
 
-        /** Alpine init() — dipanggil via x-init="init()" di element root */
         init() {
-            /* Init rupiah input setelah Alpine selesai mount */
             this.$nextTick(() => {
                 if (window.RupiahInput?.initAll) window.RupiahInput.initAll();
 
-                /* Sync nilaiRupiah dengan perubahan dari RupiahInput */
                 const displayEl = document.getElementById('display-nilai-rekom');
                 if (displayEl) {
                     displayEl.addEventListener('input', () => {
@@ -462,12 +526,10 @@ function rekomendasiForm() {
                 }
             });
 
-            /* Jika ada old('lhp_id') dari validasi gagal, fetch temuan langsung */
-            if (this.lhpId) {
-                this.fetchTemuans();
+            if (this.programId) {
+                this.fetchLhps();
             }
 
-            /* Guard submit — disable tombol agar tidak double-submit */
             document.getElementById('form-rekom')?.addEventListener('submit', () => {
                 const btn  = document.getElementById('btn-submit-rekom');
                 const text = document.getElementById('btn-rekom-text');

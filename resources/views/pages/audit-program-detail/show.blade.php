@@ -26,6 +26,23 @@
                     <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
                     {{ $detail->objek_pengawasan }}
                 </p>
+                @if($detail->auditProgram)
+                <p class="mt-1 flex items-center gap-2 text-[10px] text-gray-400">
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
+                    {{ $detail->auditProgram->nama_program }}
+                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase
+                        {{ match($detail->auditProgram->kategori) {
+                            'PKPT' => 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400',
+                            'BPK'  => 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
+                            'BPKP' => 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400',
+                            'ITPROV' => 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-400',
+                            'ITDA'   => 'bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400',
+                            default  => 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+                        } }}">
+                        {{ $detail->auditProgram->kategori }}
+                    </span>
+                </p>
+                @endif
             </div>
         </div>
 

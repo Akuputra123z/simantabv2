@@ -15,6 +15,67 @@
     
 
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <style>
+        .ts-wrapper {
+            min-width: 0;
+            max-width: 100%;
+            vertical-align: middle;
+        }
+        .ts-wrapper .ts-control {
+            border-radius: 0.5rem;
+            border-color: #e5e7eb;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            min-height: 2.5rem;
+            background: transparent;
+            box-shadow: none;
+        }
+        .dark .ts-wrapper .ts-control {
+            border-color: #374151;
+            color: #f3f4f6;
+            background: transparent;
+        }
+        .ts-wrapper.focus .ts-control {
+            border-color: #4f46e5;
+        }
+        .ts-wrapper .ts-dropdown {
+            border-radius: 0.5rem;
+            border-color: #e5e7eb;
+            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.1);
+            margin-top: 4px;
+            width: 100% !important;
+            box-sizing: border-box;
+        }
+        .dark .ts-wrapper .ts-dropdown {
+            background: #1f2937;
+            border-color: #374151;
+        }
+        .ts-wrapper .ts-dropdown .active {
+            background: #eef2ff;
+        }
+        .dark .ts-wrapper .ts-dropdown .active {
+            background: rgba(79, 70, 229, 0.15);
+        }
+        .ts-wrapper .ts-dropdown .option {
+            padding: 0.5rem 0.875rem;
+            font-size: 0.8125rem;
+        }
+        .dark .ts-wrapper .ts-dropdown .option {
+            color: #d1d5db;
+        }
+        .ts-wrapper .ts-dropdown .option.highlight {
+            background: rgba(79, 70, 229, 0.08);
+        }
+        .ts-wrapper.multi .ts-control {
+            padding: 0.375rem 0.5rem;
+        }
+        .ts-wrapper .ts-control input {
+            font-size: 0.875rem;
+        }
+        .dark .ts-wrapper .ts-control input {
+            color: #f3f4f6;
+        }
+    </style>
 
     <script>
         (function() {
@@ -84,6 +145,33 @@
 
     @stack('scripts')
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('select:not([data-no-ts])').forEach(function(el) {
+                if (el.tomselect) return;
+                var origW = el.offsetWidth;
+                try {
+                    new TomSelect(el, {
+                        maxItems: el.multiple ? undefined : 1,
+                        hideSelected: true,
+                        maxOptions: null,
+                        allowEmptyOption: true,
+                        plugins: el.multiple ? ['remove_button'] : [],
+                        onChange: function() {
+                            if (el.hasAttribute('data-auto-submit')) {
+                                (el.form || el.closest('form')).submit();
+                            }
+                        },
+                        onReady: function() {
+                            if (origW > 0) this.wrapper.style.minWidth = origW + 'px';
+                        }
+                    });
+                } catch(e) {
+                    // fallback: leave as native
+                }
+            });
+        });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
        

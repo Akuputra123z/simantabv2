@@ -48,7 +48,7 @@
                     </div>
 
                     <div class="sm:col-span-3 lg:col-span-3">
-                        <select id="kategori" name="kategori">
+                        <select id="kategori" name="kategori" data-no-ts>
                             <option value="">Semua Kategori</option>
                             @foreach(['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'] as $cat)
                             <option value="{{ $cat }}" {{ request('kategori') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
@@ -57,7 +57,7 @@
                     </div>
 
                     <div class="sm:col-span-3 lg:col-span-4">
-                        <select id="kecamatan" name="kecamatan">
+                        <select id="kecamatan" name="kecamatan" data-no-ts>
                             <option value="">Semua Kecamatan</option>
                             @foreach($kecamatanList as $kec)
                             <option value="{{ $kec }}" {{ request('kecamatan') == $kec ? 'selected' : '' }}>{{ $kec }}</option>

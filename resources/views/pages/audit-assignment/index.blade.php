@@ -21,56 +21,86 @@
 </div>
 @endif
 
-<div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+{{-- Header --}}
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Daftar Penugasan Audit</h1>
+        <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Total: {{ $assignments->total() }} penugasan ditemukan</p>
+    </div>
+    <a href="{{ route('audit-assignment.create') }}"
+       class="inline-flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm shadow-blue-500/10 active:scale-[0.98] transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Tambah Penugasan
+    </a>
+</div>
 
-    {{-- ── Header & Filter ── --}}
-    <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-800">
-        <div>
-            <h3 class="text-base font-bold text-gray-800 dark:text-white/90">Daftar Penugasan Audit</h3>
-            <p class="text-xs text-gray-500">Total: {{ $assignments->total() }} penugasan ditemukan</p>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <form action="{{ url()->current() }}" method="GET" class="hidden lg:flex gap-2">
-                <select name="tahun" onchange="this.form.submit()" class="h-9 rounded-lg border border-gray-200 bg-transparent px-2 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                    <option value="">Semua Tahun</option>
-                    @foreach(range(date('Y'), date('Y') - 5) as $y)
-                        <option value="{{ $y }}" @selected(request('tahun') == $y)>{{ $y }}</option>
-                    @endforeach
-                </select>
-
-                <select name="status" onchange="this.form.submit()" class="h-9 rounded-lg border border-gray-200 bg-transparent px-2 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                    <option value="">Semua Status</option>
-                    <option value="draft" @selected(request('status') == 'draft')>Draft</option>
-                    <option value="berjalan" @selected(request('status') == 'berjalan')>Berjalan</option>
-                    <option value="selesai" @selected(request('status') == 'selesai')>Selesai</option>
-                </select>
-
-                <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nomor/unit..." 
-                        class="h-9 rounded-lg border border-gray-200 bg-transparent pl-8 pr-3 text-xs dark:border-gray-700 dark:text-white outline-none focus:border-blue-500">
-                    <svg class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                </div>
-            </form>
-
-            <a href="{{ route('audit-assignment.create') }}" class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2.5"/></svg>
-                TAMBAH
-            </a>
+{{-- Filter --}}
+<form method="GET" action="{{ url()->current() }}" class="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
+    <div class="flex-1 min-w-0 md:max-w-md">
+        <div class="relative">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 dark:text-gray-500">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+            <input type="text" name="search" value="{{ request('search') }}"
+                   placeholder="Cari nomor surat atau unit..."
+                   class="h-10 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-500">
         </div>
     </div>
+
+    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        <div class="flex-1 min-w-[140px] sm:flex-initial sm:w-44">
+            <select name="tahun" data-auto-submit>
+                <option value="">Semua Tahun</option>
+                @foreach(range(date('Y'), date('Y') - 5) as $y)
+                    <option value="{{ $y }}" @selected(request('tahun') == $y)>{{ $y }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="flex-1 min-w-[140px] sm:flex-initial sm:w-44">
+            <select name="kategori" data-auto-submit>
+                <option value="">Semua Kategori</option>
+                @foreach($kategoriOptions as $k)
+                    <option value="{{ $k }}" @selected(request('kategori') == $k)>{{ $k }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="flex-1 min-w-[140px] sm:flex-initial sm:w-44">
+            <select name="status" data-auto-submit>
+                <option value="">Semua Status</option>
+                <option value="draft" @selected(request('status') == 'draft')>Draft</option>
+                <option value="berjalan" @selected(request('status') == 'berjalan')>Berjalan</option>
+                <option value="selesai" @selected(request('status') == 'selesai')>Selesai</option>
+            </select>
+        </div>
+        <button type="submit"
+                class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg bg-gray-950 text-sm font-medium text-white hover:bg-gray-850 focus:outline-none focus:ring-2 focus:ring-gray-950/20 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-500/20 transition-colors whitespace-nowrap">
+            Filter
+        </button>
+        @if (request()->hasAny(['search','tahun','kategori','status']))
+        <a href="{{ route('audit-assignment.index') }}"
+           class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors whitespace-nowrap">
+            Reset
+        </a>
+        @endif
+    </div>
+</form>
+
+<div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
 
     {{-- ── Table ── --}}
     <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
             <thead class="bg-gray-50/50 dark:bg-gray-900/50 text-[10px] uppercase tracking-widest text-gray-400 font-bold border-b border-gray-100 dark:border-gray-800">
                 <tr>
-                    <th class="px-5 py-4 w-[35%]">Program & No. Surat</th>
-                    <th class="px-4 py-4 w-[18%]">Unit Diperiksa</th>
-                    <th class="px-4 py-4 w-[18%]">Jadwal</th>
-                    <th class="px-4 py-4 w-[10%] text-center">Jenis</th>
-                    <th class="px-4 py-4 w-[10%] text-center">Status</th>
-                    <th class="px-5 py-4 w-[9%] text-right">Aksi</th>
+                    <th class="px-5 py-4 w-[30%]">Program & No. Surat</th>
+                    <th class="px-4 py-4 w-[16%]">Unit Diperiksa</th>
+                    <th class="px-4 py-4 w-[16%]">Jadwal</th>
+                    <th class="px-4 py-4 w-[9%] text-center">Jenis</th>
+                    <th class="px-4 py-4 w-[9%] text-center">Kategori</th>
+                    <th class="px-4 py-4 w-[9%] text-center">Status</th>
+                    <th class="px-5 py-4 w-[11%] text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -135,6 +165,24 @@
                         </span>
                     </td>
 
+                    {{-- Kategori --}}
+                    <td class="px-4 py-4 text-center">
+                        @php
+                            $k = $item->auditProgramDetail?->auditProgram?->kategori;
+                            $kategoriBadge = match($k) {
+                                'PKPT' => 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400',
+                                'BPK'  => 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
+                                'BPKP' => 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400',
+                                'ITPROV' => 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-400',
+                                'ITDA'   => 'bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400',
+                                default  => 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+                            };
+                        @endphp
+                        <span class="px-2 py-1 rounded text-[10px] font-bold uppercase {{ $kategoriBadge }}">
+                            {{ $k ?? '-' }}
+                        </span>
+                    </td>
+
                     {{-- Status --}}
                     <td class="px-4 py-4 text-center">
                         @php
@@ -174,7 +222,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-5 py-20 text-center">
+                    <td colspan="7" class="px-5 py-20 text-center">
                         <div class="flex flex-col items-center gap-3">
                             <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-full text-gray-300">
                                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-width="1.5"/></svg>

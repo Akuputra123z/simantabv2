@@ -24,7 +24,7 @@
                 <h3 class="mb-4 text-xs font-black uppercase tracking-[0.2em] text-blue-600">01. Klasifikasi Kode</h3>
                 <div class="space-y-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Kode Temuan</label>
-                    <select name="kode_temuan_id" id="kode-temuan-select" required class="w-full">
+                    <select name="kode_temuan_id" id="kode-temuan-select" data-no-ts required class="w-full">
                         <option value="">-- Pilih Kode Temuan --</option>
                         @foreach($kodeTemuans as $kode)
                             <option value="{{ $kode->id }}" {{ old('kode_temuan_id') == $kode->id ? 'selected' : '' }}>

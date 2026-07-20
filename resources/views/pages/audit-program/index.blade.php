@@ -31,67 +31,65 @@
 </div>
 @endif
 
-<div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+{{-- Header --}}
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Program Kerja Pengawasan Tahunan</h1>
+        <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Monitoring progres audit dan LHP</p>
+    </div>
+    <a href="{{ route('audit-program.create') }}"
+       class="inline-flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm shadow-blue-500/10 active:scale-[0.98] transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Tambah PKPT
+    </a>
+</div>
 
-    {{-- FILTER --}}
-    <form method="GET" action="{{ route('audit-program.index') }}">
-        <div class="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 dark:border-gray-800 lg:flex-row lg:items-center lg:justify-between">
-
-            <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-                    Program Kerja Pengawasan Tahunan
-                </h3>
-
-                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    Monitoring progres audit dan LHP
-                </p>
+{{-- Filter --}}
+<form method="GET" action="{{ route('audit-program.index') }}" class="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
+    <div class="flex-1 min-w-0 md:max-w-md">
+        <div class="relative">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 dark:text-gray-500">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
             </div>
-
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-
-                {{-- Tahun --}}
-                <select name="tahun"
-                        onchange="this.form.submit()"
-                        class="h-9 rounded-lg border border-gray-200 bg-white px-3 text-xs text-gray-700 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                    <option value="">Semua Tahun</option>
-
-                    @foreach(range(date('Y') + 1, 2024) as $y)
-                        <option value="{{ $y }}" {{ request('tahun') == $y ? 'selected' : '' }}>
-                            {{ $y }}
-                        </option>
-                    @endforeach
-                </select>
-
-                {{-- Search --}}
-                <div class="relative">
-                    <input type="text"
-                           name="search"
-                           value="{{ request('search') }}"
-                           placeholder="Cari program..."
-                           class="h-9 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-xs text-gray-700 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white sm:w-52">
-
-                    <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
-                         fill="none"
-                         stroke="currentColor"
-                         viewBox="0 0 24 24">
-                        <path stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                </div>
-
-                {{-- Button --}}
-                <a href="{{ route('audit-program.create') }}"
-                   class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700">
-                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    Tambah PKPT
-                </a>
-            </div>
+            <input type="text" name="search" value="{{ request('search') }}"
+                   placeholder="Cari program..."
+                   class="h-10 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-500">
         </div>
-    </form>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        <div class="flex-1 min-w-[140px] sm:flex-initial sm:w-44">
+            <select name="tahun" data-auto-submit>
+                <option value="">Semua Tahun</option>
+                @foreach(range(date('Y') + 1, 2024) as $y)
+                    <option value="{{ $y }}" {{ request('tahun') == $y ? 'selected' : '' }}>{{ $y }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="flex-1 min-w-[140px] sm:flex-initial sm:w-44">
+            <select name="kategori" data-auto-submit>
+                <option value="">Semua Kategori</option>
+                @foreach($kategoris as $kat)
+                    <option value="{{ $kat }}" {{ request('kategori') == $kat ? 'selected' : '' }}>{{ $kat }}</option>
+                @endforeach
+            </select>
+        </div>
+        <button type="submit"
+                class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg bg-gray-950 text-sm font-medium text-white hover:bg-gray-850 focus:outline-none focus:ring-2 focus:ring-gray-950/20 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-500/20 transition-colors whitespace-nowrap">
+            Filter
+        </button>
+        @if (request()->hasAny(['search','tahun','kategori']))
+        <a href="{{ route('audit-program.index') }}"
+           class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors whitespace-nowrap">
+            Reset
+        </a>
+        @endif
+    </div>
+</form>
+
+<div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
 
     {{-- TABLE --}}
     <div class="overflow-x-auto">
@@ -101,6 +99,10 @@
                 <tr>
                     <th class="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-gray-400">
                         Program
+                    </th>
+
+                    <th class="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                        Kategori
                     </th>
 
                     <th class="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
@@ -148,6 +150,23 @@
                                 Tahun {{ $item->tahun }}
                             </p>
                         </div>
+                    </td>
+
+                    {{-- Kategori --}}
+                    <td class="px-4 py-3 text-center">
+                        @php
+                            $badge = match($item->kategori) {
+                                'PKPT' => 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400',
+                                'BPK'  => 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
+                                'BPKP' => 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400',
+                                'ITPROV' => 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-400',
+                                'ITDA'   => 'bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400',
+                                default  => 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+                            };
+                        @endphp
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-[9px] font-bold uppercase {{ $badge }}">
+                            {{ $item->kategori ?? '-' }}
+                        </span>
                     </td>
 
                     {{-- Sub Program --}}
@@ -234,7 +253,7 @@
                 @empty
 
                 <tr>
-                    <td colspan="5" class="px-6 py-14 text-center">
+                    <td colspan="6" class="px-6 py-14 text-center">
                         <div class="flex flex-col items-center justify-center text-gray-400">
                             <svg class="mb-3 h-8 w-8 opacity-30"
                                  fill="none"

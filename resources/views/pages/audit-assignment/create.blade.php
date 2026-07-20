@@ -94,7 +94,7 @@
                     {{-- Program Audit --}}
                     <div class="space-y-1.5">
                         <label for="audit_program_id" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Program Audit <span class="text-red-400">*</span></label>
-                        <select id="audit_program_id" name="audit_program_id" required
+                        <select id="audit_program_id" name="audit_program_id" data-no-ts required
                             class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
                             <option value="">Pilih program audit</option>
                             @foreach($programs as $p)
@@ -107,7 +107,7 @@
                     <div class="space-y-3">
                         <div class="space-y-1.5">
                             <label for="audit_program_detail_id" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">PKPT / Detail Program <span class="text-red-400">*</span></label>
-                            <select id="audit_program_detail_id" name="audit_program_detail_id" required>
+                            <select id="audit_program_detail_id" name="audit_program_detail_id" data-no-ts required>
                                 <option value="">Pilih detail setelah memilih program</option>
                             </select>
                             <div id="pkpt-info" class="hidden"></div>
@@ -148,20 +148,20 @@
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold uppercase text-gray-400 tracking-tighter">Filter Kategori</label>
-                            <select id="filter_kategori" class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-xs dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                            <select id="filter_kategori" data-no-ts class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-xs dark:bg-gray-900 dark:border-gray-700 dark:text-white">
                                 <option value="">Semua Kategori</option>
                                 @foreach($kategoriOptions as $cat) <option value="{{ $cat }}">{{ $cat }}</option> @endforeach
                             </select>
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold uppercase text-gray-400 tracking-tighter">Filter Kecamatan</label>
-                            <select id="filter_kecamatan" class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-xs dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                            <select id="filter_kecamatan" data-no-ts class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-xs dark:bg-gray-900 dark:border-gray-700 dark:text-white">
                                 <option value="">Semua Kecamatan</option>
                             </select>
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold uppercase text-gray-400 tracking-tighter">Tampilkan</label>
-                            <select id="filter_show" class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-xs dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                            <select id="filter_show" data-no-ts class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-xs dark:bg-gray-900 dark:border-gray-700 dark:text-white">
                                 <option value="all">Semua Unit</option>
                                 <option value="selected">Terpilih Saja</option>
                                 <option value="unselected">Belum Dipilih</option>

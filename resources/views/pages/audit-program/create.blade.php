@@ -52,11 +52,21 @@
                     @enderror
                 </div>
 
-                {{-- Status Inisial --}}
+                {{-- Kategori --}}
                 <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Status Awal</label>
-                    <input type="text" value="Draft" disabled class="w-full rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5 text-gray-500 dark:border-gray-800 dark:bg-gray-900">
-                    <p class="mt-1 text-[10px] text-gray-400 italic">Status akan otomatis menjadi 'Draft' saat pembuatan.</p>
+                    <label for="kategori" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Kategori <span class="text-red-500">*</span>
+                    </label>
+                    <select name="kategori" id="kategori" required
+                            class="w-full rounded-lg border border-gray-200 bg-transparent px-4 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:text-white @error('kategori') border-red-500 @enderror">
+                        <option value="">-- Pilih Kategori --</option>
+                        @foreach($kategoriOptions as $opt)
+                            <option value="{{ $opt }}" {{ old('kategori') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                        @endforeach
+                    </select>
+                    @error('kategori')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
                 </div>
             </div>
 

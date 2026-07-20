@@ -20,7 +20,7 @@
         </div>
     @endif
 
-    <form action="{{ route('audit-program-detail.store') }}" method="POST">
+    <form action="{{ route('audit-program-detail.store') }}" method="POST" x-data="{ kategori: '{{ $kategori }}' }">
         @csrf
         {{-- ID Induk PKPT --}}
         <input type="hidden" name="audit_program_id" value="{{ $auditProgram->id }}">
@@ -34,11 +34,9 @@
         </div>
 
         <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-800/50">
-            <div class="h-1.5 w-full bg-gray-100 dark:bg-gray-700">
-                <div class="h-full bg-blue-600 w-full"></div>
-            </div>
+            
 
-            <div class="p-8 space-y-8">
+            <div class="p-8 space-y-6">
                 {{-- Nama Detail Program --}}
                 <div>
                     <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Nama Detail Program Kerja</label>
@@ -47,72 +45,67 @@
                            placeholder="Contoh: Audit Kinerja Pelayanan Publik" required>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {{-- Jenis Kegiatan --}}
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Jenis Kegiatan</label>
-                        <select name="jenis_kegiatan" class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900" required>
-                            <option value="">Pilih Jenis</option>
-                            @foreach(['Audit', 'Review', 'Evaluasi', 'Pemantauan'] as $jenis)
-                                <option value="{{ $jenis }}" {{ old('jenis_kegiatan') == $jenis ? 'selected' : '' }}>{{ $jenis }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                {{-- Jenis Kegiatan --}}
+                <div>
+                    <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Jenis Kegiatan</label>
+                    <select name="jenis_kegiatan" class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900" required>
+                        <option value="">Pilih Jenis</option>
+                        @foreach(['Audit', 'Review', 'Evaluasi', 'Pemantauan', 'Tindak Lanjut'] as $jenis)
+                            <option value="{{ $jenis }}" {{ old('jenis_kegiatan') == $jenis ? 'selected' : '' }}>{{ $jenis }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-                    {{-- Tingkat Risiko --}}
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Tingkat Risiko</label>
-                        <div class="flex items-center h-[52px] gap-2 px-2 bg-gray-50/50 border-2 border-gray-100 rounded-xl dark:bg-gray-900">
-                            @foreach(['Rendah', 'Sedang', 'Tinggi'] as $level)
-                            <label class="flex items-center gap-1.5 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-white transition-all">
-                                <input type="radio" name="tingkat_resiko" value="{{ $level }}" 
-                                       {{ old('tingkat_resiko', 'Rendah') == $level ? 'checked' : '' }} 
-                                       class="w-3.5 h-3.5 border-gray-300 text-blue-600">
-                                <span class="text-[10px] font-bold text-gray-500 uppercase">{{ $level }}</span>
-                            </label>
-                            @endforeach
-                        </div>
+                {{-- Tingkat Risiko --}}
+                <div>
+                    <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Tingkat Risiko</label>
+                    <div class="flex items-center h-[52px] gap-2 px-2 bg-gray-50/50 border-2 border-gray-100 rounded-xl dark:bg-gray-900">
+                        @foreach(['Rendah', 'Sedang', 'Tinggi'] as $level)
+                        <label class="flex items-center gap-1.5 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-white transition-all">
+                            <input type="radio" name="tingkat_resiko" value="{{ $level }}" 
+                                   {{ old('tingkat_resiko', 'Rendah') == $level ? 'checked' : '' }} 
+                                   class="w-3.5 h-3.5 border-gray-300 text-blue-600">
+                            <span class="text-[10px] font-bold text-gray-500 uppercase">{{ $level }}</span>
+                        </label>
+                        @endforeach
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {{-- Objek Pengawasan --}}
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Objek Pengawasan (Lokasi)</label>
-                        <input type="text" name="objek_pengawasan" value="{{ old('objek_pengawasan') }}" 
-                               class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900"
-                               placeholder="Nama Unit Kerja/Instansi">
-                    </div>
-                    {{-- Personil --}}
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Personil / Auditor</label>
-                        <input type="text" name="personil" value="{{ old('personil') }}" 
-                               class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900" 
-                               placeholder="Contoh: 4 Orang">
+                {{-- Objek Pengawasan --}}
+                <div>
+                    <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Objek Pengawasan (Lokasi)</label>
+                    <input type="text" name="objek_pengawasan" value="{{ old('objek_pengawasan') }}" 
+                           class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900"
+                           placeholder="Nama Unit Kerja/Instansi">
+                </div>
+
+                {{-- Personil (PKPT only) --}}
+                <div x-show="kategori === 'PKPT'" x-transition>
+                    <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Personil / Auditor</label>
+                    <input type="text" name="personil" value="{{ old('personil') }}" 
+                           class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900" 
+                           placeholder="Contoh: 4 Orang">
+                </div>
+
+                {{-- Anggaran --}}
+                <div>
+                    <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Anggaran (Rp)</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">Rp</span>
+                        <input type="text" id="display_anggaran" value="{{ old('anggaran') }}" 
+                               class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 pl-12 pr-4 py-3.5 text-sm font-bold text-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all dark:bg-gray-900"
+                               placeholder="0">
+                        <input type="hidden" name="anggaran" id="real_anggaran" value="{{ old('anggaran', 0) }}">
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {{-- Anggaran --}}
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Anggaran (Rp)</label>
-                        <div class="relative">
-                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">Rp</span>
-                            <input type="text" id="display_anggaran" value="{{ old('anggaran') }}" 
-                                   class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 pl-12 pr-4 py-3.5 text-sm font-bold text-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all dark:bg-gray-900"
-                                   placeholder="0">
-                            <input type="hidden" name="anggaran" id="real_anggaran" value="{{ old('anggaran', 0) }}">
-                        </div>
-                    </div>
-
-                    {{-- Status --}}
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Status</label>
-                        <select name="status" class="w-full rounded-xl border-2 border-blue-100 bg-blue-50/30 px-4 py-3.5 text-[11px] font-bold uppercase tracking-wider text-blue-600 focus:border-blue-500 transition-all dark:bg-gray-900" required>
-                            <option value="rencana" {{ old('status') == 'rencana' ? 'selected' : '' }}>RENCANA (DRAFT)</option>
-                            <option value="aktif" {{ old('status') == 'aktif' ? 'selected' : '' }}>AKTIF (RUNNING)</option>
-                        </select>
-                    </div>
+                {{-- Status --}}
+                <div>
+                    <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Status</label>
+                    <select name="status" class="w-full rounded-xl border-2 border-blue-100 bg-blue-50/30 px-4 py-3.5 text-[11px] font-bold uppercase tracking-wider text-blue-600 focus:border-blue-500 transition-all dark:bg-gray-900" required>
+                        <option value="rencana" {{ old('status') == 'rencana' ? 'selected' : '' }}>RENCANA (DRAFT)</option>
+                        <option value="aktif" {{ old('status') == 'aktif' ? 'selected' : '' }}>AKTIF (RUNNING)</option>
+                    </select>
                 </div>
 
                 {{-- Ruang Lingkup --}}
@@ -121,23 +114,22 @@
                     <textarea name="ruang_lingkup" rows="2" class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900" placeholder="Batasan area pemeriksaan...">{{ old('ruang_lingkup') }}</textarea>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {{-- Tim Irban --}}
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Tim Pengawas</label>
-                        <select name="tim" class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900">
-                            <option value="">Pilih Tim</option>
-                            @foreach(['Irban I', 'Irban II', 'Irban III', 'Irban IV', 'Irbansus', 'Semua Irban', 'Sekretariat', 'Tim'] as $ir)
-                                <option value="{{ $ir }}" {{ old('tim') == $ir ? 'selected' : '' }}>{{ $ir }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    {{-- Jadwal (Bulan) --}}
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Bulan Pelaksanaan</label>
-                        <input type="date" name="jadwal" value="{{ old('jadwal') }}"
-                               class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900" required>
-                    </div>
+                {{-- Tim Pengawas (PKPT only) --}}
+                <div x-show="kategori === 'PKPT'" x-transition>
+                    <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Tim Pengawas</label>
+                    <select name="tim" class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900">
+                        <option value="">Pilih Tim</option>
+                        @foreach(['Irban I', 'Irban II', 'Irban III', 'Irban IV', 'Irbansus', 'Semua Irban', 'Sekretariat', 'Tim'] as $ir)
+                            <option value="{{ $ir }}" {{ old('tim') == $ir ? 'selected' : '' }}>{{ $ir }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Bulan Pelaksanaan --}}
+                <div>
+                    <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black">Bulan Pelaksanaan</label>
+                    <input type="date" name="jadwal" value="{{ old('jadwal') }}"
+                           class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm focus:border-blue-500 dark:bg-gray-900" required>
                 </div>
 
                 {{-- Laporan Akhir --}}

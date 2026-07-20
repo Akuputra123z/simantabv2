@@ -40,6 +40,10 @@ class AuditProgramController extends Controller
             $query->where('tahun', $request->tahun);
         }
 
+        if ($request->filled('kategori')) {
+            $query->where('kategori', $request->kategori);
+        }
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -50,7 +54,9 @@ class AuditProgramController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('pages.audit-program.index', compact('data'));
+        $kategoris = AuditProgram::KATEGORI;
+
+        return view('pages.audit-program.index', compact('data', 'kategoris'));
     }
 
     /**
@@ -58,7 +64,8 @@ class AuditProgramController extends Controller
      */
     public function create()
     {
-        return view('pages.audit-program.create');
+        $kategoriOptions = AuditProgram::KATEGORI;
+        return view('pages.audit-program.create', compact('kategoriOptions'));
     }
 
     /**
@@ -69,6 +76,7 @@ class AuditProgramController extends Controller
         $validated = $request->validate([
             'nama_program' => 'required|string|max:255',
             'tahun'        => 'required|integer|digits:4',
+            'kategori'     => 'required|string|in:' . implode(',', AuditProgram::KATEGORI),
         ]);
 
         $program = AuditProgram::create(array_merge($validated, [
@@ -125,9 +133,9 @@ class AuditProgramController extends Controller
      */
     public function edit(AuditProgram $auditProgram)
     {
-
         $program = $auditProgram;
-        return view('pages.audit-program.edit', compact('program'));
+        $kategoriOptions = AuditProgram::KATEGORI;
+        return view('pages.audit-program.edit', compact('program', 'kategoriOptions'));
     }
 
     /**
@@ -138,6 +146,7 @@ class AuditProgramController extends Controller
         $validated = $request->validate([
             'nama_program' => 'required|string|max:255',
             'tahun'        => 'required|integer|digits:4',
+            'kategori'     => 'required|string|in:' . implode(',', AuditProgram::KATEGORI),
             'status'       => 'required|in:draft,berjalan,selesai',
         ]);
 

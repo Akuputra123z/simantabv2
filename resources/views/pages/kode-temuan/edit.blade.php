@@ -47,7 +47,7 @@
 
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kelompok Utama</label>
-                            <select name="kel" x-model="kelompok" @change="updateSubKelOptions" required class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                            <select name="kel" data-no-ts x-model="kelompok" @change="updateSubKelOptions" required class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                                 <option value="1">1 — Ketidakpatuhan Terhadap Peraturan</option>
                                 <option value="2">2 — Kelemahan SPI</option>
                                 <option value="3">3 — Temuan 3E</option>
@@ -56,7 +56,7 @@
 
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Sub Kelompok</label>
-                            <select name="sub_kel" x-model="subKelTerpilih" @change="updateNamaSubKel" required class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                            <select name="sub_kel" data-no-ts x-model="subKelTerpilih" @change="updateNamaSubKel" required class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                                 <template x-for="(label, value) in subKelOptions" :key="value">
                                     <option :value="value" x-text="label" :selected="value == subKelTerpilih"></option>
                                 </template>

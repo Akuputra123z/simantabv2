@@ -43,6 +43,20 @@
                         <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs text-blue-700 dark:bg-blue-500/10 dark:text-blue-300 border border-blue-100 dark:border-blue-500/20">
                             TA {{ $auditProgram->tahun }}
                         </span>
+                        @php
+                            $kat = $auditProgram->kategori;
+                            $katBadge = match($kat) {
+                                'PKPT' => 'bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20',
+                                'BPK'  => 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20',
+                                'BPKP' => 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20',
+                                'ITPROV' => 'bg-cyan-50 text-cyan-700 border-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:border-cyan-500/20',
+                                'ITDA'   => 'bg-teal-50 text-teal-700 border-teal-100 dark:bg-teal-500/10 dark:text-teal-300 dark:border-teal-500/20',
+                                default  => 'bg-gray-50 text-gray-700 border-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
+                            };
+                        @endphp
+                        <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase border {{ $katBadge }}">
+                            {{ $kat ?? '-' }}
+                        </span>
                     </div>
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Pusat Kendali Program Kerja Pengawasan Tahunan.</p>
                 </div>

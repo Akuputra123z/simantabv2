@@ -104,7 +104,7 @@
                                     Kode Rekomendasi <span class="text-red-500">*</span>
                                 </label>
                                 <div class="relative">
-                                    <select name="kode_rekomendasi_id" required
+                                    <select name="kode_rekomendasi_id" data-no-ts required
                                         class="shadow-theme-xs h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                                         <option value="">-- Pilih Kode --</option>
                                         @foreach($kodeRekoms as $k)
@@ -126,7 +126,7 @@
                                     Jenis Rekomendasi <span class="text-red-500">*</span>
                                 </label>
                                 <div class="relative">
-                                    <select name="jenis_rekomendasi" x-model="jenis" required
+                                    <select name="jenis_rekomendasi" data-no-ts x-model="jenis" required
                                         class="shadow-theme-xs h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2 text-sm text-gray-800 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                                         <option value="uang">Keuangan (Uang)</option>
                                         <option value="barang">Barang / Aset</option>

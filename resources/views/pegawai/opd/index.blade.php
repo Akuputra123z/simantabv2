@@ -67,7 +67,7 @@
                 {{-- Unit OPD (searchable) --}}
                 <div class="sm:col-span-1 lg:col-span-3">
                     <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Unit OPD</label>
-                    <select name="unit_opd" id="unit-opd-select"
+                    <select name="unit_opd" id="unit-opd-select" data-no-ts
                             class="h-10 w-full px-3 text-sm border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg">
                         <option value="">Semua Unit</option>
                         @foreach($opdUnitOptions as $unit)

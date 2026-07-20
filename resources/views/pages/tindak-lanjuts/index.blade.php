@@ -135,11 +135,18 @@ window.__tlAttachments = @json($tlAttachments);
                 <option value="draft" {{ request('status_opd') == 'draft' ? 'selected' : '' }}>Draft</option>
                 <option value="dikirim" {{ request('status_opd') == 'dikirim' ? 'selected' : '' }}>Terkirim</option>
             </select>
+            <select name="kategori"
+                    class="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 w-full sm:w-44">
+                <option value="">Semua Kategori</option>
+                @foreach($kategoris as $k)
+                    <option value="{{ $k }}" {{ request('kategori') == $k ? 'selected' : '' }}>{{ $k }}</option>
+                @endforeach
+            </select>
             <button type="submit"
                     class="h-10 rounded-lg bg-gray-900 px-5 text-sm font-medium text-white hover:bg-gray-700 transition-colors dark:bg-blue-600 dark:hover:bg-blue-700">
                 Filter
             </button>
-            @if(request()->filled('search') || request()->filled('status') || request()->filled('status_opd'))
+            @if(request()->filled('search') || request()->filled('status') || request()->filled('status_opd') || request()->filled('kategori'))
                 <a href="{{ route('tindak-lanjuts.index') }}"
                    class="inline-flex h-10 items-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5">
                     Reset
@@ -156,6 +163,7 @@ window.__tlAttachments = @json($tlAttachments);
                     <tr class="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
                         <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400">Rekomendasi / LHP</th>
                         <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400">Jenis</th>
+                        <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400">Kategori</th>
 
                         <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400 text-right">Nilai TL</th>
                         <th class="px-6 py-3.5 text-xs  uppercase tracking-wide text-gray-500 dark:text-gray-400 text-center">Status</th>
@@ -188,6 +196,25 @@ window.__tlAttachments = @json($tlAttachments);
                             @endphp
                             <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold {{ $jenisCls }}">
                                 {{ ucfirst($tl->jenis_penyelesaian) }}
+                            </span>
+                        </td>
+
+                        {{-- Kategori --}}
+                        <td class="px-6 py-4">
+                            @php
+                                $kategoriLabel = $tl->kategori ?? '-';
+                                $kategoriCls = match($tl->kategori) {
+                                    'PKPT'   => 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+                                    'BPK'    => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+                                    'BPKP'   => 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+                                    'ITPROV' => 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+                                    'ITDA'   => 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+                                    'LAINNYA' => 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+                                    default  => 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+                                };
+                            @endphp
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold {{ $kategoriCls }}">
+                                {{ $kategoriLabel }}
                             </span>
                         </td>
 
@@ -277,7 +304,7 @@ window.__tlAttachments = @json($tlAttachments);
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-16 text-center">
+                        <td colspan="7" class="px-6 py-16 text-center">
                             <div class="flex flex-col items-center gap-2">
                                 <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
                                     <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

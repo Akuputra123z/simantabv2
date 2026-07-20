@@ -37,35 +37,64 @@
                     </div>
                 @endif
 
-                <form action="{{ route('tindak-lanjuts.store') }}" method="POST" id="main-form" enctype="multipart/form-data">
+                <form action="{{ route('tindak-lanjuts.store') }}" method="POST" id="main-form" enctype="multipart/form-data"
+                      x-data="tlRekomForm()">
                     @csrf
                     <div class="-mx-2.5 flex flex-wrap gap-y-5">
 
-                        {{-- Pilih Rekomendasi --}}
+                        {{-- ── PILIH PROGRAM AUDIT ── --}}
+                        <div class="w-full px-2.5">
+                            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                                Program Audit <span class="text-red-500">*</span>
+                            </label>
+                            <select name="audit_program_id" id="audit_program_id" data-no-ts
+                                    x-model="programId"
+                                    @change="onProgramChange()"
+                                    class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                                <option value="">-- Pilih Program Audit --</option>
+                                @foreach($auditPrograms as $p)
+                                    <option value="{{ $p->id }}">{{ $p->nama_program }} ({{ $p->tahun }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- ── PILIH REKOMENDASI ── --}}
                         <div class="w-full px-2.5">
                             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                                 Pilih Rekomendasi <span class="text-red-500">*</span>
                             </label>
-                            {{--
-                                data-sisa    = nilai_sisa rekomendasi (dipakai sebagai MAX validasi)
-                                data-rekom   = nilai_rekom (untuk label info)
-                                data-jenis   = jenis_rekomendasi (uang / barang / administrasi)
-                            --}}
-                            <select name="recommendation_id" id="recommendation_id" required
-                                class="h-11 w-full rounded-lg border {{ $errors->has('recommendation_id') ? 'border-red-500' : 'border-gray-300' }} bg-transparent px-4 py-2.5 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-white">
-                                <option value="">-- Pilih Rekomendasi --</option>
-                                @foreach($recommendations as $rekom)
-                                    <option value="{{ $rekom->id }}"
-                                        data-sisa="{{ (int) $rekom->nilai_sisa }}"
-                                        data-rekom="{{ (int) $rekom->nilai_rekom }}"
-                                        data-jenis="{{ $rekom->jenis_rekomendasi }}"
-                                        {{ old('recommendation_id') == $rekom->id ? 'selected' : '' }}>
-                                        [{{ $rekom->temuan->lhp->nomor_lhp ?? 'LHP' }}]
-                                        {{ Str::limit($rekom->uraian_rekom, 80) }}
-                                        — (Sisa: Rp{{ number_format($rekom->nilai_sisa, 0, ',', '.') }})
+
+                            <div x-show="loadingRekom" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800 animate-pulse flex items-center px-4">
+                                <span class="text-xs text-gray-400">Memuat data rekomendasi...</span>
+                            </div>
+
+                            <div x-show="!loadingRekom">
+                                <select name="recommendation_id" id="recommendation_id" data-no-ts required
+                                    :disabled="!programId || rekomendasis.length === 0"
+                                    class="h-11 w-full rounded-lg border {{ $errors->has('recommendation_id') ? 'border-red-500' : 'border-gray-300' }} bg-transparent px-4 py-2.5 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-white disabled:bg-gray-100 disabled:cursor-not-allowed dark:disabled:bg-white/5">
+                                    <option value="">
+                                        <template x-if="!programId">Pilih Program terlebih dahulu</template>
+                                        <template x-if="programId && rekomendasis.length === 0">Tidak ada rekomendasi tersedia</template>
+                                        <template x-if="programId && rekomendasis.length > 0">-- Pilih Rekomendasi --</template>
                                     </option>
-                                @endforeach
-                            </select>
+                                    <template x-for="r in rekomendasis" :key="r.id">
+                                        <option :value="r.id"
+                                                :data-sisa="r.sisa"
+                                                :data-rekom="r.rekom"
+                                                :data-jenis="r.jenis"
+                                                x-text="r.label"></option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            {{-- Info: tidak ada rekomendasi tersedia --}}
+                            <div x-show="programId && !loadingRekom && rekomendasis.length === 0" x-transition
+                                 class="mt-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 dark:bg-blue-900/20 dark:border-blue-800">
+                                <p class="text-xs text-blue-700 dark:text-blue-300">
+                                    ✓ Semua rekomendasi pada program ini sudah selesai (tidak ada sisa).
+                                </p>
+                            </div>
+
                             @error('recommendation_id')
                                 <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                             @enderror
@@ -330,6 +359,48 @@
 </style>
 <script>
 document.addEventListener('alpine:init', () => {
+    Alpine.data('tlRekomForm', () => ({
+        programId    : '{{ old("audit_program_id", "") }}',
+        rekomendasis : [],
+        rekomendasiId: '{{ old("recommendation_id", "") }}',
+        loadingRekom : false,
+
+        onProgramChange() {
+            this.rekomendasis  = [];
+            this.rekomendasiId = '';
+            if (!this.programId) return;
+            this.fetchRekomendasis();
+        },
+
+        async fetchRekomendasis() {
+            this.loadingRekom = true;
+            try {
+                const url = `/recommendations-by-program/${this.programId}`;
+                const res = await fetch(url, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                this.rekomendasis = await res.json();
+
+                if (this.rekomendasiId && this.rekomendasis.find(r => String(r.id) === this.rekomendasiId)) {
+                    this.$nextTick(() => {
+                        const sel = document.getElementById('recommendation_id');
+                        if (sel) { sel.value = this.rekomendasiId; sel.dispatchEvent(new Event('change')); }
+                    });
+                }
+            } catch (e) {
+                console.error('[tlRekomForm]', e);
+                this.rekomendasis = [];
+            } finally {
+                this.loadingRekom = false;
+            }
+        },
+
+        init() {
+            if (this.programId) this.fetchRekomendasis();
+        }
+    }));
+
     Alpine.data('verifikatorSelect', (users, oldId) => ({
         users: users,
         selectedId: oldId || '',
@@ -481,17 +552,30 @@ document.addEventListener('DOMContentLoaded', function () {
         validateNilai(parseInt(hiddenNilai.value || '0', 10));
     });
 
-    // Trigger awal jika ada old value (setelah validation error)
-    if (selectRekom.value) {
-        selectRekom.dispatchEvent(new Event('change'));
-        // Pulihkan old nilai dari hidden
-        const oldNilai = parseInt('{{ old("nilai_tindak_lanjut", 0) }}', 10);
-        if (oldNilai > 0) {
-            displayNilai.value = formatRibuan(oldNilai);
-            hiddenNilai.value  = oldNilai;
-            validateNilai(oldNilai);
-        }
-    }
+    // Old value restoration — Alpine async cascade might still be loading
+    // This retries until the select has the expected old option
+    (function restoreOldValue() {
+        const oldId = '{{ old("recommendation_id", "") }}';
+        if (!oldId) return;
+        (function check() {
+            if (selectRekom.options.length > 1) {
+                for (let opt of selectRekom.options) {
+                    if (opt.value === oldId) {
+                        selectRekom.value = oldId;
+                        selectRekom.dispatchEvent(new Event('change'));
+                        const oldNilai = parseInt('{{ old("nilai_tindak_lanjut", 0) }}', 10);
+                        if (oldNilai > 0) {
+                            displayNilai.value = String(oldNilai).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                            hiddenNilai.value  = oldNilai;
+                            validateNilai(oldNilai);
+                        }
+                        return;
+                    }
+                }
+            }
+            setTimeout(check, 100);
+        })();
+    })();
 
     /* ── Toggle section cicilan ──────────────────────────── */
     radios.forEach(radio => {

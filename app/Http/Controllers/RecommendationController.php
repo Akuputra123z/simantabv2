@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditProgram;
 use App\Models\KodeRekomendasi;
 use App\Models\Lhp;
 use App\Models\Recommendation;
@@ -19,10 +20,17 @@ class RecommendationController extends Controller
     {
         $recommendations = Recommendation::query()
             ->select([
-                'id', 'temuan_id', 'kode_rekomendasi_id', 'uraian_rekom',
-                'jenis_rekomendasi', 'nilai_rekom', 'nilai_sisa', 'status',
-                'batas_waktu', 'created_at',
+                'recommendations.id', 'recommendations.temuan_id', 'recommendations.kode_rekomendasi_id',
+                'recommendations.uraian_rekom', 'recommendations.jenis_rekomendasi',
+                'recommendations.nilai_rekom', 'recommendations.nilai_sisa', 'recommendations.status',
+                'recommendations.batas_waktu', 'recommendations.created_at',
+                'ap.kategori',
             ])
+            ->leftJoin('temuans', 'recommendations.temuan_id', '=', 'temuans.id')
+            ->leftJoin('lhps', 'temuans.lhp_id', '=', 'lhps.id')
+            ->leftJoin('audit_assignments', 'lhps.audit_assignment_id', '=', 'audit_assignments.id')
+            ->leftJoin('audit_program_details', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
+            ->leftJoin('audit_programs as ap', 'audit_program_details.audit_program_id', '=', 'ap.id')
             ->with([
                 'temuan:id,lhp_id,kode_temuan_id,kondisi',
                 'temuan.lhp:id,nomor_lhp,tanggal_lhp',
@@ -30,31 +38,32 @@ class RecommendationController extends Controller
                 'kodeRekomendasi:id,kode,deskripsi',
                 'tindakLanjuts:id,recommendation_id,total_terbayar',
             ])
-            ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
-            ->when($request->filled('jenis'),  fn($q) => $q->where('jenis_rekomendasi', $request->jenis))
+            ->when($request->filled('kategori'), fn($q) => $q->where('ap.kategori', $request->kategori))
+            ->when($request->filled('status'), fn($q) => $q->where('recommendations.status', $request->status))
+            ->when($request->filled('jenis'),  fn($q) => $q->where('recommendations.jenis_rekomendasi', $request->jenis))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $q->where(function($query) use ($request) {
-                    $query->where('uraian_rekom', 'like', "%{$request->search}%")
+                    $query->where('recommendations.uraian_rekom', 'like', "%{$request->search}%")
                           ->orWhereHas('temuan.lhp', fn($sq) =>
                               $sq->where('nomor_lhp', 'like', "%{$request->search}%")
                           );
                 });
             })
-            ->latest()
+            ->latest('recommendations.created_at')
             ->paginate(15)
             ->withQueryString();
 
-        return view('pages.recommendations.index', compact('recommendations'));
+        $kategoris = AuditProgram::KATEGORI;
+
+        return view('pages.recommendations.index', compact('recommendations', 'kategoris'));
     }
 
    public function create()
 {
-    // ✅ LHP muncul selama punya minimal 1 temuan (apapun status rekomnya)
-        $lhps = Lhp::query()
-            ->select('id', 'nomor_lhp', 'tanggal_lhp')
-            ->has('temuans')
-            ->orderByDesc('tanggal_lhp')
-            ->limit(100)
+        $auditPrograms = AuditProgram::query()
+            ->select('id', 'nama_program', 'tahun')
+            ->orderBy('tahun', 'desc')
+            ->orderBy('nama_program')
             ->get();
 
         $kodeRekoms = KodeRekomendasi::query()
@@ -63,7 +72,7 @@ class RecommendationController extends Controller
         ->orderBy('kode')
         ->get();
 
-    return view('pages.recommendations.create', compact('lhps', 'kodeRekoms'));
+    return view('pages.recommendations.create', compact('auditPrograms', 'kodeRekoms'));
 }
 
   public function getTemuans($lhpId)
@@ -90,6 +99,23 @@ class RecommendationController extends Controller
 
     return response()->json($temuans);
 }
+
+    public function getLhpsByProgram($programId)
+    {
+        $lhps = Lhp::query()
+            ->select('id', 'nomor_lhp', 'tanggal_lhp')
+            ->whereHas('auditAssignment.auditProgramDetail', fn($q) => $q->where('audit_program_id', $programId))
+            ->has('temuans')
+            ->orderByDesc('tanggal_lhp')
+            ->limit(100)
+            ->get()
+            ->map(fn($lhp) => [
+                'id'    => $lhp->id,
+                'label' => "{$lhp->nomor_lhp} ({$lhp->tanggal_lhp->format('Y')})",
+            ]);
+
+        return response()->json($lhps);
+    }
 
     public function store(Request $request)
     {

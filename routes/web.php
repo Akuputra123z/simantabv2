@@ -48,6 +48,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::resource('temuan', TemuanController::class);
     Route::resource('recommendations', RecommendationController::class);
     Route::resource('tindak-lanjuts', TindakLanjutController::class);
+    Route::get('/recommendations-by-program/{programId}', [TindakLanjutController::class, 'getRekomendasisByProgram']);
     Route::patch('/tindak-lanjuts/{tindakLanjut}/buka-kunci-opd', [TindakLanjutController::class, 'bukaKunciOpd'])
         ->name('tindak-lanjuts.buka-kunci-opd');
     Route::post('/tindak-lanjuts/{tindakLanjut}/tolak-opd', [TindakLanjutController::class, 'tolakOpd'])
@@ -57,6 +58,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::resource('audit-assignment', AuditAssignmentController::class);
     Route::delete('/audit-assignment/bulk-delete', [AuditAssignmentController::class, 'bulkDelete'])->name('audit-assignment.bulkDelete');
     Route::get('/lhp/{lhpId}/temuans', [RecommendationController::class, 'getTemuans']);
+    Route::get('/lhps-by-program/{programId}', [RecommendationController::class, 'getLhpsByProgram']);
 
     // --- Audit Program Detail (Fleksibel) ---
     // --- Audit Program Detail (Fleksibel) ---

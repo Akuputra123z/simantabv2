@@ -26,7 +26,7 @@ class PegawaiOpdController extends Controller
                 )
             )
             ->latest()
-            ->paginate(15)
+            ->paginate(min((int) $request->per_page ?: 15, 100))
             ->withQueryString();
 
         $stats = [

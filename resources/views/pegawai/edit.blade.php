@@ -146,7 +146,12 @@
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                     Unit OPD <span class="text-xs text-gray-400 font-normal">(pilih unit yang bisa diakses)</span>
                                 </label>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
+                                <div class="relative mb-3">
+                                    <input type="text" id="opd-unit-search" placeholder="Cari unit OPD..."
+                                           class="w-full px-4 py-2 pl-10 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all">
+                                    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                </div>
+                                <div id="opd-unit-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
                                     @forelse($opdUnits as $unit)
                                     <label class="flex items-start gap-3 p-2 rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-colors cursor-pointer">
                                         <input type="checkbox" name="opd_unit_ids[]" value="{{ $unit->id }}"
@@ -213,6 +218,8 @@
     function toggleOpdSection() {
         if (roleSelect.value === 'opd') {
             opdSection.classList.remove('hidden');
+            const searchEl = document.getElementById('opd-unit-search');
+            if (searchEl) { searchEl.value = ''; searchEl.dispatchEvent(new Event('keyup')); }
         } else {
             opdSection.classList.add('hidden');
         }
@@ -221,6 +228,16 @@
     roleSelect.addEventListener('change', toggleOpdSection);
     toggleOpdSection();
     @endif
+
+    const searchInput = document.getElementById('opd-unit-search');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function () {
+            const keyword = this.value.toLowerCase().trim();
+            document.querySelectorAll('#opd-unit-grid > label').forEach(function (label) {
+                label.style.display = label.textContent.toLowerCase().includes(keyword) ? '' : 'none';
+            });
+        });
+    }
 </script>
 
 <style>

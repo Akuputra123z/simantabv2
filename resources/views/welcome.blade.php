@@ -131,11 +131,11 @@
         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
         <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
       </span>
-      Sistem Audit Internal Terintegrasi
+      Sistem Informasi Akuntabilitas Pemantauan Tindak Lanjut Terintegrasi
     </div>
 
     <h1 class="font-display text-5xl lg:text-7xl font-extrabold tracking-[-0.03em] mb-6 text-slate-900 dark:text-white max-w-5xl mx-auto leading-[1.1] animate-fadeup delay-2">
-      SIMANTAB<br class="hidden lg:block"/>
+      SIAP TUNTAS<br class="hidden lg:block"/>
       <span class="text-primary dark:text-blue-400">Inspektorat Daerah</span><br class="hidden lg:block"/>
       Kabupaten Rembang
     </h1>

@@ -45,10 +45,7 @@ class MenuHelper
                         'name' => 'Pegawai Inspektorat',
                         'path' => route('pegawai.inspektorat.index', absolute: false),
                     ],
-                    [
-                        'name' => 'Pegawai Per Instansi/OPD',
-                        'path' => route('pegawai.opd.index', absolute: false),
-                    ],
+                   
                 ],
             ],
 
@@ -106,9 +103,14 @@ class MenuHelper
                 'name' => 'Manajemen Pengguna',
                 'subItems' => [
                     [
+                        'name' => 'User Instansi/OPD',
+                        'path' => route('pegawai.opd.index', absolute: false),
+                    ],
+                    [
                         'name' => 'Hak Akses',
                         'path' => route('permissions.index', absolute: false),
                     ],
+                    
                 ],
             ],
 

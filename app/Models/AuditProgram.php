@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\AuditProgramDetail;
 use App\Models\AuditAssignment;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,43 +16,51 @@ class AuditProgram extends Model
 
     const KATEGORI = ['PKPT', 'BPK', 'BPKP', 'ITPROV', 'ITDA', 'LAINNYA'];
 
+    const APPROVAL_DRAFT    = 'draft';
+    const APPROVAL_MENUNGGU = 'menunggu';
+    const APPROVAL_DISETUJUI = 'disetujui';
+    const APPROVAL_DITOLAK  = 'ditolak';
+
     protected $fillable = [
         'nama_program',
         'tahun',
         'kategori',
         'status',
-       
+        'approval_status',
+        'approved_by',
+        'approved_at',
+        'approved_pdf',
         'created_by',
         'updated_by',
     ];
 
     protected $casts = [
-        'tahun' => 'integer',
+        'tahun'       => 'integer',
+        'approved_at' => 'datetime',
     ];
 
     // ─── Relations ────────────────────────────────────────────────────────────
 
-    /**
-     * Relasi ke 10 program detail
-     */
     public function details(): HasMany
     {
         return $this->hasMany(AuditProgramDetail::class);
     }
 
-    /**
-     * Relasi tidak langsung ke Assignments melalui Details
-     */
     public function assignments(): HasManyThrough
     {
         return $this->hasManyThrough(
             AuditAssignment::class,
             AuditProgramDetail::class,
-            'audit_program_id',        // Foreign key di tabel audit_program_details
-            'audit_program_detail_id', // Foreign key di tabel audit_assignments
-            'id',                      // Local key di tabel audit_programs
-            'id'                       // Local key di tabel audit_program_details
+            'audit_program_id',
+            'audit_program_detail_id',
+            'id',
+            'id'
         );
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     // ─── Accessors (Logic Perhitungan Progress Otomatis) ─────────────────────
@@ -114,5 +123,15 @@ class AuditProgram extends Model
         if ($progress >= 100) return 'selesai';
         
         return 'berjalan';
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->approval_status === self::APPROVAL_DISETUJUI;
+    }
+
+    public function isWaiting(): bool
+    {
+        return $this->approval_status === self::APPROVAL_MENUNGGU;
     }
 }

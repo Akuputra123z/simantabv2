@@ -21,9 +21,9 @@ class AuditAssignmentController extends Controller
     private function sharedViewData($assignmentId = null): array
     {
         return [
-            // Filter program yang memiliki detail yang masih tersedia (belum ditugaskan)
-            // Namun jika sedang EDIT, detail yang sedang dipakai tetap harus muncul
-            'programs'        => AuditProgram::orderBy('tahun', 'desc')->get(),
+            'programs'        => AuditProgram::where('approval_status', AuditProgram::APPROVAL_DISETUJUI)
+                ->orWhereHas('details.assignments', fn($q) => $q->where('id', $assignmentId))
+                ->orderBy('tahun', 'desc')->get(),
             'ketuaTim'        => User::orderBy('name')->get(),
             'members'         => User::orderBy('name')->get(),
             'kategoriOptions' => ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'],
@@ -100,6 +100,11 @@ class AuditAssignmentController extends Controller
         ], [
             'audit_program_detail_id.unique' => 'PKPT/Detail Program ini sudah pernah dibuatkan penugasannya.'
         ]);
+
+        $detail = AuditProgramDetail::with('auditProgram')->find($validated['audit_program_detail_id']);
+        if (!$detail || !$detail->auditProgram->isApproved()) {
+            return back()->withInput()->with('error', 'Penugasan hanya dapat dibuat untuk PKPT yang sudah disetujui.');
+        }
 
         $detailId = null;
 

@@ -34,21 +34,22 @@ class ProfileController extends Controller
                 'max:255',
                 Rule::unique(User::class)->ignore($user->id),
             ],
-            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'], // Validasi Avatar
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'signature' => ['nullable', 'image', 'mimes:png', 'max:1024'],
         ]);
 
-        // Logika Upload Avatar
         if ($request->hasFile('avatar')) {
-            // 1. Hapus avatar lama jika ada di storage
             if ($user->avatar) {
                 Storage::disk('public')->delete($user->avatar);
             }
+            $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
 
-            // 2. Simpan file baru ke folder 'avatars' di disk 'public'
-            $path = $request->file('avatar')->store('avatars', 'public');
-            
-            // 3. Masukkan path file ke array validated untuk disimpan ke DB
-            $validated['avatar'] = $path;
+        if ($request->hasFile('signature')) {
+            if ($user->signature) {
+                Storage::disk('public')->delete($user->signature);
+            }
+            $validated['signature'] = $request->file('signature')->store('signatures', 'public');
         }
 
         $user->fill($validated);

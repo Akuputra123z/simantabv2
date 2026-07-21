@@ -69,6 +69,69 @@
             </div>
         </div>
 
+        {{-- Approval Section --}}
+        @php
+            $canApprove = auth()->user()->hasRole('kepala_inspektorat') || auth()->user()->hasRole('super_admin');
+        @endphp
+        @if($canApprove)
+        <div class="border-b border-gray-100 px-6 py-5 dark:border-gray-800 {{ $auditProgram->isApproved() ? 'bg-emerald-50/50 dark:bg-emerald-500/5' : ($auditProgram->isWaiting() ? 'bg-amber-50/50 dark:bg-amber-500/5' : '') }}">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex items-center gap-3">
+                    @if($auditProgram->isApproved())
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                            <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Disetujui
+                        </span>
+                        @if($auditProgram->approver)
+                            <span class="text-sm text-gray-500 dark:text-gray-400">
+                                oleh <span class="font-medium text-gray-700 dark:text-gray-300">{{ $auditProgram->approver->name }}</span>
+                                &middot; {{ $auditProgram->approved_at?->format('d M Y H:i') }}
+                            </span>
+                        @endif
+                    @elseif($auditProgram->isWaiting())
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+                            <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11.867-1.5zm.866 4.034a1 1 0 00-1.224.723l-.284 1.136a1 1 0 101.946.502l.284-1.136a1 1 0 00-.722-1.225z" clip-rule="evenodd"/></svg>
+                            Menunggu Persetujuan
+                        </span>
+                    @elseif($auditProgram->approval_status === \App\Models\AuditProgram::APPROVAL_DITOLAK)
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-500/20 dark:text-rose-300">
+                            <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707a1 1 0 00-1.414-1.414L10 10.586 8.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Ditolak
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                            Draft
+                        </span>
+                    @endif
+                </div>
+
+                <div class="flex items-center gap-2">
+                    @if(!$auditProgram->isApproved())
+                        <a href="{{ route('audit-program.preview', $auditProgram->id) }}"
+                           class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 hover:border-rose-200 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-rose-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            Preview
+                        </a>
+                    @else
+                        <a href="{{ Storage::url($auditProgram->approved_pdf) }}" target="_blank"
+                           class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 shadow-sm">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Unduh PDF Disetujui
+                        </a>
+                        <form action="{{ route('audit-program.batal-setujui', $auditProgram->id) }}" method="POST" onsubmit="return confirm('Batalkan persetujuan PKPT ini?')">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-white px-4 py-2 text-xs font-semibold text-amber-600 transition hover:bg-amber-50 dark:border-amber-500/20 dark:bg-gray-800 dark:text-amber-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                Batal Setujui
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endif
+
         {{-- Stats Grid --}}
         <div class="grid grid-cols-2 gap-4 border-b border-gray-100 p-6 dark:border-gray-800 lg:grid-cols-4 bg-gray-50/50 dark:bg-white/[0.01]">
             @php

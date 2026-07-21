@@ -12,7 +12,7 @@ class SecurityHeaders
     {
         $response = $next($request);
 
-        $response->headers->set('X-Frame-Options', 'DENY');
+        $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');
@@ -25,8 +25,8 @@ class SecurityHeaders
             "img-src 'self' data: blob: https://insp.rembangkab.go.id http://127.0.0.1:5173 http://localhost:5173; " .
             "font-src 'self' data: https://fonts.gstatic.com; " .
             "connect-src 'self' ws://127.0.0.1:5173 ws://localhost:5173 http://127.0.0.1:5173 http://localhost:5173; " .
-            "frame-src 'none'; " .
-            "object-src 'none'; " .
+            "frame-src 'self'; " .
+            "object-src 'self'; " .
             "base-uri 'self'; " .
             "form-action 'self';"
         );

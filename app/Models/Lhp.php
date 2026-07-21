@@ -86,7 +86,7 @@ class Lhp extends Model
             return $query->whereRaw('1 = 0');
         }
 
-        if ($user->hasRole('super_admin')) {
+        if ($user->hasRole('super_admin') || $user->hasRole('kepala_inspektorat')) {
             return $query;
         }
 

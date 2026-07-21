@@ -92,6 +92,40 @@
         </tbody>
     </table>
 
+    {{-- Signature --}}
+    <div style="margin-top: 30px; width: 100%;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 50%;"></td>
+                <td style="width: 50%; text-align: center;">
+                    <p style="font-size: 9px; margin: 0 0 5px;">Kota ..., {{ now()->format('d F Y') }}</p>
+                    <p style="font-size: 9px; margin: 0 0 5px; font-weight: bold;">KEPALA INSPEKTORAT DAERAH</p>
+                    @if($auditProgram->isApproved())
+                        @php
+                            $signaturePath = $auditProgram->approver?->signature;
+                            $sigBase64 = '';
+                            if ($signaturePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($signaturePath)) {
+                                $sigBase64 = base64_encode(\Illuminate\Support\Facades\Storage::disk('public')->get($signaturePath));
+                            }
+                        @endphp
+                        @if($sigBase64)
+                            <img src="data:image/png;base64,{{ $sigBase64 }}"
+                                 style="height: 50px; margin: 8px 0 4px;">
+                        @else
+                            <br><br><br>
+                        @endif
+                        <p style="font-size: 11px; font-weight: bold; margin: 0;">{{ $auditProgram->approver?->name ?? '(nama)' }}</p>
+                        <p style="font-size: 8px; margin: 2px 0; color: #888;">Disetujui: {{ $auditProgram->approved_at?->format('d/m/Y H:i') }}</p>
+                    @else
+                        <br><br><br><br>
+                        <p style="font-size: 11px; font-weight: bold; margin: 0;">(........................................)</p>
+                        <p style="font-size: 8px; margin: 2px 0; color: #888;">&nbsp;</p>
+                    @endif
+                </td>
+            </tr>
+        </table>
+    </div>
+
     <div class="footer">
         Dicetak pada {{ now()->format('d/m/Y H:i') }} — SIMANTAP
     </div>

@@ -138,6 +138,7 @@ class PermissionController extends Controller
             User::ROLE_KETUA_TIM,
             User::ROLE_ANGGOTA,
             User::ROLE_STAFF_INSPEKTORAT,
+            User::ROLE_OPD,
         ];
 
         if (in_array($role->name, $protected)) {

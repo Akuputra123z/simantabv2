@@ -43,6 +43,27 @@
                 </div>
             </div>
 
+            {{-- Signature --}}
+            <div class="flex items-center gap-4">
+                <div class="shrink-0">
+                    @if($user->signature)
+                        <img class="h-16 w-32 object-contain border dark:border-gray-700 bg-white rounded-lg" 
+                             src="{{ asset('storage/' . $user->signature) }}" 
+                             alt="Signature">
+                    @else
+                        <div class="h-16 w-32 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs text-gray-400 border dark:border-gray-700">
+                            Belum ada
+                        </div>
+                    @endif
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanda Tangan (PNG, transparan)</label>
+                    <input type="file" name="signature" accept="image/png"
+                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-gray-800 dark:file:text-gray-300">
+                    <p class="mt-1 text-xs text-gray-400">Format PNG, background transparan, maks 1MB.</p>
+                </div>
+            </div>
+
             <div>
                 <x-forms.input
                     name="name"

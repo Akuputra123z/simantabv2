@@ -117,6 +117,10 @@
                         Status
                     </th>
 
+                    <th class="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                        Approval
+                    </th>
+
                     <th class="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wide text-gray-400">
                         Aksi
                     </th>
@@ -205,6 +209,42 @@
                         </span>
                     </td>
 
+                    {{-- Approval --}}
+                    <td class="px-4 py-3 text-center">
+                        @php
+                            $approvalBadge = match($item->approval_status) {
+                                'disetujui' => 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400',
+                                'menunggu'  => 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
+                                'ditolak'   => 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400',
+                                default     => 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+                            };
+                            $approvalLabel = match($item->approval_status) {
+                                'disetujui' => 'Disetujui',
+                                'menunggu'  => 'Menunggu',
+                                'ditolak'   => 'Ditolak',
+                                default     => 'Draft',
+                            };
+                            $showPdfLink = $item->isApproved() && $item->approved_pdf;
+                        @endphp
+                        <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide {{ $approvalBadge }}">
+                            @if($item->isApproved())
+                            <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            @elseif($item->isWaiting())
+                            <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11.867-1.5zm.866 4.034a1 1 0 00-1.224.723l-.284 1.136a1 1 0 101.946.502l.284-1.136a1 1 0 00-.722-1.225z" clip-rule="evenodd"/></svg>
+                            @elseif($item->approval_status === \App\Models\AuditProgram::APPROVAL_DITOLAK)
+                            <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707a1 1 0 00-1.414-1.414L10 10.586 8.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            @endif
+                            {{ $approvalLabel }}
+                        </span>
+                        @if($showPdfLink)
+                        <a href="{{ Storage::url($item->approved_pdf) }}" target="_blank"
+                           class="mt-1 inline-flex items-center gap-0.5 text-[9px] text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300">
+                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            PDF
+                        </a>
+                        @endif
+                    </td>
+
                     {{-- Action --}}
                     <td class="px-4 py-3">
                         <div class="flex items-center justify-end gap-2">
@@ -253,7 +293,7 @@
                 @empty
 
                 <tr>
-                    <td colspan="6" class="px-6 py-14 text-center">
+                    <td colspan="7" class="px-6 py-14 text-center">
                         <div class="flex flex-col items-center justify-center text-gray-400">
                             <svg class="mb-3 h-8 w-8 opacity-30"
                                  fill="none"

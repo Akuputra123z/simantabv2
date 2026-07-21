@@ -7,6 +7,7 @@ use App\Models\AuditProgramDetail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AuditProgramController extends Controller
@@ -177,11 +178,35 @@ class AuditProgramController extends Controller
             ->with('success', 'Program Audit berhasil dihapus.');
     }
 
+    public function preview(AuditProgram $auditProgram)
+    {
+        $auditProgram->load('approver');
+
+        return view('pages.audit-program.preview', compact('auditProgram'));
+    }
+
+    public function previewPdf(AuditProgram $auditProgram)
+    {
+        $auditProgram->load('approver');
+        $details = $this->getFilteredDetails($auditProgram);
+
+        $pdf = Pdf::loadView('pages.audit-program.pdf.detail', compact('auditProgram', 'details'))
+            ->setPaper('a4', 'landscape')
+            ->setOptions([
+                'defaultFont'          => 'sans-serif',
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled'      => false,
+            ]);
+
+        return $pdf->stream('preview-' . str_replace('/', '-', $auditProgram->nama_program) . '-' . now()->format('Ymd') . '.pdf');
+    }
+
     /**
      * Export PDF daftar sub-program
      */
     public function exportPdf(AuditProgram $auditProgram)
     {
+        $auditProgram->load('approver');
         $details = $this->getFilteredDetails($auditProgram);
 
         $pdf = Pdf::loadView('pages.audit-program.pdf.detail', compact('auditProgram', 'details'))
@@ -205,6 +230,81 @@ class AuditProgramController extends Controller
 
         $filename = 'sub-program-' . str_replace('/', '-', $auditProgram->nama_program) . '-' . now()->format('Ymd') . '.xlsx';
         return Excel::download(new \App\Exports\DetailProgramExport($auditProgram, $details), $filename);
+    }
+
+    public function approve(AuditProgram $auditProgram)
+    {
+        if (!auth()->user()->hasRole('kepala_inspektorat') && !auth()->user()->hasRole('super_admin')) {
+            return back()->with('error', 'Hanya Kepala Inspektorat yang dapat menyetujui PKPT.');
+        }
+
+        if ($auditProgram->isApproved()) {
+            return back()->with('error', 'PKPT ini sudah disetujui.');
+        }
+
+        $auditProgram->update([
+            'approval_status' => AuditProgram::APPROVAL_DISETUJUI,
+            'approved_by'     => auth()->id(),
+            'approved_at'     => now(),
+        ]);
+
+        $auditProgram = AuditProgram::with('approver')->find($auditProgram->id);
+        $details = $this->getFilteredDetails($auditProgram);
+
+        $filename = 'approved-' . str_replace('/', '-', $auditProgram->nama_program) . '-' . now()->format('Ymd') . '.pdf';
+
+        $pdf = Pdf::loadView('pages.audit-program.pdf.detail', compact('auditProgram', 'details'))
+            ->setPaper('a4', 'landscape')
+            ->setOptions([
+                'defaultFont'          => 'sans-serif',
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled'      => false,
+            ]);
+
+        Storage::disk('public')->put('approved-pdfs/' . $filename, $pdf->output());
+
+        $auditProgram->update(['approved_pdf' => 'approved-pdfs/' . $filename]);
+
+        return back()->with('success', 'PKPT berhasil disetujui.');
+    }
+
+    public function batalSetujui(AuditProgram $auditProgram)
+    {
+        if (!auth()->user()->hasRole('kepala_inspektorat') && !auth()->user()->hasRole('super_admin')) {
+            return back()->with('error', 'Hanya Kepala Inspektorat yang dapat membatalkan persetujuan PKPT.');
+        }
+
+        if (!$auditProgram->isApproved()) {
+            return back()->with('error', 'PKPT ini belum disetujui.');
+        }
+
+        if ($auditProgram->approved_pdf && Storage::disk('public')->exists($auditProgram->approved_pdf)) {
+            Storage::disk('public')->delete($auditProgram->approved_pdf);
+        }
+
+        $auditProgram->update([
+            'approval_status' => AuditProgram::APPROVAL_DRAFT,
+            'approved_by'     => null,
+            'approved_at'     => null,
+            'approved_pdf'    => null,
+        ]);
+
+        return back()->with('success', 'Persetujuan PKPT berhasil dibatalkan.');
+    }
+
+    public function reject(AuditProgram $auditProgram)
+    {
+        if (!auth()->user()->hasRole('kepala_inspektorat') && !auth()->user()->hasRole('super_admin')) {
+            return back()->with('error', 'Hanya Kepala Inspektorat yang dapat menolak PKPT.');
+        }
+
+        $auditProgram->update([
+            'approval_status' => AuditProgram::APPROVAL_DITOLAK,
+            'approved_by'     => auth()->id(),
+            'approved_at'     => now(),
+        ]);
+
+        return back()->with('success', 'PKPT ditolak.');
     }
 
     /**

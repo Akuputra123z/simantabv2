@@ -106,17 +106,31 @@ Route::get('/get-kecamatan/{kategori}', [AuditAssignmentController::class, 'getK
 Route::get('/get-unit/{kecamatan}', [AuditAssignmentController::class, 'getUnit'])->name('get-unit');
 Route::get('/audit-assignment/{id}/print', [AuditAssignmentController::class, 'printPdf'])->name('audit-assignment.print');
 
+    // Master Data & Audit Program Utama
+    Route::resource('kode-temuan', KodeTemuanController::class);
+    Route::resource('unit-diperiksa', UnitDiperiksaController::class);
+    Route::resource('audit-program', AuditProgramController::class);
+    Route::get('/audit-program/{auditProgram}/preview', [AuditProgramController::class, 'preview'])->name('audit-program.preview');
+    Route::get('/audit-program/{auditProgram}/preview-pdf', [AuditProgramController::class, 'previewPdf'])->name('audit-program.preview-pdf');
+    Route::match(['GET', 'POST'], '/audit-program/{auditProgram}/export-pdf', [AuditProgramController::class, 'exportPdf'])->name('audit-program.export-pdf');
+    Route::match(['GET', 'POST'], '/audit-program/{auditProgram}/export-excel', [AuditProgramController::class, 'exportExcel'])->name('audit-program.export-excel');
+    Route::post('/audit-program/{auditProgram}/approve', [AuditProgramController::class, 'approve'])->name('audit-program.approve');
+    Route::post('/audit-program/{auditProgram}/reject', [AuditProgramController::class, 'reject'])->name('audit-program.reject');
+    Route::post('/audit-program/{auditProgram}/batal-setujui', [AuditProgramController::class, 'batalSetujui'])->name('audit-program.batal-setujui');
+    Route::resource('kode-rekomendasi', KodeRekomendasiController::class);
+    Route::patch('kode-rekomendasi/{kodeRekomendasi}/toggle', [KodeRekomendasiController::class, 'toggleStatus'])->name('kode-rekomendasi.toggle');
+});
+
+// --- GRUP 2: Khusus Super Admin (Manajemen User) ---
+Route::middleware(['auth', 'active', 'role:super_admin'])->group(function () {
+
     // Permissions Management
     Route::resource('permissions', PermissionController::class)
          ->parameters(['permissions' => 'role'])
          ->except(['show']);
     Route::post('permissions/permission/store', [PermissionController::class, 'storePermission'])->name('permissions.permission.store');
     Route::delete('permissions/permission/{permission}', [PermissionController::class, 'destroyPermission'])->name('permissions.permission.destroy');
-});
 
-// --- GRUP 2: Khusus Super Admin (Manajemen User & Master Data) ---
-Route::middleware(['auth', 'active', 'role:super_admin'])->group(function () {
-    
     // ── Pegawai Inspektorat ──
     Route::prefix('pegawai/inspektorat')->name('pegawai.inspektorat.')->group(function () {
         Route::get('/', [PegawaiInspektoratController::class, 'index'])->name('index');
@@ -140,15 +154,6 @@ Route::middleware(['auth', 'active', 'role:super_admin'])->group(function () {
         Route::delete('{user}', [PegawaiController::class, 'destroy'])->name('destroy');
         Route::patch('{user}/toggle-active', [PegawaiController::class, 'toggleActive'])->name('toggle-active');
     });
-
-    // Master Data & Audit Program Utama
-    Route::resource('kode-temuan', KodeTemuanController::class);
-    Route::resource('unit-diperiksa', UnitDiperiksaController::class);
-    Route::resource('audit-program', AuditProgramController::class);
-    Route::match(['GET', 'POST'], '/audit-program/{auditProgram}/export-pdf', [AuditProgramController::class, 'exportPdf'])->name('audit-program.export-pdf');
-    Route::match(['GET', 'POST'], '/audit-program/{auditProgram}/export-excel', [AuditProgramController::class, 'exportExcel'])->name('audit-program.export-excel');
-    Route::resource('kode-rekomendasi', KodeRekomendasiController::class);
-    Route::patch('kode-rekomendasi/{kodeRekomendasi}/toggle', [KodeRekomendasiController::class, 'toggleStatus'])->name('kode-rekomendasi.toggle');
 });
 
 // --- GRUP 3: Laporan ---

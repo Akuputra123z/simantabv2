@@ -25,6 +25,7 @@ class User extends Authenticatable
         'unit_kerja',
         'phone',
         'avatar',
+        'signature',
         'is_active',
     ];
 

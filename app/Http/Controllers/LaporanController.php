@@ -37,7 +37,8 @@ class LaporanController extends Controller
         });
 
         $irbanList = Cache::remember('laporan:irbanList:' . $user->id, 600, function () use ($user) {
-            return AuditProgramDetail::whereHas('assignments.lhps', function ($q) use ($user) {
+            return AuditProgramDetail::whereHas('assignments', function ($q) use ($user) {
+                    $q->whereHas('lhps');
                     if (!$user->hasRole('super_admin')) {
                         $q->where('ketua_tim_id', $user->id)
                           ->orWhereHas('members', fn($q2) => $q2->where('user_id', $user->id));

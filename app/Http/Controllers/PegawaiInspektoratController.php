@@ -26,7 +26,7 @@ class PegawaiInspektoratController extends Controller
                 $q->where('jabatan', $request->jabatan)
             )
             ->latest()
-            ->paginate(15)
+            ->paginate(min((int) $request->per_page, 100) ?: 15)
             ->withQueryString();
 
         $unitKerjaOptions = User::UNIT_KERJA_OPTIONS;

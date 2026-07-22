@@ -2,195 +2,254 @@
 
 @section('content')
 
-{{-- Notifikasi Sukses Otomatis Hilang 5 Detik --}}
+{{-- ✅ Alert Berhasil --}}
 @if(session('success'))
-<div id="alert-success" class="mb-6 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] transition-all duration-500 ease-in-out opacity-100 scale-100">
-    <div class="px-6 py-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
-        <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Sistem Notifikasi</h3>
-        <button onclick="dismissAlert()" class="text-gray-400 hover:text-gray-600">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+<div id="alert-success" class="mb-6 rounded-xl border border-green-500 bg-green-50 p-4 dark:border-green-500/30 dark:bg-green-500/15 transition-all duration-500">
+    <div class="flex items-start gap-3">
+        <div class="text-green-500">
+            <svg class="fill-current" width="24" height="24" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
             </svg>
-        </button>
-    </div>
-    <div class="p-4 sm:p-6">
-        <div class="flex items-center gap-3 w-full sm:max-w-[400px] rounded-md border-b-4 border-green-500 bg-white p-3 shadow-theme-sm dark:bg-[#1E2634]">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg text-green-600 bg-green-50 dark:bg-green-500/15">
-                <svg class="fill-current" width="20" height="20" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-            </div>
-            <div>
-                <h4 class="text-sm font-bold text-gray-800 dark:text-white">Berhasil!</h4>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ session('success') }}</p>
-            </div>
         </div>
+        <div class="flex-1 text-sm font-medium text-green-800 dark:text-green-400">
+            {{ session('success') }}
+        </div>
+        <button onclick="dismissAlert()" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
     </div>
 </div>
 @endif
 
-<div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-
-    {{-- Form Filter --}}
-    <form id="filter-form" action="{{ route('lhps.index') }}" method="GET"></form>
-
-    {{-- Form Bulk Delete --}}
-    <form id="main-form" action="{{ route('lhps.bulkDelete') }}" method="POST">
-        @csrf
-        @method('DELETE')
-
-        {{-- Header & Toolbar --}}
-        <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-800">
-            <div>
-                <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Daftar LHP</h3>
-                <p class="text-xs text-gray-500">Manajemen Laporan Hasil Pemeriksaan</p>
-                <button type="button" id="btn-bulk-delete" class="hidden mt-2 text-xs font-bold text-red-600 hover:text-red-700 transition-all uppercase">
-                    🗑️ Hapus Terpilih (<span id="count-selected">0</span>)
-                </button>
-            </div>
-
-            <div class="flex items-center gap-3">
-                <div class="hidden sm:flex gap-2">
-                    <select name="tahun" form="filter-form" data-auto-submit
-                        class="h-10 rounded-lg border border-gray-200 bg-transparent px-3 w-36 text-sm dark:border-gray-700 dark:text-gray-400">
-                        <option value="">Semua Tahun</option>
-                        @foreach(range(date('Y'), date('Y')-3) as $y)
-                            <option value="{{ $y }}" {{ request('tahun') == $y ? 'selected' : '' }}>{{ $y }}</option>
-                        @endforeach
-                    </select>
-                    <input type="text" name="search" form="filter-form" value="{{ request('search') }}"
-                        placeholder="Cari nomor LHP..."
-                        class="h-10 rounded-lg border border-gray-200 bg-transparent px-4 text-sm dark:border-gray-700 dark:text-white">
-                </div>
-                <a href="{{ route('lhps.create') }}"
-                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-all">
-                    Buat LHP Baru
-                </a>
-            </div>
-        </div>
-
-        {{-- Tabel --}}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
-                <thead class="bg-gray-50/50 dark:bg-gray-900/50">
-                    <tr class="text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        <th class="px-6 py-4 w-10 text-center">
-                            <input type="checkbox" id="check-all"
-                                class="h-4 w-4 rounded border-gray-300 text-blue-600 cursor-pointer">
-                        </th>
-                        <th class="px-4 py-4">Nomor LHP</th>
-                        <th class="px-4 py-4">Program Audit</th>
-                        <th class="px-4 py-4">Tanggal</th>
-                        <th class="px-4 py-4 text-center">Progress TL</th>
-                        <th class="px-4 py-4 text-center">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-sm">
-                    @forelse($lhps as $lhp)
-
-                    {{-- 
-                        Ambil persen dari statistik langsung (sudah eager-loaded di controller).
-                        Ini lebih aman daripada accessor $lhp->persen_selesai karena
-                        tidak tergantung pada kondisi relationLoaded.
-                    --}}
-                    @php
-                        $persen      = (float) ($lhp->statistik?->persen_selesai_gabungan ?? 0);
-                        $persenLabel = number_format($persen, 0);
-
-                        $barColor = match(true) {
-                            $persen >= 100 => 'bg-green-500',
-                            $persen >= 50  => 'bg-amber-400',
-                            $persen > 0    => 'bg-blue-500',
-                            default        => 'bg-gray-300',
-                        };
-                    @endphp
-
-                    <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                        <td class="px-6 py-4 text-center">
-                            <input type="checkbox" name="ids[]" value="{{ $lhp->id }}"
-                                class="check-item h-4 w-4 rounded border-gray-300 cursor-pointer">
-                        </td>
-                        <td class="px-4 py-4">
-                            <span class="font-bold text-gray-800 dark:text-white">{{ $lhp->nomor_lhp }}</span>
-                            <div class="text-[10px] text-gray-400 uppercase tracking-tight">Irban: {{ $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-' }}</div>
-                        </td>
-                        <td class="px-4 py-4 text-gray-600 dark:text-gray-400 max-w-[200px] truncate">
-                           {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
-                        </td>
-                        <td class="px-4 py-4 whitespace-nowrap text-gray-500">
-                            {{ $lhp->tanggal_lhp->format('d/m/Y') }}
-                        </td>
-
-                        {{-- Kolom Progress — baca dari statistik, bukan accessor --}}
-                        <td class="px-4 py-4">
-                            <div class="flex flex-col items-center gap-1">
-                                <div class="w-24 bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
-                                    <div class="{{ $barColor }} h-1.5 rounded-full transition-all duration-500"
-                                        style="width: {{ min($persen, 100) }}%"></div>
-                                </div>
-                                <span class="text-[10px] font-semibold
-                                    {{ $persen >= 100 ? 'text-green-600' : ($persen >= 50 ? 'text-amber-500' : 'text-gray-500') }}">
-                                    {{ $persenLabel }}%
-                                </span>
-
-                                {{-- Info jumlah rekomendasi jika statistik tersedia --}}
-                                @if($lhp->statistik)
-                                    <span class="text-[9px] text-gray-400">
-                                        {{ $lhp->statistik->rekom_selesai }}/{{ $lhp->statistik->total_rekomendasi }} rekom
-                                    </span>
-                                @endif
-                            </div>
-                        </td>
-
-                        <td class="px-4 py-4">
-                            <div class="flex items-center justify-center gap-3 text-gray-400">
-                                <a href="{{ route('lhps.show', $lhp->id) }}" class="hover:text-blue-500" title="Lihat">
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </a>
-                                <a href="{{ route('lhps.edit', $lhp->id) }}" class="hover:text-amber-500" title="Edit">
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                    </svg>
-                                </a>
-
-
-                                <a href="{{ route('laporan.preview-pdf-per-lhp', $lhp->id) }}" target="_blank"
-                                   class="hover:text-blue-500 transition-colors" title="Unduh / Preview PDF">
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                    </svg>
-                                </a>
-
-                                <button type="button" onclick="openDeleteModal('single', '{{ $lhp->id }}')"
-                                    class="hover:text-red-500 transition-colors" title="Hapus">
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="px-4 py-16 text-center text-gray-500 italic">
-                            Belum ada data LHP.
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800">
-            {{ $lhps->links() }}
-        </div>
-    </form>
+{{-- Header --}}
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Daftar Laporan Hasil Pemeriksaan</h1>
+        <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Total: {{ $lhps->total() }} LHP ditemukan</p>
+    </div>
+    <a href="{{ route('lhps.create') }}"
+       class="inline-flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm shadow-blue-500/10 active:scale-[0.98] transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Buat LHP Baru
+    </a>
 </div>
+
+{{-- Filter --}}
+<form method="GET" action="{{ url()->current() }}" class="mb-6 flex flex-col gap-3 md:flex-row md:items-center">
+    <div class="flex-1 min-w-0">
+        <div class="relative">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 dark:text-gray-500">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+            <input type="text" name="search" value="{{ request('search') }}"
+                   placeholder="Cari nomor LHP..."
+                   class="h-10 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-500">
+        </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        <div class="flex-1 min-w-[140px] sm:flex-initial sm:w-44">
+            <select name="tahun" data-auto-submit>
+                <option value="">Semua Tahun</option>
+                @foreach(range(date('Y'), date('Y') - 3) as $y)
+                    <option value="{{ $y }}" @selected(request('tahun') == $y)>{{ $y }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="flex-1 min-w-[140px] sm:flex-initial sm:w-44">
+            <select name="kategori" data-auto-submit>
+                <option value="">Semua Kategori</option>
+                @foreach($kategoris as $k)
+                    <option value="{{ $k }}" @selected(request('kategori') == $k)>{{ $k }}</option>
+                @endforeach
+            </select>
+        </div>
+        <button type="submit"
+                class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg bg-gray-950 text-sm font-medium text-white hover:bg-gray-850 focus:outline-none focus:ring-2 focus:ring-gray-950/20 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-500/20 transition-colors whitespace-nowrap">
+            Filter
+        </button>
+        @if (request()->hasAny(['search', 'tahun', 'kategori']))
+        <a href="{{ route('lhps.index') }}"
+           class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors whitespace-nowrap">
+            Reset
+        </a>
+        @endif
+    </div>
+</form>
+
+{{-- Table --}}
+<form id="main-form" action="{{ route('lhps.bulkDelete') }}" method="POST">
+    @csrf
+    @method('DELETE')
+
+<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-gray-50/70 dark:bg-gray-900/40">
+                <tr>
+                    <th class="px-5 py-3.5 w-[4%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">
+                        <input type="checkbox" id="check-all"
+                            class="h-4 w-4 rounded border-gray-300 text-blue-600 cursor-pointer">
+                    </th>
+                    <th class="px-5 py-3.5 w-[22%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nomor LHP &amp; Program</th>
+                    <th class="px-5 py-3.5 w-[14%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Unit</th>
+                    <th class="px-5 py-3.5 w-[10%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Tanggal</th>
+                    <th class="px-5 py-3.5 w-[13%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Temuan &amp; Rekom</th>
+                    <th class="px-5 py-3.5 w-[14%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Progress TL</th>
+                    <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Kategori</th>
+                    <th class="px-5 py-3.5 w-[14%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-right">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                @forelse($lhps as $lhp)
+                @php
+                    $persen      = (float) ($lhp->statistik?->persen_selesai_gabungan ?? 0);
+                    $persenLabel = number_format($persen, 0);
+                    $barColor = match(true) {
+                        $persen >= 100 => 'bg-green-500',
+                        $persen >= 50  => 'bg-amber-400',
+                        $persen > 0    => 'bg-blue-500',
+                        default        => 'bg-gray-300',
+                    };
+                    $k = $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori;
+                    $kategoriBadge = match($k) {
+                        'PKPT' => 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400',
+                        'BPK'  => 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
+                        'BPKP' => 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400',
+                        'ITPROV' => 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-400',
+                        'ITDA'   => 'bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400',
+                        default  => 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+                    };
+                @endphp
+                <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                    {{-- Checkbox --}}
+                    <td class="px-5 py-4 text-center">
+                        <input type="checkbox" name="ids[]" value="{{ $lhp->id }}"
+                            class="check-item h-4 w-4 rounded border-gray-300 cursor-pointer">
+                    </td>
+
+                    {{-- Nomor LHP & Program --}}
+                    <td class="px-5 py-4">
+                        <div class="text-sm font-bold text-gray-900 dark:text-white">{{ $lhp->nomor_lhp }}</div>
+                        <div class="text-[11px] text-gray-400 mt-0.5">
+                            {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
+                        </div>
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            @if($lhp->auditAssignment?->auditProgramDetail?->tim)
+                            <span class="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-[9px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30">
+                                Irban: {{ $lhp->auditAssignment->auditProgramDetail->tim }}
+                            </span>
+                            @endif
+                            @if($lhp->status)
+                            <span class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[9px] font-semibold text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                {{ ucfirst($lhp->status) }}
+                            </span>
+                            @endif
+                        </div>
+                    </td>
+
+                    {{-- Unit --}}
+                    <td class="px-5 py-4">
+                        <div class="text-[11px] leading-snug text-gray-600 dark:text-gray-400 break-words max-w-[140px]">
+                            {{ $lhp->unitDiperiksa?->label ?? $lhp->unitDiperiksa?->nama_unit ?? '-' }}
+                        </div>
+                    </td>
+
+                    {{-- Tanggal --}}
+                    <td class="px-5 py-4 whitespace-nowrap">
+                        <div class="text-[11px] text-gray-600 dark:text-gray-400">
+                            {{ $lhp->tanggal_lhp->translatedFormat('d M Y') }}
+                        </div>
+                    </td>
+
+                    {{-- Temuan & Rekom --}}
+                    <td class="px-5 py-4 text-center">
+                        <div class="flex flex-wrap gap-1 justify-center">
+                            <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                {{ $lhp->statistik?->total_temuan ?? 0 }} temuan
+                            </span>
+                            <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                {{ $lhp->statistik?->total_rekomendasi ?? 0 }} rekom
+                            </span>
+                        </div>
+                    </td>
+
+                    {{-- Progress TL --}}
+                    <td class="px-5 py-4">
+                        <div class="flex flex-col items-center gap-1">
+                            <div class="w-full max-w-[100px] bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
+                                <div class="{{ $barColor }} h-1.5 rounded-full transition-all duration-500"
+                                    style="width: {{ min($persen, 100) }}%"></div>
+                            </div>
+                            <span class="text-[10px] font-semibold
+                                {{ $persen >= 100 ? 'text-green-600' : ($persen >= 50 ? 'text-amber-500' : 'text-gray-500') }}">
+                                {{ $persenLabel }}%
+                            </span>
+                            @if($lhp->statistik)
+                            <span class="text-[9px] text-gray-400">
+                                {{ $lhp->statistik->rekom_selesai }}/{{ $lhp->statistik->total_rekomendasi }} rekom
+                            </span>
+                            @endif
+                        </div>
+                    </td>
+
+                    {{-- Kategori --}}
+                    <td class="px-5 py-4 text-center">
+                        <span class="px-2 py-1 rounded text-[10px] font-bold uppercase {{ $kategoriBadge }}">
+                            {{ $k ?? '-' }}
+                        </span>
+                    </td>
+
+                    {{-- Aksi --}}
+                    <td class="px-5 py-4 text-right">
+                        <div class="flex justify-end gap-2">
+                            <a href="{{ route('lhps.show', $lhp->id) }}" class="p-1.5 text-gray-400 hover:text-blue-600 transition-colors" title="Lihat">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"/></svg>
+                            </a>
+                            <a href="{{ route('lhps.edit', $lhp->id) }}" class="p-1.5 text-gray-400 hover:text-amber-600 transition-colors" title="Edit">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 17H9v-2.828l9.414-9.586z" stroke-width="2"/></svg>
+                            </a>
+                            <a href="{{ route('laporan.preview-pdf-per-lhp', $lhp->id) }}" target="_blank"
+                               class="p-1.5 text-gray-400 hover:text-green-600 transition-colors" title="Unduh PDF">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-width="2"/></svg>
+                            </a>
+                            <button type="button" onclick="openDeleteModal('single', '{{ $lhp->id }}')"
+                                    class="p-1.5 text-gray-400 hover:text-red-600 transition-colors" title="Hapus">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="8" class="px-5 py-20 text-center">
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-full text-gray-300">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-width="1.5"/></svg>
+                            </div>
+                            <p class="text-sm text-gray-400 font-medium italic">Tidak ada data LHP.</p>
+                        </div>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <div class="flex items-center justify-between border-t border-gray-100 px-5 py-3.5 dark:border-gray-800">
+        <button type="button" id="btn-bulk-delete" class="hidden text-xs font-bold text-red-600 hover:text-red-700 transition-all uppercase">
+            Hapus Terpilih (<span id="count-selected">0</span>)
+        </button>
+        <div class="flex-1 flex justify-center">
+            @if($lhps->hasPages())
+            {{ $lhps->links() }}
+            @endif
+        </div>
+    </div>
+</div>
+</form>
 
 {{-- Modal Konfirmasi Hapus --}}
 <div id="delete-modal" class="fixed inset-0 z-[9999] hidden items-center justify-center p-4 transition-all duration-300 ease-out opacity-0">

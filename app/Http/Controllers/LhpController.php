@@ -3,6 +3,7 @@
     namespace App\Http\Controllers;
 
 use App\Models\AuditAssignment;
+use App\Models\AuditProgram;
 use App\Models\KodeTemuan;
 use App\Models\Lhp;
 use App\Models\Recommendation;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Storage;
         'auditAssignment.auditProgramDetail.auditProgram', // ✅ FIX: rantai lengkap
         'statistik',
         'creator',
+        'unitDiperiksa',
     ])
     ->forUser(auth()->user());
 
@@ -40,9 +42,17 @@ use Illuminate\Support\Facades\Storage;
         $query->whereYear('tanggal_lhp', $request->tahun);
     }
 
+    if ($request->filled('kategori')) {
+        $query->whereHas('auditAssignment.auditProgramDetail.auditProgram', fn($q) =>
+            $q->where('kategori', $request->kategori)
+        );
+    }
+
     $lhps = $query->latest()->paginate(10)->withQueryString();
 
-    return view('pages.lhps.index', compact('lhps'));
+    $kategoris = AuditProgram::KATEGORI;
+
+    return view('pages.lhps.index', compact('lhps', 'kategoris'));
 }
 
         public function create()

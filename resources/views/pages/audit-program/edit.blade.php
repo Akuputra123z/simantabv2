@@ -31,7 +31,7 @@
     </div>
 
     {{-- Card --}}
-    <div class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
         <form action="{{ route('audit-program.update', $program->id) }}" method="POST">
             @csrf
             @method('PUT')

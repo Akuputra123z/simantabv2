@@ -131,7 +131,7 @@
     </div>
 
   {{-- TABEL LHP --}}
-    <div class="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
             <div class="flex items-center justify-between">
                 <h2 class="text-sm font-semibold text-gray-900 dark:text-white">
@@ -142,23 +142,21 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-700 text-sm">
-                <thead class="bg-gray-50/50 dark:bg-gray-900/50">
-                    <tr class="text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        <th class="px-4 py-3">Nomor LHP</th>
-                        <th class="px-4 py-3">Program Audit</th>
-                        <th class="px-4 py-3">Tanggal</th>
-                        {{-- Kolom Semester Dihapus --}}
-                        <th class="px-4 py-3">IRBAN</th>
-                        <th class="px-4 py-3 text-center">Status</th>
-                        <th class="px-4 py-3 text-center">Temuan</th>
-                        <th class="px-4 py-3 text-center">Rekom</th>
-                        <th class="px-4 py-3">Kerugian</th>
-                        <th class="px-4 py-3 text-center">Progress</th>
-                        <th class="px-4 py-3 text-center">Unduh</th>
+            <table class="w-full text-left text-sm">
+                <thead class="bg-gray-50/70 dark:bg-gray-900/40">
+                    <tr>
+                        <th class="px-5 py-3.5 w-[22%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nomor LHP</th>
+                        <th class="px-5 py-3.5 w-[14%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Unit</th>
+                        <th class="px-5 py-3.5 w-[10%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Tanggal</th>
+                        <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400">IRBAN</th>
+                        <th class="px-5 py-3.5 w-[8%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Kategori</th>
+                        <th class="px-5 py-3.5 w-[8%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Status</th>
+                        <th class="px-5 py-3.5 w-[15%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-right">Kerugian</th>
+                        <th class="px-5 py-3.5 w-[10%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-right">Progress</th>
+                        <th class="px-5 py-3.5 w-[10%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-right">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                     @forelse ($lhps as $lhp)
                     @php
                         $stat   = $lhp->statistik;
@@ -171,71 +169,108 @@
                             'batal'          => 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
                             default          => 'bg-gray-100 text-gray-600',
                         };
+                        $k = $lhp->auditAssignment?->auditProgram?->kategori;
+                        $kategoriBadge = match($k) {
+                            'PKPT' => 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400',
+                            'BPK'  => 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
+                            'BPKP' => 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400',
+                            'ITPROV' => 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-400',
+                            'ITDA'   => 'bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400',
+                            default  => 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+                        };
                     @endphp
-                    <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                        <td class="px-4 py-3">
-                            <a href="{{ route('laporan.rekap-per-lhp', $lhp->id) }}"
-                               class="font-semibold text-blue-600 hover:underline dark:text-blue-400">
-                                {{ $lhp->nomor_lhp }}
-                            </a>
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                        {{-- Nomor LHP --}}
+                        <td class="px-5 py-4">
+                            <div class="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                <a href="{{ route('laporan.rekap-per-lhp', $lhp->id) }}" class="hover:underline">
+                                    {{ $lhp->nomor_lhp }}
+                                </a>
+                            </div>
+                            @if($lhp->auditAssignment?->auditProgram?->nama_program)
+                            <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
+                                {{ $lhp->auditAssignment->auditProgram->nama_program }}
+                            </p>
+                            @endif
+                            @if($lhp->auditAssignment?->auditProgramDetail?->jenis_kegiatan)
+                            <p class="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500 leading-tight">
+                                {{ $lhp->auditAssignment->auditProgramDetail->jenis_kegiatan }}
+                            </p>
+                            @endif
                         </td>
-                        <td class="px-4 py-3 max-w-[180px] truncate text-gray-600 dark:text-gray-400">
-                            {{ $lhp->auditAssignment?->auditProgram?->nama_program ?? '-' }}
+                        {{-- Unit --}}
+                        <td class="px-5 py-4">
+                            <div class="text-[11px] leading-snug text-gray-600 dark:text-gray-400 break-words max-w-[140px]">
+                                {{ $lhp->unitDiperiksa?->label ?? $lhp->unitDiperiksa?->nama_unit ?? '-' }}
+                            </div>
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap text-gray-500 text-xs">
+                        {{-- Tanggal --}}
+                        <td class="px-5 py-4 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
                             {{ $lhp->tanggal_lhp?->format('d/m/Y') ?? '-' }}
+                            @if($lhp->semester)
+                            <span class="mt-1 block text-[10px] text-gray-400 dark:text-gray-500">Smt {{ $lhp->semester == 1 ? 'I' : 'II' }}</span>
+                            @endif
                         </td>
-                        {{-- Data Semester Dihapus --}}
-                        <td class="px-4 py-3 text-gray-500 text-xs">{{ $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-' }}</td>
-                        <td class="px-4 py-3 text-center">
-                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $statusConf }}">
+                        {{-- IRBAN --}}
+                        <td class="px-5 py-4">
+                            <span class="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-[9px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30">
+                                {{ $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-' }}
+                            </span>
+                        </td>
+                        {{-- Kategori --}}
+                        <td class="px-5 py-4">
+                            <span class="px-2 py-1 rounded text-[10px] font-bold uppercase {{ $kategoriBadge }}">
+                                {{ $k ?? '-' }}
+                            </span>
+                        </td>
+                        {{-- Status --}}
+                        <td class="px-5 py-4">
+                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase {{ $statusConf }}">
                                 {{ ucfirst($lhp->status) }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-center font-medium">{{ $stat?->total_temuan ?? 0 }}</td>
-                        <td class="px-4 py-3 text-center">
-                            <div class="flex items-center justify-center gap-1 text-xs">
-                                <span class="text-green-600">{{ $stat?->rekom_selesai ?? 0 }}</span>
-                                <span class="text-gray-300">/</span>
-                                <span class="text-gray-600 dark:text-gray-300">{{ $stat?->total_rekomendasi ?? 0 }}</span>
+                        {{-- Kerugian --}}
+                        <td class="px-5 py-4 text-right whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                Rp {{ number_format($stat?->total_kerugian ?? 0, 0, ',', '.') }}
                             </div>
+                            @if(($stat?->total_sisa ?? 0) > 0)
+                            <div class="mt-0.5 text-[10px] text-red-500 dark:text-red-400">
+                                Sisa: Rp {{ number_format($stat->total_sisa, 0, ',', '.') }}
+                            </div>
+                            @endif
                         </td>
-                        <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                            Rp {{ number_format($stat?->total_kerugian ?? 0, 0, ',', '.') }}
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex flex-col items-center gap-1">
+                        {{-- Progress --}}
+                        <td class="px-5 py-4">
+                            <div class="flex flex-col items-end gap-1">
                                 <div class="h-1.5 w-20 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
-                                    <div class="{{ $bar }} h-full rounded-full" style="width:{{ min(100,$persen) }}%"></div>
+                                    <div class="{{ $bar }} h-full rounded-full transition-all" style="width:{{ min(100,$persen) }}%"></div>
                                 </div>
-                                <span class="text-[10px] font-semibold {{ $persen >= 100 ? 'text-green-600' : ($persen >= 50 ? 'text-amber-500' : 'text-gray-500') }}">
+                                <span class="text-[10px] font-bold {{ $persen >= 100 ? 'text-green-600' : ($persen >= 50 ? 'text-amber-500' : 'text-gray-400') }}">
                                     {{ number_format($persen, 1) }}%
                                 </span>
                             </div>
                         </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center justify-center gap-1">
-                                {{-- PDF Per LHP --}}
+                        {{-- Aksi --}}
+                        <td class="px-5 py-4">
+                            <div class="flex items-center justify-end gap-0.5">
                                 <a href="{{ route('laporan.download-pdf-per-lhp', $lhp->id) }}"
-                                   target="_blank"
-                                   title="Download PDF"
-                                   class="rounded p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                   target="_blank" title="Download PDF"
+                                   class="p-1.5 text-gray-400 hover:text-red-600 transition-colors">
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                                     </svg>
                                 </a>
-                                {{-- Excel Per LHP --}}
                                 <a href="{{ route('laporan.download-excel-per-lhp', $lhp->id) }}"
                                    title="Download Excel"
-                                   class="rounded p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+                                   class="p-1.5 text-gray-400 hover:text-green-600 transition-colors">
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>
                                 </a>
-                                {{-- Detail --}}
                                 <a href="{{ route('laporan.rekap-per-lhp', $lhp->id) }}"
                                    title="Lihat Detail"
-                                   class="rounded p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                                   class="p-1.5 text-gray-400 hover:text-blue-600 transition-colors">
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -246,9 +281,13 @@
                     </tr>
                     @empty
                     <tr>
-                        {{-- Colspan dikurangi menjadi 10 karena satu kolom dihapus --}}
-                        <td colspan="10" class="px-4 py-16 text-center text-gray-400 dark:text-gray-500">
-                            Tidak ada data LHP sesuai filter.
+                        <td colspan="9" class="px-5 py-16 text-center">
+                            <div class="flex flex-col items-center gap-2">
+                                <svg class="h-10 w-10 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <p class="text-sm text-gray-400 dark:text-gray-500">Tidak ada data LHP sesuai filter.</p>
+                            </div>
                         </td>
                     </tr>
                     @endforelse
@@ -256,9 +295,11 @@
             </table>
         </div>
 
-        <div class="border-t border-gray-100 px-6 py-4 dark:border-gray-700">
+        @if($lhps->hasPages())
+        <div class="border-t border-gray-100 px-5 py-3.5 dark:border-gray-800">
             {{ $lhps->withQueryString()->links() }}
         </div>
+        @endif
     </div>
 
 </div>

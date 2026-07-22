@@ -869,15 +869,18 @@ pre[class*='language-'] {
   right: auto;
 }
 
+.ts-wrapper {
+    width: 100%;
+}
+
 .ts-control {
-    min-height: 40px;
-    height: auto !important;
+    height: 40px;
     border-radius: 0.5rem;
     border: 1px solid #e5e7eb;
     font-size: 0.875rem;
     display: flex;
     align-items: center;
-    padding: 6px 10px;
+    padding: 4px 10px;
     flex-wrap: wrap;
 }
 

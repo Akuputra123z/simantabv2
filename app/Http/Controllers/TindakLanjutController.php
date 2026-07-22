@@ -27,6 +27,8 @@ class TindakLanjutController extends Controller
             ->select([
                 'tindak_lanjuts.*',
                 'ap.kategori',
+                'audit_program_details.tim as irban',
+                'ap.nama_program',
             ])
             ->leftJoin('recommendations', 'tindak_lanjuts.recommendation_id', '=', 'recommendations.id')
             ->leftJoin('temuans', 'recommendations.temuan_id', '=', 'temuans.id')
@@ -37,6 +39,7 @@ class TindakLanjutController extends Controller
             ->forUser(auth()->user())
             ->with([
                 'recommendation.temuan.lhp',
+                'recommendation.temuan.lhp.unitDiperiksa',
                 'recommendation',
                 'creator',
                 'attachments',

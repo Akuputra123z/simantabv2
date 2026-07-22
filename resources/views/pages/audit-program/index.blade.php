@@ -46,7 +46,7 @@
 
 {{-- Filter --}}
 <form method="GET" action="{{ route('audit-program.index') }}" class="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
-    <div class="flex-1 min-w-0 md:max-w-md">
+    <div class="flex-1 min-w-0">
         <div class="relative">
             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 dark:text-gray-500">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,39 +89,39 @@
     </div>
 </form>
 
-<div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
 
     {{-- TABLE --}}
     <div class="overflow-x-auto">
-        <table class="w-full divide-y divide-gray-100 dark:divide-gray-800">
+        <table class="w-full text-left text-sm">
 
             <thead class="bg-gray-50/70 dark:bg-gray-900/40">
                 <tr>
-                    <th class="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                    <th class="px-5 py-3.5 w-[28%] text-left text-[10px] font-bold uppercase tracking-wide text-gray-400">
                         Program
                     </th>
 
-                    <th class="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                    <th class="px-5 py-3.5 w-[10%] text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
                         Kategori
                     </th>
 
-                    <th class="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                    <th class="px-5 py-3.5 w-[8%] text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
                         Sub Program
                     </th>
 
-                    <th class="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                    <th class="px-5 py-3.5 w-[22%] text-left text-[10px] font-bold uppercase tracking-wide text-gray-400">
                         Progress
                     </th>
 
-                    <th class="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                    <th class="px-5 py-3.5 w-[10%] text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
                         Status
                     </th>
 
-                    <th class="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                    <th class="px-5 py-3.5 w-[10%] text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
                         Approval
                     </th>
 
-                    <th class="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                    <th class="px-5 py-3.5 w-[12%] text-right text-[10px] font-bold uppercase tracking-wide text-gray-400">
                         Aksi
                     </th>
                 </tr>
@@ -144,7 +144,7 @@
                 <tr class="transition hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
 
                     {{-- Program --}}
-                    <td class="px-4 py-3">
+                    <td class="px-5 py-4">
                         <div>
                             <p class="text-sm font-semibold text-gray-900 dark:text-white">
                                 {{ $item->nama_program }}
@@ -246,7 +246,7 @@
                     </td>
 
                     {{-- Action --}}
-                    <td class="px-4 py-3">
+                    <td class="px-5 py-4">
                         <div class="flex items-center justify-end gap-2">
 
                             <a href="{{ route('audit-program.show', $item->id) }}"
@@ -320,7 +320,7 @@
 
     {{-- PAGINATION --}}
     @if($data->hasPages())
-    <div class="border-t border-gray-100 px-4 py-3 dark:border-gray-800">
+    <div class="border-t border-gray-100 px-5 py-3.5 dark:border-gray-800">
         {{ $data->links() }}
     </div>
     @endif

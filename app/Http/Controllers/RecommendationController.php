@@ -25,6 +25,8 @@ class RecommendationController extends Controller
                 'recommendations.nilai_rekom', 'recommendations.nilai_sisa', 'recommendations.status',
                 'recommendations.batas_waktu', 'recommendations.created_at',
                 'ap.kategori',
+                'audit_program_details.tim as irban',
+                'ap.nama_program',
             ])
             ->leftJoin('temuans', 'recommendations.temuan_id', '=', 'temuans.id')
             ->leftJoin('lhps', 'temuans.lhp_id', '=', 'lhps.id')
@@ -33,7 +35,8 @@ class RecommendationController extends Controller
             ->leftJoin('audit_programs as ap', 'audit_program_details.audit_program_id', '=', 'ap.id')
             ->with([
                 'temuan:id,lhp_id,kode_temuan_id,kondisi',
-                'temuan.lhp:id,nomor_lhp,tanggal_lhp',
+                'temuan.lhp:id,nomor_lhp,tanggal_lhp,unit_diperiksa_id',
+                'temuan.lhp.unitDiperiksa',
                 'temuan.kodeTemuan:id,kode',
                 'kodeRekomendasi:id,kode,deskripsi',
                 'tindakLanjuts:id,recommendation_id,total_terbayar',

@@ -36,7 +36,7 @@
 
 {{-- Filter --}}
 <form method="GET" action="{{ url()->current() }}" class="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
-    <div class="flex-1 min-w-0 md:max-w-md">
+    <div class="flex-1 min-w-0">
         <div class="relative">
             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 dark:text-gray-500">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,20 +87,20 @@
     </div>
 </form>
 
-<div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
 
     {{-- ── Table ── --}}
     <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead class="bg-gray-50/50 dark:bg-gray-900/50 text-[10px] uppercase tracking-widest text-gray-400 font-bold border-b border-gray-100 dark:border-gray-800">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-gray-50/70 dark:bg-gray-900/40">
                 <tr>
-                    <th class="px-5 py-4 w-[30%]">Program & No. Surat</th>
-                    <th class="px-4 py-4 w-[16%]">Unit Diperiksa</th>
-                    <th class="px-4 py-4 w-[16%]">Jadwal</th>
-                    <th class="px-4 py-4 w-[9%] text-center">Jenis</th>
-                    <th class="px-4 py-4 w-[9%] text-center">Kategori</th>
-                    <th class="px-4 py-4 w-[9%] text-center">Status</th>
-                    <th class="px-5 py-4 w-[11%] text-right">Aksi</th>
+                    <th class="px-5 py-3.5 w-[30%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Program & No. Surat</th>
+                    <th class="px-5 py-3.5 w-[16%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Unit Diperiksa</th>
+                    <th class="px-5 py-3.5 w-[16%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Jadwal</th>
+                    <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Jenis</th>
+                    <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Kategori</th>
+                    <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Status</th>
+                    <th class="px-5 py-3.5 w-[11%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -133,7 +133,7 @@
                     </td>
 
                     {{-- Unit Diperiksa (Pivot Many-to-Many) --}}
-                    <td class="px-4 py-4">
+                    <td class="px-5 py-4">
                         <div class="flex flex-wrap gap-1 max-w-[250px]">
                             @foreach($item->unitDiperiksas->take(2) as $unit)
                                 <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
@@ -147,7 +147,7 @@
                     </td>
 
                     {{-- Jadwal --}}
-                    <td class="px-4 py-4">
+                    <td class="px-5 py-4">
                         <div class="text-[11px] text-gray-600 dark:text-gray-400 flex flex-col">
                             <span class="font-medium text-gray-800 dark:text-gray-200">
                                 {{ \Carbon\Carbon::parse($item->tanggal_mulai)->translatedFormat('d M') }} - {{ \Carbon\Carbon::parse($item->tanggal_selesai)->translatedFormat('d M Y') }}

@@ -39,13 +39,15 @@
             border-color: #4f46e5;
         }
         .ts-wrapper .ts-dropdown {
-            border-radius: 0.5rem;
-            border-color: #e5e7eb;
-            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.1);
-            margin-top: 4px;
-            width: 100% !important;
-            box-sizing: border-box;
-        }
+    position: absolute !important; /* Wajib melayang */
+    z-index: 50 !important;        /* Wajib di atas elemen lain */
+    border-radius: 0.5rem;
+    border-color: #e5e7eb;
+    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.1);
+    margin-top: 4px;
+    width: 100% !important;
+    box-sizing: border-box;
+}
         .dark .ts-wrapper .ts-dropdown {
             background: #1f2937;
             border-color: #374151;

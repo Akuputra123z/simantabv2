@@ -93,13 +93,13 @@
                         <input type="checkbox" id="check-all"
                             class="h-4 w-4 rounded border-gray-300 text-blue-600 cursor-pointer">
                     </th>
-                    <th class="px-5 py-3.5 w-[22%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nomor LHP &amp; Program</th>
-                    <th class="px-5 py-3.5 w-[14%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Unit</th>
-                    <th class="px-5 py-3.5 w-[10%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Tanggal</th>
-                    <th class="px-5 py-3.5 w-[13%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Temuan &amp; Rekom</th>
-                    <th class="px-5 py-3.5 w-[14%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Progress TL</th>
-                    <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Kategori</th>
-                    <th class="px-5 py-3.5 w-[14%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-right">Aksi</th>
+                    <th class="px-5 py-3.5 w-[24%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nomor LHP &amp; Program</th>
+                    <th class="px-5 py-3.5 w-[18%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Penugasan Audit</th>
+                    <th class="px-5 py-3.5 w-[12%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Unit</th>
+                    <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Tanggal</th>
+                    <th class="px-5 py-3.5 w-[12%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Progress TL</th>
+                    <th class="px-5 py-3.5 w-[8%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Kategori</th>
+                    <th class="px-5 py-3.5 w-[13%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -148,11 +148,33 @@
                             </span>
                             @endif
                         </div>
+                        <div class="flex flex-wrap gap-1 mt-1.5">
+                            <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                {{ $lhp->statistik?->total_temuan ?? 0 }} temuan
+                            </span>
+                            <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                {{ $lhp->statistik?->total_rekomendasi ?? 0 }} rekom
+                            </span>
+                        </div>
+                    </td>
+
+                    {{-- Penugasan Audit --}}
+                    <td class="px-5 py-4">
+                        <div class="text-[11px] leading-snug text-gray-600 dark:text-gray-400">
+                            @if($lhp->auditAssignment)
+                                <div class="font-medium text-gray-800 dark:text-gray-200">{{ $lhp->auditAssignment->nomor_surat }}</div>
+                                @if($lhp->auditAssignment->nama_tim)
+                                    <div class="text-[10px] text-gray-400 mt-0.5">Tim: {{ $lhp->auditAssignment->nama_tim }}</div>
+                                @endif
+                            @else
+                                <span class="italic text-gray-300">-</span>
+                            @endif
+                        </div>
                     </td>
 
                     {{-- Unit --}}
                     <td class="px-5 py-4">
-                        <div class="text-[11px] leading-snug text-gray-600 dark:text-gray-400 break-words max-w-[140px]">
+                        <div class="text-[11px] leading-snug text-gray-600 dark:text-gray-400 break-words max-w-[120px]">
                             {{ $lhp->unitDiperiksa?->label ?? $lhp->unitDiperiksa?->nama_unit ?? '-' }}
                         </div>
                     </td>
@@ -161,18 +183,6 @@
                     <td class="px-5 py-4 whitespace-nowrap">
                         <div class="text-[11px] text-gray-600 dark:text-gray-400">
                             {{ $lhp->tanggal_lhp->translatedFormat('d M Y') }}
-                        </div>
-                    </td>
-
-                    {{-- Temuan & Rekom --}}
-                    <td class="px-5 py-4 text-center">
-                        <div class="flex flex-wrap gap-1 justify-center">
-                            <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-                                {{ $lhp->statistik?->total_temuan ?? 0 }} temuan
-                            </span>
-                            <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-                                {{ $lhp->statistik?->total_rekomendasi ?? 0 }} rekom
-                            </span>
                         </div>
                     </td>
 

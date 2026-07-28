@@ -216,7 +216,7 @@
                             <td class="px-4 py-3 text-center font-semibold text-gray-500">{{ $no++ }}</td>
                             <td class="px-4 py-3 text-xs text-gray-500">T{{ $ti + 1 }}</td>
                             <td class="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-xs text-xs">
-                                {{ Str::limit($r->uraian_rekom, 100) }}
+                                {{ Str::limit(strip_tags($r->uraian_rekom), 100) }}
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $jenisConf }}">

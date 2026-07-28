@@ -138,6 +138,9 @@ class RecommendationController extends Controller
             'batas_waktu'         => 'required|date',
         ]);
 
+        $allowedTags = '<p><br><b><strong><i><em><u><strike><s><del><ol><ul><li><h1><h2><h3><h4><h5><h6><blockquote><pre><code><span><a><table><thead><tbody><tr><th><td><hr>';
+        $validated['uraian_rekom'] = strip_tags($validated['uraian_rekom'], $allowedTags);
+
         DB::beginTransaction();
         try {
             $jenis = $validated['jenis_rekomendasi'];
@@ -198,6 +201,9 @@ public function update(Request $request, Recommendation $recommendation)
         'nilai_rekom'         => 'nullable|numeric|min:0',
         'batas_waktu'         => 'required|date',
     ]);
+
+    $allowedTags = '<p><br><b><strong><i><em><u><strike><s><del><ol><ul><li><h1><h2><h3><h4><h5><h6><blockquote><pre><code><span><a><table><thead><tbody><tr><th><td><hr>';
+    $validated['uraian_rekom'] = strip_tags($validated['uraian_rekom'], $allowedTags);
 
     DB::beginTransaction();
     try {

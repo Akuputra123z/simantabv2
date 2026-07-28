@@ -44,12 +44,13 @@
                     class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
             </div>
             <div class="md:col-span-2">
-                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Deskripsi
-                </label>
-                <textarea name="deskripsi" rows="4"
-                    placeholder="Tuliskan deskripsi lengkap di sini..."
-                    class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30">{{ old('deskripsi', $data->deskripsi ?? '') }}</textarea>
+                @include('components._rich-editor', [
+                    'name'       => 'deskripsi',
+                    'value'      => old('deskripsi', $data->deskripsi ?? ''),
+                    'required'   => false,
+                    'height'     => 250,
+                    'placeholder' => 'Tuliskan deskripsi lengkap di sini...',
+                ])
             </div>
             <div class="flex items-center md:pt-7">
                 <div x-data="{ switcherToggle: {{ old('is_active', $data->is_active ?? true) ? 'true' : 'false' }} }">

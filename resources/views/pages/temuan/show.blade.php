@@ -65,7 +65,7 @@
         <div class="divide-y divide-gray-100 dark:divide-gray-700">
             @foreach($temuan->recommendations as $rekom)
             <div class="p-4 px-6">
-                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $rekom->uraian_rekom }}</p>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">{!! $rekom->uraian_rekom !!}</p>
                 <p class="mt-1 text-xs text-gray-400">Status: {{ $rekom->status ?? '-' }}</p>
             </div>
             @endforeach

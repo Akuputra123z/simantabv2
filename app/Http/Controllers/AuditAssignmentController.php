@@ -21,8 +21,11 @@ class AuditAssignmentController extends Controller
     private function sharedViewData($assignmentId = null): array
     {
         return [
-            'programs'        => AuditProgram::where('approval_status', AuditProgram::APPROVAL_DISETUJUI)
+            'programs'        => AuditProgram::where(fn($q) => $q
+                ->where('approval_status', AuditProgram::APPROVAL_DISETUJUI)
                 ->orWhereHas('details.assignments', fn($q) => $q->where('id', $assignmentId))
+                ->orWhereHas('details', fn($q) => $q->whereDoesntHave('assignments'))
+            )->where('approval_status', '!=', AuditProgram::APPROVAL_DITOLAK)
                 ->orderBy('tahun', 'desc')->get(),
             'ketuaTim'        => User::orderBy('name')->get(),
             'members'         => User::orderBy('name')->get(),
@@ -81,6 +84,10 @@ class AuditAssignmentController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'pengendali_teknis_id' => $request->pengendali_teknis_id ?: null,
+        ]);
+
         $validated = $request->validate([
             // Tambahkan unique untuk mencegah duplikasi PKPT di database
             'audit_program_detail_id' => 'required|exists:audit_program_details,id|unique:audit_assignments,audit_program_detail_id',
@@ -93,7 +100,7 @@ class AuditAssignmentController extends Controller
             'nama_tim'                => 'nullable|string|max:255',
             'jenis_pengawasan'        => ['nullable', 'string', Rule::in(AuditAssignment::JENIS_PENGAWASAN)],
             'anggaran_disetujui'      => 'nullable|numeric|min:0',
-            'pengendali_teknis'       => 'nullable|string|max:150',
+            'pengendali_teknis_id'    => 'nullable|exists:users,id',
             'status'                  => 'required|in:draft,berjalan,selesai',
             'members'                 => 'nullable|array',
             'members.*'               => 'exists:users,id',
@@ -102,7 +109,7 @@ class AuditAssignmentController extends Controller
         ]);
 
         $detail = AuditProgramDetail::with('auditProgram')->find($validated['audit_program_detail_id']);
-        if (!$detail || !$detail->auditProgram->isApproved()) {
+        if (!$detail || !$detail->auditProgram || $detail->auditProgram->approval_status === AuditProgram::APPROVAL_DITOLAK) {
             return back()->withInput()->with('error', 'Penugasan hanya dapat dibuat untuk PKPT yang sudah disetujui.');
         }
 
@@ -161,6 +168,10 @@ class AuditAssignmentController extends Controller
 
     public function update(Request $request, AuditAssignment $auditAssignment)
     {
+        $request->merge([
+            'pengendali_teknis_id' => $request->pengendali_teknis_id ?: null,
+        ]);
+
         $validated = $request->validate([
             // Unique kecuali untuk data yang sedang di-edit itu sendiri
             'audit_program_detail_id' => 'required|exists:audit_program_details,id|unique:audit_assignments,audit_program_detail_id,' . $auditAssignment->id,
@@ -169,11 +180,11 @@ class AuditAssignmentController extends Controller
             'ketua_tim_id'            => 'required|exists:users,id',
             'nomor_surat'             => 'required|string|max:255|unique:audit_assignments,nomor_surat,' . $auditAssignment->id,
             'nama_tim'                => 'nullable|string|max:255',
-            'jenis_pengawasan'        => 'required|string|max:255',
+            'jenis_pengawasan'        => ['nullable', 'string', Rule::in(AuditAssignment::JENIS_PENGAWASAN)],
             'anggaran_disetujui'      => 'nullable|numeric|min:0',
             'tanggal_mulai'           => 'required|date',
             'tanggal_selesai'         => 'required|date|after_or_equal:tanggal_mulai',
-            'pengendali_teknis'       => 'nullable|string|max:150',
+            'pengendali_teknis_id'    => 'nullable|exists:users,id',
             'status'                  => 'required|in:draft,berjalan,selesai',
             'members'                 => 'nullable|array',
             'members.*'               => 'exists:users,id',
@@ -247,12 +258,13 @@ class AuditAssignmentController extends Controller
 
     public function print($id)
 {
-    // Eager load relasi sesuai nama fungsi di Model AuditAssignment
     $assignment = AuditAssignment::with([
         'auditProgramDetail.auditProgram',
         'unitDiperiksas', 
         'ketuaTim',
-        'members' // Sesuai dengan public function members() di model
+        'pengendaliTeknis',
+        'signer',
+        'members'
     ])->findOrFail($id);
 
     return view('pages.audit-assignment.print', compact('assignment'));
@@ -266,10 +278,21 @@ class AuditAssignmentController extends Controller
             'auditProgramDetail.auditProgram',
             'unitDiperiksas',
             'ketuaTim',
+            'pengendaliTeknis',
+            'signer',
             'members',
         ])->findOrFail($id);
 
-        $pdf = Pdf::loadView('pages.audit-assignment.print-pdf', compact('assignment'))
+        $signatureBase64 = null;
+        if ($assignment->isSigned() && $assignment->signer && $assignment->signer->signature) {
+            $path = Storage::disk('public')->path($assignment->signer->signature);
+            if (file_exists($path)) {
+                $ext = pathinfo($path, PATHINFO_EXTENSION);
+                $signatureBase64 = 'data:image/' . $ext . ';base64,' . base64_encode(file_get_contents($path));
+            }
+        }
+
+        $pdf = Pdf::loadView('pages.audit-assignment.print-pdf', compact('assignment', 'signatureBase64'))
             ->setPaper('a4', 'portrait')
             ->setOptions([
                 'defaultFont'   => 'sans-serif',
@@ -288,12 +311,36 @@ class AuditAssignmentController extends Controller
             'auditProgramDetail.auditProgram',
             'unitDiperiksas',
             'ketuaTim',
+            'pengendaliTeknis',
             'members',
             'attachments',
-            'lhps'
+            'lhps',
+            'signer',
         ]);
 
         return view('pages.audit-assignment.show', compact('data'));
+    }
+
+    public function sign(AuditAssignment $auditAssignment)
+    {
+        if (!auth()->user()->hasRole('super_admin') && !auth()->user()->hasRole('kepala_inspektorat')) {
+            return back()->with('error', 'Hanya Super Admin dan Kepala Inspektorat yang dapat menandatangani Surat Tugas.');
+        }
+
+        if ($auditAssignment->isSigned()) {
+            return back()->with('error', 'Surat Tugas ini sudah ditandatangani.');
+        }
+
+        $auditAssignment->update([
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+        ]);
+
+        $redirectTo = request('from') === 'preview'
+            ? route('audit-assignment.preview', $auditAssignment->id)
+            : route('audit-assignment.show', $auditAssignment->id);
+
+        return redirect($redirectTo)->with('success', 'Surat Tugas berhasil ditandatangani.');
     }
 
 

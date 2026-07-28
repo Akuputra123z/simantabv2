@@ -10,7 +10,7 @@
         <a href="{{ route('tindak-lanjuts.index') }}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Tindak Lanjut</a>
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
         <a href="{{ route('tindak-lanjuts.show', $tindakLanjut) }}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors truncate max-w-xs">
-            {{ Str::limit($tindakLanjut->recommendation->uraian_rekom ?? 'Detail', 45) }}
+            {{ Str::limit(strip_tags($tindakLanjut->recommendation->uraian_rekom ?? 'Detail'), 45) }}
         </a>
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
         <span class="text-slate-600 dark:text-slate-300">Cicilan</span>

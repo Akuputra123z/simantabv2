@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Lhp;
 use App\Models\LhpStatistik;
+use App\Models\AuditProgram;
 use App\Models\AuditProgramDetail;
 use App\Exports\RekapSemuaLhpExport;
 use App\Exports\RekapPerLhpExport;
@@ -31,11 +32,6 @@ class LaporanController extends Controller
 
         $lhps = $query->orderBy('tanggal_lhp', 'desc')->paginate(15)->withQueryString();
 
-        $tahunList = Cache::remember('laporan:tahunList:' . $user->id, 600, function () use ($user) {
-            return Lhp::forUser($user)->selectRaw('YEAR(tanggal_lhp) as tahun')
-                ->distinct()->orderByDesc('tahun')->pluck('tahun');
-        });
-
         $irbanList = Cache::remember('laporan:irbanList:' . $user->id, 600, function () use ($user) {
             return AuditProgramDetail::whereHas('assignments', function ($q) use ($user) {
                     $q->whereHas('lhps');
@@ -50,8 +46,10 @@ class LaporanController extends Controller
                 ->pluck('tim');
         });
 
+        $kategoris  = AuditProgram::KATEGORI;
+
         return view('pages.laporan.index', compact(
-            'lhps', 'ringkasan', 'tahunList', 'irbanList'
+            'lhps', 'ringkasan', 'irbanList', 'kategoris'
         ));
     }
 
@@ -204,19 +202,42 @@ class LaporanController extends Controller
 
     private function applyFilters($query, Request $request): void
     {
-        if ($request->filled('tahun')) {
-            $query->whereYear('tanggal_lhp', $request->tahun);
-        }
-        if ($request->filled('semester')) {
-            $query->where('semester', $request->semester);
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nomor_lhp', 'like', "%{$search}%")
+                  ->orWhereHas('auditAssignment.auditProgram', fn($sq) => $sq->where('nama_program', 'like', "%{$search}%"))
+                  ->orWhereHas('auditAssignment', fn($sq) => $sq->where('nomor_surat', 'like', "%{$search}%"));
+            });
         }
         if ($request->filled('irban')) {
             $query->whereHas('auditAssignment.auditProgramDetail', function ($q) use ($request) {
                 $q->where('tim', $request->irban);
             });
         }
+        if ($request->filled('kategori')) {
+            $query->whereHas('auditAssignment.auditProgram', function ($q) use ($request) {
+                $q->where('kategori', $request->kategori);
+            });
+        }
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $query->whereHas('statistik', function ($q) use ($request) {
+                switch ($request->status) {
+                    case 'lunas':
+                        $q->where('persen_selesai_gabungan', '>=', 100);
+                        break;
+                    case 'sebagian':
+                        $q->where('persen_selesai_gabungan', '>', 0)
+                          ->where('persen_selesai_gabungan', '<', 100);
+                        break;
+                    case 'belum':
+                        $q->where(function ($sq) {
+                            $sq->whereNull('persen_selesai_gabungan')
+                               ->orWhere('persen_selesai_gabungan', 0);
+                        });
+                        break;
+                }
+            });
         }
         if ($request->filled('dari')) {
             $query->whereDate('tanggal_lhp', '>=', $request->dari);

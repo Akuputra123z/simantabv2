@@ -93,12 +93,11 @@
     {{-- Table --}}
     <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
+            <table class="w-full text-left text-sm table-fixed">
                 <thead class="bg-gray-50/70 dark:bg-gray-900/40">
                     <tr>
-                        <th class="px-5 py-3.5 w-[14%] text-[10px] font-bold uppercase tracking-wide text-gray-400 whitespace-nowrap">No. LHP / Temuan</th>
-                        <th class="px-5 py-3.5 w-[22%] text-[10px] font-bold uppercase tracking-wide text-gray-400 whitespace-nowrap">Uraian Rekomendasi</th>
-                        <th class="px-5 py-3.5 w-[8%] text-[10px] font-bold uppercase tracking-wide text-gray-400 whitespace-nowrap">Jenis</th>
+                        <th class="px-5 py-3.5 w-[18%] text-[10px] font-bold uppercase tracking-wide text-gray-400 whitespace-nowrap">No. LHP / Temuan</th>
+                        <th class="px-5 py-3.5 w-[26p%] text-[10px] font-bold uppercase tracking-wide text-gray-400 whitespace-nowrap">Uraian Rekomendasi</th>
                         <th class="px-5 py-3.5 w-[8%] text-[10px] font-bold uppercase tracking-wide text-gray-400 whitespace-nowrap">Kategori</th>
                         <th class="px-5 py-3.5 w-[10%] text-[10px] font-bold uppercase tracking-wide text-gray-400 whitespace-nowrap">Unit</th>
                         <th class="px-5 py-3.5 w-[10%] text-[10px] font-bold uppercase tracking-wide text-gray-400 whitespace-nowrap">Nilai Rekom</th>
@@ -140,15 +139,13 @@
                                     Irban: {{ $r->irban }}
                                 </span>
                                 @endif
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase {{ $jenisCfg['class'] }}">
+                                    {{ $jenisCfg['label'] }}
+                                </span>
                             </div>
                         </td>
-                        <td class="px-5 py-4 max-w-[200px]">
-                            <p class="line-clamp-2 break-words text-sm text-gray-700 dark:text-gray-300" title="{{ $r->uraian_rekom }}">{{ $r->uraian_rekom }}</p>
-                        </td>
-                        <td class="px-5 py-4 whitespace-nowrap">
-                            <span class="px-2 py-1 rounded text-[10px] font-bold uppercase {{ $jenisCfg['class'] }}">
-                                {{ $jenisCfg['label'] }}
-                            </span>
+                        <td class="px-5 py-4">
+                            <p class="break-words text-justify text-sm text-gray-700 dark:text-gray-300" title="{{ $r->uraian_rekom }}">{{ Str::limit(strip_tags($r->uraian_rekom), 300) }}</p>
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
                             @php
@@ -219,7 +216,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="py-16 text-center">
+                        <td colspan="8" class="py-16 text-center">
                             <div class="flex flex-col items-center justify-center">
                                 <svg class="h-12 w-12 text-gray-200 dark:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                                 <p class="mt-4 text-sm text-gray-500 dark:text-gray-400 font-medium">Data rekomendasi tidak ditemukan</p>

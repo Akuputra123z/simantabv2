@@ -6,16 +6,33 @@
     <style>
         @page { size: A4; margin: 2cm 1.5cm 1.5cm 2cm; }
         body { font-family: "Times New Roman", Times, serif; font-size: 12pt; line-height: 1.5; margin: 0; padding: 0; color: #000; }
+        .page-margin { padding: 0; margin: 0; }
         .container { width: 100%; }
+        .list-isi {
+    margin: 0;
+    padding: 0;
+}
+
+.item {
+    margin-bottom: 6px;
+    text-align: justify;
+}
+
+.sub-item {
+    margin-left: 20px;
+}
+
+.sub-kecamatan {
+    margin-left: 35px;
+    font-style: italic;
+}
         
-        /* Kop Surat */
         .kop-surat { border-bottom: 4px double black; padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
         .kop-text h1 { font-size: 14pt; margin: 0; text-transform: uppercase; font-weight: bold; }
         .kop-text h2 { font-size: 18pt; margin: 0; text-transform: uppercase; font-weight: bold; line-height: 1.2; }
         .kop-text p { font-size: 10pt; margin: 2px 0 0 0; font-style: normal; }
         .kop-text .sub-p { font-size: 9pt; font-style: italic; }
         
-        /* Judul Surat */
         .judul-surat { text-align: center; margin-bottom: 25px; }
         .judul-surat h3 { text-decoration: underline; text-transform: uppercase; margin: 0; font-size: 14pt; font-weight: bold; letter-spacing: 0.5px; }
         .judul-surat p { margin: 5px 0 0 0; font-size: 12pt; }
@@ -31,26 +48,36 @@
         table.tim th { border-top: 1px solid black; border-bottom: 1px solid black; text-align: left; padding: 5px 8px; font-size: 10pt; text-transform: uppercase; font-weight: bold; }
         table.tim td { padding: 5px 8px; vertical-align: top; border-bottom: 1px solid #ccc; }
         table.tim tr:last-child td { border-bottom: 1px solid black; }
-        table.unit-list { width: 100%; border-collapse: collapse; margin: 6px 0 4px 0; font-size: 11pt; }
-        table.unit-list td { padding: 3px 12px; vertical-align: top; width: 50%; }
-        table.unit-list td:first-child { border-right: 1px solid #ccc; }
+        .list-isi { margin: 0; padding: 0; }
+        .item { margin-bottom: 4px; }
         .ttd-wrapper { width: 100%; margin-top: 30px; text-align: right; }
-        .ttd-container { display: inline-block; text-align: left; width: 400px; }
-        .table-ttd-meta { width: 100%; font-size: 11pt; margin-bottom: 10px; }
+        .ttd-container { display: inline-block; text-align: center; width: 400px; }
+        .table-ttd-meta { width: 100%; font-size: 11pt; margin-bottom: 10px; text-align: left; }
         .table-ttd-meta td { padding: 1px 0; vertical-align: top; }
-        .ttd-jabatan { text-align: center; font-weight: bold; line-height: 1.3; margin-bottom: 50px; text-transform: uppercase; }
+        .ttd-jabatan { text-align: center; font-weight: bold; line-height: 1.3; margin-bottom: 10px; text-transform: uppercase; }
         .ttd-nama { text-align: center; font-weight: bold; text-decoration: underline; margin: 0; font-size: 12pt; }
         .ttd-nip { text-align: center; margin: 0; font-size: 11pt; line-height: 1.2; }
         .footer-note { border: 1px dashed black; padding: 8px; text-align: center; font-style: italic; font-size: 9.5pt; margin-top: 40px; font-weight: bold; page-break-inside: avoid; }
-        
+        .btn-print {
+            display: inline-block; margin-top: 20px;
+            background: #2563eb; color: #fff; border: none;
+            padding: 10px 30px; font-size: 11pt; font-weight: bold;
+            border-radius: 8px; cursor: pointer;
+        }
+        .btn-print:hover { background: #1d4ed8; }
         @media print {
-            .no-print { display: none; }
+            .no-print { display: none !important; }
             body { -webkit-print-color-adjust: exact; }
+            .page-margin { padding: 0 !important; margin: 0 !important; }
+        }
+        @media screen {
+            .page-margin { padding: 2cm 1.5cm 1.5cm 2cm; }
         }
     </style>
 </head>
-<body onload="window.print()">
+<body>
 
+    <div class="page-margin">
     <div class="container">
         <div class="kop-surat">
             <div class="kop-text">
@@ -93,7 +120,6 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {{-- 1. Tampilkan Ketua Tim --}}
                         @if($assignment->ketuaTim)
                         <tr>
                             <td style="text-align: center;">1.</td>
@@ -105,11 +131,22 @@
                         </tr>
                         @endif
 
-                        {{-- 2. Tampilkan Anggota dari Relasi members() --}}
+                        @if($assignment->pengendaliTeknis)
+                        <tr>
+                            <td style="text-align: center;">{{ $assignment->ketuaTim ? 2 : 1 }}.</td>
+                            <td>
+                                <strong>{{ $assignment->pengendaliTeknis->name }}</strong><br>
+                                <span style="font-size: 11pt; color: #333;">NIP. {{ $assignment->pengendaliTeknis->nip ?? '-' }}</span>
+                            </td>
+                            <td>Pengendali Teknis</td>
+                        </tr>
+                        @endif
+
                         @if($assignment->members && $assignment->members->isNotEmpty())
+                            @php $nomor = ($assignment->ketuaTim ? 1 : 0) + ($assignment->pengendaliTeknis ? 1 : 0); @endphp
                             @foreach($assignment->members as $index => $member)
                             <tr>
-                                <td style="text-align: center;">{{ $index + 2 }}.</td>
+                                <td style="text-align: center;">{{ $index + 1 + $nomor }}.</td>
                                 <td>
                                     <strong>{{ $member->name }}</strong><br>
                                     <span style="font-size: 11pt; color: #333;">NIP. {{ $member->nip ?? '-' }}</span>
@@ -123,30 +160,47 @@
             </div>
         </div>
 
-        <div class="section" style="margin-top: 15px;">
+        <div class="section" style="margin-top: 15px; page-break-inside: avoid;">
             <div class="label">UNTUK :</div>
             <div class="content">
-                <ol class="list-dinas">
-                    <li>
-                        Melaksanakan {{ $assignment->jenis_pengawasan }} pada :
-                        @if($assignment->unitDiperiksas && $assignment->unitDiperiksas->isNotEmpty())
-                        <table class="unit-list">
-                            <tr>
-                            @foreach($assignment->unitDiperiksas as $unit)
-                                <td> - {{ $unit->nama_unit }}<br><span style="margin-left:14px;font-style:italic;font-size:10pt;color:#444;">{{ $unit->nama_kecamatan }}</span></td>
-                                @if($loop->iteration % 2 == 0 && !$loop->last)</tr><tr>@endif
-                            @endforeach
-                            @if($assignment->unitDiperiksas->count() % 2 != 0)<td></td>@endif
-                            </tr>
-                        </table>
-                        @else
-                        <span style="font-style: italic;">-</span>
-                        @endif
-                    </li>
-                    <li>Waktu pelaksanaan selama {{ \Carbon\Carbon::parse($assignment->tanggal_mulai)->diffInDays(\Carbon\Carbon::parse($assignment->tanggal_selesai)) + 1 }} hari kerja, mulai tanggal {{ \Carbon\Carbon::parse($assignment->tanggal_mulai)->translatedFormat('d F') }} s.d {{ \Carbon\Carbon::parse($assignment->tanggal_selesai)->translatedFormat('d F Y') }}.</li>
-                    <li>Melaporkan Hasil Pelaksanaan Tugas Kepada Pejabat Pemberi Tugas.</li>
-                    <li>Perintah ini Agar Dilaksanakan dengan Penuh Tanggung Jawab.</li>
-                </ol>
+                <div class="list-isi">
+
+    <div class="item">
+        <span style="display:inline-block; width:18px;">1.</span>
+        Melaksanakan {{ $assignment->jenis_pengawasan }} pada :
+
+        @if($assignment->unitDiperiksas && $assignment->unitDiperiksas->isNotEmpty())
+            @foreach($assignment->unitDiperiksas as $unit)
+                <div style="margin-left:18px;">
+                    - {{ $unit->nama_unit }}
+                </div>
+                <div style="margin-left:35px; font-style:italic;">
+                    {{ $unit->nama_kecamatan }}
+                </div>
+            @endforeach
+        @else
+            <div style="margin-left:18px;">
+                -
+            </div>
+        @endif
+    </div>
+
+    <div class="item">
+        <span style="display:inline-block; width:18px;">2.</span>
+        Waktu pelaksanaan selama {{ \Carbon\Carbon::parse($assignment->tanggal_mulai)->diffInDays(\Carbon\Carbon::parse($assignment->tanggal_selesai)) + 1 }} hari kerja, mulai tanggal {{ \Carbon\Carbon::parse($assignment->tanggal_mulai)->translatedFormat('d F') }} s.d {{ \Carbon\Carbon::parse($assignment->tanggal_selesai)->translatedFormat('d F Y') }}.
+    </div>
+
+    <div class="item">
+        <span style="display:inline-block; width:18px;">3.</span>
+        Melaporkan Hasil Pelaksanaan Tugas Kepada Pejabat Pemberi Tugas.
+    </div>
+
+    <div class="item">
+        <span style="display:inline-block; width:18px;">4.</span>
+        Perintah ini Agar Dilaksanakan dengan Penuh Tanggung Jawab.
+    </div>
+
+</div>
             </div>
         </div>
 
@@ -164,20 +218,63 @@
                         <td>{{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</td>
                     </tr>
                 </table>
-                
+
                 <div class="ttd-jabatan">
                     INSPEKTUR DAERAH<br>KABUPATEN REMBANG
                 </div>
-                
-                <p class="ttd-nama">IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE</p>
-                <p class="ttd-nip">Pembina<br>NIP. 197411281999032003</p>
+
+                @if($assignment->isSigned() && $assignment->signer)
+                    @if($assignment->signer->signature)
+                        <div style="margin-bottom:5px;">
+                            <img src="{{ Storage::url($assignment->signer->signature) }}" alt="Tanda Tangan" style="height:80px;">
+                        </div>
+                    @endif
+                    <p class="ttd-nama">{{ $assignment->signer->name }}</p>
+                    <p class="ttd-nip">
+                        {{ $assignment->signer->jabatan ?? '-' }}<br>
+                        NIP. {{ $assignment->signer->nip ?? '-' }}
+                    </p>
+                @else
+                    <p class="ttd-nama">IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE</p>
+                    <p class="ttd-nip">Pembina<br>NIP. 197411281999032003</p>
+                @endif
             </div>
         </div>
-        <br>
 
         <div class="footer-note">
             Dilarang meminta dan atau menerima pemberian dalam bentuk apapun dari siapapun.
         </div>
+        </div>
+    </div>
+
+    <div class="no-print" style="text-align: center; margin-top: 20px;">
+        @php $canSign = auth()->check() && (auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('kepala_inspektorat')); @endphp
+
+        @if($canSign && !$assignment->isSigned())
+        <form action="{{ route('audit-assignment.sign', $assignment->id) }}" method="POST" style="display:inline;">
+            @csrf
+            <input type="hidden" name="from" value="preview">
+            <button style="display:inline-block; margin:0 5px; background:#16a34a; color:#fff; border:none; padding:14px 40px; font-size:13pt; font-weight:bold; border-radius:8px; cursor:pointer; letter-spacing:1px;" onclick="return confirm('Tandatangani Surat Tugas ini?')">
+                ✓ TANDA TANGANI
+            </button>
+        </form>
+        @endif
+
+        @if($assignment->isSigned())
+        <div style="display:inline-block; margin:0 5px; background:#f0fdf4; border:2px solid #22c55e; border-radius:8px; padding:10px 30px;">
+            <strong style="color:#16a34a; font-size:12pt;">✓ SURAT TUGAS TELAH DITANDATANGANI</strong>
+            <p style="color:#166534; margin:4px 0 0; font-size:10pt;">
+                oleh {{ $assignment->signer->name }}, {{ $assignment->approved_at->translatedFormat('d F Y H:i') }}
+            </p>
+        </div>
+        @endif
+
+        <br><br>
+        <a href="{{ route('audit-assignment.print', $assignment->id) }}" target="_blank"
+           style="display:inline-block; margin:0 5px; background:#2563eb; color:#fff; border:none; padding:10px 30px; font-size:11pt; font-weight:bold; border-radius:8px; cursor:pointer; text-decoration:none;">
+            📄 Unduh PDF
+        </a>
+        <button class="btn-print" onclick="window.print()" style="margin:0 5px;">🖨 Cetak Browser</button>
     </div>
 
 </body>

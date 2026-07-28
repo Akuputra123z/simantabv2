@@ -72,7 +72,7 @@
         </div>
         <div class="p-5">
             <p class="text-base font-medium leading-relaxed text-gray-800">
-                {{ $tindakLanjut->recommendation->uraian_rekom ?? 'Tidak ada uraian rekomendasi.' }}
+                {!! $tindakLanjut->recommendation->uraian_rekom ?? 'Tidak ada uraian rekomendasi.' !!}
             </p>
 
             <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3 border-t border-gray-50 pt-5">

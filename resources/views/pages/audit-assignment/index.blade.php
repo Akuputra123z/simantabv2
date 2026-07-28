@@ -94,13 +94,13 @@
         <table class="w-full text-left text-sm">
             <thead class="bg-gray-50/70 dark:bg-gray-900/40">
                 <tr>
-                    <th class="px-5 py-3.5 w-[30%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Program & No. Surat</th>
-                    <th class="px-5 py-3.5 w-[16%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Unit Diperiksa</th>
-                    <th class="px-5 py-3.5 w-[16%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Jadwal</th>
-                    <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Jenis</th>
-                    <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Kategori</th>
-                    <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Status</th>
-                    <th class="px-5 py-3.5 w-[11%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-right">Aksi</th>
+                    <th class="px-5 py-3.5 w-[26%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Program & No. Surat</th>
+                    <th class="px-5 py-3.5 w-[14%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Unit Diperiksa</th>
+                    <th class="px-5 py-3.5 w-[14%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Jadwal</th>
+                    <th class="px-5 py-3.5 w-[8%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Jenis</th>
+                    <th class="px-5 py-3.5 w-[8%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Kategori</th>
+                    <th class="px-5 py-3.5 w-[8%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Status</th>
+                    <th class="px-5 py-3.5 w-[12%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -200,9 +200,9 @@
                     {{-- Aksi --}}
                     <td class="px-5 py-4 text-right">
                         <div class="flex justify-end gap-2">
-                           <a href="{{ route('audit-assignment.print', $item->id) }}" target="_blank" class="p-1.5 text-gray-400 hover:text-green-600 transition-colors" title="Cetak Surat Tugas">
+                           <a href="{{ route('audit-assignment.preview', $item->id) }}" target="_blank" class="p-1.5 text-gray-400 hover:text-green-600 transition-colors" title="Pratinjau Surat Tugas">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"/>
                                 </svg>
                             </a>
                             <a href="{{ route('audit-assignment.show', $item->id) }}" class="p-1.5 text-gray-400 hover:text-blue-600 transition-colors">

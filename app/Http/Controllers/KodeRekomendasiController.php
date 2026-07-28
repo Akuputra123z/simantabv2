@@ -57,6 +57,12 @@ class KodeRekomendasiController extends Controller
         // Fix checkbox: jika tidak dicentang, set false
         $validated['is_active'] = $request->has('is_active');
 
+        // Sanitasi HTML untuk deskripsi
+        $allowedTags = '<p><br><b><strong><i><em><u><ol><ul><li>';
+        if (!empty($validated['deskripsi'])) {
+            $validated['deskripsi'] = strip_tags($validated['deskripsi'], $allowedTags);
+        }
+
         KodeRekomendasi::create($validated);
 
         return redirect()
@@ -108,6 +114,12 @@ class KodeRekomendasiController extends Controller
         ]);
 
         $validated['is_active'] = $request->has('is_active');
+
+        // Sanitasi HTML untuk deskripsi
+        $allowedTags = '<p><br><b><strong><i><em><u><ol><ul><li>';
+        if (!empty($validated['deskripsi'])) {
+            $validated['deskripsi'] = strip_tags($validated['deskripsi'], $allowedTags);
+        }
 
         $kodeRekomendasi->update($validated);
 

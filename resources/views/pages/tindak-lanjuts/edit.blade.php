@@ -42,7 +42,7 @@
                     <p class="text-xs font-semibold text-blue-600 uppercase mb-1">Rekomendasi Terkait</p>
                     <p class="text-sm text-gray-700 dark:text-gray-300">
                         <strong>[{{ $tindakLanjut->recommendation->temuan->lhp->nomor_lhp ?? '-' }}]</strong>
-                        {{ Str::limit($tindakLanjut->recommendation->uraian_rekom ?? '-', 120) }}
+                        {{ Str::limit(strip_tags($tindakLanjut->recommendation->uraian_rekom ?? '-'), 120) }}
                     </p>
                     <p class="text-xs text-gray-500 mt-1">
                         Nilai rekom: <strong>Rp {{ number_format($tindakLanjut->recommendation->nilai_rekom ?? 0, 0, ',', '.') }}</strong>
@@ -159,7 +159,6 @@
                         </div>
 
                         {{-- Verifikator --}}
-                        @php $verifikatorUsers = $users->map(fn($u) => ['id' => $u->id, 'name' => $u->name])->values(); @endphp
                         <div class="w-full px-2.5 xl:w-1/2"
                              x-data='verifikatorSelect(@json($verifikatorUsers), @json(old("diverifikasi_oleh", $tindakLanjut->diverifikasi_oleh)))'>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">

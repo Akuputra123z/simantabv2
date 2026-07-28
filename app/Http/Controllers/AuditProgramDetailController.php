@@ -129,6 +129,9 @@ class AuditProgramDetailController extends Controller
     {
         $detail = $auditProgramDetail;
         $auditProgram = $detail->parentProgram;
+        if (!$auditProgram) {
+            abort(404, 'Program induk tidak ditemukan.');
+        }
         $kategori = $auditProgram->kategori;
         return view('pages.audit-program-detail.edit', compact('detail', 'auditProgram', 'kategori'));
     }

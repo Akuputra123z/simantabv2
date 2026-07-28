@@ -61,14 +61,6 @@ class Recommendation extends Model
 
     /**
      * Sinkronisasi status & nilai berdasarkan data TindakLanjut terkini.
-     *
-     * PERBAIKAN:
-     * - nilai_tl_selesai di-cap max nilai_rekom → mencegah nilai_sisa negatif
-     *   dan progress > 100%.
-     */
-  /**
-     * Sinkronisasi status & nilai berdasarkan data TindakLanjut terkini.
-     * FIX: Status berubah jadi PROSES jika ada TL, meskipun nominal belum masuk (karena belum verifikasi).
      */
     public function syncStatus(): void
     {
@@ -134,7 +126,7 @@ class Recommendation extends Model
             if ($nilaiRekom <= 0) return 0;
 
             // Ambil total_terbayar dari TL (sudah di-cap di syncStatus)
-            $totalBayar = $this->tindakLanjuts->sum('total_terbayar');
+            $totalBayar = (float) $this->tindakLanjuts()->sum('total_terbayar');
 
             return min(100, round(($totalBayar / $nilaiRekom) * 100, 2));
         }
@@ -153,8 +145,4 @@ class Recommendation extends Model
 
     // ── Events ────────────────────────────────────────────────────────────────
 
-    protected static function booted(): void
-    {
-        // Sengaja kosong.
-    }
 }

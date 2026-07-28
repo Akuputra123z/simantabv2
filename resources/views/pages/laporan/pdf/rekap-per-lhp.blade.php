@@ -259,7 +259,7 @@
                         @foreach($temuan->recommendations as $rekom)
                             <div class="rekom-wrapper">
                                 <span class="rekom-tag">R{{ $loop->iteration }}.</span>
-                                <span class="rekom-text">{{ $rekom->uraian_rekom }}</span>
+                                <span class="rekom-text">{!! $rekom->uraian_rekom !!}</span>
                                 
                                 <div class="tl-box">
                                     @php 

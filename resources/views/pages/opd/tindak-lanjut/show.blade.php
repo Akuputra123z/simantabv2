@@ -63,7 +63,7 @@
                     <div>
                         <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Uraian Rekomendasi</p>
                         <p class="text-sm leading-relaxed text-gray-800">
-                            {{ $tindakLanjut->recommendation?->uraian_rekom ?? 'Tidak ada uraian.' }}
+                            {!! $tindakLanjut->recommendation?->uraian_rekom ?? 'Tidak ada uraian.' !!}
                         </p>
                     </div>
 

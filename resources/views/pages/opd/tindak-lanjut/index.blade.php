@@ -95,7 +95,7 @@
                         <td class="px-5 py-4 align-top">
                             <!-- Uraian Rekomendasi (Utama) -->
                             <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug mb-1">
-                                {{ $tl->recommendation->uraian_rekom ?? '-' }}
+                                {{ strip_tags($tl->recommendation->uraian_rekom ?? '-') }}
                             </p>
                             
                             <!-- Nomor LHP (Sekunder/Metadata) -->
@@ -107,7 +107,7 @@
                         {{ $tl->recommendation?->temuan?->lhp?->unitDiperiksa?->nama_unit ?? '-' }}
                     </td>
                     <td class="px-5 py-4 max-w-xs truncate text-gray-700">
-                        {{ Str::limit($tl->recommendation?->uraian_rekom ?? '-', 60) }}
+                        {{ Str::limit(strip_tags($tl->recommendation?->uraian_rekom ?? '-'), 60) }}
                     </td>
                     <td class="px-5 py-4">
                         @php

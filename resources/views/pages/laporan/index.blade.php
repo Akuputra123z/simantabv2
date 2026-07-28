@@ -1,5 +1,14 @@
 @extends('layouts.app')
 
+@push('styles')
+<style>
+    input[type="date"] { color-scheme: light; }
+    .dark input[type="date"] { color-scheme: dark; }
+    input[type="date"]::-webkit-calendar-picker-indicator { display: block; }
+    input[type="date"]::-webkit-calendar-picker-indicator:hover { cursor: pointer; opacity: 0.7; }
+</style>
+@endpush
+
 @section('content')
 <div class="space-y-6">
 
@@ -65,22 +74,10 @@
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
 
                 <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Tahun</label>
-                    <select name="tahun" class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        <option value="">Semua</option>
-                        @foreach ($tahunList as $t)
-                            <option value="{{ $t }}" {{ request('tahun') == $t ? 'selected' : '' }}>{{ $t }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Semester</label>
-                    <select name="semester" class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        <option value="">Semua</option>
-                        <option value="1" {{ request('semester') == '1' ? 'selected' : '' }}>Semester I</option>
-                        <option value="2" {{ request('semester') == '2' ? 'selected' : '' }}>Semester II</option>
-                    </select>
+                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Cari</label>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="Nomor LHP, program, ST..."
+                           class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                 </div>
 
                 <div>
@@ -94,26 +91,35 @@
                 </div>
 
                 <div>
+                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Kategori</label>
+                    <select name="kategori" class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        <option value="">Semua</option>
+                        @foreach ($kategoris as $k)
+                            <option value="{{ $k }}" {{ request('kategori') == $k ? 'selected' : '' }}>{{ $k }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
                     <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Status</label>
                     <select name="status" class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                         <option value="">Semua</option>
-                        <option value="draft"          {{ request('status') == 'draft'          ? 'selected' : '' }}>Draft</option>
-                        <option value="final"          {{ request('status') == 'final'          ? 'selected' : '' }}>Final</option>
-                        <option value="ditandatangani" {{ request('status') == 'ditandatangani' ? 'selected' : '' }}>Ditandatangani</option>
-                        <option value="batal"          {{ request('status') == 'batal'          ? 'selected' : '' }}>Batal</option>
+                        <option value="lunas"    {{ request('status') == 'lunas'    ? 'selected' : '' }}>Lunas</option>
+                        <option value="sebagian" {{ request('status') == 'sebagian' ? 'selected' : '' }}>Sebagian</option>
+                        <option value="belum"    {{ request('status') == 'belum'    ? 'selected' : '' }}>Belum</option>
                     </select>
                 </div>
 
                 <div>
                     <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Dari Tanggal</label>
                     <input type="date" name="dari" value="{{ request('dari') }}"
-                        class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        class="h-9 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                 </div>
 
                 <div>
                     <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Sampai Tanggal</label>
                     <input type="date" name="sampai" value="{{ request('sampai') }}"
-                        class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        class="h-9 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                 </div>
 
             </div>
@@ -145,10 +151,9 @@
             <table class="w-full text-left text-sm">
                 <thead class="bg-gray-50/70 dark:bg-gray-900/40">
                     <tr>
-                        <th class="px-5 py-3.5 w-[22%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nomor LHP</th>
+                        <th class="px-5 py-3.5 w-[31%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nomor LHP</th>
                         <th class="px-5 py-3.5 w-[14%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Unit</th>
                         <th class="px-5 py-3.5 w-[10%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Tanggal</th>
-                        <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400">IRBAN</th>
                         <th class="px-5 py-3.5 w-[8%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Kategori</th>
                         <th class="px-5 py-3.5 w-[8%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Status</th>
                         <th class="px-5 py-3.5 w-[15%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-right">Kerugian</th>
@@ -162,12 +167,10 @@
                         $stat   = $lhp->statistik;
                         $persen = (float) ($stat?->persen_selesai_gabungan ?? 0);
                         $bar    = $persen >= 100 ? 'bg-green-500' : ($persen >= 50 ? 'bg-amber-400' : ($persen > 0 ? 'bg-blue-500' : 'bg-gray-300'));
-                        $statusConf = match($lhp->status) {
-                            'draft'          => 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
-                            'final'          => 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-                            'ditandatangani' => 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-                            'batal'          => 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-                            default          => 'bg-gray-100 text-gray-600',
+                        $statusConf = match($stat?->status_progress) {
+                            'Lunas'    => 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+                            'Sebagian' => 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                            default    => 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
                         };
                         $k = $lhp->auditAssignment?->auditProgram?->kategori;
                         $kategoriBadge = match($k) {
@@ -187,6 +190,11 @@
                                     {{ $lhp->nomor_lhp }}
                                 </a>
                             </div>
+                            @if($lhp->auditAssignment?->nomor_surat)
+                            <p class="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500 leading-tight">
+                                ST: {{ $lhp->auditAssignment->nomor_surat }}
+                            </p>
+                            @endif
                             @if($lhp->auditAssignment?->auditProgram?->nama_program)
                             <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
                                 {{ $lhp->auditAssignment->auditProgram->nama_program }}
@@ -197,6 +205,16 @@
                                 {{ $lhp->auditAssignment->auditProgramDetail->jenis_kegiatan }}
                             </p>
                             @endif
+                            <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                <span class="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-[9px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30">
+                                    {{ $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-' }}
+                                </span>
+                                @if($lhp->auditAssignment?->jenis_pengawasan)
+                                <span class="px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-900/20 text-[9px] font-semibold text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30">
+                                    {{ ucfirst($lhp->auditAssignment->jenis_pengawasan) }}
+                                </span>
+                                @endif
+                            </div>
                         </td>
                         {{-- Unit --}}
                         <td class="px-5 py-4">
@@ -211,14 +229,8 @@
                             <span class="mt-1 block text-[10px] text-gray-400 dark:text-gray-500">Smt {{ $lhp->semester == 1 ? 'I' : 'II' }}</span>
                             @endif
                         </td>
-                        {{-- IRBAN --}}
-                        <td class="px-5 py-4">
-                            <span class="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-[9px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30">
-                                {{ $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-' }}
-                            </span>
-                        </td>
                         {{-- Kategori --}}
-                        <td class="px-5 py-4">
+                        <td class="px-5 py-4 text-center">
                             <span class="px-2 py-1 rounded text-[10px] font-bold uppercase {{ $kategoriBadge }}">
                                 {{ $k ?? '-' }}
                             </span>
@@ -226,7 +238,7 @@
                         {{-- Status --}}
                         <td class="px-5 py-4">
                             <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase {{ $statusConf }}">
-                                {{ ucfirst($lhp->status) }}
+                                {{ $stat?->status_progress ?? 'Belum' }}
                             </span>
                         </td>
                         {{-- Kerugian --}}
@@ -281,7 +293,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="px-5 py-16 text-center">
+                        <td colspan="8" class="px-5 py-16 text-center">
                             <div class="flex flex-col items-center gap-2">
                                 <svg class="h-10 w-10 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -303,4 +315,11 @@
     </div>
 
 </div>
+@push('scripts')
+<script>
+document.querySelectorAll('input[type="date"]').forEach(input => {
+    input.addEventListener('click', function() { this.showPicker(); });
+});
+</script>
+@endpush
 @endsection

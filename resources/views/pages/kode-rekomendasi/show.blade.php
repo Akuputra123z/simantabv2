@@ -83,10 +83,10 @@
 
         {{-- Deskripsi --}}
         <div class="border-t border-gray-100 pt-4">
-            <p class="text-sm text-gray-500 mb-2">Uraian</p>
-            <p class="text-gray-600 leading-relaxed">
+            <p class="text-sm text-gray-500 mb-2">Deskripsi</p>
+            <div class="rounded-lg bg-gray-50 p-4 text-gray-800 dark:bg-gray-800 dark:text-white/90 prose prose-sm max-w-none leading-relaxed">
                 {{ $data->deskripsi ?: 'Belum ada deskripsi untuk data ini.' }}
-            </p>
+            </div>
         </div>
 
         {{-- Footer --}}

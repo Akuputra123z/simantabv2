@@ -1,439 +1,636 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Login - E-AUDIT INSPEKTORAT</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/css/landing.css?v=1">
-<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-<script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "on-error": "#ffffff",
-            "on-secondary-fixed": "#011b3e",
-            "error": "#ba1a1a",
-            "on-background": "#1a1c1c",
-            "on-tertiary-container": "#ffdfd2",
-            "inverse-surface": "#2f3131",
-            "secondary-fixed-dim": "#b2c7f3",
-            "secondary": "#4a5f85",
-            "tertiary-container": "#ae4600",
-            "surface-variant": "#e2e2e2",
-            "primary": "#0049ab",
-            "surface-container": "#eeeeee",
-            "on-secondary-fixed-variant": "#32476c",
-            "on-error-container": "#93000a",
-            "on-primary-fixed": "#001945",
-            "on-tertiary": "#ffffff",
-            "primary-container": "#1d61d1",
-            "primary-fixed-dim": "#b0c6ff",
-            "surface": "#f9f9f9",
-            "error-container": "#ffdad6",
-            "secondary-container": "#bdd2fe",
-            "tertiary-fixed-dim": "#ffb694",
-            "on-tertiary-fixed": "#351000",
-            "on-tertiary-fixed-variant": "#7b2f00",
-            "on-primary-fixed-variant": "#00429b",
-            "on-secondary-container": "#455a80",
-            "outline": "#737785",
-            "inverse-on-surface": "#f0f1f1",
-            "surface-dim": "#dadada",
-            "tertiary": "#873500",
-            "surface-container-high": "#e8e8e8",
-            "secondary-fixed": "#d7e3ff",
-            "tertiary-fixed": "#ffdbcc",
-            "on-surface": "#1a1c1c",
-            "on-primary-container": "#dee5ff",
-            "on-primary": "#ffffff",
-            "surface-container-low": "#f3f3f4",
-            "surface-container-lowest": "#ffffff",
-            "on-secondary": "#ffffff",
-            "surface-bright": "#f9f9f9",
-            "background": "#f9f9f9",
-            "inverse-primary": "#b0c6ff",
-            "surface-tint": "#0858c8",
-            "surface-container-highest": "#e2e2e2",
-            "on-surface-variant": "#424653",
-            "primary-fixed": "#d9e2ff",
-            "outline-variant": "#c2c6d6"
-          },
-          borderRadius: {
-            DEFAULT: "0.25rem",
-            lg: "0.5rem",
-            xl: "0.75rem",
-            "2xl": "1rem",
-            full: "9999px"
-          },
-          fontFamily: {
-            "body-md": ["Inter"],
-            "caption": ["Inter"],
-            "label-sm": ["Inter"],
-            h1: ["Inter"],
-            h2: ["Inter"]
-          },
-          fontSize: {
-            "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
-            caption: ["12px", { lineHeight: "16px", fontWeight: "400" }],
-            "label-sm": ["14px", { lineHeight: "20px", fontWeight: "500" }],
-            h1: ["30px", { lineHeight: "38px", letterSpacing: "-0.02em", fontWeight: "700" }],
-            h2: ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "600" }]
-          }
-        }
-      }
-    }
-</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masuk — SIWAS Inspektorat Kabupaten Rembang</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-    * { box-sizing: border-box; }
+  :root{
+    --ink-black:#0A0D12;
+    --ink-panel:#11151C;
+    --teal:#22D3B8;
+    --amber:#F0A93B;
+    --coral:#E8674F;
+    --paper:#F7F7F5;
+    --slate-900:#171B22;
+    --slate-600:#5B6472;
+    --slate-300:#D7DAE0;
+    --slate-100:#EEEFF1;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Inter', sans-serif;
+    display:flex;
+    min-height:100vh;
+    background:var(--paper);
+    color:var(--slate-900);
+    overflow:hidden;
+  }
 
-    .glass-panel {
-        background: rgba(255,255,255,0.03);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255,255,255,0.08);
-        box-shadow: 0 4px 30px rgba(0,0,0,0.1);
-    }
-    .smooth-gradient {
-        background: linear-gradient(135deg, #1d61d1 0%, #0049ab 100%);
-    }
-    .smooth-gradient-hover:hover {
-        background: linear-gradient(135deg, #1d61d1 10%, #00429b 100%);
-    }
-    .bg-mesh {
-        background-color: #051024;
-        background-image:
-            radial-gradient(at 80% 0%, hsla(217,100%,25%,0.4) 0px, transparent 50%),
-            radial-gradient(at 0% 100%, hsla(217,100%,15%,0.6) 0px, transparent 50%);
-    }
+  /* ===== LEFT: 3D STAGE ===== */
+  .stage{
+    position:relative;
+    flex:1 1 56%;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(34,211,184,0.10), transparent 55%),
+      radial-gradient(ellipse at 75% 80%, rgba(240,169,59,0.08), transparent 50%),
+      var(--ink-black);
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    min-height:100vh;
+  }
 
-    /* Floating badges — static on small screens, animated on lg+ */
-    .float-badge-right {
-        transform: translateY(16px);
-        transition: transform 0.5s ease;
-    }
-    .float-badge-right:hover { transform: translateY(-8px); }
+  .scene3d{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    perspective:1200px;
+    z-index:1;
+    pointer-events:none;
+  }
+  .gem{
+    position:relative;
+    width:260px; height:260px;
+    transform-style:preserve-3d;
+    animation:spinGem 14s linear infinite;
+  }
+  @keyframes spinGem{
+    from{ transform:rotateY(0deg) rotateX(-18deg); }
+    to{ transform:rotateY(360deg) rotateX(-18deg); }
+  }
+  .facet{
+    position:absolute;
+    top:50%; left:50%;
+    width:150px; height:150px;
+    margin:-75px 0 0 -75px;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    opacity:0.92;
+    backface-visibility:visible;
+    box-shadow: 0 0 40px rgba(34,211,184,0.15);
+  }
+  .facet.f1{ background:linear-gradient(135deg, #2FE3C6, #1AA98F); transform: rotateY(0deg)   translateZ(90px); }
+  .facet.f2{ background:linear-gradient(135deg, #23B39C, #14806D); transform: rotateY(60deg)  translateZ(90px); }
+  .facet.f3{ background:linear-gradient(135deg, #F2B75A, #D98F1F); transform: rotateY(120deg) translateZ(90px); }
+  .facet.f4{ background:linear-gradient(135deg, #EF8B62, #D85C36); transform: rotateY(180deg) translateZ(90px); }
+  .facet.f5{ background:linear-gradient(135deg, #23B39C, #14806D); transform: rotateY(240deg) translateZ(90px); }
+  .facet.f6{ background:linear-gradient(135deg, #2FE3C6, #1AA98F); transform: rotateY(300deg) translateZ(90px); }
+  .facet.top{
+    background:linear-gradient(135deg, #F6D488, #F0A93B);
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+    transform: rotateX(90deg) translateZ(90px);
+  }
+  .facet.bottom{
+    background:linear-gradient(135deg, #163B36, #0C2422);
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+    transform: rotateX(-90deg) translateZ(90px);
+  }
+  .ring{
+    position:absolute; top:50%; left:50%;
+    width:340px; height:340px;
+    margin:-170px 0 0 -170px;
+    border:1px solid rgba(34,211,184,0.35);
+    border-radius:50%;
+    transform-style:preserve-3d;
+    animation:spinRing 22s linear infinite reverse;
+  }
+  @keyframes spinRing{
+    from{ transform:rotateX(78deg) rotateZ(0deg); }
+    to{ transform:rotateX(78deg) rotateZ(360deg); }
+  }
+  .ring::before, .ring::after{
+    content:'';
+    position:absolute;
+    width:10px; height:10px;
+    border-radius:50%;
+    background:var(--amber);
+    box-shadow:0 0 12px var(--amber);
+    top:-5px; left:calc(50% - 5px);
+  }
+  .ring::after{
+    background:var(--teal);
+    box-shadow:0 0 12px var(--teal);
+    top:auto; bottom:-5px;
+    left:calc(50% - 5px);
+  }
+  .glow-floor{
+    position:absolute; bottom:-40px; left:50%;
+    width:380px; height:90px;
+    transform:translateX(-50%);
+    background:radial-gradient(ellipse at center, rgba(34,211,184,0.28), transparent 70%);
+    filter:blur(6px);
+  }
 
-    .float-badge-left {
-        transform: translateY(-16px);
-        transition: transform 0.5s ease;
-    }
-    .float-badge-left:hover { transform: translateY(8px); }
+  .stage-top{
+    position:relative; z-index:2;
+    display:flex; align-items:center; gap:10px;
+    padding:36px 44px 0;
+  }
+  .mark{
+    width:28px; height:28px;
+    background:linear-gradient(135deg, var(--teal), var(--amber));
+    border-radius:7px;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+  .brand-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px; letter-spacing:.14em; color:var(--slate-300);
+    text-transform:uppercase;
+  }
 
-    /* Bar chart bars hover */
-    .bar { transition: height 0.3s ease; }
+  .stage-bottom{
+    position:relative; z-index:2;
+    padding:0 44px 48px;
+  }
+  .stage-bottom h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:clamp(30px, 3.6vw, 46px);
+    line-height:1.08;
+    color:#fff;
+    letter-spacing:-0.01em;
+    max-width:9.5ch;
+  }
 
-    /* Shimmer on info card */
-    .shimmer-group:hover .shimmer {
-        transform: translateX(100%);
-        transition: transform 1s ease-in-out;
-    }
-    .shimmer {
-        transform: translateX(-100%);
-        transition: none;
-    }
+  .title-3d-wrap{
+    perspective:900px;
+    margin-bottom:2px;
+  }
+  .title-3d{
+    display:inline-block;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(26px, 2.7vw, 38px);
+    line-height:1.14;
+    letter-spacing:0.01em;
+    color:#F4FBFA;
+    max-width:11.5ch;
+    min-height:2.3em;
+    transform:rotateX(10deg) rotateY(-4deg);
+    transform-style:preserve-3d;
+    text-shadow:
+      1px 1px 0   #1AA98F,
+      2px 2px 0   #17967F,
+      3px 3px 0   #14806D,
+      4px 4px 0   #116C5C,
+      5px 5px 0   #0E5A4D,
+      6px 6px 0   #0B4A3F,
+      7px 7px 0   #093C33,
+      8px 8px 10px rgba(0,0,0,0.55),
+      0 0 26px rgba(34,211,184,0.35);
+    animation:titleFloat 6s ease-in-out infinite;
+  }
+  @keyframes titleFloat{
+    0%, 100%{ transform:rotateX(10deg) rotateY(-4deg) translateY(0px); }
+    50%{ transform:rotateX(10deg) rotateY(-4deg) translateY(-5px); }
+  }
+  .title-eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--amber);
+    margin-bottom:10px;
+    min-height:14px;
+  }
 
-    /* Ensure the page never overflows on small screens */
-    html, body { height: 100%; }
+  .tw-cursor{
+    display:inline-block;
+    width:2px;
+    margin-left:2px;
+    background:currentColor;
+    animation:twBlink 0.85s steps(1) infinite;
+    vertical-align:-0.05em;
+  }
+  .tw-cursor.on-eyebrow{ height:11px; background:var(--amber); }
+  .tw-cursor.on-title{ height:0.85em; background:var(--teal); }
+  .tw-cursor.on-sub{ height:14px; background:var(--slate-300); }
+  .tw-cursor.done{ animation:twBlink 0.85s steps(1) infinite; }
+  @keyframes twBlink{
+    0%, 49%{ opacity:1; }
+    50%, 100%{ opacity:0; }
+  }
+  .stage-bottom .sub{
+    margin-top:14px;
+    font-size:15px;
+    color:var(--slate-300);
+    max-width:34ch;
+    line-height:1.55;
+  }
+  .stage-foot{
+    margin-top:28px;
+    display:flex; gap:22px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:#586071;
+    letter-spacing:.04em;
+  }
+  .stage-foot span{ display:flex; align-items:center; gap:6px; }
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--teal); box-shadow:0 0 8px var(--teal);}
+
+  /* ===== RIGHT: FORM ===== */
+  .panel{
+    flex:1 1 44%;
+    max-width:560px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px;
+    background:var(--paper);
+    position:relative;
+  }
+  .form-wrap{ width:100%; max-width:380px; }
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--coral);
+    margin-bottom:10px;
+  }
+  .form-wrap h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:28px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin-bottom:8px;
+  }
+  .form-wrap p.desc{
+    font-size:14px;
+    color:var(--slate-600);
+    line-height:1.5;
+    margin-bottom:32px;
+  }
+
+  .field{ margin-bottom:20px; }
+  .field label{
+    display:block;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--slate-900);
+    margin-bottom:8px;
+  }
+
+  .tenant-card{
+    display:flex; align-items:center; gap:12px;
+    border:1.5px solid var(--slate-300);
+    border-radius:12px;
+    padding:13px 14px;
+    cursor:default;
+    transition:border-color .15s ease, background .15s ease;
+    background:#fff;
+  }
+  .tenant-card:hover{ border-color:var(--teal); }
+  .tenant-icon{
+    width:36px; height:36px; border-radius:9px;
+    background:linear-gradient(135deg, #E8FBF7, #FDF3E3);
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px;
+  }
+  .tenant-info{ flex:1; }
+  .tenant-info .name{ font-size:14px; font-weight:600; color:var(--slate-900); }
+  .tenant-info .meta{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--slate-600); margin-top:2px; }
+  .tenant-info .meta .status-dot{ width:6px; height:6px; border-radius:50%; background:var(--teal); }
+
+  .input-group{
+    display:flex; align-items:center; gap:10px;
+    border:1.5px solid var(--slate-300);
+    border-radius:12px;
+    padding:12px 14px;
+    background:#fff;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .input-group:focus-within{
+    border-color:var(--teal);
+    box-shadow:0 0 0 4px rgba(34,211,184,0.12);
+  }
+  .input-group.input-error{
+    border-color:var(--coral);
+    box-shadow:0 0 0 4px rgba(232,103,79,0.12);
+  }
+  .input-group svg{ flex-shrink:0; color:var(--slate-600); }
+  .input-group input{
+    border:none; outline:none; flex:1;
+    font-family:'Inter', sans-serif;
+    font-size:14px; color:var(--slate-900);
+    background:transparent;
+  }
+  .input-group input::placeholder{ color:#A7ACB6; }
+  .eye-btn{ background:none; border:none; cursor:pointer; color:var(--slate-600); display:flex; padding:0; }
+
+  .field-error{
+    font-size:12px;
+    color:var(--coral);
+    margin-top:6px;
+    display:flex;
+    align-items:center;
+    gap:5px;
+  }
+
+  .row-between{ display:flex; align-items:center; justify-content:space-between; margin:2px 0 24px; }
+  .remember{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--slate-600); cursor:pointer; }
+  .remember input{ accent-color:var(--teal); width:14px; height:14px; cursor:pointer; }
+  .forgot{ font-size:13px; color:var(--coral); text-decoration:none; font-weight:600; }
+  .forgot:hover{ text-decoration:underline; }
+
+  .alert-error{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 14px;
+    border-radius:12px;
+    background:#FEF2F0;
+    border:1px solid #FADBD4;
+    font-size:13px;
+    color:var(--coral);
+    margin-bottom:20px;
+    line-height:1.4;
+  }
+  .alert-error svg{ flex-shrink:0; }
+
+  .btn-primary{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:var(--slate-900);
+    color:#fff;
+    font-family:'Inter', sans-serif;
+    font-size:14.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .15s ease, transform .1s ease;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-primary:hover{ background:#000; }
+  .btn-primary:active{ transform:scale(0.99); }
+  .btn-primary:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  .security-note{
+    display:flex; align-items:flex-start; gap:8px;
+    margin-top:22px;
+    font-size:12px;
+    color:var(--slate-600);
+    line-height:1.5;
+  }
+  .security-note svg{ flex-shrink:0; margin-top:1px; color:var(--slate-600); }
+
+  .divider-foot{
+    margin-top:34px;
+    padding-top:20px;
+    border-top:1px solid var(--slate-100);
+    font-size:12px;
+    color:#9CA1AC;
+    display:flex; justify-content:space-between;
+  }
+  .divider-foot a{ color:var(--slate-600); text-decoration:none; font-weight:600; }
+  .divider-foot a:hover{ color:var(--slate-900); }
+
+  @media (max-width: 880px){
+    body{ flex-direction:column; overflow:auto; }
+    .stage{ min-height:280px; flex:none; }
+    .stage-bottom h1{ font-size:clamp(24px, 5vw, 36px); }
+    .panel{ max-width:100%; padding:32px 24px 60px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .scene3d{ display:none; }
+    .title-3d{ animation:none; }
+  }
 </style>
 </head>
-<body class="bg-slate-50 text-on-background font-body-md antialiased selection:bg-[#1d61d1] selection:text-white min-h-screen flex flex-col">
+<body>
 
-<main class="flex-grow flex w-full items-start lg:items-center justify-center p-3 sm:p-4 lg:p-8">
-
-    <!-- Outer card -->
-    <div class="flex w-full bg-surface-container-lowest rounded-2xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-outline-variant/20 flex-col lg:flex-row max-w-[1300px] mx-auto">
-
-        <!-- ═══════════════════════════════════════
-             LEFT — Authentication Zone
-        ════════════════════════════════════════ -->
-        <div class="w-full lg:w-[42%] xl:w-[38%] bg-white flex flex-col items-center justify-center px-5 py-10 sm:px-8 sm:py-12 lg:px-16 lg:py-16 relative z-10">
-
-            <div class="w-full max-w-[400px] mb-40">
-                <div class="w-full max-w-[400px]">
-                    <a href="{{ route('home') }}" class="group inline-flex items-center text-[13px] font-medium text-gray-400 hover:text-primary transition-all duration-300">
-                        <x-heroicon-o-arrow-left class="w-[18px] h-[18px] mr-2 group-hover:-translate-x-1 transition-transform" aria-hidden="true" />
-                        Kembali ke Beranda
-                    </a>
-                </div>
-                
-
-                <!-- Logo & Header -->
-        <div class="mb-8 text-center flex flex-col items-center space-y-4 mt-10">
-
-    <!-- Logo -->
-    <div class="flex justify-center">
-        <img 
-            src="{{ asset('images/logo/image.png') }}" 
-            alt="Logo Inspektorat" 
-            class="h-24 sm:h-28 w-auto object-contain"
-        >
+  <div class="stage">
+    <div class="scene3d">
+      <div class="gem">
+        <div class="facet f1"></div>
+        <div class="facet f2"></div>
+        <div class="facet f3"></div>
+        <div class="facet f4"></div>
+        <div class="facet f5"></div>
+        <div class="facet f6"></div>
+        <div class="facet top"></div>
+        <div class="facet bottom"></div>
+        <div class="ring"></div>
+      </div>
+      <div class="glow-floor"></div>
     </div>
-
-    <!-- Nama Instansi -->
-    <div class="space-y-0.5">
-        <h1 class="text-[18px] sm:text-[20px] font-bold text-gray-900 tracking-tight">
-            E-AUDIT INSPEKTORAT
-        </h1>
-        <p class="text-[12px] text-[#1d61d1] font-semibold tracking-[0.15em] uppercase">
-            Kabupaten Rembang
-        </p>
+    <div class="stage-top">
+      <div class="mark"></div>
+      <div class="brand-tag">SIMANTAB · Kab. Rembang</div>
     </div>
-
-    <!-- Divider -->
-    <div class="w-14 h-[2px] bg-gradient-to-r from-[#1d61d1] to-blue-400 rounded-full"></div>
-
-    <!-- Welcome Text -->
-    <div class="space-y-1 pt-1">
-        <h2 class="text-[18px] sm:text-[20px] font-semibold text-gray-800">
-            Selamat Datang
-        </h2>
-        <p class="text-[13px] text-gray-500 font-light">
-            Silakan masuk untuk melanjutkan ke sistem
-        </p>
+    <div class="stage-bottom">
+      <div class="title-eyebrow" id="twEyebrow"></div>
+      <div class="title-3d-wrap">
+        <span class="title-3d"><span class="tw-line" id="twLine1"></span><br><span class="tw-line" id="twLine2"></span></span>
+      </div>
+      <p class="sub" id="twSub"></p>
+      <div class="stage-foot">
+        <span><span class="dot"></span> Sistem beroperasi normal</span>
+        <span>v1.0.0</span>
+      </div>
     </div>
+  </div>
 
-</div>
-                <!-- Form -->
-                <form method="POST" action="{{ route('login') }}" class="space-y-5">
-                    @csrf
+  <div class="panel">
+    <div class="form-wrap">
+      <div class="eyebrow">Masuk ke Sistem</div>
+      <h2>Selamat datang kembali</h2>
+      <p class="desc">Masukkan detail akun Anda untuk melanjutkan ke SIWAS Inspektorat Daerah Kabupaten Rembang.</p>
 
-                    <!-- Email -->
-                    <div>
-                        <label class="block text-[13px] font-medium text-gray-700 mb-1.5" for="email">Email</label>
-                        <div class="relative group">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                <x-heroicon-o-envelope class="w-5 h-5 text-gray-400 group-focus-within:text-[#1d61d1] transition-colors duration-300" aria-hidden="true" />
-                            </div>
-                            <input
-                                class="w-full pl-10 pr-4 py-[11px] rounded-xl border {{ $errors->has('email') ? 'border-red-400 bg-red-50/30' : 'border-gray-200 bg-gray-50/50' }} text-gray-900 focus:bg-white focus:ring-4 focus:ring-[#1d61d1]/10 focus:border-[#1d61d1] transition-all duration-300 text-[14px] font-light placeholder:text-gray-400 outline-none"
-                                id="email"
-                                type="email"
-                                name="email"
-                                value="{{ old('email') }}"
-                                required
-                                autofocus
-                                autocomplete="email"
-                                placeholder="Masukkan email Anda"
-                            />
-                        </div>
-                        @error('email')
-                            <p class="text-red-500 text-[12px] mt-1.5 flex items-center gap-1">
-                                <x-heroicon-o-exclamation-circle class="w-[14px] h-[14px]" aria-hidden="true" />
-                                {{ $message }}
-                            </p>
-                        @enderror
-                    </div>
+      {{-- Error Alert --}}
+      @if ($errors->any())
+      <div class="alert-error">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+        </svg>
+        <span>Email atau password salah. Silakan coba lagi.</span>
+      </div>
+      @endif
 
-                    <!-- Password -->
-                    <div x-data="{ show: false }">
-                        <label class="block text-[13px] font-medium text-gray-700 mb-1.5" for="password">Password</label>
-                        <div class="relative group">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                <x-heroicon-o-lock-closed class="w-5 h-5 text-gray-400 group-focus-within:text-[#1d61d1] transition-colors duration-300" aria-hidden="true" />
-                            </div>
-                            <input
-                                :type="show ? 'text' : 'password'"
-                                class="w-full pl-10 pr-11 py-[11px] rounded-xl border {{ $errors->has('password') ? 'border-red-400 bg-red-50/30' : 'border-gray-200 bg-gray-50/50' }} text-gray-900 focus:bg-white focus:ring-4 focus:ring-[#1d61d1]/10 focus:border-[#1d61d1] transition-all duration-300 text-[14px] font-light placeholder:text-gray-400 outline-none"
-                                id="password"
-                                name="password"
-                                required
-                                autocomplete="current-password"
-                                placeholder="••••••••"
-                            />
-                            <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center">
-                                <button type="button" @click="show = !show" class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none">
-                                    <x-heroicon-o-eye class="w-5 h-5" x-show="!show" aria-hidden="true" />
-                                    <x-heroicon-o-eye-slash class="w-5 h-5" x-show="show" aria-hidden="true" />
-                                </button>
-                            </div>
-                        </div>
-                        @error('password')
-                            <p class="text-red-500 text-[12px] mt-1.5 flex items-center gap-1">
-                                <x-heroicon-o-exclamation-circle class="w-[14px] h-[14px]" aria-hidden="true" />
-                                {{ $message }}
-                            </p>
-                        @enderror
-                    </div>
+      <form method="POST" action="{{ route('login') }}">
+        @csrf
 
-                    <!-- Remember & Forgot -->
-                    <div class="flex items-center justify-between pt-1 pb-2">
-                        <div class="flex items-center">
-                            <input class="h-[16px] w-[16px] text-[#1d61d1] focus:ring-[#1d61d1]/20 border-gray-300 rounded cursor-pointer transition-colors duration-200" id="remember-me" type="checkbox" name="remember"/>
-                            <label class="ml-2.5 text-[13px] text-gray-600 cursor-pointer font-light" for="remember-me">Ingat saya</label>
-                        </div>
-                        @if (Route::has('password.request'))
-                            <a class="text-[13px] text-[#1d61d1] hover:text-[#0049ab] transition-colors font-medium" href="{{ route('password.request') }}">Lupa password?</a>
-                        @endif
-                    </div>
-
-                    <!-- Global error alert -->
-                    @if ($errors->any() && !$errors->has('email') && !$errors->has('password'))
-                        <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2.5 text-red-600 text-[13px]">
-                            <x-heroicon-o-exclamation-circle class="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
-                            Email atau password salah
-                        </div>
-                    @endif
-                    @if ($errors->has('email') || $errors->has('password'))
-                        <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2.5 text-red-600 text-[13px]">
-                            <x-heroicon-o-exclamation-circle class="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
-                            Email atau password salah. Silakan coba lagi.
-                        </div>
-                    @endif
-
-    
-
-                   <div>
-    <button type="submit" class="w-full flex justify-center items-center py-[13px] px-6 border border-transparent rounded-xl shadow-lg shadow-[#1d61d1]/20 text-[14px] font-semibold text-white smooth-gradient smooth-gradient-hover transition-all duration-300 ease-out focus:outline-none focus:ring-4 focus:ring-[#1d61d1]/30 active:scale-[0.98]">
-        <x-heroicon-o-lock-open class="w-5 h-5 mr-2" aria-hidden="true" />
-        Masuk ke Sistem
-    </button>
-</div>
-
-<div class="pt-2 flex flex-col items-center justify-center text-center opacity-60 hover:opacity-100 transition-opacity duration-300">
-    <p class="text-[11px] text-gray-500 max-w-[280px] leading-relaxed font-light">
-        Sistem ini dilindungi dengan enkripsi AES-256 dan hanya untuk pengguna yang berwenang.
-    </p>
-</div>
-                    
-
-                </form>
+        <div class="field">
+          <label>Unit Kerja</label>
+          <div class="tenant-card">
+            <div class="tenant-icon">🏛️</div>
+            <div class="tenant-info">
+              <div class="name">Inspektorat Daerah — Kab. Rembang</div>
+              <div class="meta"><span class="status-dot"></span> Periode Aktif · 2026</div>
             </div>
-
-            <!-- Footer mobile -->
-            <div class="mt-8 lg:hidden text-center w-full">
-                <p class="text-[11px] text-gray-400 font-light">© 2024 Inspektorat. All rights reserved.</p>
-            </div>
+          </div>
         </div>
 
-        <!-- ═══════════════════════════════════════
-             RIGHT — Information Zone
-        ════════════════════════════════════════ -->
-        <div class="hidden lg:flex w-[58%] xl:w-[62%] bg-mesh relative overflow-hidden flex-col justify-between items-center p-12 xl:p-16 rounded-r-2xl">
+        <div class="field">
+          <label>Email</label>
+          <div class="input-group @error('email') input-error @enderror">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <input type="email" name="email" value="{{ old('email') }}" placeholder="Masukkan email Anda" required autofocus autocomplete="email">
+          </div>
+          @error('email')
+            <p class="field-error">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+              </svg>
+              {{ $message }}
+            </p>
+          @enderror
+        </div>
 
-            <!-- Background dot grid -->
-            <div class="absolute inset-0 pointer-events-none" style="background-image:radial-gradient(rgba(255,255,255,0.08) 1px,transparent 1px);background-size:40px 40px;opacity:0.5;"></div>
+        <div class="field">
+          <label>Kata Sandi</label>
+          <div class="input-group @error('password') input-error @enderror">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <input id="pwd" type="password" name="password" placeholder="Minimal 6 karakter" required autocomplete="current-password">
+            <button class="eye-btn" onclick="togglePwd()" type="button" aria-label="Tampilkan kata sandi">
+              <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          @error('password')
+            <p class="field-error">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+              </svg>
+              {{ $message }}
+            </p>
+          @enderror
+        </div>
 
-            <!-- Decorative glows -->
-            <div class="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-blue-500/20 rounded-full blur-[100px] pointer-events-none"></div>
-            <div class="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="row-between">
+          <label class="remember">
+            <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
+            Ingat saya
+          </label>
+          @if (Route::has('password.request'))
+            <a href="{{ route('password.request') }}" class="forgot">Lupa kata sandi?</a>
+          @endif
+        </div>
 
-            <!-- Headline -->
-            <div class="z-10 text-left w-full max-w-xl mt-4 relative">
-                <h2 class="font-h1 text-[38px] xl:text-[46px] leading-[1.15] font-bold text-white mb-6 tracking-tight">
-                    Transparansi, <br/>
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-200">Akuntabilitas,</span><br/>
-                    Integritas.
-                </h2>
-                <div class="w-14 h-1.5 bg-gradient-to-r from-[#1d61d1] to-blue-400 rounded-full mb-6 shadow-[0_0_15px_rgba(29,97,209,0.5)]"></div>
-               
-            </div>
+        <button type="submit" class="btn-primary">
+          Masuk
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </button>
+      </form>
 
-            <!-- Illustration -->
-            <div class="z-10 relative flex-grow flex items-center justify-center w-full my-8 xl:my-10">
-                <div class="relative w-full max-w-[500px] h-[340px] xl:h-[370px]">
+      <div class="security-note">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Koneksi Anda dienkripsi end-to-end. Kami tidak pernah meminta kata sandi lewat email atau telepon.
+      </div>
 
-                    <!-- Dashboard card -->
-                    <div class="absolute inset-0 glass-panel rounded-2xl overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] -rotate-2 hover:rotate-0 transition-transform duration-700 ease-out">
-                        <!-- Titlebar -->
-                        <div class="h-9 border-b border-white/5 flex items-center px-5 bg-white/5">
-                            <div class="flex gap-2">
-                                <div class="w-3 h-3 rounded-full bg-red-400/80 shadow-[0_0_8px_rgba(248,113,113,0.5)]"></div>
-                                <div class="w-3 h-3 rounded-full bg-yellow-400/80 shadow-[0_0_8px_rgba(250,204,21,0.5)]"></div>
-                                <div class="w-3 h-3 rounded-full bg-green-400/80 shadow-[0_0_8px_rgba(74,222,128,0.5)]"></div>
-                            </div>
-                        </div>
-                        <!-- Content -->
-                        <div class="p-6 flex flex-col gap-5">
-                            <!-- Stat cards row -->
-                            <div class="flex gap-4">
-                                <div class="flex-1 rounded-xl bg-white/[0.02] border border-white/5 p-4 hover:bg-white/[0.05] transition-colors duration-300">
-                                    <div class="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-                                        <x-heroicon-o-presentation-chart-bar class="w-[18px] h-[18px] text-blue-400" aria-hidden="true" />
-                                    </div>
-                                    <div class="w-1/2 h-2 bg-white/20 rounded-full mb-2"></div>
-                                    <div class="w-3/4 h-2 bg-white/10 rounded-full"></div>
-                                </div>
-                                <div class="flex-1 rounded-xl bg-white/[0.02] border border-white/5 p-4 hover:bg-white/[0.05] transition-colors duration-300">
-                                    <div class="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(34,197,94,0.2)]">
-                                        <x-heroicon-o-check-badge class="w-[18px] h-[18px] text-green-400" aria-hidden="true" />
-                                    </div>
-                                    <div class="w-1/2 h-2 bg-white/20 rounded-full mb-2"></div>
-                                    <div class="w-3/4 h-2 bg-white/10 rounded-full"></div>
-                                </div>
-                                <div class="flex-1 rounded-xl bg-white/[0.02] border border-white/5 p-4 hover:bg-white/[0.05] transition-colors duration-300">
-                                    <div class="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-                                        <x-heroicon-o-document-text class="w-[18px] h-[18px] text-purple-400" aria-hidden="true" />
-                                    </div>
-                                    <div class="w-1/2 h-2 bg-white/20 rounded-full mb-2"></div>
-                                    <div class="w-3/4 h-2 bg-white/10 rounded-full"></div>
-                                </div>
-                            </div>
-                            <!-- Bar chart -->
-                            <div class="w-full h-[120px] xl:h-[130px] rounded-xl bg-white/[0.02] border border-white/5 p-4 relative overflow-hidden">
-                                <div class="absolute bottom-0 left-0 w-full h-full bg-gradient-to-t from-blue-500/5 to-transparent"></div>
-                                <div class="flex items-end gap-2.5 h-full justify-between px-1 pb-1 relative z-10">
-                                    <div class="flex-1 bg-gradient-to-t from-blue-500/60 to-blue-400/40 rounded-t-md bar" style="height:33%"></div>
-                                    <div class="flex-1 bg-gradient-to-t from-blue-500/70 to-blue-400/50 rounded-t-md bar" style="height:66%"></div>
-                                    <div class="flex-1 bg-gradient-to-t from-blue-500/80 to-blue-400/60 rounded-t-md bar" style="height:50%"></div>
-                                    <div class="flex-1 bg-gradient-to-t from-blue-500/60 to-blue-400/40 rounded-t-md bar" style="height:75%"></div>
-                                    <div class="flex-1 bg-gradient-to-t from-[#1d61d1]/90 to-blue-400/70 rounded-t-md shadow-[0_0_20px_rgba(29,97,209,0.3)]" style="height:100%"></div>
-                                    <div class="flex-1 bg-gradient-to-t from-blue-500/80 to-blue-400/60 rounded-t-md bar" style="height:80%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+      <div class="divider-foot">
+        <span>&copy; {{ date('Y') }} Inspektorat Kab. Rembang</span>
+        <a href="#">Butuh bantuan?</a>
+      </div>
+    </div>
+  </div>
 
-                    <!-- Badge: Data Terenkripsi -->
-                    <div class="absolute -right-6 xl:-right-8 top-14 p-4 glass-panel rounded-2xl flex items-center gap-3.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] float-badge-right z-20 border border-white/10 min-w-[180px]">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#1d61d1]/30 to-blue-500/10 flex items-center justify-center border border-blue-400/20 shadow-[0_0_15px_rgba(29,97,209,0.3)] shrink-0">
-                            <x-heroicon-o-shield-check class="w-[22px] h-[22px] text-blue-300" aria-hidden="true" />
-                        </div>
-                        <div>
-                            <div class="text-[13px] text-white font-medium tracking-wide">Data Terenkripsi</div>
-                            <div class="text-[11px] text-blue-200/60 mt-0.5">AES-256 Bit Security</div>
-                        </div>
-                    </div>
+<script>
+  function togglePwd(){
+    const pwd = document.getElementById('pwd');
+    const icon = document.getElementById('eyeIcon');
+    const isPwd = pwd.type === 'password';
+    pwd.type = isPwd ? 'text' : 'password';
+    icon.innerHTML = isPwd
+      ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
 
-                    <!-- Badge: Audit Real-time -->
-                    <div class="absolute -left-6 xl:-left-8 bottom-16 p-4 glass-panel rounded-2xl flex items-center gap-3.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] float-badge-left z-20 border border-white/10 min-w-[180px]">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-500/20 to-green-400/5 flex items-center justify-center border border-green-400/20 shadow-[0_0_15px_rgba(34,197,94,0.2)] shrink-0">
-                            <x-heroicon-o-clipboard-document-check class="w-[22px] h-[22px] text-green-400" aria-hidden="true" />
-                        </div>
-                        <div>
-                            <div class="text-[13px] text-white font-medium tracking-wide">Audit Real-time</div>
-                            <div class="text-[11px] text-blue-200/60 mt-0.5">Sinkronisasi Otomatis</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  (function initParallax(){
+    const stage = document.querySelector('.stage');
+    const gem = document.querySelector('.gem');
+    if(!stage || !gem) return;
+    stage.addEventListener('mousemove', (e)=>{
+      const rect = stage.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      gem.style.setProperty('--tiltX', (py * -14) + 'deg');
+      gem.style.setProperty('--tiltY', (px * 14) + 'deg');
+    });
+  })();
 
-            <!-- Security card -->
-            <div class="z-10 w-full max-w-[500px] glass-panel p-5 rounded-2xl flex items-start gap-4 mb-2 hover:bg-white/[0.05] transition-all duration-500 border border-white/5 shadow-xl relative overflow-hidden shimmer-group">
-                <div class="shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none"></div>
-                <div class="bg-gradient-to-br from-blue-500/20 to-[#1d61d1]/10 p-3 rounded-xl shrink-0 border border-blue-400/20">
-                    <x-heroicon-o-check-circle class="w-6 h-6 text-blue-300" aria-hidden="true" />
-                </div>
-                <div class="pt-0.5">
-                    <h4 class="text-[15px] font-semibold text-white mb-1.5 tracking-wide">Keamanan Sistem Terjamin</h4>
-                    <p class="text-[13px] leading-[1.65] text-blue-100/70 font-light">Seluruh data dan aktivitas diawasi dan dilindungi sesuai standar keamanan informasi pemerintah.</p>
-                </div>
-            </div>
+  (function initTypewriter(){
+    const sequence = [
+      { el: document.getElementById('twEyebrow'), text: 'Sistem Informasi Pengawasan', speed: 32, cursorClass: 'on-eyebrow' },
+      { el: document.getElementById('twLine1'),   text: 'INSPEKTORAT DAERAH',          speed: 52, cursorClass: 'on-title' },
+      { el: document.getElementById('twLine2'),   text: 'KABUPATEN REMBANG',           speed: 52, cursorClass: 'on-title' },
+      { el: document.getElementById('twSub'),     text: 'Portal internal untuk pengelolaan pengawasan, tindak lanjut hasil audit, dan pelaporan kinerja perangkat daerah.', speed: 16, cursorClass: 'on-sub' }
+    ].filter(step => step.el);
 
-            <!-- Footer desktop right panel -->
-            <div class="z-10 w-full text-left mt-4">
-                <p class="text-[11px] text-blue-200/30 font-light tracking-wide">© 2024 Inspektorat. All rights reserved.</p>
-            </div>
+    if(!sequence.length) return;
 
-        </div><!-- /right panel -->
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduceMotion){
+      sequence.forEach(step => { step.el.textContent = step.text; });
+      return;
+    }
 
-    </div><!-- /outer card -->
+    const cursor = document.createElement('span');
+    cursor.className = 'tw-cursor';
 
-</main>
+    function typeStep(step){
+      return new Promise(resolve => {
+        step.el.textContent = '';
+        step.el.parentNode.insertBefore(cursor, step.el.nextSibling);
+        cursor.className = 'tw-cursor ' + step.cursorClass;
 
+        let charIndex = 0;
+        let lastTime = null;
 
+        function frame(now){
+          if(lastTime === null) lastTime = now;
+          const elapsed = now - lastTime;
+          if(elapsed >= step.speed){
+            charIndex++;
+            step.el.textContent = step.text.slice(0, charIndex);
+            lastTime = now;
+          }
+          if(charIndex < step.text.length){
+            requestAnimationFrame(frame);
+          } else {
+            resolve();
+          }
+        }
+        requestAnimationFrame(frame);
+      });
+    }
+
+    function pause(ms){
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function runSequence(){
+      for(const step of sequence){
+        await typeStep(step);
+        await pause(180);
+      }
+      cursor.classList.add('done');
+    }
+
+    if(document.fonts && document.fonts.ready){
+      document.fonts.ready.then(runSequence);
+    } else {
+      runSequence();
+    }
+  })();
+</script>
 </body>
 </html>

@@ -6,7 +6,7 @@
 @endpush
 
 @section('content')
-<div class="mx-auto max-w-4xl px-4 py-8" x-data="editRekomForm()" x-init="init()">
+<div class="mx-auto max-w-7xl px-4 py-8" x-data="editRekomForm()" x-init="init()">
 
     {{-- HEADER --}}
     <div class="mb-6 flex items-center justify-between">
@@ -31,7 +31,7 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
         
         {{-- COLUMN LEFT: REFERENSI (READ-ONLY) --}}
         <div class="lg:col-span-1 space-y-6">
@@ -85,18 +85,17 @@
         </div>
 
         {{-- COLUMN RIGHT: FORM EDIT --}}
-        <div class="lg:col-span-2">
+        <div class="lg:col-span-3">
             <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
                 <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
                     <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Form Perubahan Rekomendasi</h3>
                 </div>
 
-                <div class="p-5 sm:p-6">
+                <div class="p-6">
                     <form action="{{ route('recommendations.update', $recommendation) }}" method="POST" id="form-edit-rekom">
                         @csrf
                         @method('PUT')
-
-                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             
                             {{-- KODE REKOMENDASI --}}
                             <div class="sm:col-span-1">
@@ -179,8 +178,13 @@
                                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                                     Uraian Rekomendasi <span class="text-red-500">*</span>
                                 </label>
-                                <textarea name="uraian_rekom" rows="5" required
-                                    class="shadow-theme-xs w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">{{ old('uraian_rekom', $recommendation->uraian_rekom) }}</textarea>
+                                @include('components._rich-editor', [
+                                    'name'       => 'uraian_rekom',
+                                    'value'      => old('uraian_rekom', $recommendation->uraian_rekom),
+                                    'required'   => true,
+                                    'height'     => 500,
+                                    'placeholder' => 'Tuliskan instruksi rekomendasi secara spesifik dan terukur...',
+                                ])
                             </div>
 
                             {{-- ACTIONS --}}
@@ -204,8 +208,8 @@
 
 <script>
 function editRekomForm() {
-    return {
-        jenis: '{{ old("jenis_rekomendasi", $recommendation->jenis_rekomendasi) }}',
+return {
+    jenis: @json(old('jenis_rekomendasi', $recommendation->jenis_rekomendasi)),
         plafon: {{ $recommendation->temuan->nilai_temuan ?? 0 }},
         nilaiRupiah: {{ old('nilai_rekom', $recommendation->nilai_rekom ?? 0) }},
 

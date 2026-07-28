@@ -307,7 +307,7 @@
                                     </span>
                                     <span class="text-theme-xs text-gray-500 dark:text-gray-400">
                                         {{ $tl->recommendation?->temuan?->lhp?->unitDiperiksa?->nama_unit ?? '-' }}
-                                        &middot; {{ Str::limit($tl->recommendation?->uraian_rekom ?? '-', 50) }}
+                                        &middot; {{ Str::limit(strip_tags($tl->recommendation?->uraian_rekom ?? '-'), 50) }}
                                     </span>
                                 </div>
                             </a>
@@ -355,7 +355,7 @@
                             </td>
                             <td class="px-6 py-3">
                                 <span class="text-theme-sm text-gray-700 dark:text-gray-400 block max-w-[250px] truncate">
-                                    {{ Str::limit($tl->recommendation?->uraian_rekom ?? '-', 60) }}
+                                    {{ Str::limit(strip_tags($tl->recommendation?->uraian_rekom ?? '-'), 60) }}
                                 </span>
                             </td>
                             <td class="px-6 py-3 whitespace-nowrap">

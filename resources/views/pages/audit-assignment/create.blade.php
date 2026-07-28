@@ -281,14 +281,53 @@
                     </div>
 
                     {{-- Pengendali Teknis --}}
-                    <div class="space-y-1.5">
-                        <label for="pengendali_teknis" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pengendali Teknis (Dalnis)</label>
-                        <input type="text" name="pengendali_teknis" id="pengendali_teknis" value="{{ old('pengendali_teknis') }}"
-                            placeholder="Nama pengendali teknis..."
-                            class="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
-                        @error('pengendali_teknis')
-                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                        @enderror
+                    <div class="space-y-1.5"
+                         x-data='ketuaSelect(@json($ketuaTimUsers), @json(old("pengendali_teknis_id")))'>
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pengendali Teknis (Dalnis)</label>
+                        <div class="relative">
+                            <input type="hidden" name="pengendali_teknis_id" x-model="selectedId">
+                            <button type="button" @click="open = !open" @keydown.escape="open = false"
+                                class="flex h-11 w-full items-center rounded-xl border border-gray-200 bg-white px-4 text-sm dark:bg-gray-900 dark:border-gray-700"
+                                :class="open ? 'border-blue-500 ring-4 ring-blue-500/10' : ''">
+                                <span class="flex-1 text-left truncate"
+                                      :class="selectedId ? 'text-gray-900 dark:text-white' : 'text-gray-400'"
+                                      x-text="selectedId ? (users.find(u => u.id == selectedId)?.name ?? 'Pilih pengendali teknis') : 'Pilih pengendali teknis'">
+                                </span>
+                                <svg class="h-4 w-4 text-gray-500 transition-transform shrink-0" :class="{'rotate-180': open}"
+                                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <div x-show="open" x-cloak @click.outside="open = false"
+                                 style="max-height: 15rem; overflow-y: auto;"
+                                 class="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                                <div class="sticky top-0 bg-white dark:bg-gray-900 p-2 border-b border-gray-100 dark:border-gray-700">
+                                    <input type="text" x-model="search" @input="open = true"
+                                           placeholder="Cari pengendali teknis..."
+                                           class="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500">
+                                </div>
+                                <ul class="py-1">
+                                    <template x-for="user in filteredUsers" :key="user.id">
+                                        <li>
+                                            <button type="button" @click="select(user.id)"
+                                                class="flex w-full items-center px-4 py-2.5 text-sm transition-colors"
+                                                :class="selectedId == user.id
+                                                    ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/20 dark:text-blue-300'
+                                                    : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'">
+                                                <svg x-show="selectedId == user.id" class="mr-2 h-4 w-4 shrink-0 text-blue-600"
+                                                     fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                </svg>
+                                                <span x-text="user.name"></span>
+                                            </button>
+                                        </li>
+                                    </template>
+                                    <li x-show="filteredUsers.length === 0">
+                                        <p class="px-4 py-3 text-xs text-gray-400 text-center">Tidak ada pengendali teknis ditemukan</p>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

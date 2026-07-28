@@ -59,7 +59,7 @@
                         </div>
 
                         {{-- ── PILIH REKOMENDASI ── --}}
-                        <div class="w-full px-2.5">
+                        <div class="w-full px-2.5 relative">
                             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                                 Pilih Rekomendasi <span class="text-red-500">*</span>
                             </label>
@@ -70,13 +70,9 @@
 
                             <div x-show="!loadingRekom">
                                 <select name="recommendation_id" id="recommendation_id" data-no-ts required
-                                    :disabled="!programId || rekomendasis.length === 0"
-                                    class="h-11 w-full rounded-lg border {{ $errors->has('recommendation_id') ? 'border-red-500' : 'border-gray-300' }} bg-transparent px-4 py-2.5 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-white disabled:bg-gray-100 disabled:cursor-not-allowed dark:disabled:bg-white/5">
-                                    <option value="">
-                                        <template x-if="!programId">Pilih Program terlebih dahulu</template>
-                                        <template x-if="programId && rekomendasis.length === 0">Tidak ada rekomendasi tersedia</template>
-                                        <template x-if="programId && rekomendasis.length > 0">-- Pilih Rekomendasi --</template>
-                                    </option>
+                                    class="hidden"
+                                    :disabled="!programId || rekomendasis.length === 0">
+                                    <option value="">--</option>
                                     <template x-for="r in rekomendasis" :key="r.id">
                                         <option :value="r.id"
                                                 :data-sisa="r.sisa"
@@ -85,9 +81,55 @@
                                                 x-text="r.label"></option>
                                     </template>
                                 </select>
+
+                                <button type="button"
+                                    @click="openDropdown = !openDropdown"
+                                    @keydown.escape="openDropdown = false"
+                                    :disabled="!programId || rekomendasis.length === 0"
+                                    class="flex h-auto min-h-[48px] w-full items-center rounded-lg border bg-transparent px-4 py-3 text-sm transition-colors dark:bg-gray-900 dark:text-white disabled:bg-gray-100 disabled:cursor-not-allowed dark:disabled:bg-white/5"
+                                    :class="openDropdown
+                                        ? 'border-brand-300 ring-3 ring-brand-500/10'
+                                        : ({{ $errors->has('recommendation_id') ? 'true' : 'false' }}
+                                            ? 'border-red-500'
+                                            : 'border-gray-300 dark:border-gray-700')">
+                                    <span class="flex-1 text-left leading-snug"
+                                          :class="selectedRekom ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-400'"
+                                          x-text="selectedRekom ? selectedRekom.label : placeholder">
+                                    </span>
+                                    <svg class="ml-2 h-4 w-4 shrink-0 text-gray-500 transition-transform" :class="{'rotate-180': openDropdown}"
+                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+
+                                <div x-show="openDropdown" x-cloak @click.outside="openDropdown = false"
+                                     style="max-height: 18rem; overflow-y: auto;"
+                                     class="absolute left-2.5 right-2.5 z-50 mt-1 rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                                    <div class="sticky top-0 bg-white dark:bg-gray-900 p-2 border-b border-gray-100 dark:border-gray-700">
+                                        <input type="text" x-model="searchRekom"
+                                               placeholder="Cari rekomendasi..."
+                                               class="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm outline-none focus:border-brand-300 focus:ring-1 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500">
+                                    </div>
+                                    <ul class="py-1">
+                                        <template x-for="r in filteredRekomendasis" :key="r.id">
+                                            <li>
+                                                <button type="button"
+                                                    @click="selectRekom(r.id)"
+                                                    class="flex w-full items-start px-4 py-3 text-sm transition-colors text-left leading-snug"
+                                                    :class="rekomendasiId == r.id
+                                                        ? 'bg-brand-50 text-brand-700 font-semibold dark:bg-brand-900/20 dark:text-brand-300'
+                                                        : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'">
+                                                    <span x-text="r.label"></span>
+                                                </button>
+                                            </li>
+                                        </template>
+                                        <li x-show="filteredRekomendasis.length === 0">
+                                            <p class="px-4 py-3 text-xs text-gray-400 text-center">Tidak ada rekomendasi ditemukan</p>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
 
-                            {{-- Info: tidak ada rekomendasi tersedia --}}
                             <div x-show="programId && !loadingRekom && rekomendasis.length === 0" x-transition
                                  class="mt-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 dark:bg-blue-900/20 dark:border-blue-800">
                                 <p class="text-xs text-blue-700 dark:text-blue-300">
@@ -163,8 +205,7 @@
                                     value="{{ old('nilai_tindak_lanjut') ? number_format((int)old('nilai_tindak_lanjut'), 0, ',', '.') : '' }}"
                                     placeholder="0"
                                     autocomplete="off"
-                                    class="h-11 w-full rounded-lg border border-gray-300 bg-transparent pl-11 pr-4 py-2.5 text-sm font-bold focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:bg-gray-900 dark:border-gray-700 dark:text-white"
-                                    id="display-nilai-tl">
+                                    class="h-11 w-full rounded-lg border border-gray-300 bg-transparent pl-11 pr-4 py-2.5 text-sm font-bold focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:bg-gray-900 dark:border-gray-700 dark:text-white">
                                 {{-- Hidden input inilah yang benar-benar dikirim ke server --}}
                                 <input type="hidden" name="nilai_tindak_lanjut" id="nilai_tindak_lanjut"
                                     value="{{ old('nilai_tindak_lanjut', 0) }}">
@@ -245,7 +286,6 @@
                         </div>
 
                         {{-- Verifikator --}}
-                        @php $verifikatorUsers = $users->map(fn($u) => ['id' => $u->id, 'name' => $u->name])->values(); @endphp
                         <div class="w-full px-2.5 xl:w-1/2"
                              x-data='verifikatorSelect(@json($verifikatorUsers), @json(old("diverifikasi_oleh")))'>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
@@ -360,10 +400,36 @@
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.data('tlRekomForm', () => ({
-        programId    : '{{ old("audit_program_id", "") }}',
+        programId    : @json(old('audit_program_id', '')),
         rekomendasis : [],
-        rekomendasiId: '{{ old("recommendation_id", "") }}',
+        rekomendasiId: @json(old('recommendation_id', '')),
         loadingRekom : false,
+        searchRekom  : '',
+        openDropdown : false,
+
+        get filteredRekomendasis() {
+            if (!this.searchRekom) return this.rekomendasis;
+            const q = this.searchRekom.toLowerCase();
+            return this.rekomendasis.filter(r => r.label.toLowerCase().includes(q));
+        },
+        get selectedRekom() {
+            if (!this.rekomendasiId) return null;
+            return this.rekomendasis.find(r => String(r.id) === String(this.rekomendasiId));
+        },
+        get placeholder() {
+            if (!this.programId) return 'Pilih Program terlebih dahulu';
+            if (this.rekomendasis.length === 0) return 'Tidak ada rekomendasi tersedia';
+            return '-- Pilih Rekomendasi --';
+        },
+        selectRekom(id) {
+            this.rekomendasiId = id;
+            this.searchRekom = '';
+            this.openDropdown = false;
+            this.$nextTick(() => {
+                const sel = document.getElementById('recommendation_id');
+                if (sel) { sel.value = id; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+            });
+        },
 
         onProgramChange() {
             this.rekomendasis  = [];
@@ -555,15 +621,17 @@ document.addEventListener('DOMContentLoaded', function () {
     // Old value restoration — Alpine async cascade might still be loading
     // This retries until the select has the expected old option
     (function restoreOldValue() {
-        const oldId = '{{ old("recommendation_id", "") }}';
+        const oldId = @json(old('recommendation_id', ''));
         if (!oldId) return;
+        let retries = 0;
+        const maxRetries = 50;
         (function check() {
             if (selectRekom.options.length > 1) {
                 for (let opt of selectRekom.options) {
                     if (opt.value === oldId) {
                         selectRekom.value = oldId;
                         selectRekom.dispatchEvent(new Event('change'));
-                        const oldNilai = parseInt('{{ old("nilai_tindak_lanjut", 0) }}', 10);
+                        const oldNilai = parseInt(@json(old('nilai_tindak_lanjut', 0)), 10);
                         if (oldNilai > 0) {
                             displayNilai.value = String(oldNilai).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
                             hiddenNilai.value  = oldNilai;
@@ -573,7 +641,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
             }
-            setTimeout(check, 100);
+            if (++retries < maxRetries) {
+                setTimeout(check, 100);
+            }
         })();
     })();
 

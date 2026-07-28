@@ -237,7 +237,7 @@
                         @foreach($tlJatuhTempo as $tl)
                         <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
                             <td class="py-3 pr-4 max-w-[250px]">
-                                <p class="truncate font-medium text-gray-800 dark:text-white">{{ $tl->recommendation?->uraian_rekom ?? '-' }}</p>
+                                <p class="truncate font-medium text-gray-800 dark:text-white">{{ strip_tags($tl->recommendation?->uraian_rekom ?? '-') }}</p>
                             </td>
                             <td class="py-3 pr-4">
                                 <span class="text-sm {{ $tl->tanggal_jatuh_tempo && $tl->tanggal_jatuh_tempo->isPast() ? 'text-red-600 font-bold' : 'text-gray-500' }}">

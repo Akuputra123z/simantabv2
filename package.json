@@ -4,8 +4,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-
-        "dev": "vite"
+        "dev": "vite",
+        "postinstall": "cp -r node_modules/tinymce public/tinymce 2>/dev/null; exit 0"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.2.2",
@@ -23,12 +23,17 @@
         "@fullcalendar/list": "^6.1.19",
         "@fullcalendar/timegrid": "^6.1.19",
         "@popperjs/core": "^2.11.8",
+        "@tiptap/extension-document": "^3.29.0",
+        "@tiptap/extension-paragraph": "^3.29.0",
+        "@tiptap/extension-text": "^3.29.0",
+        "@tiptap/react": "^3.29.0",
         "alpinejs": "^3.14.9",
         "apexcharts": "^5.3.5",
         "chart.js": "^4.5.1",
         "flatpickr": "^4.6.13",
         "jsvectormap": "^1.7.0",
         "prismjs": "^1.30.0",
-        "swiper": "^12.0.3"
+        "swiper": "^12.0.3",
+        "tinymce": "^6.8.6"
     }
 }

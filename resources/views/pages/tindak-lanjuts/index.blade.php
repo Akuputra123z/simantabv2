@@ -193,7 +193,7 @@ window.__tlAttachments = @json($tlAttachments);
                                 {{ $tl->nama_program ?? '-' }}
                             </div>
                             <p class="mt-0.5 text-[11px] text-gray-400 line-clamp-2 leading-snug break-words">
-                                {{ $tl->recommendation->uraian_rekom ?? '-' }}
+                                {{ strip_tags($tl->recommendation->uraian_rekom ?? '-') }}
                             </p>
                             @if($tl->irban)
                             <span class="mt-1 inline-block px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-[9px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30">

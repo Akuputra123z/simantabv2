@@ -60,7 +60,7 @@ class TindakLanjutController extends Controller
             }
         });
 
-        $tindakLanjuts = $query->latest('tindak_lanjuts.created_at')->paginate(15)->withQueryString();
+        $tindakLanjuts = $query->latest('tindak_lanjuts.created_at')->paginate(7)->withQueryString();
 
         $statsQuery = TindakLanjut::query()
             ->forUser(auth()->user())
@@ -87,8 +87,9 @@ class TindakLanjutController extends Controller
             ->get();
 
         $users = User::orderBy('name')->limit(100)->get();
+        $verifikatorUsers = $users->map(fn($u) => ['id' => $u->id, 'name' => $u->name])->values();
 
-        return view('pages.tindak-lanjuts.create', compact('auditPrograms', 'users'));
+        return view('pages.tindak-lanjuts.create', compact('auditPrograms', 'users', 'verifikatorUsers'));
     }
 
     public function getRekomendasisByProgram($programId)
@@ -106,7 +107,7 @@ class TindakLanjutController extends Controller
                 'rekom' => (int) $r->nilai_rekom,
                 'jenis' => $r->jenis_rekomendasi,
                 'label' => '[' . ($r->temuan?->lhp?->nomor_lhp ?? 'LHP') . '] '
-                    . \Str::limit($r->uraian_rekom, 80)
+                    . \Str::limit(strip_tags($r->uraian_rekom), 200)
                     . ' — (Sisa: Rp' . number_format($r->nilai_sisa, 0, ',', '.') . ')',
             ]);
 
@@ -130,8 +131,6 @@ class TindakLanjutController extends Controller
             'attachments.*'           => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
-        $rekom = Recommendation::findOrFail($validated['recommendation_id']);
-
         $rekom    = Recommendation::findOrFail($validated['recommendation_id']);
         $nilaiTl  = (float) ($validated['nilai_tindak_lanjut'] ?? 0);
         $nilaiSisa = (float) ($rekom->nilai_sisa ?? 0);
@@ -146,40 +145,38 @@ class TindakLanjutController extends Controller
                 ]);
         }
 
-       try {
-        DB::beginTransaction();
-        $tindakLanjut = TindakLanjut::create($validated);
+        try {
+            DB::beginTransaction();
+            $tindakLanjut = TindakLanjut::create($validated);
 
-        // Simpan lampiran
-        if ($request->hasFile('attachments')) {
-            foreach ($request->file('attachments') as $i => $file) {
-                if ($file && $file->isValid()) {
-                    $path = $file->store('attachments/tindak-lanjut', 'public');
-                    $tindakLanjut->attachments()->create([
-                        'file_path'   => $path,
-                        'file_name'   => $file->getClientOriginalName(),
-                        'jenis_bukti' => 'tindak_lanjut',
-                        'urutan'      => $i,
-                    ]);
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $i => $file) {
+                    if ($file && $file->isValid()) {
+                        $path = $file->store('attachments/tindak-lanjut', 'public');
+                        $tindakLanjut->attachments()->create([
+                            'file_path'   => $path,
+                            'file_name'   => $file->getClientOriginalName(),
+                            'jenis_bukti' => 'tindak_lanjut',
+                            'urutan'      => $i,
+                        ]);
+                    }
                 }
             }
+
+            DB::commit();
+
+            $this->syncRekomendasi($tindakLanjut);
+            $this->updateStatistik($tindakLanjut);
+
+            return redirect()
+                ->route('tindak-lanjuts.index')
+                ->with('success', 'Tindak lanjut berhasil disimpan.');
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('TindakLanjut store error: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal menyimpan data.');
         }
-
-        DB::commit();
-
-        // ✅ Sync status Recommendation DULU sebelum hitung statistik LHP
-        $this->syncRekomendasi($tindakLanjut);
-        $this->updateStatistik($tindakLanjut);
-
-        return redirect()
-            ->route('tindak-lanjuts.index')
-            ->with('success', 'Tindak lanjut berhasil disimpan.');
-
-    } catch (\Throwable $e) {
-        DB::rollBack();
-        Log::error('TindakLanjut store error: ' . $e->getMessage());
-        return back()->withInput()->with('error', 'Gagal menyimpan data.');
-    }
     }
 
     public function show(TindakLanjut $tindakLanjut)
@@ -210,8 +207,9 @@ class TindakLanjutController extends Controller
             ->get();
 
         $users = User::orderBy('name')->get();
+        $verifikatorUsers = $users->map(fn($u) => ['id' => $u->id, 'name' => $u->name])->values();
 
-        return view('pages.tindak-lanjuts.edit', compact('tindakLanjut', 'recommendations', 'users'));
+        return view('pages.tindak-lanjuts.edit', compact('tindakLanjut', 'recommendations', 'users', 'verifikatorUsers'));
     }
 
     public function update(Request $request, TindakLanjut $tindakLanjut)
@@ -387,31 +385,27 @@ class TindakLanjutController extends Controller
             ->with('success', 'Bukti OPD ditolak. Alasan sudah dicatat dan OPD dapat mengirim ulang.');
     }
 
-private function syncRekomendasi(TindakLanjut $tl): void
-{
-    $recommendation = $tl->recommendation;
-    if (! $recommendation) {
-        // Load jika belum ter-load
-        $tl->load('recommendation.tindakLanjuts.cicilans');
+    private function syncRekomendasi(TindakLanjut $tl): void
+    {
         $recommendation = $tl->recommendation;
+        if (! $recommendation) {
+            $tl->load('recommendation.tindakLanjuts.cicilans');
+            $recommendation = $tl->recommendation;
+        }
+
+        if (! $recommendation) return;
+
+        $recommendation->refresh();
+        $recommendation->load('tindakLanjuts.cicilans');
+
+        $recommendation->syncStatus();
     }
 
-    if (! $recommendation) return;
-
-    // Refresh dari DB agar tidak baca cache lama, lalu load semua TL terkait
-    $recommendation->refresh();
-    $recommendation->load('tindakLanjuts.cicilans');
-    
-    // syncStatus() akan update: status, nilai_tl_selesai, nilai_sisa
-    // lalu memanggil temuan->syncStatus() secara otomatis
-    $recommendation->syncStatus();
-}
-
-private function updateStatistik(TindakLanjut $tl): void
-{
-    $lhpId = $tl->recommendation?->temuan?->lhp_id;
-    if ($lhpId) {
-        $this->statistikService->updateStatistik($lhpId);
+    private function updateStatistik(TindakLanjut $tl): void
+    {
+        $lhpId = $tl->recommendation?->temuan?->lhp_id;
+        if ($lhpId) {
+            $this->statistikService->updateStatistik($lhpId);
+        }
     }
-}
 }

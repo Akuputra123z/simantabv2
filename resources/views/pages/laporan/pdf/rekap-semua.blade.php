@@ -227,7 +227,7 @@
                                 <td colspan="4" style="border-left: none; border-top: none; border-bottom: none;"></td>
                             @endif
 
-                            <td>{{ $indexRow == 0 ? $rekom->uraian_rekom : '' }}</td>
+                            <td>{!! $indexRow == 0 ? $rekom->uraian_rekom : '' !!}</td>
                             <td class="text-center">{{ $indexRow == 0 ? ($rekom->kodeRekomendasi?->kode ?? '-') : '' }}</td>
                             <td class="text-right">{{ $indexRow == 0 ? number_format($temuan->nilai_temuan, 0, ',', '.') : '' }}</td>
 
@@ -265,7 +265,7 @@
                             @else
                                 <td colspan="4" style="border-left: none; border-top: none; border-bottom: none;"></td>
                             @endif
-                            <td>{{ $rekom->uraian_rekom }}</td>
+                            <td>{!! $rekom->uraian_rekom !!}</td>
                             <td class="text-center">{{ $rekom->kodeRekomendasi?->kode ?? '-' }}</td>
                             <td class="text-right">{{ number_format($temuan->nilai_temuan, 0, ',', '.') }}</td>
                             <td colspan="3" class="text-center invalid">Belum ditindaklanjuti</td>

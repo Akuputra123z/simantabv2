@@ -32,6 +32,10 @@ class AuditAssignment extends Model
         'status',
         'anggaran_disetujui',
         'pengendali_teknis',
+        'pengendali_teknis_id',
+        'approval_status',
+        'approved_by',
+        'approved_at',
         'created_by',
         'updated_by',
     ];
@@ -40,6 +44,7 @@ class AuditAssignment extends Model
         'tanggal_mulai'       => 'date',
         'tanggal_selesai'     => 'date',
         'anggaran_disetujui'  => 'integer',
+        'approved_at'         => 'datetime',
     ];
 
     // ─── Static Helpers ───────────────────────────────────────────────
@@ -108,6 +113,11 @@ class AuditAssignment extends Model
         return $this->hasMany(Lhp::class);
     }
 
+    public function pengendaliTeknis(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'pengendali_teknis_id');
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -116,5 +126,15 @@ class AuditAssignment extends Model
     public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function signer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function isSigned(): bool
+    {
+        return $this->approved_by !== null;
     }
 }

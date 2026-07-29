@@ -145,7 +145,7 @@
                             </div>
                         </td>
                         <td class="px-5 py-4">
-                            <p class="break-words text-justify text-sm text-gray-700 dark:text-gray-300" title="{{ $r->uraian_rekom }}">{{ Str::limit(strip_tags($r->uraian_rekom), 300) }}</p>
+                            <p class="break-words text-justify text-sm text-gray-700 dark:text-gray-300" title="{{ $r->uraian_rekom }}">{{ Str::limit(strip_tags(html_entity_decode($r->uraian_rekom)), 300) }}</p>
                         </td>
                         <td class="px-5 py-4 whitespace-nowrap">
                             @php

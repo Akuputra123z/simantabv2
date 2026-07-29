@@ -3,6 +3,15 @@
 
 @push('scripts')
     @include('components._rupiah-input')
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('form-edit-rekom')?.addEventListener('submit', function() {
+            if (typeof tinymce !== 'undefined') {
+                tinymce.triggerSave();
+            }
+        });
+    });
+    </script>
 @endpush
 
 @section('content')
@@ -92,7 +101,7 @@
                 </div>
 
                 <div class="p-6">
-                    <form action="{{ route('recommendations.update', $recommendation) }}" method="POST" id="form-edit-rekom">
+                    <form action="{{ route('recommendations.update', $recommendation) }}" method="POST" id="form-edit-rekom" novalidate>
                         @csrf
                         @method('PUT')
                         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -241,6 +250,9 @@ return {
 
             /* Loading state on Submit */
             document.getElementById('form-edit-rekom')?.addEventListener('submit', () => {
+                if (typeof tinymce !== 'undefined') {
+                    tinymce.triggerSave();
+                }
                 const btn = document.getElementById('btn-submit-rekom');
                 const text = document.getElementById('btn-rekom-text');
                 if (btn) btn.disabled = true;

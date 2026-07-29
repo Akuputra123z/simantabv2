@@ -103,6 +103,7 @@ class UserSeeder extends Seeder
                     'unit_kerja' => $row[7],
                     'phone' => null,
                     'avatar' => null,
+                    'signature' => null,
                     'is_active' => true,
                     'remember_token' => Str::random(10),
                 ]

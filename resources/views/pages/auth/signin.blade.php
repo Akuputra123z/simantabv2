@@ -443,7 +443,7 @@
       <p class="desc">Masukkan detail akun Anda untuk melanjutkan ke SIWAS Inspektorat Daerah Kabupaten Rembang.</p>
 
       {{-- Error Alert --}}
-      @if ($errors->any())
+      @if (isset($errors) && $errors->any())
       <div class="alert-error">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>

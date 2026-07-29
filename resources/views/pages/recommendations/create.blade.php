@@ -3,6 +3,15 @@
 
 @push('scripts')
     @include('components._rupiah-input')
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('form-rekom')?.addEventListener('submit', function() {
+            if (typeof tinymce !== 'undefined') {
+                tinymce.triggerSave();
+            }
+        });
+    });
+    </script>
 @endpush
 
 @section('content')
@@ -49,7 +58,7 @@
         </div>
 
         <div class="p-5 sm:p-6">
-            <form action="{{ route('recommendations.store') }}" method="POST" id="form-rekom">
+            <form action="{{ route('recommendations.store') }}" method="POST" id="form-rekom" novalidate>
                 @csrf
                 <div class="-mx-2.5 flex flex-wrap gap-y-5">
 
@@ -534,6 +543,9 @@ function rekomendasiForm() {
             }
 
             document.getElementById('form-rekom')?.addEventListener('submit', () => {
+                if (typeof tinymce !== 'undefined') {
+                    tinymce.triggerSave();
+                }
                 const btn  = document.getElementById('btn-submit-rekom');
                 const text = document.getElementById('btn-rekom-text');
                 if (btn)  btn.disabled    = true;

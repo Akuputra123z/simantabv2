@@ -111,7 +111,6 @@
 </head>
 
 <body
-    x-data="{ loaded: true }"
     class="h-full bg-white dark:bg-gray-900"
     x-init="window.addEventListener('resize', () => {
         if (window.innerWidth < 1280) {

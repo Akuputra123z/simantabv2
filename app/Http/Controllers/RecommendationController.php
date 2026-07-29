@@ -139,7 +139,7 @@ class RecommendationController extends Controller
         ]);
 
         $allowedTags = '<p><br><b><strong><i><em><u><strike><s><del><ol><ul><li><h1><h2><h3><h4><h5><h6><blockquote><pre><code><span><a><table><thead><tbody><tr><th><td><hr>';
-        $validated['uraian_rekom'] = strip_tags($validated['uraian_rekom'], $allowedTags);
+        $validated['uraian_rekom'] = html_entity_decode(strip_tags($validated['uraian_rekom'], $allowedTags));
 
         DB::beginTransaction();
         try {
@@ -203,7 +203,7 @@ public function update(Request $request, Recommendation $recommendation)
     ]);
 
     $allowedTags = '<p><br><b><strong><i><em><u><strike><s><del><ol><ul><li><h1><h2><h3><h4><h5><h6><blockquote><pre><code><span><a><table><thead><tbody><tr><th><td><hr>';
-    $validated['uraian_rekom'] = strip_tags($validated['uraian_rekom'], $allowedTags);
+    $validated['uraian_rekom'] = html_entity_decode(strip_tags($validated['uraian_rekom'], $allowedTags));
 
     DB::beginTransaction();
     try {

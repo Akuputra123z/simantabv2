@@ -37,18 +37,41 @@
                     </div>
                 @endif
 
+                @php
+                    $tlRekom       = $tindakLanjut?->recommendation;
+                    $tlJenisRekom  = $tlRekom->jenis_rekomendasi ?? 'uang';
+                    $tlNilaiRekom  = (int) ($tlRekom->nilai_rekom ?? 0);
+                    $tlSisaRekom   = (int) ($tlRekom->nilai_sisa ?? 0);
+                    $tlNilaiLama   = (int) old('nilai_tindak_lanjut', $tindakLanjut->nilai_tindak_lanjut);
+                    $tlMaxNilai    = $tlJenisRekom === 'uang' ? ($tlSisaRekom + $tlNilaiLama) : 0;
+                @endphp
+
                 {{-- Info rekomendasi terkait (readonly) --}}
-                <div class="mb-5 rounded-lg border border-blue-100 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-900/20">
-                    <p class="text-xs font-semibold text-blue-600 uppercase mb-1">Rekomendasi Terkait</p>
+                <div class="mb-5 rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-900 dark:bg-blue-900/20">
+                    <p class="text-xs font-bold text-blue-600 uppercase mb-2">Rekomendasi Terkait</p>
                     <p class="text-sm text-gray-700 dark:text-gray-300">
-                        <strong>[{{ $tindakLanjut->recommendation->temuan->lhp->nomor_lhp ?? '-' }}]</strong>
-                        {{ Str::limit(strip_tags($tindakLanjut->recommendation->uraian_rekom ?? '-'), 120) }}
+                        <strong>[{{ $tlRekom->temuan->lhp->nomor_lhp ?? '-' }}]</strong>
+                        {{ Str::limit(strip_tags($tlRekom->uraian_rekom ?? '-'), 160) }}
                     </p>
-                    <p class="text-xs text-gray-500 mt-1">
-                        Nilai rekom: <strong>Rp {{ number_format($tindakLanjut->recommendation->nilai_rekom ?? 0, 0, ',', '.') }}</strong>
-                        &nbsp;|&nbsp;
-                        Jenis: <strong>{{ ucfirst($tindakLanjut->recommendation->jenis_rekomendasi ?? '-') }}</strong>
+                    <div class="mt-3 flex flex-wrap gap-4 border-t border-blue-100 pt-3 text-sm dark:border-blue-800">
+                        <div>
+                            <span class="block text-xs font-bold text-blue-500 uppercase">Nilai Rekomendasi</span>
+                            <span class="font-semibold text-gray-900 dark:text-white">Rp {{ number_format($tlNilaiRekom, 0, ',', '.') }}</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-bold text-blue-500 uppercase">Sisa Belum Lunas</span>
+                            <span class="font-semibold text-red-600">Rp {{ number_format($tlSisaRekom, 0, ',', '.') }}</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-bold text-blue-500 uppercase">Jenis</span>
+                            <span class="font-semibold text-gray-900 capitalize dark:text-white">{{ $tlJenisRekom }}</span>
+                        </div>
+                    </div>
+                    @if($tlJenisRekom === 'uang')
+                    <p class="mt-2 text-[11px] font-medium text-blue-500/80">
+                        * Nilai yang dapat di-setorkan maksimal Rp {{ number_format($tlMaxNilai, 0, ',', '.') }} (sisa rekomendasi + nilai TL saat ini).
                     </p>
+                    @endif
                 </div>
 
                 <form action="{{ route('tindak-lanjuts.update', $tindakLanjut->id) }}" method="POST" id="edit-form" enctype="multipart/form-data">
@@ -70,25 +93,31 @@
                                     <input type="radio" name="jenis_penyelesaian" value="langsung"
                                         class="text-brand-500 focus:ring-brand-500"
                                         {{ old('jenis_penyelesaian', $tindakLanjut->jenis_penyelesaian) == 'langsung' ? 'checked' : '' }}>
-                                    <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Langsung</span>
+                                    <div class="ml-2">
+                                        <span class="block text-sm font-bold text-gray-700 dark:text-gray-300">Langsung</span>
+                                        <span class="block text-[10px] text-gray-400 uppercase">Sekali Bayar</span>
+                                    </div>
                                 </label>
                                 <label class="flex-1 flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer transition-all has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50/20 dark:border-gray-700">
                                     <input type="radio" name="jenis_penyelesaian" value="cicilan"
                                         class="text-brand-500 focus:ring-brand-500"
                                         {{ old('jenis_penyelesaian', $tindakLanjut->jenis_penyelesaian) == 'cicilan' ? 'checked' : '' }}>
-                                    <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Cicilan</span>
+                                    <div class="ml-2">
+                                        <span class="block text-sm font-bold text-gray-700 dark:text-gray-300">Cicilan</span>
+                                        <span class="block text-[10px] text-gray-400 uppercase">Bertahap</span>
+                                    </div>
                                 </label>
                             </div>
                         </div>
 
                         {{-- Nilai Tindak Lanjut --}}
-<div class="w-full px-2.5 xl:w-1/2" id="field-nilai-tl">
+<div class="w-full px-2.5 xl:w-1/2" id="field-nilai-tl" {{ $tlJenisRekom !== 'uang' ? 'style=display:none' : '' }}>
     <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-        Nilai Tindak Lanjut (Rp) <span class="text-red-500">*</span>
+        Total Nilai yang Akan Di-setorkan (Rp) <span class="text-red-500">*</span>
     </label>
     <div class="relative group">
         <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-500 text-sm font-bold group-focus-within:text-brand-500 transition-colors pointer-events-none">Rp</span>
-        
+
         {{-- Input Tampilan (Text agar bisa pakai format titik) --}}
         <input type="text" id="display-nilai-tl"
             inputmode="numeric"
@@ -96,26 +125,44 @@
             placeholder="0"
             autocomplete="off"
             class="h-11 w-full rounded-lg border border-gray-300 bg-transparent pl-11 pr-4 py-2.5 text-sm font-bold focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:bg-gray-900 dark:border-gray-700 dark:text-white">
-        
+
         {{-- Input Hidden (Angka asli untuk database) --}}
         <input type="hidden" name="nilai_tindak_lanjut" id="nilai_tindak_lanjut"
             value="{{ old('nilai_tindak_lanjut', $tindakLanjut->nilai_tindak_lanjut) }}">
     </div>
+
+    {{-- Pesan error validasi nilai (muncul secara dinamis) --}}
+    <div id="error-nilai-tl" class="hidden mt-1.5 flex items-center gap-1 text-xs text-red-600 font-medium">
+        <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <span id="error-nilai-tl-msg"></span>
+    </div>
+    @error('nilai_tindak_lanjut')
+        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+    @enderror
+    <p class="mt-1 text-[10px] text-gray-400 font-medium">* Masukkan total target penyelesaian. Tidak boleh melebihi nilai tersedia rekomendasi.</p>
 </div>
 
                         {{-- Section Cicilan --}}
                         <div id="section-cicilan-edit"
                             class="w-full px-2.5 {{ old('jenis_penyelesaian', $tindakLanjut->jenis_penyelesaian) === 'cicilan' ? '' : 'hidden' }}">
-                            <div class="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 grid grid-cols-1 md:grid-cols-2 gap-4 dark:bg-gray-900 dark:border-gray-700">
-                                <div>
-                                    <label class="mb-1 block text-[10px] font-bold text-gray-500 uppercase">Jumlah Cicilan Rencana</label>
-                                    <input type="number" name="jumlah_cicilan_rencana" min="1"
-                                        value="{{ old('jumlah_cicilan_rencana', $tindakLanjut->jumlah_cicilan_rencana) }}"
-                                        placeholder="Contoh: 12"
-                                        class="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-brand-300 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                            <div class="p-6 bg-indigo-50/50 rounded-2xl border border-dashed border-indigo-200 grid grid-cols-1 md:grid-cols-2 gap-6 dark:bg-gray-900 dark:border-gray-700">
+                                <div class="col-span-full">
+                                    <h4 class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Rencana Jadwal Cicilan</h4>
                                 </div>
                                 <div>
-                                    <label class="mb-1 block text-[10px] font-bold text-gray-500 uppercase">Tanggal Mulai Cicilan</label>
+                                    <label class="mb-1.5 block text-[10px] font-bold text-gray-500 uppercase">Tenor / Jumlah Cicilan</label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="number" name="jumlah_cicilan_rencana" min="1"
+                                            value="{{ old('jumlah_cicilan_rencana', $tindakLanjut->jumlah_cicilan_rencana) }}"
+                                            placeholder="12"
+                                            class="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-brand-300 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                                        <span class="text-xs font-bold text-gray-400 whitespace-nowrap">Bulan</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="mb-1.5 block text-[10px] font-bold text-gray-500 uppercase">Tanggal Mulai Cicilan</label>
                                     <input type="date" name="tanggal_mulai_cicilan"
                                         onclick="this.showPicker()"
                                         value="{{ old('tanggal_mulai_cicilan', $tindakLanjut->tanggal_mulai_cicilan?->format('Y-m-d')) }}"
@@ -336,6 +383,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!num) return '';
         return num.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     }
+    function rupiahLabel(num) {
+        return 'Rp ' + formatRibuan(num);
+    }
 
     /* ── Elemen ──────────────────────────────────────────── */
     const form           = document.getElementById('edit-form');
@@ -343,27 +393,57 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnText        = document.getElementById('btn-text');
     const radios         = document.querySelectorAll('input[name="jenis_penyelesaian"]');
     const sectionCicilan = document.getElementById('section-cicilan-edit');
-    
+
     // Elemen untuk dual-input nilai
     const displayNilai   = document.getElementById('display-nilai-tl');
     const hiddenNilai    = document.getElementById('nilai_tindak_lanjut');
+    const errorBox       = document.getElementById('error-nilai-tl');
+    const errorMsg       = document.getElementById('error-nilai-tl-msg');
+
+    let maxNilai  = {{ $tlMaxNilai }};
+    let isNilaiOK = true;
 
     /* ── Logika Format Ribuan (Input) ────────────────────── */
+    function validateNilai(num) {
+        if (maxNilai > 0 && num > maxNilai) {
+            showError('Nilai melebihi nilai tersedia (' + rupiahLabel(maxNilai) + '). Tidak dapat disimpan.');
+        } else {
+            showError(null);
+        }
+    }
+
+    function showError(msg) {
+        if (msg) {
+            errorMsg.textContent = msg;
+            errorBox.classList.remove('hidden');
+            displayNilai.classList.add('border-red-500');
+            displayNilai.classList.remove('border-gray-300');
+            isNilaiOK = false;
+        } else {
+            errorBox.classList.add('hidden');
+            displayNilai.classList.remove('border-red-500');
+            displayNilai.classList.add('border-gray-300');
+            isNilaiOK = true;
+        }
+    }
+
     if (displayNilai && hiddenNilai) {
         displayNilai.addEventListener('input', function () {
             const raw = this.value.replace(/\./g, '').replace(/\D/g, '');
-            
+
             // Simpan posisi kursor agar tidak melompat
             const curPos = this.selectionStart;
             const prevLen = this.value.length;
-            
+
             const formatted = formatRibuan(raw);
             this.value = formatted;
 
             const diff = formatted.length - prevLen;
             try { this.setSelectionRange(curPos + diff, curPos + diff); } catch(e) {}
 
-            hiddenNilai.value = parseInt(raw || '0', 10);
+            const num = parseInt(raw || '0', 10);
+            hiddenNilai.value = num;
+            validateNilai(num);
         });
 
         // Handle paste agar tetap terformat
@@ -372,7 +452,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const pasted = (e.clipboardData || window.clipboardData).getData('text');
             const cleaned = pasted.replace(/\D/g, '');
             this.value = formatRibuan(cleaned);
-            hiddenNilai.value = parseInt(cleaned || '0', 10);
+            const num = parseInt(cleaned || '0', 10);
+            hiddenNilai.value = num;
+            validateNilai(num);
         });
     }
 
@@ -381,14 +463,33 @@ document.addEventListener('DOMContentLoaded', function () {
         radio.addEventListener('change', function () {
             if (sectionCicilan) {
                 sectionCicilan.classList.toggle('hidden', this.value !== 'cicilan');
+                if (this.value === 'cicilan') {
+                    document.getElementsByName('jumlah_cicilan_rencana')[0]?.focus();
+                }
             }
         });
     });
 
     /* ── Guard Submit ────────────────────────────────────── */
     form.addEventListener('submit', function (e) {
-        // Jika ada logika validasi sisa saldo bisa ditambahkan di sini
-        
+        const num = parseInt(hiddenNilai.value || '0', 10);
+
+        // Blokir jika nilai melebihi nilai tersedia
+        if (maxNilai > 0 && num > maxNilai) {
+            e.preventDefault();
+            showError('Nilai melebihi nilai tersedia (' + rupiahLabel(maxNilai) + '). Perbaiki sebelum menyimpan.');
+            displayNilai.focus();
+            return;
+        }
+
+        // Warn jika nilai 0 dan rekomendasi berjenis uang
+        if ({{ $tlJenisRekom === 'uang' ? 'true' : 'false' }} && num === 0) {
+            if (!confirm('Nilai Tindak Lanjut adalah 0. Anda yakin ingin melanjutkan?')) {
+                e.preventDefault();
+                return;
+            }
+        }
+
         submitBtn.disabled = true;
         btnText.innerText  = 'Menyimpan...';
     });

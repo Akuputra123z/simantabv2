@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const pkptTrigger = document.createElement('div');
     pkptTrigger.id        = 'pkpt-trigger';
-    pkptTrigger.className = 'flex items-center justify-between h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm cursor-pointer select-none transition-all duration-150 hover:border-blue-400 dark:bg-gray-900 dark:border-gray-700';
+    pkptTrigger.className = 'flex items-center justify-between h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm cursor-pointer select-none transition-all duration-150 hover:border-blue-400 dark:bg-gray-900 dark:border-gray-700';
     pkptTrigger.innerHTML = `
         <span id="pkpt-label" class="truncate text-gray-400 dark:text-gray-500 flex-1 mr-2">Pilih detail setelah memilih program</span>
         <span id="pkpt-anggaran" class="shrink-0 text-[11px] font-semibold text-green-600 dark:text-green-400 mr-2 hidden"></span>
@@ -97,22 +97,45 @@ document.addEventListener('DOMContentLoaded', () => {
         return 'Rp ' + Number(n).toLocaleString('id-ID');
     }
 
+    function pkptStatusBadge(status) {
+        const map = {
+            'aktif':    ['bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-900/30 dark:text-emerald-300', 'Aktif'],
+            'rencana':  ['bg-sky-50 text-sky-700 ring-sky-600/20 dark:bg-sky-900/30 dark:text-sky-300', 'Rencana'],
+            'draft':    ['bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-300', 'Draft'],
+            'nonaktif': ['bg-gray-100 text-gray-600 ring-gray-600/10 dark:bg-gray-700 dark:text-gray-300', 'Nonaktif'],
+        };
+        const [cls, label] = map[status] || ['bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300', status || 'Tanpa Status'];
+        return `<span class="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold uppercase ring-1 ring-inset ${cls}">${esc(label)}</span>`;
+    }
+
     function pkptUpdateInfo(value) {
         const $info = document.getElementById('pkpt-info');
         if (!$info) return;
         const data = pkptDetailMap[value] || {};
-        const jenis = data.jenis_kegiatan || '';
-        const tim = data.tim || '';
-        if (jenis || tim) {
-            $info.innerHTML = `
-                <div class="flex flex-wrap gap-3 mt-2 text-xs">
-                    ${jenis ? `<span class="inline-flex items-center gap-1 rounded-md bg-purple-50 dark:bg-purple-900/20 px-2 py-1 text-purple-700 dark:text-purple-300 font-medium"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg> Kegiatan: ${esc(jenis)}</span>` : ''}
-                    ${tim ? `<span class="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-900/20 px-2 py-1 text-blue-700 dark:text-blue-300 font-medium"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg> Tim: ${esc(tim)}</span>` : ''}
-                </div>`;
-            $info.classList.remove('hidden');
-        } else {
+
+        const hasInfo = data.jenis_kegiatan || data.tim
+            || data.objek_pengawasan || data.ruang_lingkup
+            || data.status || Number(data.anggaran) > 0;
+
+        if (!hasInfo) {
             $info.classList.add('hidden');
+            $info.innerHTML = '';
+            return;
         }
+
+        const chips = [
+            data.jenis_kegiatan ? `<span class="inline-flex items-center gap-1 rounded-md bg-purple-50 dark:bg-purple-900/20 px-2 py-1 text-purple-700 dark:text-purple-300 font-medium"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg> Kegiatan: ${esc(data.jenis_kegiatan)}</span>` : '',
+            data.tim ? `<span class="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-900/20 px-2 py-1 text-blue-700 dark:text-blue-300 font-medium"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg> Tim: ${esc(data.tim)}</span>` : '',
+        ].filter(Boolean).join('');
+
+        $info.innerHTML = `
+            <div class="mt-2 rounded-xl border border-blue-100 bg-blue-50/70 p-3.5 text-xs space-y-2 dark:border-blue-900/40 dark:bg-blue-900/10">
+                <div class="flex flex-wrap items-center gap-1.5">${pkptStatusBadge(data.status)}${chips}</div>
+                ${Number(data.anggaran) > 0 ? `<p class="text-gray-600 dark:text-gray-300 leading-relaxed"><span class="font-bold text-gray-700 dark:text-gray-200">Anggaran:</span> <span class="font-semibold text-green-600 dark:text-green-400">${fmtRupiah(data.anggaran)}</span></p>` : ''}
+                ${data.objek_pengawasan ? `<p class="text-gray-600 dark:text-gray-300 leading-relaxed"><span class="font-bold text-gray-700 dark:text-gray-200">Objek Pengawasan:</span> ${esc(data.objek_pengawasan)}</p>` : ''}
+                ${data.ruang_lingkup ? `<p class="text-gray-600 dark:text-gray-300 leading-relaxed"><span class="font-bold text-gray-700 dark:text-gray-200">Ruang Lingkup:</span> ${esc(data.ruang_lingkup)}</p>` : ''}
+            </div>`;
+        $info.classList.remove('hidden');
     }
 
     function pkptSetValue(value, label, anggaran) {
@@ -156,8 +179,10 @@ document.addEventListener('DOMContentLoaded', () => {
         $pkptList.innerHTML = filtered.map(o => {
             const isSel = o.value === $detSelect.value;
             const labelHtml = q ? esc(o.label).replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark class="bg-yellow-100 dark:bg-yellow-800/40 not-italic font-semibold rounded px-0.5">$1</mark>') : esc(o.label);
-            const anggaranHtml = Number(o.anggaran) > 0 ? `<span class="shrink-0 text-[11px] font-semibold text-green-600 dark:text-green-400 ml-auto">${fmtRupiah(o.anggaran)}</span>` : '';
-            return `<div class="pkpt-opt flex items-center gap-2 px-4 py-3 cursor-pointer text-sm leading-snug transition-colors ${isSel ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/[0.04]'}" data-value="${o.value}" data-label="${esc(o.label)}" data-jenis-kegiatan="${esc(o.jenis_kegiatan)}" data-tim="${esc(o.tim)}" data-anggaran="${o.anggaran || 0}"><span class="truncate">${labelHtml}</span>${anggaranHtml}</div>`;
+            const anggaranHtml = Number(o.anggaran) > 0 ? `<span class="shrink-0 text-[11px] font-semibold text-green-600 dark:text-green-400 ml-2">${fmtRupiah(o.anggaran)}</span>` : '';
+            const subtitle = [o.jenis_kegiatan ? 'Kegiatan: ' + o.jenis_kegiatan : '', o.tim ? 'Tim: ' + o.tim : ''].filter(Boolean).join(' • ');
+            const subtitleHtml = subtitle ? `<span class="block text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">${esc(subtitle)}</span>` : '';
+            return `<div class="pkpt-opt flex items-center gap-2 px-4 py-3 cursor-pointer text-sm leading-snug transition-colors ${isSel ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/[0.04]'}" data-value="${o.value}" data-label="${esc(o.label)}" data-jenis-kegiatan="${esc(o.jenis_kegiatan)}" data-tim="${esc(o.tim)}" data-anggaran="${o.anggaran || 0}"><span class="min-w-0 flex-1"><span class="block truncate">${labelHtml}</span>${subtitleHtml}</span>${anggaranHtml}</div>`;
         }).join('');
 
         $pkptList.querySelectorAll('.pkpt-opt').forEach(el => {
@@ -218,6 +243,9 @@ async function loadProgramDetails(programId, selectedDetailId = null) {
                 jenis_kegiatan: d.jenis_kegiatan || '',
                 tim: d.tim || '',
                 anggaran: d.anggaran || 0,
+                objek_pengawasan: d.objek_pengawasan || '',
+                ruang_lingkup: d.ruang_lingkup || '',
+                status: d.status || '',
             };
         });
         

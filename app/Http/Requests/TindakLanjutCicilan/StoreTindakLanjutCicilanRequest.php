@@ -49,7 +49,9 @@ class StoreTindakLanjutCicilanRequest extends FormRequest
     }
 
     /**
-     * Validasi tambahan: jumlah breakdown harus sama dengan nilai_bayar.
+     * Validasi tambahan:
+     * 1. Nilai bayar tidak boleh melebihi sisa tindak lanjut.
+     * 2. Jumlah breakdown harus sama dengan nilai_bayar.
      */
     public function withValidator($validator): void
     {
@@ -60,6 +62,21 @@ class StoreTindakLanjutCicilanRequest extends FormRequest
                        + (float) ($this->nilai_bayar_bos_blud ?? 0);
 
             $total = (float) ($this->nilai_bayar ?? 0);
+
+            // Nilai bayar tidak boleh melebihi sisa tindak lanjut
+            $tl = $this->route('tindakLanjut');
+            if ($tl instanceof \App\Models\TindakLanjut && $tl->recommendation?->isUang()) {
+                $sisa = (float) ($tl->sisa_belum_bayar ?? 0);
+
+                if ($total > $sisa + 0.01) {
+                    $validator->errors()->add(
+                        'nilai_bayar',
+                        'Nilai bayar melebihi sisa tindak lanjut (Rp '
+                            . number_format($sisa, 0, ',', '.')
+                            . ').'
+                    );
+                }
+            }
 
             // Jika ada nilai breakdown yang diisi, jumlahnya harus cocok dengan total nilai_bayar
             if ($breakdown > 0 && abs($breakdown - $total) > 0.01) {

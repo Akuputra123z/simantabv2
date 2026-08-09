@@ -50,8 +50,9 @@ class TindakLanjutCicilanController extends Controller
 
     public function create(TindakLanjut $tindakLanjut): View
     {
-        // Hitung nomor urut berikutnya berdasarkan cicilan yang ada (termasuk yang di-softdelete jika perlu)
-        $nextKe = $tindakLanjut->cicilans()->withTrashed()->count() + 1;
+        // Nomor urut berikutnya — pakai helper model agar konsisten dengan
+        // auto-set 'ke' saat menyimpan (max('ke') + 1, bukan count + 1).
+        $nextKe = $tindakLanjut->nextKeCicilan();
         $tindakLanjut->load(['recommendation.temuan.lhp']);
 
         return view('pages.tindak-lanjuts.cicilans.create', compact('tindakLanjut', 'nextKe'));

@@ -133,7 +133,7 @@
                             <div x-show="programId && !loadingRekom && rekomendasis.length === 0" x-transition
                                  class="mt-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 dark:bg-blue-900/20 dark:border-blue-800">
                                 <p class="text-xs text-blue-700 dark:text-blue-300">
-                                    ✓ Semua rekomendasi pada program ini sudah selesai (tidak ada sisa).
+                                    ✓ Semua rekomendasi pada program ini sudah ditindaklanjuti.
                                 </p>
                             </div>
 

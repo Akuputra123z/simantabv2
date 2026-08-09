@@ -61,9 +61,9 @@
             <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Uraian Rekomendasi</span>
             @php
                 $statusColor = [
-                    'disetujui' => 'bg-green-50 text-green-700 ring-green-600/10',
-                    'ditolak' => 'bg-red-50 text-red-700 ring-red-600/10',
-                    'menunggu' => 'bg-amber-50 text-amber-700 ring-amber-600/10'
+                    'lunas' => 'bg-green-50 text-green-700 ring-green-600/10',
+                    'berjalan' => 'bg-blue-50 text-blue-700 ring-blue-600/10',
+                    'menunggu_verifikasi' => 'bg-amber-50 text-amber-700 ring-amber-600/10',
                 ][$tindakLanjut->status_verifikasi] ?? 'bg-gray-50 text-gray-700 ring-gray-600/10';
             @endphp
             <span class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset {{ $statusColor }} uppercase tracking-wider">
@@ -151,6 +151,19 @@
         <div class="rounded-xl bg-gray-50/50 p-4 border border-gray-50">
             <p class="text-xs leading-relaxed text-gray-600 italic">
                 {!! $tindakLanjut->catatan_tl ? nl2br(e($tindakLanjut->catatan_tl)) : 'Tidak ada catatan.' !!}
+            </p>
+        </div>
+    </div>
+
+    {{-- HAMBATAN SECTION --}}
+    <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div class="mb-3 flex items-center gap-2">
+            <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+            <h3 class="text-xs font-bold uppercase tracking-widest text-gray-900">Hambatan</h3>
+        </div>
+        <div class="rounded-xl bg-gray-50/50 p-4 border border-gray-50">
+            <p class="text-xs leading-relaxed text-gray-600 italic">
+                {!! $tindakLanjut->hambatan ? nl2br(e($tindakLanjut->hambatan)) : 'Tidak ada hambatan.' !!}
             </p>
         </div>
     </div>

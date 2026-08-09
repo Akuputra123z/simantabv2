@@ -14,8 +14,11 @@
         // Jika ada input lama, cari objek usernya agar JavaScript bisa merender nama
         $preselectedMembers = $allMembers->whereIn('id', (array)$oldIds);
     } else {
-        // Jika tidak ada error validasi, gunakan data preselected atau kosong
-        $preselectedMembers = isset($preselected) ? collect($preselected) : collect();
+        // Jika tidak ada error validasi, gunakan data preselected atau kosong.
+        // Resolve ID ke objek user agar nama tersedia untuk render tag di JS
+        $preselectedMembers = isset($preselected)
+            ? $allMembers->whereIn('id', collect((array)$preselected)->flatten()->all())->values()
+            : collect();
     }
 @endphp
 

@@ -301,6 +301,12 @@
                 <dd class="mt-1 text-sm text-gray-800 dark:text-white">{{ $data->auditProgramDetail->ruang_lingkup }}</dd>
             </div>
             @endif
+            @if($data->auditProgramDetail->objek_pengawasan)
+            <div class="sm:col-span-2 lg:col-span-3">
+                <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Objek Pengawasan</dt>
+                <dd class="mt-1 text-sm text-gray-800 dark:text-white">{{ $data->auditProgramDetail->objek_pengawasan }}</dd>
+            </div>
+            @endif
             @if($data->auditProgramDetail->tujuan)
             <div class="sm:col-span-2 lg:col-span-3">
                 <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Tujuan</dt>
@@ -315,6 +321,24 @@
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Tim</dt>
                 <dd class="mt-1 text-sm font-medium text-gray-800 dark:text-white">{{ $data->auditProgramDetail->tim ?? '-' }}</dd>
+            </div>
+
+            <div>
+                <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">Status Detail Program</dt>
+                <dd class="mt-1">
+                    @php
+                        $statusDetail = $data->auditProgramDetail->status ?? '';
+                        $statusCls = match(strtolower($statusDetail)) {
+                            'aktif'   => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                            'rencana' => 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
+                            'draft'   => 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                            default   => 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+                        };
+                    @endphp
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize {{ $statusCls }}">
+                        {{ $statusDetail ?: '-' }}
+                    </span>
+                </dd>
             </div>
 
             <div>

@@ -18,29 +18,13 @@ class RecommendationController extends Controller
 
     public function index(Request $request)
     {
+        // Daftar default hanya menampilkan rekomendasi yang BELUM masuk tindak lanjut.
+        // Seluruh daftar tampil saat user memilih filter status eksplisit.
+        $includeAll = $request->filled('status');
+
         $recommendations = Recommendation::query()
-            ->select([
-                'recommendations.id', 'recommendations.temuan_id', 'recommendations.kode_rekomendasi_id',
-                'recommendations.uraian_rekom', 'recommendations.jenis_rekomendasi',
-                'recommendations.nilai_rekom', 'recommendations.nilai_sisa', 'recommendations.status',
-                'recommendations.batas_waktu', 'recommendations.created_at',
-                'ap.kategori',
-                'audit_program_details.tim as irban',
-                'ap.nama_program',
-            ])
-            ->leftJoin('temuans', 'recommendations.temuan_id', '=', 'temuans.id')
-            ->leftJoin('lhps', 'temuans.lhp_id', '=', 'lhps.id')
-            ->leftJoin('audit_assignments', 'lhps.audit_assignment_id', '=', 'audit_assignments.id')
-            ->leftJoin('audit_program_details', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
-            ->leftJoin('audit_programs as ap', 'audit_program_details.audit_program_id', '=', 'ap.id')
-            ->with([
-                'temuan:id,lhp_id,kode_temuan_id,kondisi',
-                'temuan.lhp:id,nomor_lhp,tanggal_lhp,unit_diperiksa_id',
-                'temuan.lhp.unitDiperiksa',
-                'temuan.kodeTemuan:id,kode',
-                'kodeRekomendasi:id,kode,deskripsi',
-                'tindakLanjuts:id,recommendation_id,total_terbayar',
-            ])
+            ->withAuditContext()
+            ->when(! $includeAll, fn ($q) => $q->whereDoesntHave('tindakLanjuts'))
             ->when($request->filled('kategori'), fn($q) => $q->where('ap.kategori', $request->kategori))
             ->when($request->filled('status'), fn($q) => $q->where('recommendations.status', $request->status))
             ->when($request->filled('jenis'),  fn($q) => $q->where('recommendations.jenis_rekomendasi', $request->jenis))
@@ -58,13 +42,15 @@ class RecommendationController extends Controller
 
         $kategoris = AuditProgram::KATEGORI;
 
-        return view('pages.recommendations.index', compact('recommendations', 'kategoris'));
+        return view('pages.recommendations.index', compact('recommendations', 'kategoris', 'includeAll'));
     }
 
    public function create()
 {
         $auditPrograms = AuditProgram::query()
             ->select('id', 'nama_program', 'tahun')
+            // Hanya program yang masih punya rekomendasi belum masuk TL (konsisten)
+            ->aktifUntukTindakLanjut()
             ->orderBy('tahun', 'desc')
             ->orderBy('nama_program')
             ->get();

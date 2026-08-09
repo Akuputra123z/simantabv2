@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\AuditProgramDetail;
 use App\Models\AuditAssignment;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -133,5 +134,21 @@ class AuditProgram extends Model
     public function isWaiting(): bool
     {
         return $this->approval_status === self::APPROVAL_MENUNGGU;
+    }
+
+    // ─── Scopes ─────────────────────────────────────────────────────────────
+
+    /**
+     * Program yang masih relevan untuk input tindak lanjut:
+     * status kolom bukan 'selesai' DAN masih punya rekomendasi yang belum masuk TL.
+     */
+    public function scopeAktifUntukTindakLanjut(Builder $q): Builder
+    {
+        return $q
+            ->where('status', '!=', 'selesai')
+            ->whereHas(
+                'details.assignments.lhps.temuans.recommendations',
+                fn ($r) => $r->whereDoesntHave('tindakLanjuts')
+            );
     }
 }

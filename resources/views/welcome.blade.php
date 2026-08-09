@@ -42,23 +42,6 @@
   .wa-float:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(37,211,102,0.55)}
   @keyframes wa-pulse{0%,100%{box-shadow:0 4px 20px rgba(37,211,102,0.45),0 0 0 0 rgba(37,211,102,0.3)}50%{box-shadow:0 4px 20px rgba(37,211,102,0.45),0 0 0 10px rgba(37,211,102,0)}}
   .wa-float{animation:wa-pulse 2.5s ease infinite}
-  .nav-desktop{display:none;align-items:center;gap:2rem;font-size:.875rem;font-weight:500}
-  .nav-desktop a{color:#64748b;transition:color .15s}
-  .nav-desktop a:hover{color:#003366}
-  .dark .nav-desktop a{color:#94a3b8}
-  .dark .nav-desktop a:hover{color:#fff}
-  .nav-desktop-actions{display:flex;align-items:center;gap:1rem;padding-left:1rem;border-left:1px solid #e2e8f0}
-  .dark .nav-desktop-actions{border-color:#334155}
-  .nav-desktop-actions button{padding:.5rem;border-radius:9999px;border:1px solid #e2e8f0;color:#64748b;transition:all .15s}
-  .nav-desktop-actions button:hover{background:#f1f5f9;color:#334155}
-  .dark .nav-desktop-actions button{border-color:#334155;color:#94a3b8}
-  .dark .nav-desktop-actions button:hover{background:#1e293b;color:#fff}
-  .nav-desktop-actions a{background:#2563eb;color:#fff;padding:.5rem 1.25rem;border-radius:.5rem;font-weight:600;font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;transition:all .15s}
-  .nav-desktop-actions a:hover{background:#1d4ed8}
-  .dark .nav-desktop-actions a{background:#3b82f6}
-  .dark .nav-desktop-actions a:hover{background:#60a5fa}
-  .nav-mobile-controls{display:flex;align-items:center;gap:.25rem}
-  @media(min-width:768px){.nav-desktop{display:flex}.nav-mobile-controls{display:none}#mobile-menu{display:none!important}}
 </style>
 </head>
 
@@ -88,26 +71,35 @@
       </a>
 
       <!-- Desktop Nav -->
-      <div class="nav-desktop">
-        <a href="/">Beranda</a>
-        <a href="#audit-process">Alur Kerja</a>
-        <a href="/tracking">Tracking</a>
-        <div class="nav-desktop-actions">
-          <button onclick="toggleDark()" aria-label="Toggle dark mode">
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium">
+        <a href="/" class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-white transition-colors">Beranda</a>
+        <a href="#audit-process" class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-white transition-colors">Alur Kerja</a>
+        <a href="/tracking" class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-white transition-colors">Tracking</a>
+
+        <div class="flex items-center gap-4 pl-4 border-l border-border-light dark:border-border-dark">
+          <!-- Dark mode toggle -->
+          <button
+            onclick="toggleDark()"
+            class="p-2 rounded-full border border-border-light dark:border-border-dark hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors"
+            aria-label="Toggle dark mode"
+          >
             <x-heroicon-o-moon class="w-5 h-5 block dark:hidden" aria-hidden="true" />
             <x-heroicon-o-sun class="w-5 h-5 hidden dark:block" aria-hidden="true" />
           </button>
-          <a href="/login">Akses Portal</a>
+
+          <a href="/login" class="bg-blue-600 dark:bg-blue-500 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-400 transition-all text-xs tracking-wider uppercase">
+            Akses Portal
+          </a>
         </div>
       </div>
 
       <!-- Mobile Controls -->
-      <div class="nav-mobile-controls">
-        <button onclick="toggleDark()" aria-label="Toggle dark mode">
+      <div class="md:hidden flex items-center gap-1">
+        <button onclick="toggleDark()" class="p-2 text-slate-600 dark:text-slate-400" aria-label="Toggle dark mode">
           <x-heroicon-o-moon class="w-5 h-5 block dark:hidden" aria-hidden="true" />
           <x-heroicon-o-sun class="w-5 h-5 hidden dark:block" aria-hidden="true" />
         </button>
-        <button onclick="toggleMenu()" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-menu" id="menu-btn">
+        <button onclick="toggleMenu()" class="p-2 text-slate-600 dark:text-slate-400" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-menu" id="menu-btn">
           <x-heroicon-o-bars-3 class="w-6 h-6" id="menu-icon-open" aria-hidden="true" />
           <x-heroicon-o-x-mark class="w-6 h-6 hidden" id="menu-icon-close" aria-hidden="true" />
         </button>
@@ -144,7 +136,7 @@
 
     <h1 class="font-display text-5xl lg:text-7xl font-extrabold tracking-[-0.03em] mb-6 text-slate-900 dark:text-white max-w-5xl mx-auto leading-[1.1] animate-fadeup delay-2">
       SIAP TUNTAS<br class="hidden lg:block"/>
-      <br/>
+      <br>
       <span class="text-primary dark:text-blue-400">Inspektorat Daerah</span><br class="hidden lg:block"/>
       Kabupaten Rembang
     </h1>

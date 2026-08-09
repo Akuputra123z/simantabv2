@@ -237,7 +237,7 @@ class AuditAssignmentController extends Controller
             }
         })
         ->orderBy('nama_detail_program')
-        ->get(['id', 'nama_detail_program', 'jenis_kegiatan', 'tim', 'anggaran']);
+        ->get(['id', 'nama_detail_program', 'jenis_kegiatan', 'tim', 'anggaran', 'objek_pengawasan', 'ruang_lingkup', 'status']);
 
     return response()->json($details);
 }

@@ -195,7 +195,8 @@
                                                inputmode="numeric"
                                                autocomplete="off"
                                                placeholder="0"
-                                               class="rupiah-field field-input field-input--sm pl-9 text-xs font-semibold"
+                                               class="rupiah-field field-input field-input--sm !pl-10 text-xs font-semibold"
+                                               style="padding-left: 2.5rem !important;" {{-- Jaminan tidak tertimpa padding .field-input --}}
                                                data-name="nilai_bayar_{{ $key }}"
                                                data-value="{{ old('nilai_bayar_'.$key, 0) }}"
                                                data-breakdown="{{ $key }}">
@@ -347,13 +348,19 @@ document.addEventListener('DOMContentLoaded', () => {
     @if($isUang)
     /* ── Refs ── */
     const displayBayar  = document.getElementById('display-nilai-bayar');
-    const hiddenBayar   = document.querySelector('input[name="nilai_bayar"]');
     const errorBox      = document.getElementById('error-nilai-bayar');
     const errorMsg      = document.getElementById('error-nilai-bayar-msg');
     const sisaProgress  = document.getElementById('sisa-progress');
     const sisaBar       = document.getElementById('sisa-bar');
     const sisaLabel     = document.getElementById('sisa-label');
     const maxSisa       = {{ $sisaTl }};
+
+    /*
+     * Hidden input diciptakan oleh komponen RupiahInput yang di-push dari stack
+     * 'scripts' — script-nya dieksekusi SETELAH script halaman ini. Jadi jangan
+     * simpan referensinya saat init (selalu null), query saat dibutuhkan saja.
+     */
+    const getHiddenBayar = () => document.querySelector('input[name="nilai_bayar"]');
 
     function fmt(val) {
         const n = String(val).replace(/\D/g,'');
@@ -364,11 +371,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* ── Validasi & progress bar ── */
     function onBayarChange() {
-        const num = parse(hiddenBayar?.value ?? 0);
+        const num = parse(getHiddenBayar()?.value ?? 0);
 
-        /* Error jika melebihi sisa */
-        if (maxSisa > 0 && num > maxSisa) {
-            errorMsg.textContent = `Nilai melebihi sisa tindak lanjut (${money(maxSisa)}).`;
+        /* Error jika melebihi sisa — termasuk saat sisa sudah 0 (lunas) */
+        if ((maxSisa <= 0 && num > 0) || (maxSisa > 0 && num > maxSisa)) {
+            errorMsg.textContent = maxSisa > 0
+                ? `Nilai melebihi sisa tindak lanjut (${money(maxSisa)}).`
+                : 'Sisa tindak lanjut sudah lunas (Rp 0). Tidak dapat menambah pembayaran.';
             errorBox.classList.remove('hidden');
             displayBayar.classList.add('field-input--error');
         } else {
@@ -394,7 +403,8 @@ document.addEventListener('DOMContentLoaded', () => {
         syncBreakdownNegara(num);
     }
 
-    /* Dengarkan event 'change' dari RupiahInput */
+    /* Dengarkan input & change pada display (hidden-nya diperbarui dulu oleh RupiahInput) */
+    displayBayar?.addEventListener('input', onBayarChange);
     displayBayar?.addEventListener('change', onBayarChange);
 
     /* ── Auto-fill negara jika kosong ── */
@@ -411,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ── Info sisa breakdown ── */
     const bdKeys = ['negara','daerah','desa','bos_blud'];
     function updateBreakdownInfo() {
-        const total  = parse(hiddenBayar?.value ?? 0);
+        const total  = parse(getHiddenBayar()?.value ?? 0);
         const sumBd  = bdKeys.reduce((s,k) => s + parse(document.querySelector(`input[name="nilai_bayar_${k}"]`)?.value ?? 0), 0);
         const sisa   = total - sumBd;
         const infoEl = document.getElementById('info-breakdown-sisa');
@@ -431,7 +441,9 @@ document.addEventListener('DOMContentLoaded', () => {
     /* Breakdown change listeners (setelah RupiahInput init) */
     setTimeout(() => {
         bdKeys.forEach(k => {
-            document.getElementById(`display-bd-${k}`)?.addEventListener('change', updateBreakdownInfo);
+            const el = document.getElementById(`display-bd-${k}`);
+            el?.addEventListener('input', updateBreakdownInfo);
+            el?.addEventListener('change', updateBreakdownInfo);
         });
         /* Trigger awal jika ada old value */
         onBayarChange();
@@ -450,10 +462,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* ── Guard submit ── */
     document.getElementById('form-cicilan')?.addEventListener('submit', function (e) {
-        const num = parse(hiddenBayar?.value ?? 0);
+        const num = parse(getHiddenBayar()?.value ?? 0);
 
-        if (maxSisa > 0 && num > maxSisa) {
+        if ((maxSisa <= 0 && num > 0) || (maxSisa > 0 && num > maxSisa)) {
             e.preventDefault();
+            errorMsg.textContent = maxSisa > 0
+                ? `Nilai melebihi sisa tindak lanjut (${money(maxSisa)}). Perbaiki sebelum menyimpan.`
+                : 'Sisa tindak lanjut sudah lunas (Rp 0). Tidak dapat menambah pembayaran.';
+            errorBox.classList.remove('hidden');
+            displayBayar?.classList.add('field-input--error');
             displayBayar?.focus();
             return;
         }

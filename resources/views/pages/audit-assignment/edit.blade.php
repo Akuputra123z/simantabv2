@@ -98,8 +98,8 @@
                         </select>
                     </div>
 
-                    {{-- PKPT + Anggaran Disetujui (grouped) --}}
-                    <div class="space-y-3">
+                    {{-- PKPT / Detail Program (2x lebar) --}}
+                    <div class="space-y-3 lg:col-span-2">
                         <div class="space-y-1.5">
                             <label for="audit_program_detail_id" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">PKPT / Detail Program <span class="text-red-400">*</span></label>
                             <select id="audit_program_detail_id" name="audit_program_detail_id" data-no-ts required
@@ -114,7 +114,12 @@
                             </select>
                             <div id="pkpt-info" class="hidden"></div>
                         </div>
-                        <div class="pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                    </div>
+
+                    {{-- Anggaran Disetujui + Nomor Surat (sejajar) --}}
+                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:col-span-2">
+                        <div class="space-y-1.5">
+                            <label for="anggaran_disetujui" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Anggaran Disetujui (Rp)</label>
                             <div class="relative">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">Rp</span>
                                 <input type="text" name="anggaran_disetujui" id="anggaran_disetujui" inputmode="numeric"
@@ -123,16 +128,14 @@
                                     class="h-11 w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
                             </div>
                         </div>
-                    </div>
 
-                    {{-- Nomor Surat --}}
-                    <div class="space-y-1.5">
-                        <label for="nomor_surat" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Nomor Surat Tugas <span class="text-red-400">*</span></label>
-                        <input type="text" name="nomor_surat" id="nomor_surat" value="{{ old('nomor_surat', $data->nomor_surat) }}"
-                            placeholder="700/001/INSPEKTORAT/2026"
-                            class="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all" required>
+                        <div class="space-y-1.5">
+                            <label for="nomor_surat" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Nomor Surat Tugas <span class="text-red-400">*</span></label>
+                            <input type="text" name="nomor_surat" id="nomor_surat" value="{{ old('nomor_surat', $data->nomor_surat) }}"
+                                placeholder="700/001/INSPEKTORAT/2026"
+                                class="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all" required>
+                        </div>
                     </div>
-
                 </div>
 
                 {{-- Unit Diperiksa --}}

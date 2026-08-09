@@ -90,6 +90,16 @@
         </div>
     </form>
  
+    {{-- Info Mode Default: hanya rekomendasi yang belum masuk TL --}}
+    @unless ($includeAll)
+    <div class="mb-6 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800/60 dark:bg-blue-900/20">
+        <svg class="h-5 w-5 flex-shrink-0 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <p class="text-sm font-medium text-blue-800 dark:text-blue-300">
+            Menampilkan <b>{{ $recommendations->total() }}</b> rekomendasi yang belum masuk tindak lanjut. Gunakan filter status <b>"Dalam Proses"</b> atau <b>"Selesai"</b> untuk melihat rekomendasi yang sudah ditindaklanjuti.
+        </p>
+    </div>
+    @endunless
+
     {{-- Table --}}
     <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="overflow-x-auto">

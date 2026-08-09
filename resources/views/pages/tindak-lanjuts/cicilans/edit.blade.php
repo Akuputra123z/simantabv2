@@ -172,7 +172,8 @@
                                                inputmode="numeric"
                                                autocomplete="off"
                                                placeholder="0"
-                                               class="rupiah-field field-input field-input--sm pl-9 text-xs font-semibold"
+                                               class="rupiah-field field-input field-input--sm !pl-10 text-xs font-semibold"
+                                               style="padding-left: 2.5rem !important;" {{-- Jaminan tidak tertimpa padding .field-input --}}
                                                data-name="nilai_bayar_{{ $key }}"
                                                data-value="{{ old('nilai_bayar_'.$key, (int)$cicilan->{'nilai_bayar_'.$key}) }}"
                                                data-breakdown="{{ $key }}">
@@ -317,7 +318,6 @@ textarea.field-input { height: auto; }
 document.addEventListener('DOMContentLoaded', () => {
     @if($isUang)
     const displayBayar  = document.getElementById('display-nilai-bayar');
-    const hiddenBayar   = document.querySelector('input[name="nilai_bayar"]');
     const toggleBtn = document.getElementById('toggle-breakdown');
     const section   = document.getElementById('section-breakdown');
     const chevron   = document.getElementById('chevron-breakdown');

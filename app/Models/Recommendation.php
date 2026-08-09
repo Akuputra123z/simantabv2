@@ -125,13 +125,49 @@ class Recommendation extends Model
 
             if ($nilaiRekom <= 0) return 0;
 
-            // Ambil total_terbayar dari TL (sudah di-cap di syncStatus)
-            $totalBayar = (float) $this->tindakLanjuts()->sum('total_terbayar');
+            // Ambil total_terbayar dari TL (sudah di-cap di syncStatus).
+            // Gunakan relasi yang sudah di-eager-load bila ada untuk hindari N+1.
+            $totalBayar = $this->relationLoaded('tindakLanjuts')
+                ? (float) $this->tindakLanjuts->sum('total_terbayar')
+                : (float) $this->tindakLanjuts()->sum('total_terbayar');
 
             return min(100, round(($totalBayar / $nilaiRekom) * 100, 2));
         }
 
         return $this->status === self::STATUS_SELESAI ? 100 : 0;
+    }
+
+    // ── Scopes ────────────────────────────────────────────────────────────────
+
+    /**
+     * Query dasar untuk halaman index: kolom audit-context (kategori, irban,
+     * nama program) via join + eager load relasi yang dipakai di view.
+     */
+    public function scopeWithAuditContext(Builder $query): Builder
+    {
+        return $query
+            ->select([
+                'recommendations.id', 'recommendations.temuan_id', 'recommendations.kode_rekomendasi_id',
+                'recommendations.uraian_rekom', 'recommendations.jenis_rekomendasi',
+                'recommendations.nilai_rekom', 'recommendations.nilai_sisa', 'recommendations.status',
+                'recommendations.batas_waktu', 'recommendations.created_at',
+                'ap.kategori',
+                'audit_program_details.tim as irban',
+                'ap.nama_program',
+            ])
+            ->leftJoin('temuans', 'recommendations.temuan_id', '=', 'temuans.id')
+            ->leftJoin('lhps', 'temuans.lhp_id', '=', 'lhps.id')
+            ->leftJoin('audit_assignments', 'lhps.audit_assignment_id', '=', 'audit_assignments.id')
+            ->leftJoin('audit_program_details', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
+            ->leftJoin('audit_programs as ap', 'audit_program_details.audit_program_id', '=', 'ap.id')
+            ->with([
+                'temuan:id,lhp_id,kode_temuan_id,kondisi',
+                'temuan.lhp:id,nomor_lhp,tanggal_lhp,unit_diperiksa_id',
+                'temuan.lhp.unitDiperiksa',
+                'temuan.kodeTemuan:id,kode',
+                'kodeRekomendasi:id,kode,deskripsi',
+                'tindakLanjuts:id,recommendation_id,total_terbayar',
+            ]);
     }
 
     // ── Relationships ─────────────────────────────────────────────────────────

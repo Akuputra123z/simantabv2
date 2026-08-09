@@ -82,6 +82,8 @@ class TindakLanjutController extends Controller
     {
         $auditPrograms = AuditProgram::query()
             ->select('id', 'nama_program', 'tahun')
+            // Hanya program yang masih punya rekomendasi belum masuk TL
+            ->aktifUntukTindakLanjut()
             ->orderBy('tahun', 'desc')
             ->orderBy('nama_program')
             ->get();
@@ -96,7 +98,9 @@ class TindakLanjutController extends Controller
     {
         $recommendations = Recommendation::with(['temuan.lhp:id,nomor_lhp'])
             ->select('id', 'temuan_id', 'uraian_rekom', 'nilai_rekom', 'nilai_sisa', 'jenis_rekomendasi')
-            ->where('status', '!=', Recommendation::STATUS_SELESAI)
+            // Hanya rekomendasi yang BELUM masuk tindak lanjut — konsisten
+            // dengan halaman Rekomendasi agar tidak ada pilihan ganda/bertumpuk.
+            ->whereDoesntHave('tindakLanjuts')
             ->whereHas('temuan.lhp.auditAssignment.auditProgramDetail', fn($q) => $q->where('audit_program_id', $programId))
             ->latest()
             ->limit(100)

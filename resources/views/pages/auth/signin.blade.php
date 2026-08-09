@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Masuk — SIWAS Inspektorat Kabupaten Rembang</title>
+<title>Masuk — SIPUAS Inspektorat Kabupaten Rembang</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -440,7 +440,7 @@
     <div class="form-wrap">
       <div class="eyebrow">Masuk ke Sistem</div>
       <h2>Selamat datang kembali</h2>
-      <p class="desc">Masukkan detail akun Anda untuk melanjutkan ke SIWAS Inspektorat Daerah Kabupaten Rembang.</p>
+      <p class="desc">Masukkan detail akun Anda untuk melanjutkan ke SIPUASInspektorat Daerah Kabupaten Rembang.</p>
 
       {{-- Error Alert --}}
       @if (isset($errors) && $errors->any())

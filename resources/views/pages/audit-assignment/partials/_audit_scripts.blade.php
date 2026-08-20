@@ -168,7 +168,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function pkptRenderList(query) {
         const q = (query || '').toLowerCase().trim();
-        const filtered = pkptOptions.filter(o => !o.disabled && (!q || o.label.toLowerCase().includes(q)));
+        const matches = o => {
+            if (!q) return true;
+            return o.label.toLowerCase().includes(q)
+                || (o.jenis_kegiatan || '').toLowerCase().includes(q)
+                || (o.tim || '').toLowerCase().includes(q);
+        };
+        const filtered = pkptOptions.filter(matches);
 
         if (!filtered.length) {
             const empty = pkptOptions.length === 0 ? 'Pilih program audit terlebih dahulu' : 'Tidak ada hasil';
@@ -176,13 +182,38 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (!q && filtered.every(o => o.disabled)) {
+            $pkptList.innerHTML = `<p class="px-4 py-5 text-center text-xs text-gray-400 italic">Semua sub-program sudah memiliki penugasan</p>`;
+            return;
+        }
+
         $pkptList.innerHTML = filtered.map(o => {
             const isSel = o.value === $detSelect.value;
-            const labelHtml = q ? esc(o.label).replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark class="bg-yellow-100 dark:bg-yellow-800/40 not-italic font-semibold rounded px-0.5">$1</mark>') : esc(o.label);
+            const labelHtml = mark(o.label, q);
             const anggaranHtml = Number(o.anggaran) > 0 ? `<span class="shrink-0 text-[11px] font-semibold text-green-600 dark:text-green-400 ml-2">${fmtRupiah(o.anggaran)}</span>` : '';
-            const subtitle = [o.jenis_kegiatan ? 'Kegiatan: ' + o.jenis_kegiatan : '', o.tim ? 'Tim: ' + o.tim : ''].filter(Boolean).join(' • ');
-            const subtitleHtml = subtitle ? `<span class="block text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">${esc(subtitle)}</span>` : '';
-            return `<div class="pkpt-opt flex items-center gap-2 px-4 py-3 cursor-pointer text-sm leading-snug transition-colors ${isSel ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/[0.04]'}" data-value="${o.value}" data-label="${esc(o.label)}" data-jenis-kegiatan="${esc(o.jenis_kegiatan)}" data-tim="${esc(o.tim)}" data-anggaran="${o.anggaran || 0}"><span class="min-w-0 flex-1"><span class="block truncate">${labelHtml}</span>${subtitleHtml}</span>${anggaranHtml}</div>`;
+
+            // Saat search: tampilkan snippet di sekitar kata kunci agar tidak terpotong.
+            // Tanpa search: subtitle dipotong ringkas + tooltip teks lengkap.
+            const subPieces = [];
+            if (q) {
+                if ((o.jenis_kegiatan || '').toLowerCase().includes(q)) {
+                    subPieces.push('Kegiatan: ' + mark(snippet(o.jenis_kegiatan, q, 45), q));
+                }
+                if ((o.tim || '').toLowerCase().includes(q)) {
+                    subPieces.push('Tim: ' + mark(snippet(o.tim, q, 25), q));
+                }
+            }
+            if (!subPieces.length) {
+                if (o.jenis_kegiatan) subPieces.push('Kegiatan: ' + limit(o.jenis_kegiatan, 70));
+                if (o.tim) subPieces.push('Tim: ' + limit(o.tim, 35));
+            }
+            const subtitle = subPieces.join(' • ');
+            const subtitleTitle = [o.jenis_kegiatan ? 'Kegiatan: ' + o.jenis_kegiatan : '', o.tim ? 'Tim: ' + o.tim : ''].filter(Boolean).join('\n');
+            const subtitleHtml = subtitle ? `<span class="block text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 truncate" title="${esc(subtitleTitle)}">${subtitle}</span>` : '';
+            const rightHtml = o.disabled
+                ? `<span class="shrink-0 rounded-md bg-gray-100 px-2 py-1 text-[10px] font-bold uppercase text-gray-400 dark:bg-gray-800 dark:text-gray-500">Sudah Ada Penugasan</span>`
+                : anggaranHtml;
+            return `<div class="pkpt-opt flex items-center gap-2 px-4 py-3 cursor-pointer text-sm leading-snug transition-colors ${isSel ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/[0.04]'} ${o.disabled ? 'opacity-50 pointer-events-none' : ''}" data-value="${o.value}" data-label="${esc(o.label)}" data-jenis-kegiatan="${esc(o.jenis_kegiatan)}" data-tim="${esc(o.tim)}" data-anggaran="${o.anggaran || 0}"><span class="min-w-0 flex-1"><span class="block truncate">${labelHtml}</span>${subtitleHtml}</span>${rightHtml}</div>`;
         }).join('');
 
         $pkptList.querySelectorAll('.pkpt-opt').forEach(el => {
@@ -200,6 +231,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function esc(s) {
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function limit(s, n) {
+        s = String(s || '');
+        if (s.length <= n) return s;
+        return s.slice(0, n).replace(/\s+\S*$/, '') + '…';
+    }
+
+    function mark(text, q) {
+        if (!q) return esc(text);
+        const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        return esc(text).replace(re, '<mark class="bg-yellow-100 dark:bg-yellow-800/40 not-italic font-semibold rounded px-0.5">$1</mark>');
+    }
+
+    function snippet(text, q, halo) {
+        const t = String(text || '');
+        const idx = t.toLowerCase().indexOf(q.toLowerCase());
+        if (idx < 0) return limit(t, 70);
+        const start = Math.max(0, idx - halo);
+        const end = Math.min(t.length, idx + q.length + halo);
+        return (start > 0 ? '…' : '') + t.slice(start, end) + (end < t.length ? '…' : '');
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -234,7 +286,7 @@ async function loadProgramDetails(programId, selectedDetailId = null) {
             jenis_kegiatan: d.jenis_kegiatan || '',
             tim: d.tim || '',
             anggaran: Number(d.anggaran) || 0,
-            disabled: false,
+            disabled: !!d.assigned,
         }));
         
         pkptDetailMap = {};

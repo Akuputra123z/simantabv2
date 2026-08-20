@@ -5,6 +5,14 @@
 @endpush
 
 @section('content')
+<style>
+    .ts-assignment-tall .ts-control {
+        height: auto;
+        min-height: 64px;
+        padding: 10px 14px;
+        align-items: flex-start;
+    }
+</style>
 <div class="mx-auto max-w-5xl">
 
     {{-- Page Header --}}
@@ -76,8 +84,8 @@
     <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
         Penugasan Audit <span class="text-red-500">*</span>
     </label>
-    <select id="select-assignment" data-no-ts disabled
-            class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 focus:border-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+    <select id="select-assignment" data-no-ts disabled class="ts-assignment-tall
+            w-full rounded-lg border border-gray-300 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 focus:border-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
         <option value="">-- Pilih Program Terlebih Dahulu --</option>
     </select>
 </div>

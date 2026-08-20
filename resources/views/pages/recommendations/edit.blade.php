@@ -56,6 +56,20 @@
                     </div>
 
                     <div>
+                        <label class="block text-[11px] font-medium text-gray-500 uppercase">Penugasan Audit</label>
+                        <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                            {{ $recommendation->temuan->lhp->auditAssignment->nomor_surat ?? '-' }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-medium text-gray-500 uppercase">Unit Kerja</label>
+                        <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                            {{ $recommendation->temuan->lhp->unitDiperiksa->nama_unit ?? '-' }}
+                        </p>
+                    </div>
+
+                    <div>
                         <label class="block text-[11px] font-medium text-gray-500 uppercase">Kondisi Temuan</label>
                         <p class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-relaxed italic">
                             "{{ $recommendation->temuan->kondisi ?? '-' }}"

@@ -22,11 +22,9 @@ class AuditAssignmentController extends Controller
     {
         return [
             'programs'        => AuditProgram::where(fn($q) => $q
-                ->where('approval_status', AuditProgram::APPROVAL_DISETUJUI)
+                ->where('approval_status', '!=', AuditProgram::APPROVAL_DITOLAK)
                 ->orWhereHas('details.assignments', fn($q) => $q->where('id', $assignmentId))
-                ->orWhereHas('details', fn($q) => $q->whereDoesntHave('assignments'))
-            )->where('approval_status', '!=', AuditProgram::APPROVAL_DITOLAK)
-                ->orderBy('tahun', 'desc')->get(),
+            )->orderBy('tahun', 'desc')->get(),
             'ketuaTim'        => User::orderBy('name')->get(),
             'members'         => User::orderBy('name')->get(),
             'kategoriOptions' => ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'],
@@ -75,9 +73,29 @@ class AuditAssignmentController extends Controller
 
     // ── create ────────────────────────────────────────────────────────
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('pages.audit-assignment.create', $this->sharedViewData());
+        $programId = null;
+        $detailId  = null;
+
+        if ($pid = $request->integer('program_detail_id')) {
+            $detail = AuditProgramDetail::with('auditProgram')->find($pid);
+
+            if ($detail && $detail->auditProgram?->approval_status !== AuditProgram::APPROVAL_DITOLAK) {
+                if ($detail->assignment) {
+                    return redirect()->route('audit-assignment.edit', $detail->assignment->id)
+                        ->with('info', 'Sub-program ini sudah memiliki penugasan — dialihkan ke halaman edit penugasan yang ada.');
+                }
+
+                $programId = $detail->audit_program_id;
+                $detailId  = $detail->id;
+            }
+        }
+
+        return view('pages.audit-assignment.create', array_merge($this->sharedViewData(), [
+            'currentProgId' => old('audit_program_id', $programId),
+            'currentDetId'  => old('audit_program_detail_id', $detailId),
+        ]));
     }
 
     // ── store ─────────────────────────────────────────────────────────
@@ -223,21 +241,25 @@ class AuditAssignmentController extends Controller
 {
     $excludeId = $request->query('exclude_assignment');
 
-    // Pastikan menggunakan nama relasi 'assignments' (jamak) sesuai model
     $details = AuditProgramDetail::where('audit_program_id', $programId)
-        ->where(function ($q) use ($excludeId) {
-            // Tampilkan yang BELUM punya penugasan
-            $q->whereDoesntHave('assignments');
-            
-            // ATAU jika sedang edit, tampilkan yang penugasannya adalah ID ini
+        ->withCount(['assignments as assigned_count' => function ($q) use ($excludeId) {
             if ($excludeId) {
-                $q->orWhereHas('assignments', function ($sub) use ($excludeId) {
-                    $sub->where('id', $excludeId);
-                });
+                $q->where('id', '!=', $excludeId);
             }
-        })
+        }])
         ->orderBy('nama_detail_program')
-        ->get(['id', 'nama_detail_program', 'jenis_kegiatan', 'tim', 'anggaran', 'objek_pengawasan', 'ruang_lingkup', 'status']);
+        ->get(['id', 'nama_detail_program', 'jenis_kegiatan', 'tim', 'anggaran', 'objek_pengawasan', 'ruang_lingkup', 'status'])
+        ->map(fn ($d) => [
+            'id'                 => $d->id,
+            'nama_detail_program' => $d->nama_detail_program,
+            'jenis_kegiatan'     => $d->jenis_kegiatan,
+            'tim'                => $d->tim,
+            'anggaran'           => $d->anggaran,
+            'objek_pengawasan'   => $d->objek_pengawasan,
+            'ruang_lingkup'      => $d->ruang_lingkup,
+            'status'             => $d->status,
+            'assigned'           => $d->assigned_count > 0,
+        ]);
 
     return response()->json($details);
 }

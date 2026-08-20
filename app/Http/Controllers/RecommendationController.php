@@ -92,16 +92,25 @@ class RecommendationController extends Controller
     public function getLhpsByProgram($programId)
     {
         $lhps = Lhp::query()
-            ->select('id', 'nomor_lhp', 'tanggal_lhp')
+            ->select('id', 'nomor_lhp', 'tanggal_lhp', 'audit_assignment_id', 'unit_diperiksa_id')
+            ->with(['auditAssignment:id,nomor_surat', 'unitDiperiksa:id,nama_unit'])
             ->whereHas('auditAssignment.auditProgramDetail', fn($q) => $q->where('audit_program_id', $programId))
             ->has('temuans')
             ->orderByDesc('tanggal_lhp')
             ->limit(100)
             ->get()
-            ->map(fn($lhp) => [
-                'id'    => $lhp->id,
-                'label' => "{$lhp->nomor_lhp} ({$lhp->tanggal_lhp->format('Y')})",
-            ]);
+            ->map(function ($lhp) {
+                $nomorSurat = $lhp->auditAssignment?->nomor_surat ?? '-';
+                $unit       = $lhp->unitDiperiksa?->nama_unit ?? '-';
+
+                return [
+                    'id'         => $lhp->id,
+                    'nomor_lhp'  => $lhp->nomor_lhp,
+                    'nomor_surat'=> $nomorSurat,
+                    'unit'       => $unit,
+                    'label'      => "LHP: {$lhp->nomor_lhp} • Penugasan: {$nomorSurat} • Unit: {$unit}",
+                ];
+            });
 
         return response()->json($lhps);
     }
@@ -172,7 +181,7 @@ class RecommendationController extends Controller
 
     public function edit(Recommendation $recommendation)
     {
-        $recommendation->load(['temuan.lhp']);
+        $recommendation->load(['temuan.lhp.auditAssignment', 'temuan.lhp.unitDiperiksa']);
         $kodeRekoms = KodeRekomendasi::active()->orderBy('kode')->get();
 
         return view('pages.recommendations.edit', compact('recommendation', 'kodeRekoms'));

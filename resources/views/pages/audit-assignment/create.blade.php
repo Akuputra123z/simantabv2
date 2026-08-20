@@ -98,7 +98,7 @@
                             class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
                             <option value="">Pilih program audit</option>
                             @foreach($programs as $p)
-                                <option value="{{ $p->id }}" @selected(old('audit_program_id') == $p->id)>{{ $p->nama_program }} ({{ $p->tahun }})</option>
+                                <option value="{{ $p->id }}" @selected($currentProgId == $p->id)>{{ $p->nama_program }} ({{ $p->tahun }})</option>
                             @endforeach
                         </select>
                     </div>
@@ -433,8 +433,8 @@ document.addEventListener('alpine:init', () => {
 
 @push('scripts')
 @php
-    $currentProgId = old('audit_program_id', '');
-    $currentDetId  = old('audit_program_detail_id', '');
+    $currentProgId = old('audit_program_id', $currentProgId ?? '');
+    $currentDetId  = old('audit_program_detail_id', $currentDetId ?? '');
     $oldUnitIds = old('unit_diperiksa_ids', []);
     $preselectedUnits = \App\Models\UnitDiperiksa::whereIn('id', (array)$oldUnitIds)->get();
 @endphp

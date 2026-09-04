@@ -156,13 +156,48 @@ class RecommendationController extends Controller
 
             DB::commit();
 
+            $stats = null;
             if ($rekom->temuan?->lhp_id) {
                 $this->statistikService->updateStatistik($rekom->temuan->lhp_id);
+                if ($rekom->temuan->relationLoaded('lhp')) {
+                    $rekom->temuan->lhp->load('statistik');
+                    $stats = $rekom->temuan->lhp->statistik;
+                } else {
+                    $lhp = \App\Models\Lhp::with('statistik')->find($rekom->temuan->lhp_id);
+                    $stats = $lhp ? $lhp->statistik : null;
+                }
+            }
+
+            // AJAX / JSON response (dari drawer slide-over)
+            if ($request->expectsJson()) {
+                $rekom->load(['kodeRekomendasi', 'temuan.kodeTemuan']);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Rekomendasi berhasil ditambahkan.',
+                    'stats'   => $stats,
+                    'rekom'   => [
+                        'id'                  => $rekom->id,
+                        'kode_rekomendasi_id' => $rekom->kode_rekomendasi_id,
+                        'kode_label'          => optional($rekom->kodeRekomendasi)->kode . ' — ' . optional($rekom->kodeRekomendasi)->deskripsi,
+                        'uraian_rekom'        => $rekom->uraian_rekom,
+                        'jenis_rekomendasi'   => $rekom->jenis_rekomendasi,
+                        'nilai_rekom'         => $rekom->nilai_rekom,
+                        'nilai_sisa'          => $rekom->nilai_sisa,
+                        'batas_waktu'         => $rekom->batas_waktu,
+                        'status'              => $rekom->status,
+                        'temuan_id'           => $rekom->temuan_id,
+                        'show_url'            => route('recommendations.show', $rekom->id),
+                        'edit_url'            => route('recommendations.edit', $rekom->id),
+                    ],
+                ]);
             }
 
             return redirect()->route('recommendations.index')->with('success', 'Rekomendasi berhasil ditambahkan.');
         } catch (\Throwable $e) {
             DB::rollBack();
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Gagal menyimpan data.'], 422);
+            }
             return back()->withInput()->with('error', 'Gagal menyimpan data.');
         }
     }
@@ -193,7 +228,14 @@ public function update(Request $request, Recommendation $recommendation)
         'kode_rekomendasi_id' => 'required|exists:kode_rekomendasis,id',
         'uraian_rekom'        => 'required|string',
         'jenis_rekomendasi'   => 'required|in:uang,barang,administrasi',
-        'nilai_rekom'         => 'nullable|numeric|min:0',
+        'nilai_rekom'         => [
+            'nullable', 'numeric', 'min:0',
+            function ($attribute, $value, $fail) use ($request) {
+                if ($request->jenis_rekomendasi === 'uang' && empty($value)) {
+                    $fail('Nilai rekomendasi wajib diisi untuk jenis uang.');
+                }
+            },
+        ],
         'batas_waktu'         => 'required|date',
     ]);
 
@@ -252,9 +294,40 @@ public function update(Request $request, Recommendation $recommendation)
 
         DB::commit();
 
-        // Setelah syncStatus() selesai, baru trigger kalkulasi LHP
+        $stats = null;
         if ($recommendation->temuan?->lhp_id) {
             $this->statistikService->updateStatistik($recommendation->temuan->lhp_id);
+            if ($recommendation->temuan->relationLoaded('lhp')) {
+                $recommendation->temuan->lhp->load('statistik');
+                $stats = $recommendation->temuan->lhp->statistik;
+            } else {
+                $lhp = \App\Models\Lhp::with('statistik')->find($recommendation->temuan->lhp_id);
+                $stats = $lhp ? $lhp->statistik : null;
+            }
+        }
+
+        // AJAX / JSON response (dari drawer slide-over)
+        if (request()->expectsJson()) {
+            $recommendation->load(['kodeRekomendasi']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Rekomendasi diperbarui.',
+                'stats'   => $stats,
+                'rekom'   => [
+                    'id'                  => $recommendation->id,
+                    'kode_rekomendasi_id' => $recommendation->kode_rekomendasi_id,
+                    'kode_label'          => optional($recommendation->kodeRekomendasi)->kode . ' — ' . optional($recommendation->kodeRekomendasi)->deskripsi,
+                    'uraian_rekom'        => $recommendation->uraian_rekom,
+                    'jenis_rekomendasi'   => $recommendation->jenis_rekomendasi,
+                    'nilai_rekom'         => $recommendation->nilai_rekom,
+                    'nilai_sisa'          => $recommendation->nilai_sisa,
+                    'batas_waktu'         => $recommendation->batas_waktu,
+                    'status'              => $recommendation->status,
+                    'temuan_id'           => $recommendation->temuan_id,
+                    'show_url'            => route('recommendations.show', $recommendation->id),
+                    'edit_url'            => route('recommendations.edit', $recommendation->id),
+                ],
+            ]);
         }
 
         return redirect()
@@ -263,6 +336,9 @@ public function update(Request $request, Recommendation $recommendation)
 
     } catch (\Throwable $e) {
         DB::rollBack();
+        if (request()->expectsJson()) {
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui data: ' . $e->getMessage()], 422);
+        }
         return back()->withInput()->with('error', 'Gagal memperbarui data: ' . $e->getMessage());
     }
 }
@@ -279,9 +355,27 @@ public function update(Request $request, Recommendation $recommendation)
                 $this->statistikService->updateStatistik($lhpId);
             }
 
+            $stats = null;
+            if ($lhpId) {
+                $lhp = \App\Models\Lhp::with('statistik')->find($lhpId);
+                $stats = $lhp ? $lhp->statistik : null;
+            }
+
+            // AJAX / JSON response (dari drawer slide-over)
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Rekomendasi berhasil dihapus.',
+                    'stats'   => $stats,
+                ]);
+            }
+
             return redirect()->route('recommendations.index')->with('success', 'Rekomendasi berhasil dihapus.');
         } catch (\Throwable $e) {
             DB::rollBack();
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Gagal menghapus data.'], 422);
+            }
             return back()->with('error', 'Gagal menghapus data.');
         }
     }

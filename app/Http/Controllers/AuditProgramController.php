@@ -49,15 +49,24 @@ class AuditProgramController extends Controller
             $query->where('status', $request->status);
         }
 
-        // Sorting berdasarkan tahun terbaru dan ID terbaru
-        $data = $query->latest('tahun')
-            ->latest('id')
-            ->paginate(10)
+        // Per page & Sorting dinamis
+        $perPage = (int) $request->input('per_page', 10);
+        if (!in_array($perPage, [5, 8, 10, 25, 50])) {
+            $perPage = 10;
+        }
+
+        $sortableColumns = ['tahun', 'nama_program', 'kategori'];
+        $sort      = in_array($request->sort, $sortableColumns) ? $request->sort : 'tahun';
+        $direction = $request->direction === 'asc' ? 'asc' : 'desc';
+
+        $data = $query->orderBy($sort, $direction)
+            ->orderBy('id', 'desc')
+            ->paginate($perPage)
             ->withQueryString();
 
         $kategoris = AuditProgram::KATEGORI;
 
-        return view('pages.audit-program.index', compact('data', 'kategoris'));
+        return view('pages.audit-program.index', compact('data', 'kategoris', 'sort', 'direction'));
     }
 
     /**

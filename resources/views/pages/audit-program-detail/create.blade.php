@@ -93,7 +93,7 @@
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">Rp</span>
                         <input type="text" id="display_anggaran" value="{{ old('anggaran') }}" 
-                               class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 pl-12 pr-4 py-3.5 text-sm font-bold text-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all dark:bg-gray-900"
+                               class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 pl-12 pr-4 py-3.5 text-sm font-bold  focus:ring-4 focus:ring-blue-500/10 transition-all dark:bg-gray-900"
                                placeholder="0">
                         <input type="hidden" name="anggaran" id="real_anggaran" value="{{ old('anggaran', 0) }}">
                     </div>

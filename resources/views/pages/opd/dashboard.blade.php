@@ -1,435 +1,263 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="grid grid-cols-12 gap-4 md:gap-6">
+<main class="min-h-screen bg-slate-50/50 dark:bg-[#121824]">
+    <div class="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10 space-y-6">
 
-    {{-- ROW 1: METRIC CARDS --}}
-    <div class="col-span-12">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 xl:grid-cols-5">
+        {{-- HEADER DASHBOARD OPD --}}
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                    Dashboard Tindak Lanjut OPD
+                </h1>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                    Pemantauan status pengunggahan, verifikasi, dan penyelesaian rekomendasi unit Anda
+                </p>
+            </div>
+            <nav class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <span class="rounded-lg bg-blue-50 px-2.5 py-1 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-bold">
+                    🏛️ {{ auth()->user()->name }}
+                </span>
+            </nav>
+        </div>
+
+        {{-- GLOBAL DATE FILTER --}}
+        <x-dashboard.date-filter
+            :preset="$preset"
+            :startDate="$startDate"
+            :endDate="$endDate"
+            :startDateFormatted="$startDateFormatted"
+            :endDateFormatted="$endDateFormatted"
+            :actionUrl="route('opd.dashboard')"
+        />
+
+        {{-- ROW 1: METRIC CARDS --}}
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-5 xl:grid-cols-5">
 
             {{-- Belum Upload --}}
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-                <h4 class="text-title-sm font-bold text-gray-800 dark:text-white/90">
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Belum Upload</span>
+                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-gray-800 dark:text-slate-300">
+                        {{ $opdStats->belum_upload ?? 0 }}
+                    </span>
+                </div>
+                <h4 class="mt-4 text-3xl font-extrabold text-slate-900 dark:text-white">
                     {{ $opdStats->belum_upload ?? 0 }}
                 </h4>
-                <div class="mt-4 flex items-end justify-between sm:mt-5">
-                    <div>
-                        <p class="text-theme-sm text-gray-700 dark:text-gray-400">Belum Upload</p>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <span class="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-theme-xs font-medium text-gray-600 dark:bg-white/10 dark:text-gray-400">
-                            {{ $opdStats->belum_upload ?? 0 }}
-                        </span>
-                    </div>
-                </div>
             </div>
 
             {{-- Draft --}}
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-                <h4 class="text-title-sm font-bold text-amber-600 dark:text-amber-400">
+            <div class="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Draft</span>
+                    <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                        Draft
+                    </span>
+                </div>
+                <h4 class="mt-4 text-3xl font-extrabold text-amber-600 dark:text-amber-400">
                     {{ $opdStats->draft ?? 0 }}
                 </h4>
-                <div class="mt-4 flex items-end justify-between sm:mt-5">
-                    <div>
-                        <p class="text-theme-sm text-gray-700 dark:text-gray-400">Draft</p>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <span class="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-theme-xs font-medium text-amber-600 dark:bg-amber-500/15 dark:text-amber-500">
-                            Draft
-                        </span>
-                    </div>
-                </div>
             </div>
 
             {{-- Terkirim --}}
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-                <h4 class="text-title-sm font-bold text-success-600 dark:text-success-500">
+            <div class="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Terkirim</span>
+                    <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                        Proses Verifikasi
+                    </span>
+                </div>
+                <h4 class="mt-4 text-3xl font-extrabold text-blue-600 dark:text-blue-400">
                     {{ $opdStats->dikirim ?? 0 }}
                 </h4>
-                <div class="mt-4 flex items-end justify-between sm:mt-5">
-                    <div>
-                        <p class="text-theme-sm text-gray-700 dark:text-gray-400">Terkirim</p>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <span class="flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5 text-theme-xs font-medium text-success-600 dark:bg-success-500/15 dark:text-success-500">
-                            +{{ $opdStats->dikirim ?? 0 }}
-                        </span>
-                    </div>
-                </div>
             </div>
 
             {{-- Ditolak --}}
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-                <h4 class="text-title-sm font-bold text-error-600 dark:text-error-500">
-                    {{ $opdStats->ditolak ?? 0 }}
-                </h4>
-                <div class="mt-4 flex items-end justify-between sm:mt-5">
-                    <div>
-                        <p class="text-theme-sm text-gray-700 dark:text-gray-400">Ditolak</p>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <span class="flex items-center gap-1 rounded-full bg-error-50 px-2 py-0.5 text-theme-xs font-medium text-error-600 dark:bg-error-500/15 dark:text-error-500">
-                            {{ $opdStats->ditolak ?? 0 }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Lunas --}}
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-                <h4 class="text-title-sm font-bold text-brand-600 dark:text-brand-500">
-                    {{ $verifikasiStats->lunas ?? 0 }}
-                </h4>
-                <div class="mt-4 flex items-end justify-between sm:mt-5">
-                    <div>
-                        <p class="text-theme-sm text-gray-700 dark:text-gray-400">Verifikasi Lunas</p>
-                    </div>
-                    @php $tlTotal = ($verifikasiStats->lunas ?? 0) + ($verifikasiStats->berjalan ?? 0) + ($verifikasiStats->menunggu ?? 0); @endphp
-                    @php $pct = $tlTotal > 0 ? min(100, round(($verifikasiStats->lunas ?? 0) / $tlTotal * 100)) : 0; @endphp
-                    <div class="flex items-center gap-1">
-                        <span class="flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-theme-xs font-medium text-brand-600 dark:bg-brand-500/15 dark:text-brand-500">
-                            {{ $pct }}%
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    {{-- ROW 2: STATISTICS + VERIFIKASI --}}
-    <div class="col-span-12 xl:col-span-8">
-        {{-- Statistik Rekapitulasi --}}
-        <div class="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
-            <div class="flex flex-col gap-5 mb-6 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Rekapitulasi Rekomendasi</h3>
-                    <p class="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-                        Progress penyelesaian rekomendasi unit Anda
-                    </p>
-                </div>
-            </div>
-
-            <div class="flex gap-4 sm:gap-9">
-                <div class="flex items-start gap-2">
-                    <div>
-                        <h4 class="mb-0.5 text-base font-bold text-gray-800 dark:text-white/90 sm:text-theme-xl">
-                            {{ $rekapitulasi->total_rekom ?? 0 }}
-                        </h4>
-                        <span class="text-gray-500 text-theme-xs dark:text-gray-400">
-                            Total Rekomendasi
-                        </span>
-                    </div>
-                    @php $rekomPct = ($rekapitulasi && $rekapitulasi->total_rekom > 0) ? min(100, round(($rekapitulasi->rekom_selesai / $rekapitulasi->total_rekom) * 100)) : 0; @endphp
-                    <span class="mt-1.5 flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5 text-theme-xs font-medium text-success-600 dark:bg-success-500/15 dark:text-success-500">
-                        {{ $rekomPct }}%
+            <div class="rounded-2xl border border-rose-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Ditolak</span>
+                    <span class="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+                        Perlu Perbaikan
                     </span>
                 </div>
+                <h4 class="mt-4 text-3xl font-extrabold text-rose-600 dark:text-rose-400">
+                    {{ $opdStats->ditolak ?? 0 }}
+                </h4>
+            </div>
 
-                <div class="flex items-start gap-2">
+            {{-- Verifikasi Lunas --}}
+            <div class="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Verifikasi Lunas</span>
+                    @php $tlTotal = ($verifikasiStats->lunas ?? 0) + ($verifikasiStats->berjalan ?? 0) + ($verifikasiStats->menunggu ?? 0); @endphp
+                    @php $pct = $tlTotal > 0 ? min(100, round(($verifikasiStats->lunas ?? 0) / $tlTotal * 100)) : 0; @endphp
+                    <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        {{ $pct }}% Lunas
+                    </span>
+                </div>
+                <h4 class="mt-4 text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                    {{ $verifikasiStats->lunas ?? 0 }}
+                </h4>
+            </div>
+
+        </div>
+
+        {{-- ROW 2: REKAPITULASI + VERIFIKASI PROGRESS --}}
+        <div class="grid grid-cols-12 gap-6">
+
+            <div class="col-span-12 lg:col-span-8 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md">
+                <div class="mb-4">
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Rekapitulasi Rekomendasi Unit</h3>
+                    <p class="text-xs text-slate-500">Progres fisik dan finansial penyelesaian rekomendasi</p>
+                </div>
+
+                @php $rekomPct = ($rekapitulasi && $rekapitulasi->total_rekom > 0) ? min(100, round(($rekapitulasi->rekom_selesai / $rekapitulasi->total_rekom) * 100)) : 0; @endphp
+                <div class="grid grid-cols-2 gap-4 my-4 p-4 rounded-xl bg-slate-50 dark:bg-gray-800/50">
                     <div>
-                        <h4 class="mb-0.5 text-base font-bold text-gray-800 dark:text-white/90 sm:text-theme-xl">
-                            Rp {{ number_format($rekapitulasi->total_kerugian ?? 0, 0, ',', '.') }}
-                        </h4>
-                        <span class="text-gray-500 text-theme-xs dark:text-gray-400">
-                            Total Kerugian
+                        <span class="text-xs font-semibold text-slate-400">Total Rekomendasi</span>
+                        <h4 class="text-xl font-extrabold text-slate-900 dark:text-white">{{ $rekapitulasi->total_rekom ?? 0 }}</h4>
+                    </div>
+                    <div>
+                        <span class="text-xs font-semibold text-slate-400">Total Kerugian / Nilai</span>
+                        <h4 class="text-xl font-extrabold text-slate-900 dark:text-white">Rp {{ number_format($rekapitulasi->total_kerugian ?? 0, 0, ',', '.') }}</h4>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span class="text-slate-600 dark:text-slate-300">Rekomendasi Selesai</span>
+                            <span class="text-slate-900 dark:text-white font-bold">{{ $rekapitulasi->rekom_selesai ?? 0 }} / {{ $rekapitulasi->total_rekom ?? 0 }} ({{ $rekomPct }}%)</span>
+                        </div>
+                        <div class="h-2 w-full rounded-full bg-slate-100 dark:bg-gray-800 overflow-hidden">
+                            <div class="h-full rounded-full bg-emerald-500 transition-all duration-500" style="width: {{ $rekomPct }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        @php $tlPct = ($rekapitulasi && $rekapitulasi->total_kerugian > 0) ? min(100, round(($rekapitulasi->total_tl_selesai / $rekapitulasi->total_kerugian) * 100)) : 0; @endphp
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span class="text-slate-600 dark:text-slate-300">Nilai TL Selesai Disetor</span>
+                            <span class="text-slate-900 dark:text-white font-bold">Rp {{ number_format($rekapitulasi->total_tl_selesai ?? 0, 0, ',', '.') }} ({{ $tlPct }}%)</span>
+                        </div>
+                        <div class="h-2 w-full rounded-full bg-slate-100 dark:bg-gray-800 overflow-hidden">
+                            <div class="h-full rounded-full bg-blue-600 transition-all duration-500" style="width: {{ $tlPct }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-span-12 lg:col-span-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white mb-1">Status Verifikasi</h3>
+                <p class="text-xs text-slate-500 mb-4">Distribusi status verifikasi tindak lanjut</p>
+
+                <div id="chartTlBar" class="min-h-[220px]"></div>
+            </div>
+
+        </div>
+
+        {{-- ROW 3: JATUH TEMPO & KEGIATAN TERBARU --}}
+        <div class="grid grid-cols-12 gap-6">
+
+            {{-- Jatuh Tempo --}}
+            <div class="col-span-12 lg:col-span-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Mendekati Jatuh Tempo (7 Hari)</h3>
+                    <span class="text-xs text-slate-400">{{ $overdue->count() }} data</span>
+                </div>
+
+                <div class="space-y-2">
+                    @forelse($overdue as $tl)
+                    <a href="{{ route('opd.tindak-lanjut.show', $tl) }}" class="flex items-center justify-between p-3 rounded-xl border border-amber-100 bg-amber-50/50 hover:bg-amber-100/70 transition-all dark:border-amber-900/30 dark:bg-amber-900/10">
+                        <div class="min-w-0 pr-3">
+                            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                                {{ $tl->recommendation?->kodeRekomendasi?->kode ?? '-' }} &middot; {{ Str::limit(strip_tags($tl->recommendation?->uraian_rekom ?? '-'), 45) }}
+                            </h4>
+                            <p class="text-[11px] text-slate-500">Jatuh Tempo: {{ $tl->tanggal_jatuh_tempo?->format('d M Y') }}</p>
+                        </div>
+                        <span class="text-[11px] font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                            {{ $tl->tanggal_jatuh_tempo?->isPast() ? 'Terlambat' : $tl->tanggal_jatuh_tempo?->diffForHumans() }}
                         </span>
-                    </div>
+                    </a>
+                    @empty
+                    <p class="text-xs text-slate-400 italic py-4 text-center">Tidak ada rekomendasi mendekati jatuh tempo.</p>
+                    @endforelse
                 </div>
             </div>
 
-            <div class="max-w-full overflow-x-auto custom-scrollbar">
-                <div class="mt-6 space-y-3">
-                    @if($rekapitulasi)
-                    <div>
-                        <div class="flex items-center justify-between text-sm mb-1">
-                            <span class="text-gray-500 dark:text-gray-400">Rekomendasi Selesai</span>
-                            <span class="font-medium text-gray-700 dark:text-gray-300">{{ $rekapitulasi->rekom_selesai ?? 0 }} / {{ $rekapitulasi->total_rekom ?? 0 }}</span>
-                        </div>
-                        <div class="h-2 w-full rounded-full bg-gray-100 dark:bg-white/10">
-                            <div class="h-2 rounded-full bg-gradient-to-r from-brand-500 to-success-500 transition-all"
-                                 style="width: {{ $rekomPct }}%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex items-center justify-between text-sm mb-1">
-                            <span class="text-gray-500 dark:text-gray-400">Nilai TL Selesai</span>
-                            <span class="font-medium text-gray-700 dark:text-gray-300">Rp {{ number_format($rekapitulasi->total_tl_selesai ?? 0, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="h-2 w-full rounded-full bg-gray-100 dark:bg-white/10">
-                            @php $tlPct = $rekapitulasi->total_kerugian > 0 ? min(100, round(($rekapitulasi->total_tl_selesai / $rekapitulasi->total_kerugian) * 100)) : 0; @endphp
-                            <div class="h-2 rounded-full bg-brand-500 transition-all"
-                                 style="width: {{ $tlPct }}%"></div>
-                        </div>
-                    </div>
-                    @else
-                    <p class="text-sm text-gray-400 dark:text-gray-500 italic">Belum ada data rekomendasi.</p>
-                    @endif
+            {{-- Kegiatan Terbaru OPD --}}
+            <div class="col-span-12 lg:col-span-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Kegiatan Terbaru Unit</h3>
+                    <span class="text-xs text-slate-400">{{ $recent->count() }} data</span>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="col-span-12 xl:col-span-4">
-        {{-- Verifikasi Progress --}}
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-            <div class="flex justify-between">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Status Verifikasi</h3>
-                    <p class="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">
-                        Progress verifikasi tindak lanjut
-                    </p>
-                </div>
-            </div>
-
-            @php $tlTotal = ($verifikasiStats->lunas ?? 0) + ($verifikasiStats->berjalan ?? 0) + ($verifikasiStats->menunggu ?? 0); @endphp
-            <div class="flex items-center justify-center my-6">
-                <div class="text-center">
-                    <h4 class="text-title-sm font-bold text-gray-800 dark:text-white/90">
-                        {{ $tlTotal }}
-                    </h4>
-                    <p class="text-theme-xs text-gray-500 dark:text-gray-400">Total TL</p>
-                </div>
-            </div>
-
-            <div class="border-gray-200 space-y-5 dark:border-gray-800">
-                <div>
-                    <p class="mb-2 text-theme-sm text-gray-500 dark:text-gray-400">Lunas</p>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-4">
-                            <div>
-                                <p class="text-base font-semibold text-gray-800 dark:text-white/90">{{ $verifikasiStats->lunas ?? 0 }}</p>
-                            </div>
-                        </div>
-                        <div class="flex w-full max-w-[140px] items-center gap-3">
-                            <div class="relative block h-2 w-full max-w-[100px] rounded-sm bg-gray-200 dark:bg-gray-800">
-                                <div class="absolute left-0 top-0 flex h-full items-center justify-center rounded-sm bg-success-500" style="width: {{ $tlTotal > 0 ? round(($verifikasiStats->lunas ?? 0) / $tlTotal * 100) : 0 }}%"></div>
-                            </div>
-                            <p class="text-theme-sm font-medium text-gray-700 dark:text-gray-400">
-                                {{ $tlTotal > 0 ? round(($verifikasiStats->lunas ?? 0) / $tlTotal * 100) : 0 }}%
+                <div class="space-y-2">
+                    @forelse($recent as $tl)
+                    <a href="{{ route('opd.tindak-lanjut.show', $tl) }}" class="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-gray-800/40 transition-colors">
+                        <div class="min-w-0 pr-3">
+                            <h4 class="text-xs font-bold text-blue-600 dark:text-blue-400 truncate">
+                                {{ $tl->recommendation?->kodeRekomendasi?->kode ?? '-' }}
+                            </h4>
+                            <p class="text-[11px] text-slate-500 truncate">
+                                {{ Str::limit(strip_tags($tl->recommendation?->uraian_rekom ?? '-'), 50) }}
                             </p>
                         </div>
-                    </div>
-                </div>
-
-                <div>
-                    <p class="mb-2 text-theme-sm text-gray-500 dark:text-gray-400">Berjalan</p>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-4">
-                            <div>
-                                <p class="text-base font-semibold text-gray-800 dark:text-white/90">{{ $verifikasiStats->berjalan ?? 0 }}</p>
-                            </div>
-                        </div>
-                        <div class="flex w-full max-w-[140px] items-center gap-3">
-                            <div class="relative block h-2 w-full max-w-[100px] rounded-sm bg-gray-200 dark:bg-gray-800">
-                                <div class="absolute left-0 top-0 flex h-full items-center justify-center rounded-sm bg-amber-500" style="width: {{ $tlTotal > 0 ? round(($verifikasiStats->berjalan ?? 0) / $tlTotal * 100) : 0 }}%"></div>
-                            </div>
-                            <p class="text-theme-sm font-medium text-gray-700 dark:text-gray-400">
-                                {{ $tlTotal > 0 ? round(($verifikasiStats->berjalan ?? 0) / $tlTotal * 100) : 0 }}%
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <p class="mb-2 text-theme-sm text-gray-500 dark:text-gray-400">Menunggu Verifikasi</p>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-4">
-                            <div>
-                                <p class="text-base font-semibold text-gray-800 dark:text-white/90">{{ $verifikasiStats->menunggu ?? 0 }}</p>
-                            </div>
-                        </div>
-                        <div class="flex w-full max-w-[140px] items-center gap-3">
-                            <div class="relative block h-2 w-full max-w-[100px] rounded-sm bg-gray-200 dark:bg-gray-800">
-                                <div class="absolute left-0 top-0 flex h-full items-center justify-center rounded-sm bg-brand-500" style="width: {{ $tlTotal > 0 ? round(($verifikasiStats->menunggu ?? 0) / $tlTotal * 100) : 0 }}%"></div>
-                            </div>
-                            <p class="text-theme-sm font-medium text-gray-700 dark:text-gray-400">
-                                {{ $tlTotal > 0 ? round(($verifikasiStats->menunggu ?? 0) / $tlTotal * 100) : 0 }}%
-                            </p>
-                        </div>
-                    </div>
+                        <span class="text-[10px] font-semibold text-slate-400 whitespace-nowrap">
+                            {{ $tl->updated_at?->diffForHumans() }}
+                        </span>
+                    </a>
+                    @empty
+                    <p class="text-xs text-slate-400 italic py-4 text-center">Belum ada aktivitas terbaru.</p>
+                    @endforelse
                 </div>
             </div>
+
         </div>
+
     </div>
-
-    {{-- ROW 3: GRAFIK + JATUH TEMPO --}}
-    <div class="col-span-12 xl:col-span-6">
-        {{-- TL by Status --}}
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-            <div class="flex items-center justify-between mb-5">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Tindak Lanjut by Status</h3>
-            </div>
-            <div id="chartTlBar" style="min-height: 250px;"></div>
-        </div>
-    </div>
-
-    <div class="col-span-12 xl:col-span-6">
-        {{-- Jatuh Tempo --}}
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-            <div class="mb-6 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Jatuh Tempo (7 Hari)</h3>
-                <span class="text-theme-xs text-gray-500 dark:text-gray-400">{{ $overdue->count() }} data</span>
-            </div>
-
-            @if($overdue->isEmpty())
-                <p class="text-theme-sm text-gray-400 dark:text-gray-500 italic">Tidak ada tindak lanjut yang mendekati jatuh tempo.</p>
-            @else
-                <div class="custom-scrollbar max-w-full overflow-x-auto">
-                    <div class="min-w-[500px]">
-                        <div class="flex flex-col gap-2">
-                            @foreach($overdue as $tl)
-                            <a href="{{ route('opd.tindak-lanjut.show', $tl) }}"
-                               class="flex cursor-pointer items-center gap-9 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-white/[0.03]
-                                   {{ $tl->tanggal_jatuh_tempo->isPast() ? 'bg-red-50 dark:bg-red-900/10' : 'bg-amber-50 dark:bg-amber-900/10' }}">
-                                <div class="flex items-start gap-3">
-                                    <div class="flex h-5 w-5 items-center justify-center rounded-md border-[1.25px] {{ $tl->tanggal_jatuh_tempo->isPast() ? 'border-red-400 bg-red-100 dark:border-red-600 dark:bg-red-900/30' : 'border-amber-400 bg-amber-100 dark:border-amber-600 dark:bg-amber-900/30' }}">
-                                        <svg class="text-white" width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                            <path d="M11.6668 3.5L5.25016 9.91667L2.3335 7" stroke="currentColor" stroke-width="1.94437" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <span class="mb-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-                                            {{ $tl->tanggal_jatuh_tempo->format('D, d M') }}
-                                        </span>
-                                        <span class="text-theme-sm font-medium text-gray-700 dark:text-gray-400">
-                                            @if($tl->tanggal_jatuh_tempo->isPast())
-                                                <span class="text-error-600 dark:text-error-400">Terlambat</span>
-                                            @else
-                                                {{ $tl->tanggal_jatuh_tempo->diffForHumans() }}
-                                            @endif
-                                        </span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <span class="mb-1 block text-theme-sm font-medium text-gray-700 dark:text-gray-400">
-                                        {{ $tl->recommendation?->kodeRekomendasi?->kode ?? '-' }}
-                                    </span>
-                                    <span class="text-theme-xs text-gray-500 dark:text-gray-400">
-                                        {{ $tl->recommendation?->temuan?->lhp?->unitDiperiksa?->nama_unit ?? '-' }}
-                                        &middot; {{ Str::limit(strip_tags($tl->recommendation?->uraian_rekom ?? '-'), 50) }}
-                                    </span>
-                                </div>
-                            </a>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            @endif
-        </div>
-    </div>
-
-    {{-- ROW 4: TABLE KEGIATAN TERBARU --}}
-    <div class="col-span-12">
-        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white pt-4 dark:border-gray-800 dark:bg-white/[0.03]">
-            <div class="mb-4 flex flex-col gap-5 px-6 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Kegiatan Terbaru</h3>
-                </div>
-                <span class="text-theme-xs text-gray-500 dark:text-gray-400">{{ $recent->count() }} data</span>
-            </div>
-
-            <div class="custom-scrollbar max-w-full overflow-x-auto">
-                <table class="min-w-full">
-                    <thead class="border-y border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
-                        <tr>
-                            <th class="px-6 py-3 whitespace-nowrap text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Kode</th>
-                            <th class="px-6 py-3 whitespace-nowrap text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Unit</th>
-                            <th class="px-6 py-3 whitespace-nowrap text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Uraian</th>
-                            <th class="px-6 py-3 whitespace-nowrap text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
-                            <th class="px-6 py-3 whitespace-nowrap text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Waktu</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                        @forelse($recent as $tl)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
-                            <td class="px-6 py-3 whitespace-nowrap">
-                                <a href="{{ route('opd.tindak-lanjut.show', $tl) }}" class="text-theme-sm font-medium text-brand-500 hover:text-brand-600">
-                                    {{ $tl->recommendation?->kodeRekomendasi?->kode ?? '-' }}
-                                </a>
-                            </td>
-                            <td class="px-6 py-3 whitespace-nowrap">
-                                <span class="text-theme-sm text-gray-700 dark:text-gray-400">
-                                    {{ $tl->recommendation?->temuan?->lhp?->unitDiperiksa?->nama_unit ?? '-' }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-3">
-                                <span class="text-theme-sm text-gray-700 dark:text-gray-400 block max-w-[250px] truncate">
-                                    {{ Str::limit(strip_tags($tl->recommendation?->uraian_rekom ?? '-'), 60) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-3 whitespace-nowrap">
-                                @if($tl->alasan_tolak_opd)
-                                    <span class="bg-error-50 text-theme-xs text-error-600 dark:bg-error-500/15 dark:text-error-500 rounded-full px-2 py-0.5 font-medium">Ditolak</span>
-                                @elseif($tl->status_opd === 'dikirim')
-                                    <span class="bg-success-50 text-theme-xs text-success-600 dark:bg-success-500/15 dark:text-success-500 rounded-full px-2 py-0.5 font-medium">Terkirim</span>
-                                @elseif($tl->status_opd === 'draft')
-                                    <span class="bg-warning-50 text-theme-xs text-warning-600 dark:bg-warning-500/15 dark:text-warning-400 rounded-full px-2 py-0.5 font-medium">Draft</span>
-                                @else
-                                    <span class="bg-gray-100 text-theme-xs text-gray-600 dark:bg-white/10 dark:text-gray-400 rounded-full px-2 py-0.5 font-medium">Belum Upload</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-3 whitespace-nowrap">
-                                <span class="text-theme-sm text-gray-500 dark:text-gray-400">
-                                    {{ $tl->updated_at->diffForHumans() }}
-                                </span>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-theme-sm text-gray-400 dark:text-gray-500 italic">
-                                Belum ada kegiatan.
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-</div>
+</main>
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const draft = {{ $opdStats->draft ?? 0 }};
-        const dikirim = {{ $opdStats->dikirim ?? 0 }};
-        const ditolak = {{ $opdStats->ditolak ?? 0 }};
+document.addEventListener('DOMContentLoaded', function() {
+    const draft = {{ $opdStats->draft ?? 0 }};
+    const dikirim = {{ $opdStats->dikirim ?? 0 }};
+    const ditolak = {{ $opdStats->ditolak ?? 0 }};
 
-        if (document.getElementById('chartTlBar') && typeof ApexCharts !== 'undefined') {
-            const options = {
-                series: [{ name: 'Jumlah', data: [draft, dikirim, ditolak] }],
-                chart: {
-                    type: 'bar',
-                    height: 250,
-                    fontFamily: 'Outfit, sans-serif',
-                    toolbar: { show: false }
-                },
-                colors: ['#465fff', '#12b76a', '#f04438'],
-                plotOptions: {
-                    bar: {
-                        borderRadius: 4,
-                        columnWidth: '55%',
-                        distributed: true
-                    }
-                },
-                xaxis: {
-                    categories: ['Draft', 'Terkirim', 'Ditolak'],
-                    axisBorder: { show: false },
-                    axisTicks: { show: false },
-                    labels: { style: { fontFamily: 'Outfit', colors: '#667085' } }
-                },
-                yaxis: {
-                    labels: { style: { fontFamily: 'Outfit', colors: '#667085' } }
-                },
-                dataLabels: { enabled: false },
-                grid: { borderColor: '#e4e7ec', strokeDashArray: 3 },
-                legend: { show: false }
-            };
-            new ApexCharts(document.getElementById('chartTlBar'), options).render();
-        }
-    });
+    if (document.getElementById('chartTlBar') && typeof ApexCharts !== 'undefined') {
+        const isDark = document.documentElement.classList.contains('dark');
+        new ApexCharts(document.getElementById('chartTlBar'), {
+            series: [{ name: 'Jumlah', data: [draft, dikirim, ditolak] }],
+            chart: {
+                type: 'bar',
+                height: 220,
+                fontFamily: 'Outfit, sans-serif',
+                toolbar: { show: false }
+            },
+            colors: ['#f59e0b', '#2563eb', '#f43f5e'],
+            plotOptions: {
+                bar: {
+                    borderRadius: 6,
+                    columnWidth: '50%',
+                    distributed: true
+                }
+            },
+            xaxis: {
+                categories: ['Draft', 'Terkirim', 'Ditolak'],
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+                labels: { style: { colors: isDark ? "#94a3b8" : "#64748b" } }
+            },
+            yaxis: {
+                labels: { style: { colors: isDark ? "#94a3b8" : "#64748b" } }
+            },
+            dataLabels: { enabled: false },
+            grid: { borderColor: isDark ? "#1e293b" : "#f1f5f9", strokeDashArray: 4 },
+            legend: { show: false }
+        }).render();
+    }
+});
 </script>
 @endpush
 @endsection

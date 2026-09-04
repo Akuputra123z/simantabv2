@@ -14,7 +14,9 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
 
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
         .ts-wrapper {
             min-width: 0;
@@ -141,6 +143,123 @@
             </div>
         </div>
     </div>
+
+    {{-- ✅ Global Pop-Up Alert Success Modal Ultra-Smooth --}}
+    @if(session('success'))
+    <div x-data="{ show: false }"
+         x-init="$nextTick(() => { setTimeout(() => show = true, 50); })"
+         @keydown.escape.window="show = false"
+         x-show="show"
+         x-cloak
+         class="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        
+        <!-- Backdrop overlay with smooth fade -->
+        <div x-show="show"
+             x-transition:enter="transition ease-out duration-500"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="show = false"
+             class="fixed inset-0 bg-slate-900/60 backdrop-blur-md"></div>
+
+        <!-- Modal Card -->
+        <div x-show="show"
+             x-transition:enter="transition cubic-bezier(0.16, 1, 0.3, 1) duration-500 transform"
+             x-transition:enter-start="opacity-0 scale-90 translate-y-6 blur-md"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0 blur-none"
+             x-transition:leave="transition cubic-bezier(0.7, 0, 0.84, 0) duration-300 transform"
+             x-transition:leave-start="opacity-100 scale-100 translate-y-0 blur-none"
+             x-transition:leave-end="opacity-0 scale-95 translate-y-4 blur-sm"
+             class="relative w-full max-w-[520px] rounded-[32px] bg-white p-8 sm:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] dark:bg-gray-900 border border-slate-100 dark:border-gray-800/80 text-center overflow-hidden">
+            
+            <!-- Glowing background aura -->
+            <div class="absolute -top-24 -left-24 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -right-24 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
+
+            <!-- Animated Success SVG Badge -->
+            <div class="mx-auto mb-6 flex items-center justify-center">
+                <img src="{{ asset('images/success.svg') }}" alt="Success" class="h-20 w-20 sm:h-24 sm:w-24 transition-transform duration-300 hover:scale-105">
+            </div>
+
+            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white uppercase">
+                SUCCESS !
+            </h2>
+
+            <p class="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-md mx-auto">
+                {{ session('success') }}
+            </p>
+
+            <!-- Action Button -->
+            <div class="mt-8 flex items-center justify-center">
+                <button type="button"
+                        @click="show = false"
+                        class="group relative inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer">
+                    <span>Tutup &amp; Lanjutkan</span>
+                    <svg class="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ⚠️ Global Pop-Up Alert Error Modal --}}
+    @if(session('error'))
+    <div x-data="{ show: false }"
+         x-init="$nextTick(() => { setTimeout(() => show = true, 50); })"
+         @keydown.escape.window="show = false"
+         x-show="show"
+         x-cloak
+         class="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        
+        <!-- Backdrop overlay -->
+        <div x-show="show"
+             x-transition:enter="transition ease-out duration-500"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="show = false"
+             class="fixed inset-0 bg-slate-900/60 backdrop-blur-md"></div>
+
+        <!-- Modal Card -->
+        <div x-show="show"
+             x-transition:enter="transition cubic-bezier(0.16, 1, 0.3, 1) duration-500 transform"
+             x-transition:enter-start="opacity-0 scale-90 translate-y-6 blur-md"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0 blur-none"
+             x-transition:leave="transition cubic-bezier(0.7, 0, 0.84, 0) duration-300 transform"
+             x-transition:leave-start="opacity-100 scale-100 translate-y-0 blur-none"
+             x-transition:leave-end="opacity-0 scale-95 translate-y-4 blur-sm"
+             class="relative w-full max-w-[520px] rounded-[32px] bg-white p-8 sm:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] dark:bg-gray-900 border border-slate-100 dark:border-gray-800/80 text-center overflow-hidden">
+            
+            <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 ring-8 ring-red-50 dark:ring-red-900/10">
+                <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+
+            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white uppercase">
+                GAGAL !
+            </h2>
+
+            <p class="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-md mx-auto">
+                {{ session('error') }}
+            </p>
+
+            <div class="mt-8 flex items-center justify-center">
+                <button type="button"
+                        @click="show = false"
+                        class="group relative inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-red-600/25 transition-all duration-300 hover:from-red-500 hover:to-rose-500 hover:shadow-red-600/40 cursor-pointer">
+                    <span>Tutup</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
 
 
 

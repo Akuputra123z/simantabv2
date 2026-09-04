@@ -76,8 +76,8 @@
                                     <p class="text-gray-500 text-theme-sm dark:text-gray-400">{{ $item->kategori }}</p>
                                 </td>
                                 <td class="px-5 py-4">
-                                    <p class="text-gray-500 text-theme-sm dark:text-gray-400 line-clamp-1 max-w-xs" title="{{ $item->deskripsi }}">
-                                        {{ $item->deskripsi }}
+                                    <p class="text-gray-500 text-theme-sm dark:text-gray-400 line-clamp-1 max-w-xs" title="{{ strip_tags($item->deskripsi) }}">
+                                        {{ strip_tags($item->deskripsi) }}
                                     </p>
                                 </td>
                                 <td class="px-5 py-4">

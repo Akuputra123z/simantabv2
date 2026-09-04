@@ -42,7 +42,7 @@
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-4">
         <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
             <p class="text-xs text-gray-500 dark:text-gray-400">Total LHP</p>
-            <p class="mt-1 text-2xl font-bold text-blue-600 dark:text-blue-400">{{ $ringkasan['total_lhp'] }}</p>
+            <p class="mt-1 text-2xl font-bold ">{{ $ringkasan['total_lhp'] }}</p>
         </div>
         <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
             <p class="text-xs text-gray-500 dark:text-gray-400">Total Rekomendasi</p>
@@ -185,7 +185,7 @@
                     <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
                         {{-- Nomor LHP --}}
                         <td class="px-5 py-4">
-                            <div class="text-sm font-bold text-blue-600 dark:text-blue-400">
+                            <div class="text-sm font-bold">
                                 <a href="{{ route('laporan.rekap-per-lhp', $lhp->id) }}" class="hover:underline">
                                     {{ $lhp->nomor_lhp }}
                                 </a>

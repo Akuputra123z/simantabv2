@@ -2,25 +2,6 @@
 
 @section('content')
 
-{{-- ✅ Alert Berhasil --}}
-@if(session('success'))
-<div id="alert-success" class="mb-6 rounded-xl border border-green-500 bg-green-50 p-4 dark:border-green-500/30 dark:bg-green-500/15 transition-all duration-500">
-    <div class="flex items-start gap-3">
-        <div class="text-green-500">
-            <svg class="fill-current" width="24" height="24" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-        </div>
-        <div class="flex-1 text-sm font-medium text-green-800 dark:text-green-400">
-            {{ session('success') }}
-        </div>
-        <button onclick="dismissAlert()" class="text-gray-400 hover:text-gray-600">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-    </div>
-</div>
-@endif
-
 {{-- Header --}}
 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
@@ -354,18 +335,23 @@
         }, 300);
     }
 
-    btnBulk.addEventListener('click', () => openDeleteModal('bulk'));
+    if (btnBulk) {
+        btnBulk.addEventListener('click', () => openDeleteModal('bulk'));
+    }
 
-    document.getElementById('confirm-delete-btn').addEventListener('click', function () {
-        this.disabled  = true;
-        this.innerText = 'Processing...';
-        if (currentDeleteType === 'bulk') {
-            document.getElementById('main-form').submit();
-        } else {
-            const form   = document.getElementById('delete-single-form');
-            form.action  = `/lhps/${currentId}`;
-            form.submit();
-        }
-    });
+    const confirmBtn = document.getElementById('confirm-delete-btn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function () {
+            this.disabled  = true;
+            this.innerText = 'Processing...';
+            if (currentDeleteType === 'bulk') {
+                document.getElementById('main-form').submit();
+            } else {
+                const form   = document.getElementById('delete-single-form');
+                form.action  = `/lhps/${currentId}`;
+                form.submit();
+            }
+        });
+    }
 </script>
 @endsection

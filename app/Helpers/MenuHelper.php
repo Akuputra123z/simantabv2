@@ -33,41 +33,6 @@ class MenuHelper
         $canAudit = $isSuperAdmin || $isKepala || $isAuditor;
         $canUserMgmt = $isSuperAdmin;
 
-        // ================= MASTER DATA =================
-        if ($canMasterData) {
-            $masterSub = [];
-
-            if ($isSuperAdmin || $isKepala) {
-                $masterSub[] = [
-                    'name' => 'Kode Rekomendasi',
-                    'path' => route('kode-rekomendasi.index', absolute: false),
-                ];
-                $masterSub[] = [
-                    'name' => 'Kode Temuan',
-                    'path' => route('kode-temuan.index', absolute: false),
-                ];
-                $masterSub[] = [
-                    'name' => 'Objek Pemeriksaan',
-                    'path' => route('unit-diperiksa.index', absolute: false),
-                ];
-            }
-
-            if ($isSuperAdmin) {
-                $masterSub[] = [
-                    'name' => 'Pegawai Inspektorat',
-                    'path' => route('pegawai.inspektorat.index', absolute: false),
-                ];
-            }
-
-            if ($masterSub) {
-                $items[] = [
-                    'icon' => 'database',
-                    'name' => 'Master Data',
-                    'subItems' => $masterSub,
-                ];
-            }
-        }
-
         // ================= AUDIT =================
         if ($canAudit) {
             $items[] = [
@@ -75,33 +40,44 @@ class MenuHelper
                 'name' => 'Program Pengawasan',
                 'subItems' => [
                     [
-                        'name' => 'Program Kegiatan',
+                        'name' => 'Program Audit',
                         'path' => route('audit-program.index', absolute: false),
                     ],
                     [
                         'name' => 'Penugasan Audit',
                         'path' => route('audit-assignment.index', absolute: false),
                     ],
+                   
                 ],
             ];
         }
 
-        // ================= LHP =================
+        // ================= HASIL AUDIT =================
         if ($canAudit) {
             $items[] = [
                 'icon' => 'pages',
-                'name' => 'LHP & Tindak Lanjut',
+                'name' => 'LHP',
                 'subItems' => [
                     [
                         'name' => 'LHP',
                         'path' => route('lhps.index', absolute: false),
                     ],
+                    // [
+                    //     'name' => 'Rekomendasi Audit',
+                    //     'path' => route('recommendations.index', absolute: false),
+                    // ],
+                ],
+            ];
+        }
+
+        // ================= TINDAK LANJUT =================
+        if ($canAudit) {
+            $items[] = [
+                'icon' => 'task',
+                'name' => 'Tindak Lanjut',
+                'subItems' => [
                     [
-                        'name' => 'Rekomendasi',
-                        'path' => route('recommendations.index', absolute: false),
-                    ],
-                    [
-                        'name' => 'Tindak Lanjut',
+                        'name' => 'Monitoring TL',
                         'path' => route('tindak-lanjuts.index', absolute: false),
                     ],
                 ],
@@ -115,42 +91,60 @@ class MenuHelper
                 'name' => 'Laporan',
                 'subItems' => [
                     [
-                        'name' => 'Laporan',
+                        'name' => 'Laporan Rekapitulasi',
                         'path' => route('laporan.index', absolute: false),
                     ],
                 ],
             ];
         }
 
-        // ================= MANAJEMEN PENGGUNA =================
-        if ($canUserMgmt) {
-            $items[] = [
-                'icon' => 'user-profile',
-                'name' => 'Manajemen Pengguna',
-                'subItems' => [
-                    [
-                        'name' => 'User Instansi/OPD',
-                        'path' => route('pegawai.opd.index', absolute: false),
-                    ],
-                    [
-                        'name' => 'Hak Akses',
-                        'path' => route('permissions.index', absolute: false),
-                    ],
+        // ================= MASTER DATA =================
+        if ($canMasterData) {
+            $masterSub = [
+                [
+                    'name' => 'Kode Temuan',
+                    'path' => route('kode-temuan.index', absolute: false),
                 ],
+                [
+                    'name' => 'Kode Rekomendasi',
+                    'path' => route('kode-rekomendasi.index', absolute: false),
+                ],
+                [
+                    'name' => 'Objek Pemeriksaan',
+                    'path' => route('unit-diperiksa.index', absolute: false),
+                ],
+            ];
+
+            $items[] = [
+                'icon' => 'database',
+                'name' => 'Master Data',
+                'subItems' => $masterSub,
             ];
         }
 
-        // ================= AKUN =================
-        $items[] = [
-            'icon' => 'user-profile',
-            'name' => 'Akun Saya',
-            'subItems' => [
+        // ================= SISTEM =================
+        if ($canUserMgmt) {
+            $sistemSub = [
                 [
-                    'name' => 'Profil Saya',
-                    'path' => route('settings.profile.edit', absolute: false),
+                    'name' => 'Pegawai Inspektorat',
+                    'path' => route('pegawai.inspektorat.index', absolute: false),
                 ],
-            ],
-        ];
+                [
+                    'name' => 'User Instansi/OPD',
+                    'path' => route('pegawai.opd.index', absolute: false),
+                ],
+                [
+                    'name' => 'Role & Permission',
+                    'path' => route('permissions.index', absolute: false),
+                ],
+            ];
+
+            $items[] = [
+                'icon' => 'user-profile',
+                'name' => 'Sistem & Pengguna',
+                'subItems' => $sistemSub,
+            ];
+        }
 
         return $items;
     }
@@ -162,11 +156,11 @@ class MenuHelper
         if ($user && $user->hasRole('opd')) {
             return [
                 [
-                    'title' => 'Menu',
+                    'title' => 'DASHBOARD',
                     'items' => self::getMainNavItems(),
                 ],
                 [
-                    'title' => 'Tindak Lanjut',
+                    'title' => 'TINDAK LANJUT',
                     'items' => self::getOpdItems(),
                 ],
             ];
@@ -174,11 +168,11 @@ class MenuHelper
 
         return [
             [
-                'title' => 'Menu',
+                'title' => 'MAIN MENU',
                 'items' => self::getMainNavItems(),
             ],
             [
-                'title' => 'Administration',
+                'title' => 'E-AUDIT MANAGEMENT',
                 'items' => self::getAdministrationItems(),
             ],
         ];
@@ -192,14 +186,14 @@ class MenuHelper
                 'name' => 'Tindak Lanjut',
                 'subItems' => [
                     [
-                        'name' => 'Tindak Lanjut Saya',
+                        'name' => 'Monitoring TL Saya',
                         'path' => route('opd.tindak-lanjut.index', absolute: false),
                     ],
                 ],
             ],
             [
                 'icon' => 'user-profile',
-                'name' => 'Akun',
+                'name' => 'Pengaturan Akun',
                 'subItems' => [
                     [
                         'name' => 'Profil Saya',

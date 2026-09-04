@@ -262,7 +262,7 @@
                             Nilai Rekomendasi (Rp)
                         </label>
                         <div class="rupiah-wrap relative group">
-                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-sm font-bold text-gray-400 group-focus-within:text-brand-500 transition-colors">Rp</span>
+                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-sm font-bold text-gray-400">Rp</span>
                             <input type="text"
                                    id="display-nilai-rekom"
                                    inputmode="numeric"

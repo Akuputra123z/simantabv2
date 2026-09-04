@@ -11,6 +11,11 @@ class UnitDiperiksaController extends Controller
 {
     $query = UnitDiperiksa::query();
 
+    $perPage = (int) $request->input('per_page', 10);
+    if (!in_array($perPage, [5, 8, 10, 20, 25, 50])) {
+        $perPage = 10;
+    }
+
     $data = $query
         ->when($request->search, function ($q) use ($request) {
             $q->where(function ($sub) use ($request) {
@@ -26,7 +31,7 @@ class UnitDiperiksaController extends Controller
             $q->where('nama_kecamatan', $request->kecamatan);
         })
         ->latest()
-        ->paginate(10)
+        ->paginate($perPage)
         ->withQueryString();
 
     // ✅ ambil list kecamatan unik dari database

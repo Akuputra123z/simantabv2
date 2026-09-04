@@ -21,13 +21,14 @@ class AuditAssignmentController extends Controller
     private function sharedViewData($assignmentId = null): array
     {
         return [
-            'programs'        => AuditProgram::where(fn($q) => $q
+            'programs'          => AuditProgram::where(fn($q) => $q
                 ->where('approval_status', '!=', AuditProgram::APPROVAL_DITOLAK)
                 ->orWhereHas('details.assignments', fn($q) => $q->where('id', $assignmentId))
-            )->orderBy('tahun', 'desc')->get(),
-            'ketuaTim'        => User::orderBy('name')->get(),
-            'members'         => User::orderBy('name')->get(),
-            'kategoriOptions' => ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'],
+            )->orderBy('tahun', 'desc')->orderBy('nama_program')->get(),
+            'programCategories' => AuditProgram::KATEGORI,
+            'ketuaTim'          => User::orderBy('name')->get(),
+            'members'           => User::orderBy('name')->get(),
+            'kategoriOptions'   => ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'],
             'units' => UnitDiperiksa::orderBy('nama_unit')
                 ->get(['id', 'nama_unit as name', 'kategori', 'nama_kecamatan'])
                 ->map(fn($u) => [
@@ -43,7 +44,7 @@ class AuditAssignmentController extends Controller
 
     public function index(Request $request)
     {
-        $assignments = AuditAssignment::query()
+        $query = AuditAssignment::query()
             ->with([
                 'auditProgramDetail.auditProgram',
                 'unitDiperiksas',
@@ -63,9 +64,16 @@ class AuditAssignmentController extends Controller
                         $q->where('nama_unit', 'like', "%{$v}%")
                     )
                 )
-            )
-            ->latest()
-            ->paginate(20);
+            );
+
+        $perPage = (int) $request->input('per_page', 10);
+        if (!in_array($perPage, [5, 8, 10, 20, 25, 50])) {
+            $perPage = 10;
+        }
+
+        $assignments = $query->latest()
+            ->paginate($perPage)
+            ->withQueryString();
 
         $kategoriOptions = AuditProgram::KATEGORI;
         return view('pages.audit-assignment.index', compact('assignments', 'kategoriOptions'));
@@ -106,15 +114,35 @@ class AuditAssignmentController extends Controller
             'pengendali_teknis_id' => $request->pengendali_teknis_id ?: null,
         ]);
 
-        $validated = $request->validate([
-            // Tambahkan unique untuk mencegah duplikasi PKPT di database
-            'audit_program_detail_id' => 'required|exists:audit_program_details,id|unique:audit_assignments,audit_program_detail_id',
+        $detail = null;
+        if ($request->audit_program_detail_id) {
+            $detail = AuditProgramDetail::with('auditProgram')->find($request->audit_program_detail_id);
+        }
+
+        $programKategori = $detail?->auditProgram?->kategori ?? '';
+        $isBpkBpkp = in_array(strtoupper($programKategori), ['BPK', 'BPKP']);
+
+        if ($isBpkBpkp) {
+            if (!$request->filled('tanggal_mulai')) {
+                $request->merge(['tanggal_mulai' => now()->toDateString()]);
+            }
+            if (!$request->filled('tanggal_selesai')) {
+                $request->merge(['tanggal_selesai' => $request->tanggal_mulai ?? now()->toDateString()]);
+            }
+            if (!$request->filled('status')) {
+                $request->merge(['status' => 'berjalan']);
+            }
+            $request->merge(['pengendali_teknis_id' => null, 'members' => []]);
+        }
+
+        $rules = [
+            'audit_program_detail_id' => 'required|exists:audit_program_details,id',
             'unit_diperiksa_ids'      => 'required|array|min:1',
             'unit_diperiksa_ids.*'    => 'exists:unit_diperiksas,id',
             'ketua_tim_id'            => 'required|exists:users,id',
             'nomor_surat'             => 'required|string|max:255|unique:audit_assignments,nomor_surat',
-            'tanggal_mulai'           => 'required|date',
-            'tanggal_selesai'         => 'required|date|after_or_equal:tanggal_mulai',
+            'tanggal_mulai'           => $isBpkBpkp ? 'nullable|date' : 'required|date',
+            'tanggal_selesai'         => $isBpkBpkp ? 'nullable|date|after_or_equal:tanggal_mulai' : 'required|date|after_or_equal:tanggal_mulai',
             'nama_tim'                => 'nullable|string|max:255',
             'jenis_pengawasan'        => ['nullable', 'string', Rule::in(AuditAssignment::JENIS_PENGAWASAN)],
             'anggaran_disetujui'      => 'nullable|numeric|min:0',
@@ -122,8 +150,11 @@ class AuditAssignmentController extends Controller
             'status'                  => 'required|in:draft,berjalan,selesai',
             'members'                 => 'nullable|array',
             'members.*'               => 'exists:users,id',
-        ], [
-            'audit_program_detail_id.unique' => 'PKPT/Detail Program ini sudah pernah dibuatkan penugasannya.'
+        ];
+
+        $validated = $request->validate($rules, [
+            'audit_program_detail_id.unique' => 'PKPT/Detail Program ini sudah pernah dibuatkan penugasannya.',
+            'ketua_tim_id.required'          => $isBpkBpkp ? 'Penanggungjawab tindak lanjut wajib dipilih.' : 'Ketua tim wajib dipilih.',
         ]);
 
         $detail = AuditProgramDetail::with('auditProgram')->find($validated['audit_program_detail_id']);
@@ -190,7 +221,30 @@ class AuditAssignmentController extends Controller
             'pengendali_teknis_id' => $request->pengendali_teknis_id ?: null,
         ]);
 
-        $validated = $request->validate([
+        $detail = null;
+        if ($request->audit_program_detail_id) {
+            $detail = AuditProgramDetail::with('auditProgram')->find($request->audit_program_detail_id);
+        } else {
+            $detail = $auditAssignment->auditProgramDetail()->with('auditProgram')->first();
+        }
+
+        $programKategori = $detail?->auditProgram?->kategori ?? '';
+        $isBpkBpkp = in_array(strtoupper($programKategori), ['BPK', 'BPKP']);
+
+        if ($isBpkBpkp) {
+            if (!$request->filled('tanggal_mulai')) {
+                $request->merge(['tanggal_mulai' => $auditAssignment->tanggal_mulai?->toDateString() ?? now()->toDateString()]);
+            }
+            if (!$request->filled('tanggal_selesai')) {
+                $request->merge(['tanggal_selesai' => $request->tanggal_mulai ?? ($auditAssignment->tanggal_selesai?->toDateString() ?? now()->toDateString())]);
+            }
+            if (!$request->filled('status')) {
+                $request->merge(['status' => $auditAssignment->status ?? 'berjalan']);
+            }
+            $request->merge(['pengendali_teknis_id' => null, 'members' => []]);
+        }
+
+        $rules = [
             // Unique kecuali untuk data yang sedang di-edit itu sendiri
             'audit_program_detail_id' => 'required|exists:audit_program_details,id|unique:audit_assignments,audit_program_detail_id,' . $auditAssignment->id,
             'unit_diperiksa_ids'      => 'required|array|min:1',
@@ -200,12 +254,16 @@ class AuditAssignmentController extends Controller
             'nama_tim'                => 'nullable|string|max:255',
             'jenis_pengawasan'        => ['nullable', 'string', Rule::in(AuditAssignment::JENIS_PENGAWASAN)],
             'anggaran_disetujui'      => 'nullable|numeric|min:0',
-            'tanggal_mulai'           => 'required|date',
-            'tanggal_selesai'         => 'required|date|after_or_equal:tanggal_mulai',
+            'tanggal_mulai'           => $isBpkBpkp ? 'nullable|date' : 'required|date',
+            'tanggal_selesai'         => $isBpkBpkp ? 'nullable|date|after_or_equal:tanggal_mulai' : 'required|date|after_or_equal:tanggal_mulai',
             'pengendali_teknis_id'    => 'nullable|exists:users,id',
             'status'                  => 'required|in:draft,berjalan,selesai',
             'members'                 => 'nullable|array',
             'members.*'               => 'exists:users,id',
+        ];
+
+        $validated = $request->validate($rules, [
+            'ketua_tim_id.required' => $isBpkBpkp ? 'Penanggungjawab tindak lanjut wajib dipilih.' : 'Ketua tim wajib dipilih.',
         ]);
 
         DB::transaction(function () use ($validated, $auditAssignment) {
@@ -237,33 +295,53 @@ class AuditAssignmentController extends Controller
 
     // ── AJAX (KUNCI PERBAIKAN DI SINI) ────────────────────────────────
 
-  public function getProgramDetails(Request $request, $programId)
+public function getProgramDetails(Request $request, $programId)
 {
-    $excludeId = $request->query('exclude_assignment');
+    $excludeId = $request->integer('exclude_assignment');
 
-    $details = AuditProgramDetail::where('audit_program_id', $programId)
-        ->withCount(['assignments as assigned_count' => function ($q) use ($excludeId) {
-            if ($excludeId) {
-                $q->where('id', '!=', $excludeId);
+    $details = AuditProgramDetail::query()
+        ->where('audit_program_id', $programId)
+
+        // Hitung assignment yang sudah dimiliki
+        ->withCount([
+            'assignments as assigned_count' => function ($query) use ($excludeId) {
+                if ($excludeId > 0) {
+                    $query->where('id', '!=', $excludeId);
+                }
             }
-        }])
+        ])
+
         ->orderBy('nama_detail_program')
-        ->get(['id', 'nama_detail_program', 'jenis_kegiatan', 'tim', 'anggaran', 'objek_pengawasan', 'ruang_lingkup', 'status'])
-        ->map(fn ($d) => [
-            'id'                 => $d->id,
-            'nama_detail_program' => $d->nama_detail_program,
-            'jenis_kegiatan'     => $d->jenis_kegiatan,
-            'tim'                => $d->tim,
-            'anggaran'           => $d->anggaran,
-            'objek_pengawasan'   => $d->objek_pengawasan,
-            'ruang_lingkup'      => $d->ruang_lingkup,
-            'status'             => $d->status,
-            'assigned'           => $d->assigned_count > 0,
-        ]);
+
+        ->get([
+            'id',
+            'nama_detail_program',
+            'jenis_kegiatan',
+            'tim',
+            'anggaran',
+            'objek_pengawasan',
+            'ruang_lingkup',
+            'status',
+        ])
+
+        ->map(function ($detail) {
+            return [
+                'id'                  => $detail->id,
+                'nama_detail_program' => $detail->nama_detail_program,
+                'jenis_kegiatan'      => $detail->jenis_kegiatan,
+                'tim'                 => $detail->tim,
+                'anggaran'            => (float) ($detail->anggaran ?? 0),
+                'objek_pengawasan'    => $detail->objek_pengawasan,
+                'ruang_lingkup'       => $detail->ruang_lingkup,
+                'status'              => $detail->status,
+
+                // TRUE jika sudah digunakan assignment lain
+                'assigned'            => $detail->assigned_count > 0,
+            ];
+        });
 
     return response()->json($details);
 }
-
     // ── Sisa fungsi AJAX tetap sama ──────────────────────────────────
     
     public function getKecamatan(string $kategori)

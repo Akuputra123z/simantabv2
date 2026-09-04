@@ -4,6 +4,7 @@
 
 use App\Models\AuditAssignment;
 use App\Models\AuditProgram;
+use App\Models\KodeRekomendasi;
 use App\Models\KodeTemuan;
 use App\Models\Lhp;
 use App\Models\Recommendation;
@@ -81,8 +82,9 @@ use Illuminate\Support\Facades\Storage;
         ->map(fn($items) => $items->pluck('unit_diperiksa_id')->toArray());
 
     $kodeTemuans = KodeTemuan::orderBy('kode')->get();
+    $kodeRekoms  = KodeRekomendasi::where('is_active', true)->orderBy('kode')->get();
 
-    return view('pages.lhps.create', compact('assignments', 'kodeTemuans', 'usedUnitMap'));
+    return view('pages.lhps.create', compact('assignments', 'kodeTemuans', 'kodeRekoms', 'usedUnitMap'));
 }
         // Contoh di Controller yang menghandle API /lhp/{id}/temuans
 public function getTemuans($lhpId) {
@@ -118,10 +120,18 @@ public function getTemuans($lhpId) {
         'temuans'                         => 'nullable|array',
         'temuans.*.kode_temuan_id'        => 'nullable|exists:kode_temuans,id',
         'temuans.*.kondisi'               => 'nullable|string',
+        'temuans.*.sebab'                 => 'nullable|string',
+        'temuans.*.akibat'                => 'nullable|string',
         'temuans.*.nilai_kerugian_negara' => 'nullable', 
         'temuans.*.nilai_kerugian_daerah' => 'nullable',
         'temuans.*.nilai_kerugian_desa'   => 'nullable',
         'temuans.*.nilai_kerugian_bos_blud' => 'nullable',
+        'temuans.*.recommendations'                        => 'nullable|array',
+        'temuans.*.recommendations.*.kode_rekomendasi_id' => 'nullable|exists:kode_rekomendasis,id',
+        'temuans.*.recommendations.*.uraian_rekom'        => 'nullable|string',
+        'temuans.*.recommendations.*.jenis_rekomendasi'   => 'nullable|in:uang,barang,administrasi',
+        'temuans.*.recommendations.*.nilai_rekom'         => 'nullable',
+        'temuans.*.recommendations.*.batas_waktu'         => 'nullable|date',
         'attachments'                     => 'nullable|array',
         'attachments.*.file_path'         => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
         'attachments.*.file_name'         => 'nullable|string',
@@ -152,9 +162,11 @@ public function getTemuans($lhpId) {
                 $bosBLud = $cleanRupiah($temuan['nilai_kerugian_bos_blud'] ?? 0); 
                 $total   = $negara + $daerah + $desa + $bosBLud;
 
-                $lhp->temuans()->create([
+                $createdTemuan = $lhp->temuans()->create([
                     'kode_temuan_id'        => $temuan['kode_temuan_id'] ?? null,
                     'kondisi'               => $temuan['kondisi'] ?? null,
+                    'sebab'                 => $temuan['sebab'] ?? null,
+                    'akibat'                => $temuan['akibat'] ?? null,
                     'nilai_kerugian_negara' => $negara,
                     'nilai_kerugian_daerah' => $daerah,
                     'nilai_kerugian_desa'   => $desa,
@@ -162,6 +174,26 @@ public function getTemuans($lhpId) {
                     'nilai_temuan'          => $total,
                     'status_tl'             => 'belum_ditindaklanjuti',
                 ]);
+
+                // Simpan rekomendasi jika diisi
+                if (! empty($temuan['recommendations']) && is_array($temuan['recommendations'])) {
+                    foreach ($temuan['recommendations'] as $rekom) {
+                        if (empty($rekom['kode_rekomendasi_id']) && empty($rekom['uraian_rekom'])) continue;
+
+                        $nilaiRekom = $cleanRupiah($rekom['nilai_rekom'] ?? 0);
+                        $createdTemuan->recommendations()->create([
+                            'lhp_id'              => $lhp->id,
+                            'kode_rekomendasi_id' => $rekom['kode_rekomendasi_id'] ?? null,
+                            'uraian_rekom'        => $rekom['uraian_rekom'] ?? null,
+                            'jenis_rekomendasi'   => $rekom['jenis_rekomendasi'] ?? 'administrasi',
+                            'nilai_rekom'         => $nilaiRekom,
+                            'nilai_sisa'          => $nilaiRekom,
+                            'batas_waktu'         => !empty($rekom['batas_waktu']) ? $rekom['batas_waktu'] : now()->addDays(60)->toDateString(),
+                            'status'              => 'belum_ditindaklanjuti',
+                            'created_by'          => auth()->id(),
+                        ]);
+                    }
+                }
             }
         }
 
@@ -184,8 +216,16 @@ public function getTemuans($lhpId) {
         // Update statistik LHP
         $this->statistikService->updateStatistik($lhp->id);
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success'  => true,
+                'message'  => "LHP nomor {$lhp->nomor_lhp} beserta temuan dan rekomendasi berhasil dibuat.",
+                'redirect' => route('lhps.index'),
+            ]);
+        }
+
         return redirect()->route('lhps.index')
-            ->with('success', "LHP nomor {$lhp->nomor_lhp} berhasil dibuat.");
+            ->with('success', "LHP nomor {$lhp->nomor_lhp} beserta temuan dan rekomendasi berhasil dibuat.");
 
     } catch (\Throwable $e) {
         DB::rollBack();
@@ -198,7 +238,8 @@ public function getTemuans($lhpId) {
 {
      $lhp->load([
         'temuans.kodeTemuan',
-        'temuans.recommendations',
+        'temuans.recommendations.kodeRekomendasi',  // ✅ load kodeRekomendasi untuk display di drawer
+        'temuans.recommendations.tindakLanjuts',
         // ✅ Rantai relasi yang benar dan konsisten
         'auditAssignment.auditProgramDetail.auditProgram',
         'auditAssignment.unitDiperiksas', // tetap load untuk konteks jika perlu
@@ -222,30 +263,46 @@ public function getTemuans($lhpId) {
                 })->get();
 
             $kodeTemuans = KodeTemuan::orderBy('kode')->get();
+            $kodeRekoms  = KodeRekomendasi::where('is_active', true)->orderBy('kode')->get();
 
             $lhp->load([
                 'temuans.kodeTemuan',
+                'temuans.recommendations.kodeRekomendasi',
                 'auditAssignment.auditProgramDetail.auditProgram',
                 'attachments',
             ]);
 
-            return view('pages.lhps.edit', compact('lhp', 'assignments', 'kodeTemuans'));
+            return view('pages.lhps.edit', compact('lhp', 'assignments', 'kodeTemuans', 'kodeRekoms'));
         }
+
 public function update(Request $request, Lhp $lhp)
 {
+    $cleanRupiah = function($value) {
+        if (empty($value)) return 0;
+        return (float) preg_replace('/[^0-9]/', '', $value);
+    };
+
     $validated = $request->validate([
-        'nomor_lhp'         => 'required|string|unique:lhps,nomor_lhp,' . $lhp->id,
-        'tanggal_lhp'       => 'required|date',
-        'catatan_umum'      => 'nullable|string',
-        'temuans'           => 'nullable|array',
-        'temuans.*.id'      => 'nullable',
+        'nomor_lhp'                         => 'required|string|unique:lhps,nomor_lhp,' . $lhp->id,
+        'tanggal_lhp'                       => 'required|date',
+        'catatan_umum'                      => 'nullable|string',
+        'temuans'                           => 'nullable|array',
+        'temuans.*.id'                      => 'nullable',
         'temuans.*.kode_temuan_id'          => 'nullable|exists:kode_temuans,id',
         'temuans.*.kondisi'                 => 'nullable|string',
-        'temuans.*.nilai_kerugian_negara'   => 'nullable|numeric|min:0',
-        'temuans.*.nilai_kerugian_daerah'   => 'nullable|numeric|min:0',
-        'temuans.*.nilai_kerugian_desa'     => 'nullable|numeric|min:0',
-        'temuans.*.nilai_kerugian_bos_blud' => 'nullable|numeric|min:0',
-        // ✅ TAMBAH VALIDASI ATTACHMENT
+        'temuans.*.sebab'                   => 'nullable|string',
+        'temuans.*.akibat'                  => 'nullable|string',
+        'temuans.*.nilai_kerugian_negara'   => 'nullable',
+        'temuans.*.nilai_kerugian_daerah'   => 'nullable',
+        'temuans.*.nilai_kerugian_desa'     => 'nullable',
+        'temuans.*.nilai_kerugian_bos_blud' => 'nullable',
+        'temuans.*.recommendations'                         => 'nullable|array',
+        'temuans.*.recommendations.*.id'                  => 'nullable',
+        'temuans.*.recommendations.*.kode_rekomendasi_id' => 'nullable|exists:kode_rekomendasis,id',
+        'temuans.*.recommendations.*.uraian_rekom'        => 'nullable|string',
+        'temuans.*.recommendations.*.jenis_rekomendasi'   => 'nullable|in:uang,barang,administrasi',
+        'temuans.*.recommendations.*.nilai_rekom'         => 'nullable',
+        'temuans.*.recommendations.*.batas_waktu'         => 'nullable|date',
         'attachments'                       => 'nullable|array',
         'attachments.*.file_path'           => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
         'attachments.*.file_name'           => 'nullable|string',
@@ -267,62 +324,38 @@ public function update(Request $request, Lhp $lhp)
             });
 
             foreach ($request->temuans as $temuan) {
-                $negara   = (float) ($temuan['nilai_kerugian_negara']   ?? 0);
-                $daerah   = (float) ($temuan['nilai_kerugian_daerah']   ?? 0);
-                $desa     = (float) ($temuan['nilai_kerugian_desa']     ?? 0);
-                $bosBLud  = (float) ($temuan['nilai_kerugian_bos_blud'] ?? 0);
+                $negara   = $cleanRupiah($temuan['nilai_kerugian_negara']   ?? 0);
+                $daerah   = $cleanRupiah($temuan['nilai_kerugian_daerah']   ?? 0);
+                $desa     = $cleanRupiah($temuan['nilai_kerugian_desa']     ?? 0);
+                $bosBLud  = $cleanRupiah($temuan['nilai_kerugian_bos_blud'] ?? 0);
                 $totalNilaiBaru = $negara + $daerah + $desa + $bosBLud;
+
+                $targetTemuan = null;
 
                 if (!empty($temuan['id'])) {
                     $existing = $lhp->temuans()->find($temuan['id']);
                     if ($existing) {
-                        $isChanged = (abs((float) $existing->nilai_temuan - $totalNilaiBaru) > 0.01);
-
                         $existing->update([
                             'kode_temuan_id'          => $temuan['kode_temuan_id'] ?? null,
                             'kondisi'                 => $temuan['kondisi'] ?? null,
+                            'sebab'                   => $temuan['sebab'] ?? null,
+                            'akibat'                  => $temuan['akibat'] ?? null,
                             'nilai_kerugian_negara'   => $negara,
                             'nilai_kerugian_daerah'   => $daerah,
                             'nilai_kerugian_desa'     => $desa,
                             'nilai_kerugian_bos_blud' => $bosBLud,
                             'nilai_temuan'            => $totalNilaiBaru,
                         ]);
-
-                        if ($isChanged) {
-                            $existing->load('recommendations.tindakLanjuts.cicilans');
-
-                            foreach ($existing->recommendations as $rekom) {
-                                $rekom->update([
-                                    'status'           => Recommendation::STATUS_BELUM,
-                                    'nilai_tl_selesai' => 0,
-                                ]);
-
-                                foreach ($rekom->tindakLanjuts as $tl) {
-                                    if ($tl->jenis_penyelesaian === 'cicilan') {
-                                        $tl->cicilans()->update([
-                                            'status'             => 'menunggu',
-                                            'diverifikasi_oleh'  => null,
-                                            'diverifikasi_pada'  => null,
-                                            'catatan_verifikasi' => null,
-                                        ]);
-                                    }
-
-                                    $tl->update([
-                                        'status_verifikasi'   => 'menunggu_verifikasi',
-                                        'nilai_tindak_lanjut' => 0,
-                                    ]);
-                                }
-                            }
-
-                            $existing->fresh(['recommendations'])->syncStatus();
-                        }
+                        $targetTemuan = $existing;
                     }
                 } else {
                     if (empty($temuan['kode_temuan_id']) && empty($temuan['kondisi'])) continue;
 
-                    $lhp->temuans()->create([
+                    $targetTemuan = $lhp->temuans()->create([
                         'kode_temuan_id'          => $temuan['kode_temuan_id'] ?? null,
                         'kondisi'                 => $temuan['kondisi'] ?? null,
+                        'sebab'                   => $temuan['sebab'] ?? null,
+                        'akibat'                  => $temuan['akibat'] ?? null,
                         'nilai_kerugian_negara'   => $negara,
                         'nilai_kerugian_daerah'   => $daerah,
                         'nilai_kerugian_desa'     => $desa,
@@ -330,6 +363,40 @@ public function update(Request $request, Lhp $lhp)
                         'nilai_temuan'            => $totalNilaiBaru,
                         'status_tl'               => 'belum_ditindaklanjuti',
                     ]);
+                }
+
+                // Handle nested recommendations update/create
+                if (! empty($temuan['recommendations']) && is_array($temuan['recommendations']) && $targetTemuan) {
+                    foreach ($temuan['recommendations'] as $rekom) {
+                        if (empty($rekom['kode_rekomendasi_id']) && empty($rekom['uraian_rekom'])) continue;
+
+                        $nilaiRekom = $cleanRupiah($rekom['nilai_rekom'] ?? 0);
+                        if (!empty($rekom['id'])) {
+                            $existingRekom = $targetTemuan->recommendations()->find($rekom['id']);
+                            if ($existingRekom) {
+                                $existingRekom->update([
+                                    'kode_rekomendasi_id' => $rekom['kode_rekomendasi_id'] ?? null,
+                                    'uraian_rekom'        => $rekom['uraian_rekom'] ?? null,
+                                    'jenis_rekomendasi'   => $rekom['jenis_rekomendasi'] ?? 'administrasi',
+                                    'nilai_rekom'         => $nilaiRekom,
+                                    'nilai_sisa'          => max(0, $nilaiRekom - (float)($existingRekom->nilai_tl_selesai ?? 0)),
+                                    'batas_waktu'         => !empty($rekom['batas_waktu']) ? $rekom['batas_waktu'] : $existingRekom->batas_waktu,
+                                ]);
+                            }
+                        } else {
+                            $targetTemuan->recommendations()->create([
+                                'lhp_id'              => $lhp->id,
+                                'kode_rekomendasi_id' => $rekom['kode_rekomendasi_id'] ?? null,
+                                'uraian_rekom'        => $rekom['uraian_rekom'] ?? null,
+                                'jenis_rekomendasi'   => $rekom['jenis_rekomendasi'] ?? 'administrasi',
+                                'nilai_rekom'         => $nilaiRekom,
+                                'nilai_sisa'          => $nilaiRekom,
+                                'batas_waktu'         => !empty($rekom['batas_waktu']) ? $rekom['batas_waktu'] : now()->addDays(60)->toDateString(),
+                                'status'              => 'belum_ditindaklanjuti',
+                                'created_by'          => auth()->id(),
+                            ]);
+                        }
+                    }
                 }
             }
         }
@@ -356,7 +423,15 @@ public function update(Request $request, Lhp $lhp)
 
         $this->statistikService->updateStatistik($lhp->id);
 
-        return redirect()->route('lhps.show', $lhp->id)
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success'  => true,
+                'message'  => 'LHP berhasil diperbarui dan statistik disinkronkan.',
+                'redirect' => route('lhps.index'),
+            ]);
+        }
+
+        return redirect()->route('lhps.index')
             ->with('success', 'LHP berhasil diperbarui dan statistik disinkronkan.');
 
     } catch (\Throwable $e) {

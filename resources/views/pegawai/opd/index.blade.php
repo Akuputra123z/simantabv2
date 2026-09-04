@@ -19,18 +19,6 @@
             </a>
         </div>
 
-        {{-- Flash --}}
-        @if(session('success'))
-            <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg">
-                {{ session('success') }}
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg">
-                {{ session('error') }}
-            </div>
-        @endif
-
         {{-- Stats --}}
         <div class="grid grid-cols-3 gap-4 mb-6">
             <div class="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-4">

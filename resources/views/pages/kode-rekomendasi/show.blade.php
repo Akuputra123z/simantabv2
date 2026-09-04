@@ -83,9 +83,9 @@
 
         {{-- Deskripsi --}}
         <div class="border-t border-gray-100 pt-4">
-            <p class="text-sm text-gray-500 mb-2">Deskripsi</p>
+            <p class="text-sm text-gray-500 mb-2 font-medium">Deskripsi</p>
             <div class="rounded-lg bg-gray-50 p-4 text-gray-800 dark:bg-gray-800 dark:text-white/90 prose prose-sm max-w-none leading-relaxed">
-                {{ $data->deskripsi ?: 'Belum ada deskripsi untuk data ini.' }}
+                {!! $data->deskripsi ?: 'Belum ada deskripsi untuk data ini.' !!}
             </div>
         </div>
 

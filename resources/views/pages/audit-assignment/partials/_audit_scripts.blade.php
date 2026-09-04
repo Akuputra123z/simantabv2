@@ -5,6 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. DATA (DIPERBAIKI: Penanganan Array Kosong)
     // ══════════════════════════════════════════════════════════════════
     const ALL_UNITS = @json($units ?? []);
+    @php
+        $programsList = $programs->map(fn($p) => [
+            'id'           => (string) $p->id,
+            'nama_program' => $p->nama_program,
+            'tahun'        => $p->tahun,
+            'kategori'     => $p->kategori,
+        ])->values();
+    @endphp
+    const ALL_PROGRAMS = @json($programsList);
     
     // Pastikan INITIAL_UNITS selalu array agar tidak error .map()
     const rawOldUnits = @json(old('unit_diperiksa_ids', isset($preselectedUnits) ? $preselectedUnits->pluck('id') : []));
@@ -18,15 +27,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // ══════════════════════════════════════════════════════════════════
     // 2. ELEMENT REFS
     // ══════════════════════════════════════════════════════════════════
-    const $progSelect   = document.getElementById('audit_program_id');
-    const $detSelect    = document.getElementById('audit_program_detail_id');
-    const $list         = document.getElementById('unit-option-list');
-    const $unitSearch   = document.getElementById('unit-search');
-    const $filterKat    = document.getElementById('filter_kategori');
-    const $filterKec    = document.getElementById('filter_kecamatan');
-    const $filterShow   = document.getElementById('filter_show');
-    const $selectAllRow = document.getElementById('select-all-row');
-    const $cbAll        = document.getElementById('cb-all');
+    const $katProgSelect = document.getElementById('kategori_program');
+    const $progSelect    = document.getElementById('audit_program_id');
+    const $detSelect     = document.getElementById('audit_program_detail_id');
+    const $list          = document.getElementById('unit-option-list');
+    const $unitSearch    = document.getElementById('unit-search');
+    const $filterKat     = document.getElementById('filter_kategori');
+    const $filterKec     = document.getElementById('filter_kecamatan');
+    const $filterShow    = document.getElementById('filter_show');
+    const $selectAllRow  = document.getElementById('select-all-row');
+    const $cbAll         = document.getElementById('cb-all');
 
     if (!$progSelect || !$detSelect) return;
 
@@ -166,63 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pkptUpdateInfo(value);
     }
 
-    function pkptRenderList(query) {
-        const q = (query || '').toLowerCase().trim();
-        const matches = o => {
-            if (!q) return true;
-            return o.label.toLowerCase().includes(q)
-                || (o.jenis_kegiatan || '').toLowerCase().includes(q)
-                || (o.tim || '').toLowerCase().includes(q);
-        };
-        const filtered = pkptOptions.filter(matches);
-
-        if (!filtered.length) {
-            const empty = pkptOptions.length === 0 ? 'Pilih program audit terlebih dahulu' : 'Tidak ada hasil';
-            $pkptList.innerHTML = `<p class="px-4 py-5 text-center text-xs text-gray-400 italic">${empty}</p>`;
-            return;
-        }
-
-        if (!q && filtered.every(o => o.disabled)) {
-            $pkptList.innerHTML = `<p class="px-4 py-5 text-center text-xs text-gray-400 italic">Semua sub-program sudah memiliki penugasan</p>`;
-            return;
-        }
-
-        $pkptList.innerHTML = filtered.map(o => {
-            const isSel = o.value === $detSelect.value;
-            const labelHtml = mark(o.label, q);
-            const anggaranHtml = Number(o.anggaran) > 0 ? `<span class="shrink-0 text-[11px] font-semibold text-green-600 dark:text-green-400 ml-2">${fmtRupiah(o.anggaran)}</span>` : '';
-
-            // Saat search: tampilkan snippet di sekitar kata kunci agar tidak terpotong.
-            // Tanpa search: subtitle dipotong ringkas + tooltip teks lengkap.
-            const subPieces = [];
-            if (q) {
-                if ((o.jenis_kegiatan || '').toLowerCase().includes(q)) {
-                    subPieces.push('Kegiatan: ' + mark(snippet(o.jenis_kegiatan, q, 45), q));
-                }
-                if ((o.tim || '').toLowerCase().includes(q)) {
-                    subPieces.push('Tim: ' + mark(snippet(o.tim, q, 25), q));
-                }
-            }
-            if (!subPieces.length) {
-                if (o.jenis_kegiatan) subPieces.push('Kegiatan: ' + limit(o.jenis_kegiatan, 70));
-                if (o.tim) subPieces.push('Tim: ' + limit(o.tim, 35));
-            }
-            const subtitle = subPieces.join(' • ');
-            const subtitleTitle = [o.jenis_kegiatan ? 'Kegiatan: ' + o.jenis_kegiatan : '', o.tim ? 'Tim: ' + o.tim : ''].filter(Boolean).join('\n');
-            const subtitleHtml = subtitle ? `<span class="block text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 truncate" title="${esc(subtitleTitle)}">${subtitle}</span>` : '';
-            const rightHtml = o.disabled
-                ? `<span class="shrink-0 rounded-md bg-gray-100 px-2 py-1 text-[10px] font-bold uppercase text-gray-400 dark:bg-gray-800 dark:text-gray-500">Sudah Ada Penugasan</span>`
-                : anggaranHtml;
-            return `<div class="pkpt-opt flex items-center gap-2 px-4 py-3 cursor-pointer text-sm leading-snug transition-colors ${isSel ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/[0.04]'} ${o.disabled ? 'opacity-50 pointer-events-none' : ''}" data-value="${o.value}" data-label="${esc(o.label)}" data-jenis-kegiatan="${esc(o.jenis_kegiatan)}" data-tim="${esc(o.tim)}" data-anggaran="${o.anggaran || 0}"><span class="min-w-0 flex-1"><span class="block truncate">${labelHtml}</span>${subtitleHtml}</span>${rightHtml}</div>`;
-        }).join('');
-
-        $pkptList.querySelectorAll('.pkpt-opt').forEach(el => {
-            el.addEventListener('click', () => {
-                pkptSetValue(el.dataset.value, el.dataset.label, el.dataset.anggaran);
-                pkptClose();
-            });
-        });
-    }
+    
 
     function pkptSetOptions(opts) {
         pkptOptions = opts;
@@ -316,8 +270,115 @@ async function loadProgramDetails(programId, selectedDetailId = null) {
     }
 }
 
-    $progSelect.addEventListener('change', e => loadProgramDetails(e.target.value));
-    if (INIT_PROG_ID) loadProgramDetails(INIT_PROG_ID, INIT_DET_ID);
+    // ══════════════════════════════════════════════════════════════════
+    // 4b. CASCADING KATEGORI -> PROGRAM AUDIT & MODE BPK/BPKP
+    // ══════════════════════════════════════════════════════════════════
+    function updateBpkBpkpMode(kategori) {
+        const isBpk = ['BPK', 'BPKP'].includes(String(kategori || '').trim().toUpperCase());
+
+        const $secTitle     = document.getElementById('section2-title');
+        const $secSubtitle  = document.getElementById('section2-subtitle');
+        const $stepBadge    = document.getElementById('step2-badge');
+        const $jadwalRow    = document.getElementById('jadwal-row');
+        const $durasiInfo   = document.getElementById('durasi-info');
+        const $tglMulai     = document.getElementById('tanggal_mulai');
+        const $tglSelesai   = document.getElementById('tanggal_selesai');
+        const $dalnisWrap   = document.getElementById('dalnis-container');
+        const $ketuaWrap    = document.getElementById('ketua-tim-container');
+        const $ketuaLabel   = document.getElementById('ketua-tim-label');
+        const $memberWrap   = document.getElementById('member-picker-container');
+
+        if (isBpk) {
+            if ($secTitle) $secTitle.textContent = 'Penanggung Jawab Tindak Lanjut';
+            if ($secSubtitle) $secSubtitle.textContent = 'Tentukan personil penanggung jawab tindak lanjut untuk pemeriksaan BPK/BPKP';
+            if ($stepBadge) $stepBadge.textContent = '2. Penanggung Jawab';
+            if ($jadwalRow) $jadwalRow.classList.add('hidden');
+            if ($durasiInfo) $durasiInfo.classList.add('hidden');
+            if ($tglMulai) $tglMulai.removeAttribute('required');
+            if ($tglSelesai) $tglSelesai.removeAttribute('required');
+            if ($dalnisWrap) $dalnisWrap.classList.add('hidden');
+            if ($memberWrap) $memberWrap.classList.add('hidden');
+            if ($ketuaWrap) {
+                $ketuaWrap.classList.remove('md:col-span-1');
+                $ketuaWrap.classList.add('md:col-span-2');
+            }
+            if ($ketuaLabel) $ketuaLabel.innerHTML = 'Penanggungjawab Tindak Lanjut <span class="text-red-400">*</span>';
+        } else {
+            if ($secTitle) $secTitle.textContent = 'Jadwal & Personel';
+            if ($secSubtitle) $secSubtitle.textContent = 'Periode audit dan susunan tim pemeriksa';
+            if ($stepBadge) $stepBadge.textContent = '2. Jadwal & Tim';
+            if ($jadwalRow) $jadwalRow.classList.remove('hidden');
+            if ($tglMulai) $tglMulai.setAttribute('required', 'required');
+            if ($tglSelesai) $tglSelesai.setAttribute('required', 'required');
+            if ($dalnisWrap) $dalnisWrap.classList.remove('hidden');
+            if ($memberWrap) $memberWrap.classList.remove('hidden');
+            if ($ketuaWrap) {
+                $ketuaWrap.classList.remove('md:col-span-2');
+                $ketuaWrap.classList.add('md:col-span-1');
+            }
+            if ($ketuaLabel) $ketuaLabel.innerHTML = 'Ketua Tim <span class="text-red-400">*</span>';
+        }
+    }
+
+    function filterPrograms(selectedKat, targetProgId = '') {
+        if (!$progSelect) return;
+        const currentVal = targetProgId !== '' ? String(targetProgId) : String($progSelect.value);
+        const filtered = ALL_PROGRAMS.filter(p => !selectedKat || p.kategori === selectedKat);
+
+        $progSelect.innerHTML = '<option value="">Pilih program audit</option>' + filtered.map(p => {
+            const isSel = String(p.id) === currentVal;
+            return `<option value="${p.id}" data-kategori="${esc(p.kategori)}" ${isSel ? 'selected' : ''}>[${esc(p.kategori)}] ${esc(p.nama_program)} (${p.tahun})</option>`;
+        }).join('');
+
+        const exists = filtered.some(p => String(p.id) === currentVal);
+        if (currentVal && exists) {
+            $progSelect.value = currentVal;
+        } else {
+            $progSelect.value = '';
+            pkptSetValue('', '');
+            pkptSetOptions([]);
+        }
+    }
+
+    if ($katProgSelect) {
+        $katProgSelect.addEventListener('change', e => {
+            filterPrograms(e.target.value, '');
+            updateBpkBpkpMode(e.target.value);
+        });
+    }
+
+    $progSelect.addEventListener('change', e => {
+        const progId = e.target.value;
+        if (progId) {
+            const prog = ALL_PROGRAMS.find(p => String(p.id) === String(progId));
+            if (prog) {
+                if ($katProgSelect && !$katProgSelect.value) {
+                    $katProgSelect.value = prog.kategori;
+                }
+                updateBpkBpkpMode(prog.kategori);
+            }
+            loadProgramDetails(progId);
+        } else {
+            updateBpkBpkpMode($katProgSelect?.value || '');
+            pkptSetValue('', '');
+            pkptSetOptions([]);
+        }
+    });
+
+    if (INIT_PROG_ID) {
+        const initProg = ALL_PROGRAMS.find(p => String(p.id) === String(INIT_PROG_ID));
+        if (initProg && $katProgSelect && !$katProgSelect.value) {
+            $katProgSelect.value = initProg.kategori;
+        }
+        const effectiveKat = initProg?.kategori || $katProgSelect?.value || '';
+        filterPrograms(effectiveKat, INIT_PROG_ID);
+        updateBpkBpkpMode(effectiveKat);
+        loadProgramDetails(INIT_PROG_ID, INIT_DET_ID);
+    } else {
+        const initialKat = $katProgSelect?.value || '';
+        filterPrograms(initialKat, '');
+        updateBpkBpkpMode(initialKat);
+    }
 
     // ══════════════════════════════════════════════════════════════════
     // 5. UNIT PICKER (MULTIPLE)

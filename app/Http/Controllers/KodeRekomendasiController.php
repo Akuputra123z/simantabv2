@@ -38,7 +38,12 @@ class KodeRekomendasiController extends Controller
      */
     public function create()
     {
-        return view('pages.kode-rekomendasi.create');
+        $nextNumerik = (KodeRekomendasi::max('kode_numerik') ?? 0) + 1;
+        $data = new KodeRekomendasi([
+            'kode_numerik' => $nextNumerik
+        ]);
+
+        return view('pages.kode-rekomendasi.create', compact('data'));
     }
 
     /**
@@ -48,10 +53,16 @@ class KodeRekomendasiController extends Controller
     {
         $validated = $request->validate([
             'kode'          => 'required|string|max:10|unique:kode_rekomendasis,kode',
-            'kode_numerik'  => 'required|integer|min:1|max:999|unique:kode_rekomendasis,kode_numerik',
+            'kode_numerik'  => 'required|integer|min:1|unique:kode_rekomendasis,kode_numerik',
             'kategori'      => 'nullable|string|max:100',
             'deskripsi'     => 'nullable|string',
             'is_active'     => 'nullable|boolean',
+        ], [
+            'kode.required'         => 'Kode wajib diisi.',
+            'kode.unique'           => 'Kode ini sudah terdaftar. Silakan gunakan kode lain.',
+            'kode_numerik.required' => 'Kode numerik wajib diisi.',
+            'kode_numerik.min'      => 'Kode numerik minimal bernilai 1.',
+            'kode_numerik.unique'   => 'Kode numerik ini sudah terdaftar. Silakan gunakan angka numerik lain.',
         ]);
 
         // Fix checkbox: jika tidak dicentang, set false
@@ -64,6 +75,14 @@ class KodeRekomendasiController extends Controller
         }
 
         KodeRekomendasi::create($validated);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success'  => true,
+                'message'  => 'Data Kode Rekomendasi berhasil disimpan.',
+                'redirect' => route('kode-rekomendasi.index')
+            ]);
+        }
 
         return redirect()
             ->route('kode-rekomendasi.index')
@@ -106,11 +125,18 @@ class KodeRekomendasiController extends Controller
             'kode_numerik' => [
                 'required',
                 'integer',
+                'min:1',
                 Rule::unique('kode_rekomendasis')->ignore($kodeRekomendasi->id),
             ],
             'kategori'  => 'nullable|string|max:100',
             'deskripsi' => 'nullable|string',
             'is_active' => 'nullable|boolean',
+        ], [
+            'kode.required'         => 'Kode wajib diisi.',
+            'kode.unique'           => 'Kode ini sudah terdaftar. Silakan gunakan kode lain.',
+            'kode_numerik.required' => 'Kode numerik wajib diisi.',
+            'kode_numerik.min'      => 'Kode numerik minimal bernilai 1.',
+            'kode_numerik.unique'   => 'Kode numerik ini sudah terdaftar. Silakan gunakan angka numerik lain.',
         ]);
 
         $validated['is_active'] = $request->has('is_active');
@@ -122,6 +148,14 @@ class KodeRekomendasiController extends Controller
         }
 
         $kodeRekomendasi->update($validated);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success'  => true,
+                'message'  => 'Data Kode Rekomendasi berhasil diperbarui.',
+                'redirect' => route('kode-rekomendasi.index')
+            ]);
+        }
 
         return redirect()
             ->route('kode-rekomendasi.index')

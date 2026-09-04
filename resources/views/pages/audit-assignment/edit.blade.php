@@ -84,57 +84,77 @@
                 </div>
             </div>
 
-            <div class="p-6 space-y-8">
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {{-- Program Audit --}}
+            <div class="p-6 space-y-6">
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    {{-- 1. Kategori Program Audit --}}
                     <div class="space-y-1.5">
-                        <label for="audit_program_id" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Program Audit <span class="text-red-400">*</span></label>
-                        <select id="audit_program_id" name="audit_program_id" data-no-ts required
+                        <label for="kategori_program" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                            <span>Kategori Program</span>
+                            <span class="text-[10px] font-semibold text-blue-600 dark:text-blue-400">Langkah 1</span>
+                        </label>
+                        <select id="kategori_program" name="kategori_program" data-no-ts
                             class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
-                            <option value="">Pilih program audit</option>
-                            @foreach($programs as $p)
-                                <option value="{{ $p->id }}" @selected(old('audit_program_id', $data->auditProgramDetail?->audit_program_id) == $p->id)>{{ $p->nama_program }} ({{ $p->tahun }})</option>
+                            <option value="">Semua Kategori</option>
+                            @foreach($programCategories as $cat)
+                                <option value="{{ $cat }}" @selected(old('kategori_program', $data->auditProgramDetail?->auditProgram?->kategori) == $cat)>{{ $cat }}</option>
                             @endforeach
                         </select>
                     </div>
 
-                    {{-- PKPT / Detail Program (2x lebar) --}}
-                    <div class="space-y-3 lg:col-span-2">
-                        <div class="space-y-1.5">
-                            <label for="audit_program_detail_id" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">PKPT / Detail Program <span class="text-red-400">*</span></label>
-                            <select id="audit_program_detail_id" name="audit_program_detail_id" data-no-ts required
-                                class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
-                                @if($data->audit_program_detail_id)
-                                    <option value="{{ $data->audit_program_detail_id }}" selected>
-                                        {{ $data->auditProgramDetail?->nama_detail_program ?? 'Data terpilih' }}
-                                    </option>
-                                @else
-                                    <option value="">Pilih detail setelah memilih program</option>
-                                @endif
-                            </select>
-                            <div id="pkpt-info" class="hidden"></div>
+                    {{-- 2. Program Audit --}}
+                    <div class="space-y-1.5 md:col-span-2">
+                        <label for="audit_program_id" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                            <span>Program Audit <span class="text-red-400">*</span></span>
+                            <span class="text-[10px] font-semibold text-blue-600 dark:text-blue-400">Langkah 2</span>
+                        </label>
+                        <select id="audit_program_id" name="audit_program_id" data-no-ts required
+                            class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
+                            <option value="">Pilih program audit</option>
+                            @foreach($programs as $p)
+                                <option value="{{ $p->id }}" data-kategori="{{ $p->kategori }}" @selected(old('audit_program_id', $data->auditProgramDetail?->audit_program_id) == $p->id)>
+                                    [{{ $p->kategori }}] {{ $p->nama_program }} ({{ $p->tahun }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- 3. PKPT / Detail Program (Full width) --}}
+                    <div class="space-y-1.5 md:col-span-3">
+                        <label for="audit_program_detail_id" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                            <span>PKPT / Detail Program <span class="text-red-400">*</span></span>
+                            <span class="text-[10px] font-semibold text-blue-600 dark:text-blue-400">Langkah 3</span>
+                        </label>
+                        <select id="audit_program_detail_id" name="audit_program_detail_id" data-no-ts required
+                            class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
+                            @if($data->audit_program_detail_id)
+                                <option value="{{ $data->audit_program_detail_id }}" selected>
+                                    {{ $data->auditProgramDetail?->nama_detail_program ?? 'Data terpilih' }}
+                                </option>
+                            @else
+                                <option value="">Pilih detail setelah memilih program</option>
+                            @endif
+                        </select>
+                        <div id="pkpt-info" class="hidden"></div>
+                    </div>
+
+                    {{-- 4. Anggaran Disetujui (Rp) --}}
+                    <div class="space-y-1.5">
+                        <label for="anggaran_disetujui" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Anggaran Disetujui (Rp)</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">Rp</span>
+                            <input type="text" name="anggaran_disetujui" id="anggaran_disetujui" inputmode="numeric"
+                                value="{{ old('anggaran_disetujui', $data->anggaran_disetujui ?? 0) }}"
+                                placeholder="0"
+                                class="h-11 w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
                         </div>
                     </div>
 
-                    {{-- Anggaran Disetujui + Nomor Surat (sejajar) --}}
-                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:col-span-2">
-                        <div class="space-y-1.5">
-                            <label for="anggaran_disetujui" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Anggaran Disetujui (Rp)</label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">Rp</span>
-                                <input type="text" name="anggaran_disetujui" id="anggaran_disetujui" inputmode="numeric"
-                                    value="{{ old('anggaran_disetujui', $data->anggaran_disetujui ?? 0) }}"
-                                    placeholder="0"
-                                    class="h-11 w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
-                            </div>
-                        </div>
-
-                        <div class="space-y-1.5">
-                            <label for="nomor_surat" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Nomor Surat Tugas <span class="text-red-400">*</span></label>
-                            <input type="text" name="nomor_surat" id="nomor_surat" value="{{ old('nomor_surat', $data->nomor_surat) }}"
-                                placeholder="700/001/INSPEKTORAT/2026"
-                                class="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all" required>
-                        </div>
+                    {{-- 5. Nomor Surat Tugas --}}
+                    <div class="space-y-1.5 md:col-span-2">
+                        <label for="nomor_surat" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Nomor Surat Tugas <span class="text-red-400">*</span></label>
+                        <input type="text" name="nomor_surat" id="nomor_surat" value="{{ old('nomor_surat', $data->nomor_surat) }}"
+                            placeholder="700/001/INSPEKTORAT/2026"
+                            class="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all" required>
                     </div>
                 </div>
 
@@ -193,7 +213,7 @@
         </div>
 
         {{-- ══ SECTION 2: Jadwal & Personel ══ --}}
-        <div class="audit-card border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] shadow-sm">
+        <div id="section2-card" class="audit-card border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] shadow-sm">
             <div class="flex items-center gap-3 border-b border-gray-100 bg-gray-50/30 px-6 py-4 dark:border-gray-800 dark:bg-white/[0.02] rounded-t-2xl">
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
                     <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -201,13 +221,14 @@
                     </svg>
                 </div>
                 <div>
-                    <h3 class="text-base font-bold text-gray-800 dark:text-gray-100">Jadwal & Personel</h3>
-                    <p class="text-xs text-gray-400 font-medium">Periode audit dan susunan tim pemeriksa</p>
+                    <h3 id="section2-title" class="text-base font-bold text-gray-800 dark:text-gray-100">Jadwal & Personel</h3>
+                    <p id="section2-subtitle" class="text-xs text-gray-400 font-medium">Periode audit dan susunan tim pemeriksa</p>
                 </div>
             </div>
 
             <div class="p-6 space-y-6">
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                {{-- Row 1: Jadwal & Status (Hidden jika BPK/BPKP) --}}
+                <div id="jadwal-row" class="grid grid-cols-1 gap-6 sm:grid-cols-3">
                     <div class="space-y-1.5">
                         <label for="tanggal_mulai" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Tanggal Mulai <span class="text-red-400">*</span></label>
                         <input type="date" name="tanggal_mulai" id="tanggal_mulai" required
@@ -239,11 +260,12 @@
                     </span>
                 </div>
 
+                {{-- Row 2: Personel / Penanggung Jawab --}}
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     @php $ketuaTimUsers = $ketuaTim->map(fn($u) => ['id' => $u->id, 'name' => $u->name])->values(); @endphp
-                    <div class="space-y-1.5"
+                    <div id="ketua-tim-container" class="space-y-1.5 md:col-span-1 transition-all"
                          x-data='ketuaSelect(@json($ketuaTimUsers), @json(old("ketua_tim_id", $data->ketua_tim_id)))'>
-                        <label class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Ketua Tim <span class="text-red-400">*</span></label>
+                        <label id="ketua-tim-label" class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Ketua Tim <span class="text-red-400">*</span></label>
                         <div class="relative">
                             <input type="hidden" name="ketua_tim_id" x-model="selectedId">
                             <button type="button" @click="open = !open" @keydown.escape="open = false"
@@ -251,7 +273,7 @@
                                 :class="open ? 'border-blue-500 ring-4 ring-blue-500/10' : ''">
                                 <span class="flex-1 text-left truncate"
                                       :class="selectedId ? 'text-gray-900 dark:text-white' : 'text-gray-400'"
-                                      x-text="selectedId ? (users.find(u => u.id == selectedId)?.name ?? 'Pilih ketua tim') : 'Pilih ketua tim'">
+                                      x-text="selectedId ? (users.find(u => u.id == selectedId)?.name ?? 'Pilih nama pegawai') : 'Pilih nama pegawai'">
                                 </span>
                                 <svg class="h-4 w-4 text-gray-500 transition-transform shrink-0" :class="{'rotate-180': open}"
                                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +285,7 @@
                                  class="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
                                 <div class="sticky top-0 bg-white dark:bg-gray-900 p-2 border-b border-gray-100 dark:border-gray-700">
                                     <input type="text" x-model="search" @input="open = true"
-                                           placeholder="Cari ketua tim..."
+                                           placeholder="Cari nama pegawai..."
                                            class="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500">
                                 </div>
                                 <ul class="py-1">
@@ -283,15 +305,15 @@
                                         </li>
                                     </template>
                                     <li x-show="filteredUsers.length === 0">
-                                        <p class="px-4 py-3 text-xs text-gray-400 text-center">Tidak ada ketua tim ditemukan</p>
+                                        <p class="px-4 py-3 text-xs text-gray-400 text-center">Tidak ada pegawai ditemukan</p>
                                     </li>
                                 </ul>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Pengendali Teknis --}}
-                    <div class="space-y-1.5"
+                    {{-- Pengendali Teknis (Hidden jika BPK/BPKP) --}}
+                    <div id="dalnis-container" class="space-y-1.5 md:col-span-1"
                          x-data='ketuaSelect(@json($ketuaTimUsers), @json(old("pengendali_teknis_id", $data->pengendali_teknis_id)))'>
                         <label class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pengendali Teknis (Dalnis)</label>
                         <div class="relative">
@@ -341,11 +363,13 @@
                     </div>
                 </div>
 
-                {{-- Member Picker --}}
-                @include('pages.audit-assignment.partials._member_picker', [
-                    'members' => $members,
-                    'preselected' => old('members', $data->members->pluck('id')->toArray())
-                ])
+                {{-- Member Picker (Hidden jika BPK/BPKP) --}}
+                <div id="member-picker-container">
+                    @include('pages.audit-assignment.partials._member_picker', [
+                        'members' => $members,
+                        'preselected' => old('members', $data->members->pluck('id')->toArray())
+                    ])
+                </div>
             </div>
         </div>
 

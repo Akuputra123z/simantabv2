@@ -179,8 +179,12 @@
     </dl>
 </div>
 
+@php
+    $progKategori = strtoupper($data->auditProgramDetail?->auditProgram?->kategori ?? '');
+    $isBpkBpkp = in_array($progKategori, ['BPK', 'BPKP']);
+@endphp
 
-
+@if(!$isBpkBpkp)
     {{-- CARD: Jadwal --}}
     <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
         <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Jadwal</h3>
@@ -208,25 +212,25 @@
             </div>
         </dl>
     </div>
+@endif
 
-   {{-- CARD: Tim Audit --}}
-<div class="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
-    <div class="flex items-center justify-between border-b border-gray-100 pb-4 dark:border-gray-800">
-        <div>
-            <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">Tim Audit</h3>
-            <p class="text-sm text-gray-500">Struktur personil penugasan</p>
-        </div>
-        <div class="text-right">
-            <dt class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Total Personil</dt>
-            <dd class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ ($data->members->count() + ($data->ketuaTim ? 1 : 0)) }} Orang</dd>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
-        {{-- Kiri: Ketua Tim & Info Waktu --}}
-        <div class="lg:col-span-4 space-y-6">
+{{-- CARD: Tim Audit / Penanggung Jawab --}}
+@if($isBpkBpkp)
+    <div class="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4 dark:border-gray-800">
             <div>
-                <p class="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">Ketua Tim (Penanggung Jawab)</p>
+                <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">Penanggung Jawab Tindak Lanjut</h3>
+                <p class="text-sm text-gray-500">Personil penanggung jawab tindak lanjut hasil pemeriksaan {{ $progKategori }}</p>
+            </div>
+            <div class="text-right">
+                <dt class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Penanggung Jawab</dt>
+                <dd class="text-base font-bold text-blue-600 dark:text-blue-400">1 Orang</dd>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div>
+                <p class="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">Penanggungjawab Tindak Lanjut</p>
                 @if($data->ketuaTim)
                     <div class="group flex items-center gap-4 rounded-xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
                         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white shadow-blue-200 dark:shadow-none">
@@ -256,40 +260,90 @@
                 </div>
             </div>
         </div>
+    </div>
+@else
+    <div class="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4 dark:border-gray-800">
+            <div>
+                <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">Tim Audit</h3>
+                <p class="text-sm text-gray-500">Struktur personil penugasan</p>
+            </div>
+            <div class="text-right">
+                <dt class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Total Personil</dt>
+                <dd class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ ($data->members->count() + ($data->ketuaTim ? 1 : 0)) }} Orang</dd>
+            </div>
+        </div>
 
-        {{-- Kanan: Anggota Tim (Scrollable Grid) --}}
-        <div class="lg:col-span-8">
-            <p class="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Anggota Tim 
-                <span class="ml-2 text-blue-500">({{ $data->members->count() }})</span>
-            </p>
-            
-            @if($data->members->count())
-                <div class="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        @foreach($data->members as $member)
-                        <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
-                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                                {{ strtoupper(substr($member->name, 0, 1)) }}
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+            {{-- Kiri: Ketua Tim & Info Waktu --}}
+            <div class="lg:col-span-4 space-y-6">
+                <div>
+                    <p class="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">Ketua Tim (Penanggung Jawab)</p>
+                    @if($data->ketuaTim)
+                        <div class="group flex items-center gap-4 rounded-xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
+                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white shadow-blue-200 dark:shadow-none">
+                                {{ strtoupper(substr($data->ketuaTim->name, 0, 1)) }}
                             </div>
                             <div class="min-w-0">
-                                <p class="truncate text-sm font-semibold text-gray-800 dark:text-white">{{ $member->name }}</p>
-                                <p class="text-[10px] uppercase tracking-tighter text-gray-400">
-                                    {{ $member->pivot->jabatan_tim ?? 'Anggota Pemeriksa' }}
-                                </p>
+                                <p class="truncate text-sm font-bold text-gray-800 dark:text-white">{{ $data->ketuaTim->name }}</p>
+                                <p class="truncate text-xs text-gray-500">{{ $data->ketuaTim->email }}</p>
                             </div>
                         </div>
-                        @endforeach
+                    @else
+                        <p class="text-sm italic text-gray-400">Belum ditentukan</p>
+                    @endif
+                </div>
+
+                <div class="rounded-xl border border-gray-100 bg-gray-50/50 p-4 dark:border-gray-800 dark:bg-black/10">
+                    <p class="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">Log Aktivitas</p>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-500">Dibuat</span>
+                            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ $data->created_at->translatedFormat('d M Y, H:i') }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-500">Update terakhir</span>
+                            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ $data->updated_at->translatedFormat('d M Y, H:i') }}</span>
+                        </div>
                     </div>
                 </div>
-            @else
-                <div class="flex h-[100px] items-center justify-center rounded-xl border-2 border-dashed border-gray-100 dark:border-gray-800">
-                    <p class="text-sm text-gray-400 italic">Tidak ada anggota tim yang terdaftar</p>
-                </div>
-            @endif
+            </div>
+
+            {{-- Kanan: Anggota Tim (Scrollable Grid) --}}
+            <div class="lg:col-span-8">
+                <p class="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Anggota Tim 
+                    <span class="ml-2 text-blue-500">({{ $data->members->count() }})</span>
+                </p>
+                
+                @if($data->members->count())
+                    <div class="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            @foreach($data->members as $member)
+                            <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                    {{ strtoupper(substr($member->name, 0, 1)) }}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-semibold text-gray-800 dark:text-white">{{ $member->name }}</p>
+                                    <p class="text-[10px] uppercase tracking-tighter text-gray-400">
+                                        {{ $member->pivot->jabatan_tim ?? 'Anggota Pemeriksa' }}
+                                    </p>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <div class="flex h-[100px] items-center justify-center rounded-xl border-2 border-dashed border-gray-100 dark:border-gray-800">
+                        <p class="text-sm text-gray-400 italic">Tidak ada anggota tim yang terdaftar</p>
+                    </div>
+                @endif
+            </div>
         </div>
     </div>
-</div>
+@endif
+
     {{-- CARD: Detail Program --}}
     @if($data->auditProgramDetail)
     <div class="rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">

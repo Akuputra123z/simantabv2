@@ -82,7 +82,7 @@
             @foreach($temuan->attachments as $file)
             <div class="flex items-center justify-between">
                 <span class="text-sm text-gray-700 dark:text-gray-300">{{ $file->file_name }}</span>
-                <a href="{{ Storage::url($file->file_path) }}" target="_blank"
+                <a href="{{ route('attachments.download', $file->id) }}" target="_blank"
                    class="text-xs font-medium text-indigo-600 hover:text-indigo-800">Download</a>
             </div>
             @endforeach

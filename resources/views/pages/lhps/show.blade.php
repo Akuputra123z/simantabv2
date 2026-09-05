@@ -835,7 +835,7 @@ $totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
 
                         @foreach($lhp->attachments as $attachment)
 
-                            <a href="{{ Storage::url($attachment->file_path) }}"
+                            <a href="{{ route('attachments.show', $attachment->id) }}"
                                target="_blank"
                                class="group flex items-center gap-3 rounded-xl border border-gray-100 p-3 transition hover:border-blue-200 hover:bg-blue-50/30 dark:border-gray-800 dark:hover:border-blue-900 dark:hover:bg-blue-900/10">
 

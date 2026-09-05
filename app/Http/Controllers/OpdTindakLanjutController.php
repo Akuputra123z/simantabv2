@@ -100,7 +100,7 @@ class OpdTindakLanjutController extends Controller
             if ($request->hasFile('attachments')) {
                 foreach ($request->file('attachments') as $i => $file) {
                     if ($file && $file->isValid()) {
-                        $path = $file->store('attachments/opd-upload', 'public');
+                        $path = $file->store('attachments/opd-upload', 'local');
                         $tindakLanjut->attachments()->create([
                             'file_path'   => $path,
                             'file_name'   => $file->getClientOriginalName(),

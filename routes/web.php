@@ -166,7 +166,9 @@ Route::middleware(['auth', 'active'])->prefix('laporan')->name('laporan.')->grou
     Route::get('/download/pdf/{lhp}', [LaporanController::class, 'downloadPdfPerLhp'])->name('download-pdf-per-lhp');
     Route::get('/preview/pdf/{lhp}', [LaporanController::class, 'previewPdfPerLhp'])->name('preview-pdf-per-lhp');
     Route::get('/download/excel/semua', [LaporanController::class, 'downloadExcelSemua'])->name('download-excel-semua');
-    Route::get('/download/excel/{lhp}', [LaporanController::class, 'downloadExcelPerLhp'])->name('download-excel-per-lhp');
+    // ── Secure Lampiran Berkas ──
+    Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])->name('attachments.download');
+    Route::get('/attachments/{attachment}/view', [AttachmentController::class, 'show'])->name('attachments.show');
 });
 
 // --- GRUP 4: OPD (User Eksternal) ---

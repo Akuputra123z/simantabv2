@@ -98,7 +98,7 @@ class TemuanController extends Controller
             if ($request->has('attachments')) {
                 foreach ($request->attachments as $index => $attach) {
                     if (isset($attach['file'])) {
-                        $path = $attach['file']->store('attachments/temuan', 'public');
+                        $path = $attach['file']->store('attachments/temuan', 'local');
                         $temuan->attachments()->create([
                             'file_path'   => $path,
                             'file_name'   => $attach['name'] ?? $attach['file']->getClientOriginalName(),
@@ -233,7 +233,7 @@ public function update(Request $request, Temuan $temuan)
             $existingCount = $temuan->attachments()->count();
             foreach ($request->file('new_attachments') as $i => $file) {
                 if ($file && $file->isValid()) {
-                    $path = $file->store('attachments/temuan', 'public');
+                    $path = $file->store('attachments/temuan', 'local');
                     $temuan->attachments()->create([
                         'file_path'   => $path,
                         'file_name'   => $file->getClientOriginalName(),
@@ -297,7 +297,7 @@ public function update(Request $request, Temuan $temuan)
     {
         foreach ($attachments as $index => $attach) {
             if (isset($attach['file'])) {
-                $path = $attach['file']->store('attachments/temuan', 'public');
+                $path = $attach['file']->store('attachments/temuan', 'local');
                 $temuan->attachments()->create([
                     'file_path'   => $path,
                 'file_name'   => $attach['name'] ?? $attach['file']->getClientOriginalName(),

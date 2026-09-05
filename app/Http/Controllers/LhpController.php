@@ -208,7 +208,7 @@ public function getTemuans($lhpId) {
         if (! empty($request->attachments)) {
             foreach ($request->attachments as $item) {
                 if (isset($item['file_path']) && $item['file_path'] instanceof \Illuminate\Http\UploadedFile) {
-                    $path = $item['file_path']->store('lhp/attachments', 'public');
+                    $path = $item['file_path']->store('lhp/attachments', 'local');
                     $lhp->attachments()->create([
                         'file_path'   => $path,
                         'file_name'   => $item['file_name'] ?? $item['file_path']->getClientOriginalName(),
@@ -416,7 +416,7 @@ public function update(Request $request, Lhp $lhp)
                     isset($item['file_path']) &&
                     $item['file_path'] instanceof \Illuminate\Http\UploadedFile
                 ) {
-                    $path = $item['file_path']->store('lhp/attachments', 'public');
+                    $path = $item['file_path']->store('lhp/attachments', 'local');
                     $lhp->attachments()->create([
                         'file_path'   => $path,
                         'file_name'   => $item['file_name'] ?? $item['file_path']->getClientOriginalName(),

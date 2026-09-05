@@ -156,7 +156,7 @@ class TindakLanjutController extends Controller
             if ($request->hasFile('attachments')) {
                 foreach ($request->file('attachments') as $i => $file) {
                     if ($file && $file->isValid()) {
-                        $path = $file->store('attachments/tindak-lanjut', 'public');
+                        $path = $file->store('attachments/tindak-lanjut', 'local');
                         $tindakLanjut->attachments()->create([
                             'file_path'   => $path,
                             'file_name'   => $file->getClientOriginalName(),
@@ -272,7 +272,7 @@ class TindakLanjutController extends Controller
                 $existingCount = $tindakLanjut->attachments()->count();
                 foreach ($request->file('new_attachments') as $i => $file) {
                     if ($file && $file->isValid()) {
-                        $path = $file->store('attachments/tindak-lanjut', 'public');
+                        $path = $file->store('attachments/tindak-lanjut', 'local');
                         $tindakLanjut->attachments()->create([
                             'file_path'   => $path,
                             'file_name'   => $file->getClientOriginalName(),

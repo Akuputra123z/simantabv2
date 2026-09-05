@@ -176,7 +176,7 @@
         </div>
         <div class="space-y-6 border-t border-gray-100 p-5 sm:p-6 dark:border-gray-800">
             @foreach($tindakLanjut->attachments as $att)
-            <a href="{{ Storage::url($att->file_path) }}" target="_blank"
+            <a href="{{ route('attachments.show', $att->id) }}" target="_blank"
                class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300 dark:hover:text-blue-400">
                 <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span class="truncate">{{ $att->file_name }}</span>

@@ -74,8 +74,8 @@
                         <input type="checkbox" id="check-all"
                             class="h-4 w-4 rounded border-gray-300 text-blue-600 cursor-pointer">
                     </th>
-                    <th class="px-5 py-3.5 w-[24%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nomor LHP &amp; Program</th>
-                    <th class="px-5 py-3.5 w-[18%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Penugasan Audit</th>
+                    <th class="px-5 py-3.5 w-[24%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nama Program</th>
+                    <th class="px-5 py-3.5 w-[18%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nomor LHP</th>
                     <th class="px-5 py-3.5 w-[12%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Unit</th>
                     <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Tanggal</th>
                     <th class="px-5 py-3.5 w-[12%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Progress TL</th>
@@ -111,24 +111,34 @@
                             class="check-item h-4 w-4 rounded border-gray-300 cursor-pointer">
                     </td>
 
-                    {{-- Nomor LHP & Program --}}
+                    {{-- Nama Program --}}
                     <td class="px-5 py-4">
-                        <div class="text-sm font-bold text-gray-900 dark:text-white">{{ $lhp->nomor_lhp }}</div>
-                        <div class="text-[11px] text-gray-400 mt-0.5">
+                        <div class="text-sm font-bold text-gray-900 dark:text-white leading-snug">
                             {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
                         </div>
-                        <div class="flex flex-wrap gap-1 mt-1">
+                        @if($lhp->auditAssignment?->auditProgramDetail?->nama_detail_program)
+                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                            {{ $lhp->auditAssignment->auditProgramDetail->nama_detail_program }}
+                        </div>
+                        @endif
+                        <div class="flex flex-wrap gap-1 mt-1.5">
                             @if($lhp->auditAssignment?->auditProgramDetail?->tim)
                             <span class="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-[9px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30">
                                 Irban: {{ $lhp->auditAssignment->auditProgramDetail->tim }}
                             </span>
                             @endif
-                            @if($lhp->status)
-                            <span class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[9px] font-semibold text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-                                {{ ucfirst($lhp->status) }}
+                            @if($lhp->auditAssignment?->nomor_surat)
+                            <span class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[9px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700" title="Nomor Penugasan">
+                                Surat: {{ $lhp->auditAssignment->nomor_surat }}
                             </span>
                             @endif
                         </div>
+                    </td>
+
+                    {{-- Nomor LHP --}}
+                    <td class="px-5 py-4">
+                        <div class="text-sm font-bold text-gray-900 dark:text-white font-mono">{{ $lhp->nomor_lhp }}</div>
+                        
                         <div class="flex flex-wrap gap-1 mt-1.5">
                             <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                                 {{ $lhp->statistik?->total_temuan ?? 0 }} temuan
@@ -136,20 +146,6 @@
                             <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                                 {{ $lhp->statistik?->total_rekomendasi ?? 0 }} rekom
                             </span>
-                        </div>
-                    </td>
-
-                    {{-- Penugasan Audit --}}
-                    <td class="px-5 py-4">
-                        <div class="text-[11px] leading-snug text-gray-600 dark:text-gray-400">
-                            @if($lhp->auditAssignment)
-                                <div class="font-medium text-gray-800 dark:text-gray-200">{{ $lhp->auditAssignment->nomor_surat }}</div>
-                                @if($lhp->auditAssignment->nama_tim)
-                                    <div class="text-[10px] text-gray-400 mt-0.5">Tim: {{ $lhp->auditAssignment->nama_tim }}</div>
-                                @endif
-                            @else
-                                <span class="italic text-gray-300">-</span>
-                            @endif
                         </div>
                     </td>
 

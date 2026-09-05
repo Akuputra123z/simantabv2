@@ -4,633 +4,2185 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Masuk — SIPUAS Inspektorat Kabupaten Rembang</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
-  :root{
-    --ink-black:#0A0D12;
-    --ink-panel:#11151C;
-    --teal:#22D3B8;
-    --amber:#F0A93B;
-    --coral:#E8674F;
-    --paper:#F7F7F5;
-    --slate-900:#171B22;
-    --slate-600:#5B6472;
-    --slate-300:#D7DAE0;
-    --slate-100:#EEEFF1;
-  }
-  *{box-sizing:border-box; margin:0; padding:0;}
-  html,body{height:100%;}
-  body{
-    font-family:'Inter', sans-serif;
-    display:flex;
+:root{
+    --primary:#1558B0;
+    --primary-dark:#0B3D82;
+    --primary-deep:#062E68;
+    --primary-light:#EAF3FF;
+
+    --gold:#F6C343;
+    --gold-dark:#E7A900;
+
+    --text:#14213D;
+    --muted:#64748B;
+    --border:#E2E8F0;
+
+    --white:#FFFFFF;
+    --background:#F4F7FB;
+
+    --danger:#DC4A4A;
+    --success:#16A36A;
+}
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+html,
+body{
+    min-height:100%;
+}
+
+body{
+    font-family:'Inter',sans-serif;
+    background:var(--background);
+    color:var(--text);
     min-height:100vh;
-    background:var(--paper);
-    color:var(--slate-900);
-    overflow:hidden;
-  }
-
-  /* ===== LEFT: 3D STAGE ===== */
-  .stage{
-    position:relative;
-    flex:1 1 56%;
-    background:
-      radial-gradient(ellipse at 30% 20%, rgba(34,211,184,0.10), transparent 55%),
-      radial-gradient(ellipse at 75% 80%, rgba(240,169,59,0.08), transparent 50%),
-      var(--ink-black);
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-    min-height:100vh;
-  }
-
-  .scene3d{
-    position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center;
-    perspective:1200px;
-    z-index:1;
-    pointer-events:none;
-  }
-  .gem{
-    position:relative;
-    width:260px; height:260px;
-    transform-style:preserve-3d;
-    animation:spinGem 14s linear infinite;
-  }
-  @keyframes spinGem{
-    from{ transform:rotateY(0deg) rotateX(-18deg); }
-    to{ transform:rotateY(360deg) rotateX(-18deg); }
-  }
-  .facet{
-    position:absolute;
-    top:50%; left:50%;
-    width:150px; height:150px;
-    margin:-75px 0 0 -75px;
-    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-    opacity:0.92;
-    backface-visibility:visible;
-    box-shadow: 0 0 40px rgba(34,211,184,0.15);
-  }
-  .facet.f1{ background:linear-gradient(135deg, #2FE3C6, #1AA98F); transform: rotateY(0deg)   translateZ(90px); }
-  .facet.f2{ background:linear-gradient(135deg, #23B39C, #14806D); transform: rotateY(60deg)  translateZ(90px); }
-  .facet.f3{ background:linear-gradient(135deg, #F2B75A, #D98F1F); transform: rotateY(120deg) translateZ(90px); }
-  .facet.f4{ background:linear-gradient(135deg, #EF8B62, #D85C36); transform: rotateY(180deg) translateZ(90px); }
-  .facet.f5{ background:linear-gradient(135deg, #23B39C, #14806D); transform: rotateY(240deg) translateZ(90px); }
-  .facet.f6{ background:linear-gradient(135deg, #2FE3C6, #1AA98F); transform: rotateY(300deg) translateZ(90px); }
-  .facet.top{
-    background:linear-gradient(135deg, #F6D488, #F0A93B);
-    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
-    transform: rotateX(90deg) translateZ(90px);
-  }
-  .facet.bottom{
-    background:linear-gradient(135deg, #163B36, #0C2422);
-    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
-    transform: rotateX(-90deg) translateZ(90px);
-  }
-  .ring{
-    position:absolute; top:50%; left:50%;
-    width:340px; height:340px;
-    margin:-170px 0 0 -170px;
-    border:1px solid rgba(34,211,184,0.35);
-    border-radius:50%;
-    transform-style:preserve-3d;
-    animation:spinRing 22s linear infinite reverse;
-  }
-  @keyframes spinRing{
-    from{ transform:rotateX(78deg) rotateZ(0deg); }
-    to{ transform:rotateX(78deg) rotateZ(360deg); }
-  }
-  .ring::before, .ring::after{
-    content:'';
-    position:absolute;
-    width:10px; height:10px;
-    border-radius:50%;
-    background:var(--amber);
-    box-shadow:0 0 12px var(--amber);
-    top:-5px; left:calc(50% - 5px);
-  }
-  .ring::after{
-    background:var(--teal);
-    box-shadow:0 0 12px var(--teal);
-    top:auto; bottom:-5px;
-    left:calc(50% - 5px);
-  }
-  .glow-floor{
-    position:absolute; bottom:-40px; left:50%;
-    width:380px; height:90px;
-    transform:translateX(-50%);
-    background:radial-gradient(ellipse at center, rgba(34,211,184,0.28), transparent 70%);
-    filter:blur(6px);
-  }
-
-  .stage-top{
-    position:relative; z-index:2;
-    display:flex; align-items:center; gap:10px;
-    padding:36px 44px 0;
-  }
-  .mark{
-    width:28px; height:28px;
-    background:linear-gradient(135deg, var(--teal), var(--amber));
-    border-radius:7px;
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  }
-  .brand-tag{
-    font-family:'JetBrains Mono', monospace;
-    font-size:12px; letter-spacing:.14em; color:var(--slate-300);
-    text-transform:uppercase;
-  }
-
-  .stage-bottom{
-    position:relative; z-index:2;
-    padding:0 44px 48px;
-  }
-  .stage-bottom h1{
-    font-family:'Space Grotesk', sans-serif;
-    font-weight:600;
-    font-size:clamp(30px, 3.6vw, 46px);
-    line-height:1.08;
-    color:#fff;
-    letter-spacing:-0.01em;
-    max-width:9.5ch;
-  }
-
-  .title-3d-wrap{
-    perspective:900px;
-    margin-bottom:2px;
-  }
-  .title-3d{
-    display:inline-block;
-    font-family:'Space Grotesk', sans-serif;
-    font-weight:700;
-    font-size:clamp(26px, 2.7vw, 38px);
-    line-height:1.14;
-    letter-spacing:0.01em;
-    color:#F4FBFA;
-    max-width:11.5ch;
-    min-height:2.3em;
-    transform:rotateX(10deg) rotateY(-4deg);
-    transform-style:preserve-3d;
-    text-shadow:
-      1px 1px 0   #1AA98F,
-      2px 2px 0   #17967F,
-      3px 3px 0   #14806D,
-      4px 4px 0   #116C5C,
-      5px 5px 0   #0E5A4D,
-      6px 6px 0   #0B4A3F,
-      7px 7px 0   #093C33,
-      8px 8px 10px rgba(0,0,0,0.55),
-      0 0 26px rgba(34,211,184,0.35);
-    animation:titleFloat 6s ease-in-out infinite;
-  }
-  @keyframes titleFloat{
-    0%, 100%{ transform:rotateX(10deg) rotateY(-4deg) translateY(0px); }
-    50%{ transform:rotateX(10deg) rotateY(-4deg) translateY(-5px); }
-  }
-  .title-eyebrow{
-    font-family:'JetBrains Mono', monospace;
-    font-size:11px;
-    letter-spacing:.16em;
-    text-transform:uppercase;
-    color:var(--amber);
-    margin-bottom:10px;
-    min-height:14px;
-  }
-
-  .tw-cursor{
-    display:inline-block;
-    width:2px;
-    margin-left:2px;
-    background:currentColor;
-    animation:twBlink 0.85s steps(1) infinite;
-    vertical-align:-0.05em;
-  }
-  .tw-cursor.on-eyebrow{ height:11px; background:var(--amber); }
-  .tw-cursor.on-title{ height:0.85em; background:var(--teal); }
-  .tw-cursor.on-sub{ height:14px; background:var(--slate-300); }
-  .tw-cursor.done{ animation:twBlink 0.85s steps(1) infinite; }
-  @keyframes twBlink{
-    0%, 49%{ opacity:1; }
-    50%, 100%{ opacity:0; }
-  }
-  .stage-bottom .sub{
-    margin-top:14px;
-    font-size:15px;
-    color:var(--slate-300);
-    max-width:34ch;
-    line-height:1.55;
-  }
-  .stage-foot{
-    margin-top:28px;
-    display:flex; gap:22px;
-    font-family:'JetBrains Mono', monospace;
-    font-size:11px;
-    color:#586071;
-    letter-spacing:.04em;
-  }
-  .stage-foot span{ display:flex; align-items:center; gap:6px; }
-  .dot{width:6px;height:6px;border-radius:50%;background:var(--teal); box-shadow:0 0 8px var(--teal);}
-
-  /* ===== RIGHT: FORM ===== */
-  .panel{
-    flex:1 1 44%;
-    max-width:560px;
     display:flex;
     align-items:center;
     justify-content:center;
-    padding:40px;
-    background:var(--paper);
+    padding:24px;
+    transition:background-color .3s ease, color .3s ease;
+}
+
+/* =========================================================
+   DARK MODE OVERRIDES
+========================================================= */
+body.dark {
+    --background: #0B132B;
+    --text: #F1F5F9;
+    --muted: #94A3B8;
+    --border: #334155;
+    background: #0B132B;
+    color: #F1F5F9;
+}
+
+body.dark .login-shell {
+    background: #1C2541;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+}
+
+body.dark .form-panel {
+    background: #1C2541;
+}
+
+body.dark .form-header h2 {
+    color: #FFFFFF;
+}
+
+body.dark .form-header p {
+    color: #94A3B8;
+}
+
+body.dark .tenant-label {
+    color: #E2E8F0;
+}
+
+body.dark .tenant-card {
+    background: #111827;
+    border-color: #374151;
+}
+
+body.dark .tenant-name {
+    color: #F9FAFB;
+}
+
+body.dark .tenant-meta {
+    color: #9CA3AF;
+}
+
+body.dark .field label {
+    color: #E2E8F0;
+}
+
+body.dark .input-group {
+    background: #111827;
+    border-color: #374151;
+}
+
+body.dark .input-group input {
+    color: #F9FAFB;
+}
+
+body.dark .input-group input::placeholder {
+    color: #6B7280;
+}
+
+body.dark .security-note {
+    background: #111827;
+    color: #9CA3AF;
+}
+
+body.dark .form-footer {
+    border-top-color: #374151;
+    color: #6B7280;
+}
+
+body.dark .form-footer a {
+    color: #9CA3AF;
+}
+
+body.dark .theme-switch {
+    color: #9CA3AF;
+}
+
+/* =========================================================
+   LOGIN SHELL
+========================================================= */
+
+.login-shell{
+    width:min(1380px,100%);
+    min-height:760px;
+
+    display:grid;
+    grid-template-columns:52% 48%;
+
+    background:white;
+
+    border-radius:30px;
+
+    overflow:hidden;
+
+    box-shadow:
+        0 30px 80px rgba(15,35,70,.14),
+        0 8px 30px rgba(15,35,70,.06);
+    transition:background-color .3s ease, box-shadow .3s ease;
+}
+
+
+/* =========================================================
+   LEFT BRAND PANEL
+========================================================= */
+
+.brand-panel{
     position:relative;
-  }
-  .form-wrap{ width:100%; max-width:380px; }
+    overflow:hidden;
 
-  .eyebrow{
-    font-family:'JetBrains Mono', monospace;
-    font-size:11px;
-    letter-spacing:.14em;
-    text-transform:uppercase;
-    color:var(--coral);
-    margin-bottom:10px;
-  }
-  .form-wrap h2{
-    font-family:'Space Grotesk', sans-serif;
-    font-size:28px;
-    font-weight:600;
-    letter-spacing:-0.01em;
-    margin-bottom:8px;
-  }
-  .form-wrap p.desc{
+    display:flex;
+    flex-direction:column;
+
+    background:
+        radial-gradient(
+            circle at 20% 15%,
+            rgba(255,255,255,.14),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 85% 75%,
+            rgba(246,195,67,.12),
+            transparent 35%
+        ),
+        linear-gradient(
+            145deg,
+            #0B4EA2 0%,
+            #0B55B5 45%,
+            #063A83 100%
+        );
+
+    color:white;
+
+    padding:44px 48px 34px;
+}
+
+
+/* decorative circles */
+
+.brand-panel::before{
+    content:"";
+
+    position:absolute;
+
+    width:520px;
+    height:520px;
+
+    border:1px solid rgba(255,255,255,.08);
+
+    border-radius:50%;
+
+    top:-220px;
+    right:-180px;
+}
+
+.brand-panel::after{
+    content:"";
+
+    position:absolute;
+
+    width:380px;
+    height:380px;
+
+    border:1px solid rgba(255,255,255,.06);
+
+    border-radius:50%;
+
+    bottom:-210px;
+    left:-170px;
+}
+
+
+/* =========================================================
+   BRAND HEADER
+========================================================= */
+
+.brand-header{
+    position:relative;
+    z-index:3;
+
+    display:flex;
+    align-items:center;
+    gap:13px;
+}
+
+.brand-mini-logo{
+    width:42px;
+    height:42px;
+
+    border-radius:12px;
+
+    background:white;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    box-shadow:
+        0 8px 20px rgba(0,0,0,.12);
+}
+
+.brand-mini-logo img{
+    width:34px;
+    height:34px;
+
+    object-fit:contain;
+}
+
+.brand-header-text{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+}
+
+.brand-header-text strong{
+    font-family:'Plus Jakarta Sans',sans-serif;
+
     font-size:14px;
-    color:var(--slate-600);
-    line-height:1.5;
-    margin-bottom:32px;
-  }
+    font-weight:800;
 
-  .field{ margin-bottom:20px; }
-  .field label{
+    letter-spacing:.01em;
+}
+
+.brand-header-text span{
+    font-size:11px;
+
+    color:rgba(255,255,255,.68);
+
+    letter-spacing:.04em;
+}
+
+
+/* =========================================================
+   MASCOT
+========================================================= */
+
+.mascot-area{
+    position:relative;
+    z-index:2;
+
+    flex:1;
+
+    display:flex;
+    flex-direction:column;
+
+    align-items:center;
+    justify-content:center;
+
+    padding:25px 0 20px;
+}
+
+.logo-character{
+    width:min(430px,82%);
+
+    object-fit:contain;
+
+    filter:
+        drop-shadow(0 25px 30px rgba(0,0,0,.22));
+
+    animation:
+        mascotFloat 5s ease-in-out infinite;
+}
+
+@keyframes mascotFloat{
+
+    0%,
+    100%{
+        transform:translateY(0);
+    }
+
+    50%{
+        transform:translateY(-8px);
+    }
+
+}
+
+
+/* =========================================================
+   BRAND TEXT
+========================================================= */
+
+.brand-copy{
+    position:relative;
+    z-index:3;
+
+    text-align:center;
+
+    max-width:620px;
+
+    margin:0 auto 26px;
+}
+
+.brand-copy .welcome{
+    font-family:'Plus Jakarta Sans',sans-serif;
+
+    font-size:22px;
+
+    font-weight:700;
+
+    color:white;
+
+    margin-bottom:5px;
+}
+
+.brand-copy h1{
+    font-family:'Plus Jakarta Sans',sans-serif;
+
+    font-size:clamp(24px,2.5vw,34px);
+
+    line-height:1.15;
+
+    font-weight:800;
+
+    color:var(--gold);
+
+    margin-bottom:13px;
+}
+
+.brand-copy p{
+    font-size:13.5px;
+
+    line-height:1.65;
+
+    color:rgba(255,255,255,.78);
+
+    max-width:500px;
+
+    margin:auto;
+}
+
+
+/* =========================================================
+   VALUES
+========================================================= */
+
+.values{
+    position:relative;
+    z-index:3;
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    border:1px solid rgba(255,255,255,.18);
+
+    background:rgba(255,255,255,.06);
+
+    backdrop-filter:blur(12px);
+
+    border-radius:18px;
+
+    overflow:hidden;
+}
+
+.value{
+    padding:16px 12px;
+
+    text-align:center;
+
+    border-right:1px solid rgba(255,255,255,.13);
+}
+
+.value:last-child{
+    border-right:none;
+}
+
+.value-icon{
+    width:34px;
+    height:34px;
+
+    margin:0 auto 8px;
+
+    border-radius:10px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    background:rgba(255,255,255,.13);
+
+    color:white;
+}
+
+.value-icon svg{
+    width:18px;
+    height:18px;
+}
+
+.value strong{
     display:block;
-    font-size:12.5px;
-    font-weight:600;
-    color:var(--slate-900);
-    margin-bottom:8px;
-  }
 
-  .tenant-card{
-    display:flex; align-items:center; gap:12px;
-    border:1.5px solid var(--slate-300);
-    border-radius:12px;
-    padding:13px 14px;
-    cursor:default;
-    transition:border-color .15s ease, background .15s ease;
-    background:#fff;
-  }
-  .tenant-card:hover{ border-color:var(--teal); }
-  .tenant-icon{
-    width:36px; height:36px; border-radius:9px;
-    background:linear-gradient(135deg, #E8FBF7, #FDF3E3);
-    display:flex; align-items:center; justify-content:center;
-    font-size:16px;
-  }
-  .tenant-info{ flex:1; }
-  .tenant-info .name{ font-size:14px; font-weight:600; color:var(--slate-900); }
-  .tenant-info .meta{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--slate-600); margin-top:2px; }
-  .tenant-info .meta .status-dot{ width:6px; height:6px; border-radius:50%; background:var(--teal); }
-
-  .input-group{
-    display:flex; align-items:center; gap:10px;
-    border:1.5px solid var(--slate-300);
-    border-radius:12px;
-    padding:12px 14px;
-    background:#fff;
-    transition:border-color .15s ease, box-shadow .15s ease;
-  }
-  .input-group:focus-within{
-    border-color:var(--teal);
-    box-shadow:0 0 0 4px rgba(34,211,184,0.12);
-  }
-  .input-group.input-error{
-    border-color:var(--coral);
-    box-shadow:0 0 0 4px rgba(232,103,79,0.12);
-  }
-  .input-group svg{ flex-shrink:0; color:var(--slate-600); }
-  .input-group input{
-    border:none; outline:none; flex:1;
-    font-family:'Inter', sans-serif;
-    font-size:14px; color:var(--slate-900);
-    background:transparent;
-  }
-  .input-group input::placeholder{ color:#A7ACB6; }
-  .eye-btn{ background:none; border:none; cursor:pointer; color:var(--slate-600); display:flex; padding:0; }
-
-  .field-error{
     font-size:12px;
-    color:var(--coral);
-    margin-top:6px;
-    display:flex;
-    align-items:center;
-    gap:5px;
-  }
 
-  .row-between{ display:flex; align-items:center; justify-content:space-between; margin:2px 0 24px; }
-  .remember{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--slate-600); cursor:pointer; }
-  .remember input{ accent-color:var(--teal); width:14px; height:14px; cursor:pointer; }
-  .forgot{ font-size:13px; color:var(--coral); text-decoration:none; font-weight:600; }
-  .forgot:hover{ text-decoration:underline; }
+    font-weight:700;
 
-  .alert-error{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:12px 14px;
-    border-radius:12px;
-    background:#FEF2F0;
-    border:1px solid #FADBD4;
-    font-size:13px;
-    color:var(--coral);
-    margin-bottom:20px;
+    margin-bottom:4px;
+}
+
+.value span{
+    display:block;
+
+    font-size:10px;
+
     line-height:1.4;
-  }
-  .alert-error svg{ flex-shrink:0; }
 
-  .btn-primary{
+    color:rgba(255,255,255,.62);
+}
+
+
+/* =========================================================
+   GOLD WAVE
+========================================================= */
+
+.wave{
+    position:absolute;
+
+    z-index:1;
+
+    left:-5%;
+    bottom:-1px;
+
+    width:110%;
+
+    height:45px;
+
+    pointer-events:none;
+}
+
+.wave svg{
     width:100%;
-    padding:14px;
-    border:none;
+    height:100%;
+}
+
+
+/* =========================================================
+   RIGHT FORM PANEL
+========================================================= */
+
+.form-panel{
+    position:relative;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    padding:60px 70px;
+
+    background:#FFFFFF;
+    transition:background-color .3s ease;
+}
+
+.form-container{
+    width:100%;
+
+    max-width:430px;
+}
+
+
+/* =========================================================
+   FORM HEADER
+========================================================= */
+
+.form-icon{
+    width:52px;
+    height:52px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:16px;
+
+    background:var(--primary-light);
+
+    color:var(--primary);
+
+    margin-bottom:20px;
+}
+
+.form-icon svg{
+    width:25px;
+    height:25px;
+}
+
+.form-header h2{
+    font-family:'Plus Jakarta Sans',sans-serif;
+
+    font-size:30px;
+
+    line-height:1.2;
+
+    font-weight:800;
+
+    letter-spacing:-.03em;
+
+    color:var(--text);
+
+    margin-bottom:8px;
+    transition:color .3s ease;
+}
+
+.form-header p{
+    font-size:14px;
+
+    line-height:1.6;
+
+    color:var(--muted);
+
+    margin-bottom:32px;
+    transition:color .3s ease;
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.alert-error{
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:10px;
+
+    padding:13px 14px;
+
+    margin-bottom:20px;
+
     border-radius:12px;
-    background:var(--slate-900);
-    color:#fff;
-    font-family:'Inter', sans-serif;
-    font-size:14.5px;
-    font-weight:600;
+
+    background:#FFF3F3;
+
+    border:1px solid #FFD7D7;
+
+    color:var(--danger);
+
+    font-size:13px;
+
+    line-height:1.45;
+}
+
+.alert-error svg{
+    flex-shrink:0;
+
+    margin-top:1px;
+}
+
+
+/* =========================================================
+   TENANT
+========================================================= */
+
+.tenant-label{
+    display:block;
+
+    font-size:12px;
+
+    font-weight:700;
+
+    color:var(--text);
+
+    margin-bottom:8px;
+    transition:color .3s ease;
+}
+
+.tenant-card{
+    display:flex;
+
+    align-items:center;
+
+    gap:13px;
+
+    padding:13px;
+
+    border:1px solid var(--border);
+
+    border-radius:14px;
+
+    background:#F8FAFC;
+
+    margin-bottom:23px;
+    transition:background-color .3s ease, border-color .3s ease;
+}
+
+.tenant-icon{
+    width:42px;
+    height:42px;
+
+    flex-shrink:0;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:11px;
+
+    background:var(--primary-light);
+
+    color:var(--primary);
+}
+
+.tenant-icon svg{
+    width:21px;
+    height:21px;
+}
+
+.tenant-info{
+    min-width:0;
+}
+
+.tenant-name{
+    font-size:13px;
+
+    font-weight:700;
+
+    color:var(--text);
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+    transition:color .3s ease;
+}
+
+.tenant-meta{
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    font-size:11px;
+
+    color:var(--muted);
+
+    margin-top:3px;
+    transition:color .3s ease;
+}
+
+.status-dot{
+    width:7px;
+    height:7px;
+
+    border-radius:50%;
+
+    background:var(--success);
+
+    box-shadow:
+        0 0 0 3px rgba(22,163,106,.10);
+}
+
+
+/* =========================================================
+   FIELD
+========================================================= */
+
+.field{
+    margin-bottom:19px;
+}
+
+.field label{
+    display:block;
+
+    font-size:13px;
+
+    font-weight:700;
+
+    color:var(--text);
+
+    margin-bottom:8px;
+    transition:color .3s ease;
+}
+
+.input-group{
+    display:flex;
+
+    align-items:center;
+
+    gap:11px;
+
+    width:100%;
+
+    height:50px;
+
+    padding:0 14px;
+
+    border:1px solid var(--border);
+
+    border-radius:12px;
+
+    background:#FFFFFF;
+
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease,
+        background-color .3s ease;
+}
+
+.input-group:hover{
+    border-color:#CBD5E1;
+}
+
+.input-group:focus-within{
+    border-color:var(--primary);
+
+    box-shadow:
+        0 0 0 4px rgba(21,88,176,.10);
+}
+
+.input-group.input-error{
+    border-color:var(--danger);
+}
+
+.input-group svg{
+    flex-shrink:0;
+
+    color:#94A3B8;
+}
+
+.input-group input{
+    flex:1;
+
+    width:100%;
+
+    border:none;
+
+    outline:none;
+
+    background:transparent;
+
+    font-family:'Inter',sans-serif;
+
+    font-size:13.5px;
+
+    color:var(--text);
+}
+
+.input-group input::placeholder{
+    color:#A0AEC0;
+}
+
+.eye-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border:none;
+
+    background:none;
+
+    padding:4px;
+
+    color:#94A3B8;
+
     cursor:pointer;
-    transition:background .15s ease, transform .1s ease;
-    display:flex; align-items:center; justify-content:center; gap:8px;
-  }
-  .btn-primary:hover{ background:#000; }
-  .btn-primary:active{ transform:scale(0.99); }
-  .btn-primary:disabled{ opacity:0.5; cursor:not-allowed; }
+}
 
-  .security-note{
-    display:flex; align-items:flex-start; gap:8px;
-    margin-top:22px;
-    font-size:12px;
-    color:var(--slate-600);
+.eye-btn:hover{
+    color:var(--primary);
+}
+
+
+/* =========================================================
+   FIELD ERROR
+========================================================= */
+
+.field-error{
+    display:flex;
+
+    align-items:center;
+
+    gap:5px;
+
+    margin-top:6px;
+
+    font-size:11.5px;
+
+    color:var(--danger);
+}
+
+
+/* =========================================================
+   REMEMBER / FORGOT
+========================================================= */
+
+.row-between{
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    margin-top:2px;
+
+    margin-bottom:22px;
+}
+
+.remember{
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    cursor:pointer;
+
+    font-size:12.5px;
+
+    color:var(--muted);
+}
+
+.remember input{
+    appearance:none;
+
+    width:16px;
+    height:16px;
+
+    border:1px solid #CBD5E1;
+
+    border-radius:5px;
+
+    background:white;
+
+    cursor:pointer;
+
+    position:relative;
+}
+
+.remember input:checked{
+    background:var(--primary);
+
+    border-color:var(--primary);
+}
+
+.remember input:checked::after{
+    content:"";
+
+    position:absolute;
+
+    width:4px;
+    height:8px;
+
+    border-right:2px solid white;
+    border-bottom:2px solid white;
+
+    transform:rotate(45deg);
+
+    left:5px;
+    top:2px;
+}
+
+.forgot{
+    color:var(--primary);
+
+    font-size:12.5px;
+
+    font-weight:700;
+
+    text-decoration:none;
+}
+
+.forgot:hover{
+    text-decoration:underline;
+}
+
+
+/* =========================================================
+   PRIMARY BUTTON
+========================================================= */
+
+.btn-primary{
+    width:100%;
+
+    height:52px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary),
+            #0D4CA1
+        );
+
+    color:white;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:9px;
+
+    font-family:'Inter',sans-serif;
+
+    font-size:14px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    box-shadow:
+        0 8px 18px rgba(21,88,176,.18);
+
+    transition:
+        transform .15s ease,
+        box-shadow .15s ease,
+        filter .15s ease;
+}
+
+.btn-primary:hover{
+    filter:brightness(1.05);
+
+    box-shadow:
+        0 12px 25px rgba(21,88,176,.25);
+
+    transform:translateY(-1px);
+}
+
+.btn-primary:active{
+    transform:translateY(0);
+}
+
+.btn-primary:disabled{
+    opacity:.55;
+
+    cursor:not-allowed;
+
+    transform:none;
+}
+
+
+/* =========================================================
+   SECURITY
+========================================================= */
+
+.security-note{
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:8px;
+
+    margin-top:19px;
+
+    padding:11px 12px;
+
+    border-radius:10px;
+
+    background:#F8FAFC;
+
+    color:#64748B;
+
+    font-size:10.5px;
+
     line-height:1.5;
-  }
-  .security-note svg{ flex-shrink:0; margin-top:1px; color:var(--slate-600); }
+    transition:background-color .3s ease, color .3s ease;
+}
 
-  .divider-foot{
-    margin-top:34px;
-    padding-top:20px;
-    border-top:1px solid var(--slate-100);
+.security-note svg{
+    flex-shrink:0;
+
+    margin-top:1px;
+
+    color:#64748B;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.form-footer{
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:15px;
+
+    padding-top:22px;
+
+    margin-top:27px;
+
+    border-top:1px solid #EEF2F7;
+
+    font-size:11px;
+
+    color:#94A3B8;
+    transition:border-color .3s ease, color .3s ease;
+}
+
+.form-footer a{
+    color:#64748B;
+
+    text-decoration:none;
+
+    font-weight:600;
+}
+
+.form-footer a:hover{
+    color:var(--primary);
+}
+
+
+/* =========================================================
+   THEME BUTTON
+========================================================= */
+
+.theme-switch{
+    position:absolute;
+
+    top:28px;
+    right:32px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    border:none;
+
+    background:transparent;
+
+    color:#64748B;
+
     font-size:12px;
-    color:#9CA1AC;
-    display:flex; justify-content:space-between;
-  }
-  .divider-foot a{ color:var(--slate-600); text-decoration:none; font-weight:600; }
-  .divider-foot a:hover{ color:var(--slate-900); }
 
-  @media (max-width: 880px){
-    body{ flex-direction:column; overflow:auto; }
-    .stage{ min-height:280px; flex:none; }
-    .stage-bottom h1{ font-size:clamp(24px, 5vw, 36px); }
-    .panel{ max-width:100%; padding:32px 24px 60px; }
-  }
+    cursor:pointer;
+    transition:color .3s ease;
+}
 
-  @media (prefers-reduced-motion: reduce){
-    .scene3d{ display:none; }
-    .title-3d{ animation:none; }
-  }
+.theme-switch svg{
+    width:18px;
+    height:18px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media(max-width:1100px){
+
+    body{
+        padding:15px;
+    }
+
+    .login-shell{
+        grid-template-columns:48% 52%;
+    }
+
+    .brand-panel{
+        padding:35px 30px 28px;
+    }
+
+    .form-panel{
+        padding:50px;
+    }
+
+    .logo-character{
+        width:min(360px,90%);
+    }
+
+}
+
+
+@media(max-width:850px){
+
+    body{
+        padding:0;
+
+        display:block;
+
+        background:white;
+    }
+
+    .login-shell{
+        display:flex;
+
+        flex-direction:column;
+
+        width:100%;
+
+        min-height:100vh;
+
+        border-radius:0;
+
+        box-shadow:none;
+    }
+
+    .brand-panel{
+        min-height:570px;
+
+        padding:28px 24px 25px;
+    }
+
+    .mascot-area{
+        padding:15px 0;
+    }
+
+    .logo-character{
+        width:min(320px,75%);
+    }
+
+    .brand-copy .welcome{
+        font-size:19px;
+    }
+
+    .brand-copy h1{
+        font-size:25px;
+    }
+
+    .values{
+        max-width:560px;
+
+        width:100%;
+
+        margin:auto;
+    }
+
+    .form-panel{
+        padding:45px 24px 55px;
+
+        align-items:flex-start;
+    }
+
+    .form-container{
+        max-width:520px;
+    }
+
+    .theme-switch{
+        display:none;
+    }
+
+}
+
+
+@media(max-width:520px){
+
+    .brand-panel{
+        min-height:530px;
+    }
+
+    .brand-header{
+        gap:9px;
+    }
+
+    .brand-mini-logo{
+        width:37px;
+        height:37px;
+    }
+
+    .brand-mini-logo img{
+        width:30px;
+        height:30px;
+    }
+
+    .brand-header-text strong{
+        font-size:12px;
+    }
+
+    .brand-header-text span{
+        font-size:9px;
+    }
+
+    .logo-character{
+        width:270px;
+    }
+
+    .brand-copy{
+        margin-bottom:20px;
+    }
+
+    .brand-copy .welcome{
+        font-size:17px;
+    }
+
+    .brand-copy h1{
+        font-size:21px;
+    }
+
+    .brand-copy p{
+        font-size:11.5px;
+    }
+
+    .value{
+        padding:12px 6px;
+    }
+
+    .value-icon{
+        width:30px;
+        height:30px;
+    }
+
+    .value strong{
+        font-size:10px;
+    }
+
+    .value span{
+        display:none;
+    }
+
+    .form-header h2{
+        font-size:26px;
+    }
+
+    .form-header p{
+        font-size:13px;
+    }
+
+    .tenant-name{
+        font-size:12px;
+    }
+
+    .form-footer{
+        flex-direction:column;
+
+        align-items:flex-start;
+
+        gap:8px;
+    }
+
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+========================================================= */
+
+@media(prefers-reduced-motion:reduce){
+
+    *,
+    *::before,
+    *::after{
+        animation:none!important;
+
+        transition:none!important;
+    }
+
+}
+
 </style>
+
 </head>
+
 <body>
 
-  <div class="stage">
-    <div class="scene3d">
-      <div class="gem">
-        <div class="facet f1"></div>
-        <div class="facet f2"></div>
-        <div class="facet f3"></div>
-        <div class="facet f4"></div>
-        <div class="facet f5"></div>
-        <div class="facet f6"></div>
-        <div class="facet top"></div>
-        <div class="facet bottom"></div>
-        <div class="ring"></div>
-      </div>
-      <div class="glow-floor"></div>
+<div class="login-shell">
+
+<!-- =====================================================
+     LEFT : BRANDING
+====================================================== -->
+
+<section class="brand-panel">
+
+
+    <!-- HEADER -->
+
+    <div class="brand-header">
+
+        <div class="brand-mini-logo">
+
+            <img
+                src="{{ asset('images/icon.png') }}"
+                alt="Logo Inspektorat Kabupaten Rembang"
+            >
+
+        </div>
+
+        <div class="brand-header-text">
+
+            <strong>
+                SIPUAS
+            </strong>
+
+            <span>
+                Sistem Informasi Pengawasan
+            </span>
+
+        </div>
+
     </div>
-    <div class="stage-top">
-      <div class="mark"></div>
-      <div class="brand-tag">SIMANTAB · Kab. Rembang</div>
+
+
+    <!-- CHARACTER -->
+
+    <div class="mascot-area">
+
+        <img
+            class="logo-character"
+            src="{{ asset('images/icon.png') }}"
+            alt="Karakter Inspektorat Kabupaten Rembang"
+        >
+
     </div>
-    <div class="stage-bottom">
-      <div class="title-eyebrow" id="twEyebrow"></div>
-      <div class="title-3d-wrap">
-        <span class="title-3d"><span class="tw-line" id="twLine1"></span><br><span class="tw-line" id="twLine2"></span></span>
-      </div>
-      <p class="sub" id="twSub"></p>
-      <div class="stage-foot">
-        <span><span class="dot"></span> Sistem beroperasi normal</span>
-        <span>v1.0.0</span>
-      </div>
+
+
+    <!-- BRAND COPY -->
+
+    <div class="brand-copy">
+
+        <div class="welcome">
+            Selamat Datang di
+        </div>
+
+        <h1>
+            Inspektorat Kabupaten Rembang
+        </h1>
+
+        <p>
+            Sistem informasi untuk mendukung pengawasan
+            yang transparan, akuntabel, dan berintegritas.
+        </p>
+
     </div>
-  </div>
 
-  <div class="panel">
-    <div class="form-wrap">
-      <div class="eyebrow">Masuk ke Sistem</div>
-      <h2>Selamat datang kembali</h2>
-      <p class="desc">Masukkan detail akun Anda untuk melanjutkan ke SIPUASInspektorat Daerah Kabupaten Rembang.</p>
 
-      {{-- Error Alert --}}
-      @if (isset($errors) && $errors->any())
-      <div class="alert-error">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
-        </svg>
-        <span>Email atau password salah. Silakan coba lagi.</span>
-      </div>
-      @endif
+    <!-- VALUES -->
 
-      <form method="POST" action="{{ route('login') }}">
-        @csrf
+    <div class="values">
 
-        <div class="field">
-          <label>Unit Kerja</label>
-          <div class="tenant-card">
-            <div class="tenant-icon">🏛️</div>
-            <div class="tenant-info">
-              <div class="name">Inspektorat Daerah — Kab. Rembang</div>
-              <div class="meta"><span class="status-dot"></span> Periode Aktif · 2026</div>
+
+        <div class="value">
+
+            <div class="value-icon">
+
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+
+                    <path d="M12 3l7 4v5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V7l7-4z"/>
+
+                    <path d="M9 12l2 2 4-4"/>
+
+                </svg>
+
             </div>
-          </div>
+
+            <strong>
+                Transparan
+            </strong>
+
+            <span>
+                Keterbukaan dalam setiap proses
+            </span>
+
         </div>
 
-        <div class="field">
-          <label>Email</label>
-          <div class="input-group @error('email') input-error @enderror">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            <input type="email" name="email" value="{{ old('email') }}" placeholder="Masukkan email Anda" required autofocus autocomplete="email">
-          </div>
-          @error('email')
-            <p class="field-error">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
-              </svg>
-              {{ $message }}
-            </p>
-          @enderror
+
+        <div class="value">
+
+            <div class="value-icon">
+
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+
+                    <rect
+                        x="5"
+                        y="3"
+                        width="14"
+                        height="18"
+                        rx="2"
+                    />
+
+                    <path d="M9 8h6"/>
+                    <path d="M9 12h6"/>
+                    <path d="M9 16h4"/>
+
+                </svg>
+
+            </div>
+
+            <strong>
+                Akuntabel
+            </strong>
+
+            <span>
+                Bertanggung jawab atas setiap tindakan
+            </span>
+
         </div>
 
-        <div class="field">
-          <label>Kata Sandi</label>
-          <div class="input-group @error('password') input-error @enderror">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            <input id="pwd" type="password" name="password" placeholder="Minimal 6 karakter" required autocomplete="current-password">
-            <button class="eye-btn" onclick="togglePwd()" type="button" aria-label="Tampilkan kata sandi">
-              <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-          </div>
-          @error('password')
-            <p class="field-error">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
-              </svg>
-              {{ $message }}
-            </p>
-          @enderror
+
+        <div class="value">
+
+            <div class="value-icon">
+
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+
+                    <path d="M12 3l7 4v5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V7l7-4z"/>
+
+                    <path d="M12 8v4"/>
+
+                    <circle
+                        cx="12"
+                        cy="16"
+                        r=".7"
+                        fill="currentColor"
+                    />
+
+                </svg>
+
+            </div>
+
+            <strong>
+                Berintegritas
+            </strong>
+
+            <span>
+                Menjunjung tinggi nilai kejujuran
+            </span>
+
         </div>
 
-        <div class="row-between">
-          <label class="remember">
-            <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
-            Ingat saya
-          </label>
-          @if (Route::has('password.request'))
-            <a href="{{ route('password.request') }}" class="forgot">Lupa kata sandi?</a>
-          @endif
-        </div>
 
-        <button type="submit" class="btn-primary">
-          Masuk
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M5 12h14M13 6l6 6-6 6"/>
-          </svg>
-        </button>
-      </form>
-
-      <div class="security-note">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="11" width="18" height="11" rx="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-        Koneksi Anda dienkripsi end-to-end. Kami tidak pernah meminta kata sandi lewat email atau telepon.
-      </div>
-
-      <div class="divider-foot">
-        <span>&copy; {{ date('Y') }} Inspektorat Kab. Rembang</span>
-        <a href="#">Butuh bantuan?</a>
-      </div>
     </div>
-  </div>
+
+
+    <!-- DECORATIVE WAVE -->
+
+    <div class="wave">
+
+        <svg
+            viewBox="0 0 1200 80"
+            preserveAspectRatio="none"
+        >
+
+            <path
+                d="M0,55 C180,15 300,75 470,42 C650,8 760,60 920,35 C1040,16 1120,35 1200,10 L1200,80 L0,80 Z"
+                fill="#F6C343"
+            />
+
+            <path
+                d="M0,65 C180,25 300,85 470,52 C650,18 760,70 920,45 C1040,26 1120,45 1200,20 L1200,80 L0,80 Z"
+                fill="#0B3D82"
+                opacity=".7"
+            />
+
+        </svg>
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =====================================================
+     RIGHT : LOGIN
+====================================================== -->
+
+<section class="form-panel">
+
+
+    <!-- THEME -->
+
+    <button
+        type="button"
+        class="theme-switch"
+        aria-label="Mode tampilan"
+    >
+
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+        >
+
+            <circle
+                cx="12"
+                cy="12"
+                r="4"
+            />
+
+            <path d="M12 2v2"/>
+            <path d="M12 20v2"/>
+            <path d="M4.93 4.93l1.42 1.42"/>
+            <path d="M17.65 17.65l1.42 1.42"/>
+            <path d="M2 12h2"/>
+            <path d="M20 12h2"/>
+            <path d="M4.93 19.07l1.42-1.42"/>
+            <path d="M17.65 6.35l1.42-1.42"/>
+
+        </svg>
+
+        Light
+
+    </button>
+
+
+
+    <div class="form-container">
+
+
+        <!-- FORM HEADER -->
+
+        <div class="form-icon">
+
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+
+                <rect
+                    x="4"
+                    y="10"
+                    width="16"
+                    height="11"
+                    rx="2"
+                />
+
+                <path d="M8 10V7a4 4 0 018 0v3"/>
+
+            </svg>
+
+        </div>
+
+
+        <div class="form-header">
+
+            <h2>
+                Masuk ke Akun Anda
+            </h2>
+
+            <p>
+                Silakan masuk untuk melanjutkan ke
+                dashboard SIPUAS Inspektorat Kabupaten Rembang.
+            </p>
+
+        </div>
+
+
+
+        <!-- ERROR ALERT -->
+
+        @if (isset($errors) && $errors->any())
+
+            <div class="alert-error">
+
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+
+                    <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                    />
+
+                    <path d="M12 8v4"/>
+                    <path d="M12 16h.01"/>
+
+                </svg>
+
+                <span>
+                    Email atau password salah.
+                    Silakan coba lagi.
+                </span>
+
+            </div>
+
+        @endif
+
+
+
+        <!-- FORM -->
+
+        <form
+            method="POST"
+            action="{{ route('login') }}"
+        >
+
+            @csrf
+
+
+
+            <!-- UNIT KERJA -->
+
+            <div class="tenant-label">
+                Unit Kerja
+            </div>
+
+            <div class="tenant-card">
+
+                <div class="tenant-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
+
+                        <path d="M3 21h18"/>
+                        <path d="M5 21V7l7-4 7 4v14"/>
+                        <path d="M9 21v-5h6v5"/>
+                        <path d="M9 9h.01"/>
+                        <path d="M15 9h.01"/>
+                        <path d="M9 12h.01"/>
+                        <path d="M15 12h.01"/>
+
+                    </svg>
+
+                </div>
+
+                <div class="tenant-info">
+
+                    <div class="tenant-name">
+                        Inspektorat Daerah — Kab. Rembang
+                    </div>
+
+                    <div class="tenant-meta">
+
+                        <span class="status-dot"></span>
+
+                        Periode Aktif · {{ date('Y') }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- EMAIL -->
+
+            <div class="field">
+
+                <label for="email">
+                    Email atau Username
+                </label>
+
+                <div
+                    class="input-group
+                    @error('email') input-error @enderror"
+                >
+
+                    <svg
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+
+                        <circle
+                            cx="12"
+                            cy="7"
+                            r="4"
+                        />
+
+                    </svg>
+
+
+                    <input
+                        id="email"
+                        type="text"
+                        name="email"
+                        value="{{ old('email') }}"
+                        placeholder="Masukkan email atau username"
+                        required
+                        autofocus
+                        autocomplete="username email"
+                    >
+
+                </div>
+
+
+                @error('email')
+
+                    <p class="field-error">
+
+                        <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="10"
+                            />
+
+                            <path d="M12 8v4"/>
+                            <path d="M12 16h.01"/>
+
+                        </svg>
+
+                        {{ $message }}
+
+                    </p>
+
+                @enderror
+
+            </div>
+
+
+
+            <!-- PASSWORD -->
+
+            <div class="field">
+
+                <label for="pwd">
+                    Kata Sandi
+                </label>
+
+                <div
+                    class="input-group
+                    @error('password') input-error @enderror"
+                >
+
+                    <svg
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+
+                        <rect
+                            x="3"
+                            y="11"
+                            width="18"
+                            height="11"
+                            rx="2"
+                        />
+
+                        <path d="M7 11V7a5 5 0 0110 0v4"/>
+
+                    </svg>
+
+
+                    <input
+                        id="pwd"
+                        type="password"
+                        name="password"
+                        placeholder="Masukkan kata sandi"
+                        required
+                        autocomplete="current-password"
+                    >
+
+
+                    <button
+                        class="eye-btn"
+                        onclick="togglePwd()"
+                        type="button"
+                        aria-label="Tampilkan kata sandi"
+                    >
+
+                        <svg
+                            id="eyeIcon"
+                            width="17"
+                            height="17"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="3"
+                            />
+
+                        </svg>
+
+                    </button>
+
+                </div>
+
+
+                @error('password')
+
+                    <p class="field-error">
+
+                        <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="10"
+                            />
+
+                            <path d="M12 8v4"/>
+                            <path d="M12 16h.01"/>
+
+                        </svg>
+
+                        {{ $message }}
+
+                    </p>
+
+                @enderror
+
+            </div>
+
+
+
+            <!-- OPTIONS -->
+
+            <div class="row-between">
+
+                <label class="remember">
+
+                    <input
+                        type="checkbox"
+                        name="remember"
+                        {{ old('remember') ? 'checked' : '' }}
+                    >
+
+                    Ingat saya
+
+                </label>
+
+
+                @if (Route::has('password.request'))
+
+                    <a
+                        href="{{ route('password.request') }}"
+                        class="forgot"
+                    >
+                        Lupa kata sandi?
+                    </a>
+
+                @endif
+
+            </div>
+
+
+
+            <!-- LOGIN BUTTON -->
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+
+                Masuk
+
+                <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                >
+
+                    <path d="M5 12h14"/>
+                    <path d="M13 6l6 6-6 6"/>
+
+                </svg>
+
+            </button>
+
+
+        </form>
+
+
+
+        <!-- SECURITY -->
+
+        <div class="security-note">
+
+            <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+
+                <rect
+                    x="3"
+                    y="11"
+                    width="18"
+                    height="11"
+                    rx="2"
+                />
+
+                <path d="M7 11V7a5 5 0 0110 0v4"/>
+
+            </svg>
+
+            <span>
+                Koneksi Anda aman dan terenkripsi.
+                Jangan pernah membagikan kata sandi kepada pihak lain.
+            </span>
+
+        </div>
+
+
+
+        <!-- FOOTER -->
+
+        <div class="form-footer">
+
+            <span>
+                &copy; {{ date('Y') }}
+                Inspektorat Kabupaten Rembang
+            </span>
+
+            <a href="#">
+                Butuh bantuan?
+            </a>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+</div>
 
 <script>
-  function togglePwd(){
-    const pwd = document.getElementById('pwd');
-    const icon = document.getElementById('eyeIcon');
-    const isPwd = pwd.type === 'password';
-    pwd.type = isPwd ? 'text' : 'password';
-    icon.innerHTML = isPwd
-      ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/>'
-      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-  }
 
-  (function initParallax(){
-    const stage = document.querySelector('.stage');
-    const gem = document.querySelector('.gem');
-    if(!stage || !gem) return;
-    stage.addEventListener('mousemove', (e)=>{
-      const rect = stage.getBoundingClientRect();
-      const px = (e.clientX - rect.left) / rect.width - 0.5;
-      const py = (e.clientY - rect.top) / rect.height - 0.5;
-      gem.style.setProperty('--tiltX', (py * -14) + 'deg');
-      gem.style.setProperty('--tiltY', (px * 14) + 'deg');
-    });
-  })();
+/* =========================================================
+   PASSWORD TOGGLE
+========================================================= */
 
-  (function initTypewriter(){
-    const sequence = [
-      { el: document.getElementById('twEyebrow'), text: 'Sistem Informasi Pengawasan', speed: 32, cursorClass: 'on-eyebrow' },
-      { el: document.getElementById('twLine1'),   text: 'INSPEKTORAT DAERAH',          speed: 52, cursorClass: 'on-title' },
-      { el: document.getElementById('twLine2'),   text: 'KABUPATEN REMBANG',           speed: 52, cursorClass: 'on-title' },
-      { el: document.getElementById('twSub'),     text: 'Portal internal untuk pengelolaan pengawasan, tindak lanjut hasil audit, dan pelaporan kinerja perangkat daerah.', speed: 16, cursorClass: 'on-sub' }
-    ].filter(step => step.el);
+function togglePwd(){
 
-    if(!sequence.length) return;
+    const pwd =
+        document.getElementById('pwd');
 
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if(reduceMotion){
-      sequence.forEach(step => { step.el.textContent = step.text; });
-      return;
+    const icon =
+        document.getElementById('eyeIcon');
+
+    if(!pwd || !icon){
+        return;
     }
 
-    const cursor = document.createElement('span');
-    cursor.className = 'tw-cursor';
+    const isPassword =
+        pwd.type === 'password';
 
-    function typeStep(step){
-      return new Promise(resolve => {
-        step.el.textContent = '';
-        step.el.parentNode.insertBefore(cursor, step.el.nextSibling);
-        cursor.className = 'tw-cursor ' + step.cursorClass;
+    pwd.type =
+        isPassword
+            ? 'text'
+            : 'password';
 
-        let charIndex = 0;
-        let lastTime = null;
 
-        function frame(now){
-          if(lastTime === null) lastTime = now;
-          const elapsed = now - lastTime;
-          if(elapsed >= step.speed){
-            charIndex++;
-            step.el.textContent = step.text.slice(0, charIndex);
-            lastTime = now;
-          }
-          if(charIndex < step.text.length){
-            requestAnimationFrame(frame);
-          } else {
-            resolve();
-          }
+    icon.innerHTML = isPassword
+
+        ? `
+            <path d="M3 3l18 18"/>
+            <path d="M10.6 10.6a2 2 0 002.8 2.8"/>
+            <path d="M9.9 4.2A10.7 10.7 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-3.1 4.3"/>
+            <path d="M6.2 6.2C3.1 8.4 1 12 1 12s4 8 11 8a10.7 10.7 0 004.1-.8"/>
+          `
+
+        : `
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          `;
+}
+
+
+/* =========================================================
+   BUTTON LOADING
+========================================================= */
+
+const loginForm =
+    document.querySelector('form');
+
+if(loginForm){
+
+    loginForm.addEventListener('submit', function(){
+
+        const button =
+            this.querySelector('.btn-primary');
+
+        if(!button){
+            return;
         }
-        requestAnimationFrame(frame);
-      });
+
+        button.disabled = true;
+
+        button.innerHTML = `
+            <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                style="animation:spin .8s linear infinite"
+            >
+                <path d="M12 2v4"/>
+                <path d="M12 18v4"/>
+                <path d="M4.93 4.93l2.83 2.83"/>
+                <path d="M16.24 16.24l2.83 2.83"/>
+                <path d="M2 12h4"/>
+                <path d="M18 12h4"/>
+                <path d="M4.93 19.07l2.83-2.83"/>
+                <path d="M16.24 7.76l2.83-2.83"/>
+            </svg>
+
+            Memproses...
+        `;
+
+    });
+
+}
+
+/* =========================================================
+   DARK / LIGHT THEME TOGGLE
+========================================================= */
+
+document.addEventListener('DOMContentLoaded', function() {
+    const themeBtn = document.querySelector('.theme-switch');
+    if (!themeBtn) return;
+
+    function updateThemeUI(isDark) {
+        themeBtn.innerHTML = isDark
+            ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+               </svg> Dark`
+            : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4"/>
+                <path d="M12 2v2"/><path d="M12 20v2"/>
+                <path d="M4.93 4.93l1.42 1.42"/><path d="M17.65 17.65l1.42 1.42"/>
+                <path d="M2 12h2"/><path d="M20 12h2"/>
+                <path d="M4.93 19.07l1.42-1.42"/><path d="M17.65 6.35l1.42-1.42"/>
+               </svg> Light`;
     }
 
-    function pause(ms){
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
 
-    async function runSequence(){
-      for(const step of sequence){
-        await typeStep(step);
-        await pause(180);
-      }
-      cursor.classList.add('done');
-    }
-
-    if(document.fonts && document.fonts.ready){
-      document.fonts.ready.then(runSequence);
+    if (isDark) {
+        document.body.classList.add('dark');
+        updateThemeUI(true);
     } else {
-      runSequence();
+        document.body.classList.remove('dark');
+        updateThemeUI(false);
     }
-  })();
+
+    themeBtn.addEventListener('click', function() {
+        const currentlyDark = document.body.classList.contains('dark');
+        if (currentlyDark) {
+            document.body.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+            updateThemeUI(false);
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+            updateThemeUI(true);
+        }
+    });
+});
+
+
+/* =========================================================
+   SPINNER
+========================================================= */
+
+const style =
+    document.createElement('style');
+
+style.innerHTML = `
+
+@keyframes spin{
+
+    from{
+        transform:rotate(0deg);
+    }
+
+    to{
+        transform:rotate(360deg);
+    }
+
+}
+
+`;
+
+document.head.appendChild(style);
+
 </script>
+
 </body>
 </html>

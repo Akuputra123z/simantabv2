@@ -35,8 +35,16 @@ use Illuminate\Support\Facades\Storage;
               ->orWhereHas(
                   'auditAssignment.auditProgramDetail.auditProgram',
                   fn($sq) => $sq->where('nama_program', 'like', "%{$search}%")
+              )
+              ->orWhereHas(
+                  'unitDiperiksa',
+                  fn($sq) => $sq->where('nama_unit', 'like', "%{$search}%")
               );
         });
+    }
+
+    if ($request->filled('unit_diperiksa_id')) {
+        $query->where('unit_diperiksa_id', $request->unit_diperiksa_id);
     }
 
     if ($request->filled('tahun')) {

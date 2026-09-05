@@ -269,9 +269,12 @@
             {{-- ⚠️ Prioritas Perhatian --}}
             <div class="col-span-12 lg:col-span-6">
                 <x-dashboard.priority-attention
-                    :overdueCount="$overdueCount"
-                    :temuanBelumTlCount="$temuanBelumTlCount"
-                    :unitLowProgressCount="$unitLowProgressCount"
+                    :overdueCount="$overdueCount ?? 0"
+                    :temuanBelumTlCount="$temuanBelumTlCount ?? 0"
+                    :unitLowProgressCount="$unitLowProgressCount ?? 0"
+                    :overdueItems="$overdueItems ?? []"
+                    :temuanBelumTlItems="$temuanBelumTlItems ?? []"
+                    :unitLowProgressItems="$unitLowProgressItems ?? []"
                 />
             </div>
 
@@ -282,75 +285,11 @@
 
         </div>
 
-        {{-- 6. TABEL REKOMENDASI TERBARU --}}
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Rekomendasi Terbaru</h3>
-                    <p class="text-xs text-slate-500">Daftar rekomendasi audit yang baru diterbitkan</p>
-                </div>
-                <a href="{{ route('recommendations.index') }}" class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">
-                    Lihat Semua &rarr;
-                </a>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
-                    <thead>
-                        <tr class="border-b border-gray-100 dark:border-gray-800 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                            <th class="pb-3 pr-4">Kode / ID</th>
-                            <th class="pb-3 pr-4">Unit Periksa (OPD)</th>
-                            <th class="pb-3 pr-4">Uraian Rekomendasi</th>
-                            <th class="pb-3 pr-4">Tanggal</th>
-                            <th class="pb-3 pr-4">Status</th>
-                            <th class="pb-3 text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800/60">
-                        @forelse($rekomendasiTerbaru as $rekom)
-                        <tr class="hover:bg-slate-50/70 dark:hover:bg-gray-800/40 transition-colors">
-                            <td class="py-3 pr-4 font-bold text-slate-900 dark:text-white">
-                                {{ $rekom->kodeRekomendasi?->kode ?? ('R-' . $rekom->id) }}
-                            </td>
-                            <td class="py-3 pr-4 text-slate-700 dark:text-slate-300 font-semibold max-w-[200px] truncate">
-                                {{ $rekom->temuan?->lhp?->unitDiperiksa?->nama_unit ?? '-' }}
-                            </td>
-                            <td class="py-3 pr-4 text-slate-600 dark:text-slate-400 max-w-[300px] truncate">
-                                {{ Str::limit(strip_tags($rekom->uraian_rekom ?? '-'), 75) }}
-                            </td>
-                            <td class="py-3 pr-4 text-slate-500 whitespace-nowrap">
-                                {{ $rekom->created_at?->translatedFormat('d/m/Y') ?? '-' }}
-                            </td>
-                            <td class="py-3 pr-4 whitespace-nowrap">
-                                @if($rekom->status === 'selesai')
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                        Selesai
-                                    </span>
-                                @elseif($rekom->status === 'proses')
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-                                        Proses
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
-                                        Belum
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="py-3 text-right whitespace-nowrap">
-                                <a href="{{ route('tindak-lanjuts.index') }}" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:text-slate-200 dark:hover:bg-gray-700 transition-colors shadow-xs">
-                                    Detail
-                                </a>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="6" class="py-6 text-center text-xs text-slate-400 italic">Belum ada rekomendasi terbaru.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        {{-- 6. MATRIKS KODE TEMUAN & NILAI / REKOMENDASI TERBARU --}}
+        <x-dashboard.matriks-kode-temuan
+            :matriks="$matriksKodeTemuan ?? []"
+            :rekomendasiTerbaru="$rekomendasiTerbaru ?? []"
+        />
 
     </div>
 </main>

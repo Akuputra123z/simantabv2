@@ -1,362 +1,86 @@
-🎯 Konsep dashboard yang saya rekomendasikan
-
-Tujuan utama dashboard:
-
-Begitu user membuka dashboard, dalam 5–10 detik user langsung tahu kondisi audit, temuan, rekomendasi, dan tindak lanjut.
-
-1. Struktur keseluruhan
-   ┌─────────────────────────────────────────────────────────────────────┐
-   │ SIDEBAR │ Header 🔔 User │
-   │ ├───────────────────────────────────────────────────────────┤
-   │ │ Dashboard │
-   │ │ Ringkasan aktivitas dan progres audit │
-   │ │ │
-   │ │ ┌───────────────────────────────────────────────────────┐ │
-   │ │ │ 📅 Periode │ │
-   │ │ │ [01 Jan 2026] — [31 Des 2026] [Terapkan] │ │
-   │ │ └───────────────────────────────────────────────────────┘ │
-   │ │ │
-   │ │ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ │
-   │ │ │ Audit │ │ Temuan │ │ Rekomendasi│ │ Tindak │ │
-   │ │ │ 128 │ │ 346 │ │ 521 │ │ Lanjut │ │
-   │ │ │ ↑ 12% │ │ ↑ 8% │ │ 78% │ │ 68% │ │
-   │ │ └────────────┘ └────────────┘ └────────────┘ └──────────┘ │
-   │ │ │
-   │ │ ┌───────────────────────────┐ ┌─────────────────────────┐ │
-   │ │ │ Trend Audit & Temuan │ │ Status Tindak Lanjut │ │
-   │ │ │ │ │ │ │
-   │ │ │ ╱╲ │ │ ███████ 68% │ │
-   │ │ │ ╱─── ╲──╲ │ │ █████ 22% │ │
-   │ │ │ ╱ ╲ │ │ ███ 10% │ │
-   │ │ └───────────────────────────┘ └─────────────────────────┘ │
-   │ │ │
-   │ │ ┌───────────────────────────────────────────────────────┐ │
-   │ │ │ Progres Tindak Lanjut │ │
-   │ │ │ │ │
-   │ │ │ Unit Total Selesai Proses Belum │ │
-   │ │ │ Dinas A 42 32 7 3 │ │
-   │ │ │ Dinas B 35 21 9 5 │ │
-   │ │ │ Dinas C 28 18 6 4 │ │
-   │ │ └───────────────────────────────────────────────────────┘ │
-   └─────────────────────────────────────────────────────────────────────┘
-2. Sidebar
-
-Saya sarankan Sectioned Sidebar, bukan sidebar yang terlalu banyak menu sekaligus. TailAdmin sendiri menyediakan beberapa variasi sidebar termasuk classic, sectioned, collapsible, dan nested.
-
-Untuk sistem E-AUDIT:
-
-🏠 Dashboard
-
-AUDIT
-├── Program Audit
-├── Penugasan
-├── Unit Periksa
-└── Tim Audit
-
-HASIL AUDIT
-├── LHP
-├── Temuan
-└── Rekomendasi
-
-TINDAK LANJUT
-├── Monitoring
-├── Verifikasi
-└── Riwayat Tindak Lanjut
-
-LAPORAN
-├── Laporan Audit
-├── Laporan Temuan
-└── Laporan Tindak Lanjut
-
-MASTER DATA
-├── Unit
-├── Program
-├── Kode Temuan
-└── Kode Rekomendasi
-
-SISTEM
-├── Users
-├── Role & Permission
-└── Pengaturan
-
-Jangan tampilkan semua menu secara datar. Pengelompokan seperti ini membuat sistem jauh lebih mudah dipahami.
-
-3. Header
-
-Header cukup sederhana:
-
-☰ Dashboard
-
-                                    🔔   👤 Admin
-                                         Administrator
-
-Tambahkan:
-
-notification
-profile
-dark/light mode
-breadcrumb jika masuk halaman detail
-
-Tidak perlu terlalu banyak tombol di header.
-
-4. Bagian paling penting: Filter tanggal
-
-Karena Anda meminta sortir berdasarkan tanggal, saya menyarankan satu global date filter di bagian atas dashboard.
-
-Jangan membuat setiap chart mempunyai date filter sendiri.
-
-Recommended
-Periode Data
-
-[ 📅 01 Januari 2026 ] — [ 📅 31 Desember 2026 ]
-
-[Hari Ini] [7 Hari] [30 Hari] [Bulan Ini] [Tahun Ini] [Custom]
-
-Kemudian:
-
-                 [ Terapkan ]
-
-Semua data dashboard mengikuti filter tersebut:
-
-jumlah audit
-jumlah temuan
-rekomendasi
-tindak lanjut
-grafik
-tabel
-persentase
-
-TailAdmin sudah menggunakan Flatpickr sebagai date/time picker dan versi terbarunya juga menambahkan date range picker pada statistik chart.
-
-Saya lebih menyarankan format:
-┌─────────────────────────────────────────────┐
-│ 📅 01 Jan 2026 — 31 Dec 2026 ▼ │
-└─────────────────────────────────────────────┘
-
-Daripada:
-
-Tanggal Awal [____] Tanggal Akhir [____]
-
-Karena jauh lebih bersih.
-
-5. KPI Cards
-
-Di bawah filter tanggal langsung tampilkan 4 KPI utama.
-
-Card 1
-
-Total Audit
-
-128
-Audit
-
-↑ 12.5%
-dibanding periode sebelumnya
-Card 2
-
-Total Temuan
-
-346
-Temuan
-
-↑ 8.2%
-dibanding periode sebelumnya
-Card 3
-
-Rekomendasi
-
-521
-Rekomendasi
-
-78%
-telah ditindaklanjuti
-Card 4
-
-Tindak Lanjut
-
-354 / 521
-
-68%
-Selesai 6. Warna KPI
-
-Saya tidak menyarankan setiap card menggunakan warna mencolok.
-
-Gunakan satu warna utama dari branding E-AUDIT Anda, misalnya biru.
-
-Primary → Blue
-Success → Green
-Warning → Amber
-Danger → Red
-Neutral → Gray
-
-Contoh:
-
-Data Warna
-Audit 🔵 Blue
-Temuan 🟠 Orange
-Selesai 🟢 Green
-Belum selesai 🔴 Red
-Dalam proses 🟡 Amber
-
-Ini lebih profesional untuk aplikasi pemerintahan/inspektorat.
-
-7. Chart utama
-
-Setelah KPI, saya sarankan:
-
-Kiri — Trend Audit
-
-Lebar sekitar 65%
-
-Audit & Temuan
-
-350 ┤ ╭──╮
-300 ┤ ╭─────╯ ╰─╮
-250 ┤ ╭─────╯ ╰
-200 ┤ ╭────╯
-150 ┤───╯
-└────────────────────────────
-Jan Feb Mar Apr May Jun Jul
-
-Gunakan Line/Area Chart.
-
-Data:
-
-Audit
-Temuan
-Rekomendasi
-
-TailAdmin menggunakan ApexCharts untuk visualisasi seperti line, area, bar, donut, radar, dan radial chart.
-
-8. Chart status tindak lanjut
-
-Sebelah kanan:
-
-Status Tindak Lanjut
-
-Saya sarankan Donut Chart.
-
-             ╭───────╮
-          ╭──╯       ╰──╮
-         │      68%      │
-         │    SELESAI    │
-          ╰──╮       ╭──╯
-             ╰───────╯
-
-Selesai 354
-Proses 115
-Belum 52
-
-Ini lebih cepat dibaca daripada tabel.
-
-9. Bagian yang sangat penting: Unit Periksa
-
-Untuk sistem Inspektorat, menurut saya ini justru harus menjadi salah satu bagian utama.
-
-"Kinerja Tindak Lanjut per Unit"
-┌─────────────────────────────────────────────────────────────┐
-│ Kinerja Tindak Lanjut Lihat Semua → │
-├─────────────────────────────────────────────────────────────┤
-│ │
-│ Unit Pemerintah A 82% █████████░ │
-│ Unit Pemerintah B 76% ████████░░ │
-│ Unit Pemerintah C 68% ███████░░░ │
-│ Unit Pemerintah D 54% █████░░░░░ │
-│ Unit Pemerintah E 41% ████░░░░░░ │
-│ │
-└─────────────────────────────────────────────────────────────┘
-
-User langsung bisa melihat:
-
-Unit mana yang paling baik dan unit mana yang perlu perhatian.
-
-10. "Prioritas Perhatian"
-
-Ini menurut saya wajib ada di dashboard E-AUDIT.
-
-Contohnya:
-
-⚠️ PERLU PERHATIAN
-
-┌──────────────────────────────────────────────────────┐
-│ 🔴 12 rekomendasi melewati batas waktu │
-│ Lihat rekomendasi → │
-├──────────────────────────────────────────────────────┤
-│ 🟠 8 temuan belum memiliki tindak lanjut │
-│ Lihat temuan → │
-├──────────────────────────────────────────────────────┤
-│ 🟡 5 unit memiliki progres < 50% │
-│ Lihat unit → │
-└──────────────────────────────────────────────────────┘
-
-Ini jauh lebih berguna daripada menampilkan 10 chart sekaligus.
-
-11. Tabel terakhir
-
-Di bagian bawah:
-
-Rekomendasi Terbaru
-┌──────────────────────────────────────────────────────────────┐
-│ Rekomendasi Terbaru Lihat Semua → │
-├───────────────┬───────────────┬────────┬─────────┬─────────┤
-│ Rekomendasi │ Unit │ Tanggal│ Status │ │
-├───────────────┼───────────────┼────────┼─────────┼─────────┤
-│ R-2026-001 │ Dinas A │ 12/08 │ 🟢 │ Detail │
-│ R-2026-002 │ Dinas B │ 15/08 │ 🟡 │ Detail │
-│ R-2026-003 │ Dinas C │ 18/08 │ 🔴 │ Detail │
-│ R-2026-004 │ Dinas D │ 20/08 │ 🟢 │ Detail │
-└───────────────┴───────────────┴────────┴─────────┴─────────┘
-
-TailAdmin memang sudah memiliki komponen tabel dan data table yang mendukung sorting/filtering/pagination, sehingga pola ini sangat cocok dengan ekosistemnya.
-
-12. Layout final yang saya pilih
-
-Kalau saya yang mendesain E-AUDIT Anda, urutannya akan seperti ini:
-
-                    DASHBOARD E-AUDIT
-                           │
-                           ▼
-
-┌─────────────────────────────────────────────────────────┐
-│ Dashboard │
-│ Ringkasan aktivitas audit │
-│ │
-│ [ 📅 01 Jan 2026 — 31 Dec 2026 ] [Terapkan] │
-└─────────────────────────────────────────────────────────┘
-
-┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-│ Total Audit │ │ Total Temuan│ │ Rekomendasi │ │ Tindak Lanjut│
-│ 128 │ │ 346 │ │ 521 │ │ 68% │
-└─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘
-
-┌───────────────────────────────────┐ ┌──────────────────────┐
-│ Trend Audit & Temuan │ │ Status Tindak Lanjut │
-│ │ │ │
-│ 📈 │ │ 🍩 68% │
-│ │ │ │
-└───────────────────────────────────┘ └──────────────────────┘
-
-┌────────────────────────────────────────────────────────────┐
-│ Kinerja Tindak Lanjut per Unit │
-│ │
-│ Dinas A ████████████████████░░ 82% │
-│ Dinas B █████████████████░░░░░ 76% │
-│ Dinas C ██████████████░░░░░░░ 68% │
-│ Dinas D ███████████░░░░░░░░░░ 54% │
-└────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────┐ ┌───────────────────────────┐
-│ ⚠️ PERLU PERHATIAN │ │ 📋 Aktivitas Terbaru │
-│ │ │ │
-│ 12 terlambat │ │ • Audit baru │
-│ 8 belum ditindaklanjuti │ │ • Temuan baru │
-│ 5 unit < 50% │ │ • Rekomendasi baru │
-└─────────────────────────────┘ └───────────────────────────┘
-
-┌────────────────────────────────────────────────────────────┐
-│ Rekomendasi Terbaru │
-│ │
-│ ID Unit Tanggal Status Action │
-│ R-001 Dinas A 12/08 Selesai Detail │
-│ R-002 Dinas B 15/08 Proses Detail │
-└────────────────────────────────────────────────────────────┘
+No Sub Kelompok Temuan\*) Kode Jumlah Kejadian % Nilai (Rp)
+1 2 3 4 5 6
+Temuan Ketidakpatuhan Terhadap Peraturan 1.00.00 63 82% 1.222.989.713
+1 Kerugian Negara/daerah atau kerugian negara/daerah yang terjadi pada perusahaan milik negara/daerah 1.01.00 25 32% 1.002.187.021,00
+DESA TIREMAN (REMBANG) 1 23.001.000,00
+DESA PAKIS (SALE) 1 4.855.000,00
+DESA MOJOSARI (SEDAN) 3 66.542.066,00
+DESA TLOGOTUNGGAL (SUMBER) 1 19.905.000,00
+DESA PANTIHARJO (KALIORI) 3 34.071.589,00
+DESA TASIKHARJO (KALIORI) 1 3.577.922,00
+DESA SUMBERGIRANG (LASEM) 3 47.805.094,00
+DESA WARUGUNUNG (PANCUR) 1 11.292.444,00
+DESA PACING (SEDAN) 2 435.935.602,00
+DESA KARANGHARJO (SULANG) 1 9.750.600,00
+DESA KEMADU (SULANG) 2 41.681.000,00
+DESA JURANGJERO (SLUKE) 3 14.090.775,00
+DESA DOROPAYUNG (PANCUR) 3 121.504.828,00
+DESA NGULAHAN (SEDAN) 1 39.102.623,00
+DESA SANETAN (SLUKE) 1 26.889.260,00
+DESA SEREN (SULANG) 1 46.981.172,00
+DESA JADI (SUMBER) 2 17.619.500,00
+DESA BULU (BULU) 1 9.611.000,00
+DESA NGULAAN (BULU) 1 5.890.000,00
+DESA KETANGGI (REMBANG) 1 12.195.600,00
+DESA JOHOGUNUNG (PANCUR) 1 9.884.946,00
+
+2 Potensi kerugian negara/daerah atau kerugian negara/daerah yang terjadi pada perusahaan milik negara/daerah 1.02.00 2 3% 53.994.500,00
+DESA PACING (SEDAN) 1 16.950.000,00
+DESA KEMADU (SULANG) 1 37.044.500,00
+
+3 Kekurangan penerimaan negara/daerah atau perusahaan milik negara/daerah 1.03.00 7 9% 108.780.308,00
+DESA PACING (SEDAN) 1 3.902.353,00
+DESA KARANGHARJO (SULANG) 2 48.272.617,00
+DESA KEMADU (SULANG) 1 47.315.363,00
+DESA JURANGJERO (SLUKE) 1 4.102.774,00
+DESA JADI (SUMBER) 1 3.753.201,00
+DESA NGULAAN (BULU) 1 1.434.000,00
+
+4 Administrasi 1.04.00 29 38% 58.027.884,00
+DESA TIREMAN (REMBANG) 2 1.423.000,00
+DESA PAKIS (SALE) 1 -
+DESA MOJOSARI (SEDAN) 3 5.780.500,00
+DESA TLOGOTUNGGAL (SUMBER) 1 1.726.500,00
+DESA PANTIHARJO (KALIORI) 2 -
+DESA TASIKHARJO (KALIORI) 2 1.813.500,00
+DESA SUMBERGIRANG (LASEM) 3 50.000,00
+DESA WARUGUNUNG (PANCUR) 1 2.405.000,00
+DESA PACING (SEDAN) 2 8.791.000,00
+DESA KEMADU (SULANG) 1 5.468.200,00
+DESA JURANGJERO (SLUKE) 2 580.000,00
+DESA DOROPAYUNG (PANCUR) 3 14.837.000,00
+DESA NGULAHAN (SEDAN) 1 4.224.500,00
+DESA SEREN (SULANG) 1 776.000,00
+DESA JADI (SUMBER) 2 167.284,00
+DESA KETANGGI (REMBANG) 1 8.500.000,00
+DESA JOHOGUNUNG (PANCUR) 1 1.485.400,00
+
+5 Indikasi tindak pidana 1.05.00 0 0% -
+Subtotal Kejadian 63 82% 1.222.989.713,00
+Temuan Kelemahan Sistem Pengendalian Intern 2.00.00 14 18% -
+1 Kelemahan sistem pengendalian akuntansi dan pelaporan 2.01.00 2 100% 0
+DESA KEMADU (SULANG) 1 -
+DESA JADI (SUMBER) 1
+
+2 Kelemahan sistem pengendalian pelaksanaan anggaran pendapatan dan belanja 2.02.00 11 14% -
+DESA TLOGOTUNGGAL (SUMBER) 1 -
+DESA PACING (SEDAN) 2 -
+DESA KARANGHARJO (SULANG) 1 -
+DESA KEMADU (SULANG) 1 -
+DESA SANETAN (SLUKE) 1
+DESA SEREN (SULANG) 1 -
+DESA BULU (BULU) 1
+DESA NGULAAN (BULU) 1 -
+DESA KETANGGI (REMBANG) 1 -
+DESA JOHOGUNUNG (PANCUR) 1 -
+
+3 Kelemahan struktur pengendalian intern 2.03.00 1 1% -
+DESA JADI (SUMBER) 1 -
+
+Subtotal Kejadian 14 116% -
+Temuan 3E 3.00.00 0 0% -
+1 Ketidakhematan / pemborosan / ketidakekonomisan 3.01.00 0 0% -
+2 Ketidakefisienan 3.02.00 0 0 -
+3 Ketidakefektifan 3.03.00 0 0 -
+Subtotal Kejadian 0 0% -
+Jumlah Kejadian 77 100% 1.222.989.713

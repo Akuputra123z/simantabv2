@@ -28,9 +28,18 @@ class TemuanController extends Controller
         $q->where('lhp_id', $request->lhp_id);
     });
 
+    $query->when($request->filled('unit_diperiksa_id'), function ($q) use ($request) {
+        $q->whereHas('lhp', fn($lhp) => $lhp->where('unit_diperiksa_id', $request->unit_diperiksa_id));
+    });
+
     // 4. Tambahkan fitur pencarian sederhana untuk meningkatkan UX.
     $query->when($request->filled('search'), function ($q) use ($request) {
-        $q->where('kondisi', 'like', '%' . $request->search . '%');
+        $search = $request->search;
+        $q->where(function($sub) use ($search) {
+            $sub->where('kondisi', 'like', '%' . $search . '%')
+                ->orWhereHas('lhp.unitDiperiksa', fn($u) => $u->where('nama_unit', 'like', '%' . $search . '%'))
+                ->orWhereHas('lhp', fn($l) => $l->where('nomor_lhp', 'like', '%' . $search . '%'));
+        });
     });
 
     // 5. withQueryString() memastikan pagination tidak hilang saat user melakukan filter/search.

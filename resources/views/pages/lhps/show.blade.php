@@ -404,9 +404,9 @@ $totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
 
                     </div>
 
-                    <p class="text-sm leading-7 text-gray-600 dark:text-gray-300">
-                        {{ $lhp->catatan_umum }}
-                    </p>
+                    <div class="prose prose-sm max-w-none text-sm leading-7 text-gray-600 dark:text-gray-300 dark:prose-invert">
+                        {!! $lhp->catatan_umum !!}
+                    </div>
 
                 </div>
             @endif
@@ -424,7 +424,7 @@ $totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
                         </h3>
 
                         <p class="mt-1 text-xs text-gray-500">
-                            Rincian hasil pemeriksaan beserta rekomendasi tindak lanjut.
+                            Klik pada temuan untuk membuka / menutup rincian temuan dan rekomendasi.
                         </p>
 
                     </div>
@@ -435,19 +435,18 @@ $totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
 
                 </div>
 
-
                 <div class="divide-y divide-gray-100 dark:divide-gray-800">
 
                     @foreach($lhp->temuans as $index => $temuan)
 
-                        <div class="p-6 lg:p-7">
+                        <div class="p-6 lg:p-7" x-data="{ open: {{ $loop->first ? 'true' : 'false' }} }">
 
-                            {{-- TEMUAN HEADER --}}
-                            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            {{-- TEMUAN HEADER (TOGGLE DROPDOWN) --}}
+                            <div @click="open = !open" class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between cursor-pointer select-none group">
 
-                                <div class="flex gap-4">
+                                <div class="flex items-start gap-4">
 
-                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white shadow-sm">
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white shadow-sm transition group-hover:bg-blue-700">
                                         {{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}
                                     </div>
 
@@ -463,9 +462,13 @@ $totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
                                                 Temuan Pemeriksaan
                                             </span>
 
+                                            <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+                                                {{ $temuan->recommendations->count() }} Rekomendasi
+                                            </span>
+
                                         </div>
 
-                                        <h4 class="mt-2 text-base font-bold leading-6 text-gray-900 dark:text-white">
+                                        <h4 class="mt-1.5 text-base font-bold leading-6 text-gray-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400 transition">
                                             {{ $temuan->kodeTemuan?->deskripsi ?? $temuan->kodeTemuan?->nama ?? 'Temuan Pemeriksaan' }}
                                         </h4>
 
@@ -474,165 +477,191 @@ $totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
                                 </div>
 
 
-                                @if($temuan->nilai_temuan > 0)
+                                <div class="flex items-center gap-3 self-end sm:self-center">
 
-                                    <div class="shrink-0 rounded-xl border border-rose-100 bg-rose-50 px-4 py-2 text-right dark:border-rose-900/40 dark:bg-rose-900/20">
+                                    @if($temuan->nilai_temuan > 0)
 
-                                        <p class="text-[9px] font-bold uppercase tracking-wider text-rose-400">
-                                            Nilai Temuan
-                                        </p>
+                                        <div class="shrink-0 rounded-xl border border-rose-100 bg-rose-50 px-3 py-1.5 text-right dark:border-rose-900/40 dark:bg-rose-900/20">
 
-                                        <p class="mt-1 text-sm font-bold text-rose-600">
-                                            Rp {{ number_format($temuan->nilai_temuan, 0, ',', '.') }}
-                                        </p>
+                                            <p class="text-[9px] font-bold uppercase tracking-wider text-rose-400">
+                                                Nilai Temuan
+                                            </p>
+
+                                            <p class="text-xs font-bold text-rose-600">
+                                                Rp {{ number_format($temuan->nilai_temuan, 0, ',', '.') }}
+                                            </p>
+
+                                        </div>
+
+                                    @endif
+
+                                    <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition group-hover:bg-blue-50 group-hover:text-blue-600 dark:bg-gray-800 dark:text-gray-400 dark:group-hover:bg-blue-900/40 dark:group-hover:text-blue-400">
+                                        <svg class="h-5 w-5 transform transition-transform duration-200"
+                                             :class="open ? 'rotate-180' : ''"
+                                             fill="none"
+                                             stroke="currentColor"
+                                             viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            {{-- COLLAPSIBLE CONTENT BODY --}}
+                            <div x-show="open"
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 -translate-y-2"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 x-transition:leave="transition ease-in duration-150"
+                                 x-transition:leave-start="opacity-100 translate-y-0"
+                                 x-transition:leave-end="opacity-0 -translate-y-2"
+                                 class="mt-6 border-t border-gray-100 pt-6 dark:border-gray-800">
+
+                                {{-- KONDISI --}}
+                                <div class="border-l-2 border-gray-200 pl-5 dark:border-gray-700">
+
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">
+                                        Kondisi
+                                    </p>
+
+                                    <div class="prose prose-sm max-w-none text-sm leading-7 text-gray-700 dark:text-gray-300 dark:prose-invert">
+                                        {!! $temuan->kondisi ?: '-' !!}
+                                    </div>
+
+                                </div>
+
+
+                                {{-- SEBAB DAN AKIBAT --}}
+                                @if($temuan->sebab || $temuan->akibat)
+
+                                    <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+
+                                        @if($temuan->sebab)
+                                            <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/60">
+
+                                                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">
+                                                    Sebab
+                                                </p>
+
+                                                <div class="prose prose-sm max-w-none text-xs leading-6 text-gray-600 dark:text-gray-300 dark:prose-invert">
+                                                    {!! $temuan->sebab !!}
+                                                </div>
+
+                                            </div>
+                                        @endif
+
+
+                                        @if($temuan->akibat)
+                                            <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/60">
+
+                                                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">
+                                                    Akibat
+                                                </p>
+
+                                                <div class="prose prose-sm max-w-none text-xs leading-6 text-gray-600 dark:text-gray-300 dark:prose-invert">
+                                                    {!! $temuan->akibat !!}
+                                                </div>
+
+                                            </div>
+                                        @endif
 
                                     </div>
 
                                 @endif
 
-                            </div>
+
+                                {{-- REKOMENDASI --}}
+                                <div class="mt-7 border-t border-gray-100 pt-6 dark:border-gray-800">
+
+                                    <div class="mb-4 flex items-center gap-2">
+
+                                        <div class="h-2 w-2 rounded-full bg-blue-500"></div>
+
+                                        <h5 class="text-xs font-bold uppercase tracking-wider text-gray-500">
+                                            Rekomendasi Tindak Lanjut
+                                        </h5>
+
+                                    </div>
 
 
-                            {{-- KONDISI --}}
-                            <div class="mt-6 border-l-2 border-gray-200 pl-5 dark:border-gray-700">
+                                    <div class="space-y-3">
 
-                                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                                    Kondisi
-                                </p>
+                                        @foreach($temuan->recommendations as $rIndex => $rekom)
 
-                                <p class="mt-2 text-sm leading-7 text-gray-700 dark:text-gray-300">
-                                    {{ $temuan->kondisi ?: '-' }}
-                                </p>
+                                            <div class="relative rounded-xl border border-gray-200 p-5 transition hover:border-blue-200 hover:shadow-sm dark:border-gray-700 dark:hover:border-blue-800">
 
-                            </div>
+                                                <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 
+                                                    <div class="flex items-center gap-3">
 
-                            {{-- SEBAB DAN AKIBAT --}}
-                            @if($temuan->sebab || $temuan->akibat)
+                                                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-[11px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                                            {{ $rIndex + 1 }}
+                                                        </span>
 
-                                <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                        <div>
 
-                                    @if($temuan->sebab)
-                                        <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/60">
+                                                            <span class="font-mono text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                                                                {{ $rekom->kodeRekomendasi?->kode ?? 'REKOM' }}
+                                                            </span>
 
-                                            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                                                Sebab
-                                            </p>
+                                                            <p class="mt-1 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                                                {{ $rekom->kodeRekomendasi?->deskripsi ?? 'Rekomendasi' }}
+                                                            </p>
 
-                                            <p class="mt-2 text-xs leading-6 text-gray-600 dark:text-gray-300">
-                                                {{ $temuan->sebab }}
-                                            </p>
+                                                        </div>
 
-                                        </div>
-                                    @endif
+                                                    </div>
 
 
-                                    @if($temuan->akibat)
-                                        <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/60">
-
-                                            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                                                Akibat
-                                            </p>
-
-                                            <p class="mt-2 text-xs leading-6 text-gray-600 dark:text-gray-300">
-                                                {{ $temuan->akibat }}
-                                            </p>
-
-                                        </div>
-                                    @endif
-
-                                </div>
-
-                            @endif
-
-
-                            {{-- REKOMENDASI --}}
-                            <div class="mt-7 border-t border-gray-100 pt-6 dark:border-gray-800">
-
-                                <div class="mb-4 flex items-center gap-2">
-
-                                    <div class="h-2 w-2 rounded-full bg-blue-500"></div>
-
-                                    <h5 class="text-xs font-bold uppercase tracking-wider text-gray-500">
-                                        Rekomendasi Tindak Lanjut
-                                    </h5>
-
-                                </div>
-
-
-                                <div class="space-y-3">
-
-                                    @foreach($temuan->recommendations as $rIndex => $rekom)
-
-                                        <div class="relative rounded-xl border border-gray-200 p-5 transition hover:border-blue-200 hover:shadow-sm dark:border-gray-700 dark:hover:border-blue-800">
-
-                                            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-
-                                                <div class="flex items-center gap-3">
-
-                                                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-[11px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                                                        {{ $rIndex + 1 }}
+                                                    <span class="w-fit rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-bold uppercase text-gray-500 dark:bg-gray-800">
+                                                        {{ $rekom->jenis_rekomendasi }}
                                                     </span>
+
+                                                </div>
+
+
+                                                <div class="prose prose-sm max-w-none text-sm leading-7 text-gray-700 dark:text-gray-300 dark:prose-invert">
+                                                    {!! $rekom->uraian_rekom !!}
+                                                </div>
+
+
+                                                <div class="mt-5 grid grid-cols-1 gap-3 border-t border-gray-100 pt-4 sm:grid-cols-2 dark:border-gray-800">
 
                                                     <div>
 
-                                                        <span class="font-mono text-[10px] font-bold text-blue-600 dark:text-blue-400">
-                                                            {{ $rekom->kodeRekomendasi?->kode ?? 'REKOM' }}
-                                                        </span>
+                                                        <p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">
+                                                            Batas Waktu
+                                                        </p>
 
                                                         <p class="mt-1 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                                            {{ $rekom->kodeRekomendasi?->deskripsi ?? 'Rekomendasi' }}
+                                                            {{ optional($rekom->batas_waktu)->translatedFormat('d F Y') ?? (is_string($rekom->batas_waktu) ? \Carbon\Carbon::parse($rekom->batas_waktu)->translatedFormat('d F Y') : '-') }}
+                                                        </p>
+
+                                                    </div>
+
+
+                                                    <div class="sm:text-right">
+
+                                                        <p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">
+                                                            Nilai Rekomendasi
+                                                        </p>
+
+                                                        <p class="mt-1 text-xs font-bold text-blue-600">
+                                                            Rp {{ number_format($rekom->nilai_rekom ?? 0, 0, ',', '.') }}
                                                         </p>
 
                                                     </div>
 
                                                 </div>
 
-
-                                                <span class="w-fit rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-bold uppercase text-gray-500 dark:bg-gray-800">
-                                                    {{ $rekom->jenis_rekomendasi }}
-                                                </span>
-
                                             </div>
 
+                                        @endforeach
 
-                                            <p class="text-sm leading-7 text-gray-700 dark:text-gray-300">
-                                                {{ $rekom->uraian_rekom }}
-                                            </p>
-
-
-                                            <div class="mt-5 grid grid-cols-1 gap-3 border-t border-gray-100 pt-4 sm:grid-cols-2 dark:border-gray-800">
-
-                                                <div>
-
-                                                    <p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">
-                                                        Batas Waktu
-                                                    </p>
-
-                                                    <p class="mt-1 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                                        {{ optional($rekom->batas_waktu)->translatedFormat('d F Y') ?? (is_string($rekom->batas_waktu) ? \Carbon\Carbon::parse($rekom->batas_waktu)->translatedFormat('d F Y') : '-') }}
-                                                    </p>
-
-                                                </div>
-
-
-                                                <div class="sm:text-right">
-
-                                                    <p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">
-                                                        Nilai Rekomendasi
-                                                    </p>
-
-                                                    <p class="mt-1 text-xs font-bold text-blue-600">
-                                                        Rp {{ number_format($rekom->nilai_rekom ?? 0, 0, ',', '.') }}
-                                                    </p>
-
-                                                </div>
-
-                                            </div>
-
-                                        </div>
-
-                                    @endforeach
+                                    </div>
 
                                 </div>
 

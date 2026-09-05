@@ -24,21 +24,39 @@
   <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
     <div class="space-y-3 min-h-[310px]">
       @forelse($unitKinerja as $index => $unit)
-      <div x-show="({{ $index }} >= (page - 1) * perPage) && ({{ $index }} < page * perPage)"
-           x-transition:enter="transition ease-out duration-200"
-           x-transition:enter-start="opacity-0 transform translate-y-1"
-           x-transition:enter-end="opacity-100 transform translate-y-0"
-           class="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-gray-800/40 transition-colors gap-2 border border-slate-100 dark:border-gray-800/60">
+      @php
+        $lhpId = $unit['lhp_id'] ?? null;
+        $unitId = $unit['id'] ?? null;
+        if ($lhpId) {
+            $lhpShowUrl = route('lhps.show', $lhpId);
+        } elseif ($unitId) {
+            $lhpShowUrl = route('lhps.index', ['unit_diperiksa_id' => $unitId]);
+        } else {
+            $lhpShowUrl = route('lhps.index');
+        }
+      @endphp
+      <a href="{{ $lhpShowUrl }}"
+         x-show="({{ $index }} >= (page - 1) * perPage) && ({{ $index }} < page * perPage)"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 transform translate-y-1"
+         x-transition:enter-end="opacity-100 transform translate-y-0"
+         title="Masuk ke Detail LHP {{ $unit['nama'] }}"
+         class="group flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl hover:bg-blue-50/70 hover:border-blue-200 dark:hover:bg-blue-900/20 dark:hover:border-blue-800/40 transition-all gap-2 border border-slate-100 dark:border-gray-800/60 shadow-xs cursor-pointer block">
         <div class="flex items-center gap-3 min-w-0 flex-1">
           <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold {{ $index === 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : ($index === 1 ? 'bg-slate-200 text-slate-700 dark:bg-gray-700 dark:text-slate-200' : ($index === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' : 'bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-slate-400')) }}">
             {{ $index + 1 }}
           </span>
           <div class="min-w-0 flex-1">
-            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-              {{ $unit['nama'] }}
-            </h4>
+            <div class="flex items-center gap-1.5">
+              <h4 class="text-xs font-bold text-slate-800 group-hover:text-blue-600 dark:text-slate-200 dark:group-hover:text-blue-400 transition-colors truncate">
+                {{ $unit['nama'] }}
+              </h4>
+              <svg class="h-3.5 w-3.5 text-blue-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
             <div class="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-              <span class="font-bold text-orange-600 dark:text-orange-400">{{ $unit['total_temuan'] ?? 0 }} Temuan</span>
+              <span class="font-bold text-blue-600 dark:text-blue-400">{{ $unit['total_temuan'] ?? 0 }} Temuan</span>
               <span>&bull;</span>
               <span>{{ $unit['selesai_rekom'] ?? 0 }}/{{ $unit['total_rekom'] ?? 0 }} Rekom Selesai</span>
             </div>
@@ -54,7 +72,7 @@
             {{ $unit['progress'] ?? 0 }}%
           </span>
         </div>
-      </div>
+      </a>
       @empty
       <p class="text-xs text-slate-400 italic py-8 text-center">Belum ada data unit periksa.</p>
       @endforelse

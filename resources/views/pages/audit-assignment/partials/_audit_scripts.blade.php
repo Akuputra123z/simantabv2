@@ -183,6 +183,36 @@ document.addEventListener('DOMContentLoaded', () => {
         pkptRenderList($pkptSearch?.value || '');
     }
 
+    function pkptRenderList(query) {
+        const q = (query || '').trim();
+        const filtered = pkptOptions.filter(o =>
+            !q ||
+            o.label.toLowerCase().includes(q.toLowerCase()) ||
+            (o.jenis_kegiatan && o.jenis_kegiatan.toLowerCase().includes(q.toLowerCase())) ||
+            (o.tim && o.tim.toLowerCase().includes(q.toLowerCase()))
+        );
+
+        if (!filtered.length) {
+            $pkptList.innerHTML = '<div class="px-4 py-3 text-xs text-gray-400 italic">Tidak ada detail program ditemukan</div>';
+            return;
+        }
+
+        $pkptList.innerHTML = filtered.map(o => {
+            const isSel = o.value === $detSelect.value;
+            const labelHtml = q ? mark(o.label, q) : esc(o.label);
+            const anggaranHtml = Number(o.anggaran) > 0 ? `<span class="shrink-0 text-[11px] font-semibold text-green-600 dark:text-green-400 ml-auto">${fmtRupiah(o.anggaran)}</span>` : '';
+            const assignedBadge = o.assigned ? `<span class="shrink-0 text-[10px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded ml-2">Sudah Ada Penugasan</span>` : '';
+            return `<div class="pkpt-opt flex items-center justify-between gap-2 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.04] text-sm leading-snug transition-colors ${isSel ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'}" data-value="${o.value}" data-label="${esc(o.label)}" data-jenis-kegiatan="${esc(o.jenis_kegiatan)}" data-tim="${esc(o.tim)}" data-anggaran="${o.anggaran || 0}"><span class="truncate">${labelHtml}</span>${assignedBadge}${anggaranHtml}</div>`;
+        }).join('');
+
+        $pkptList.querySelectorAll('.pkpt-opt').forEach(el => {
+            el.addEventListener('click', () => {
+                pkptSetValue(el.dataset.value, el.dataset.label, el.dataset.anggaran);
+                pkptClose();
+            });
+        });
+    }
+
     function esc(s) {
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
@@ -240,7 +270,8 @@ async function loadProgramDetails(programId, selectedDetailId = null) {
             jenis_kegiatan: d.jenis_kegiatan || '',
             tim: d.tim || '',
             anggaran: Number(d.anggaran) || 0,
-            disabled: !!d.assigned,
+            disabled: false,
+            assigned: !!d.assigned,
         }));
         
         pkptDetailMap = {};

@@ -50,41 +50,43 @@ public function attachments(): MorphMany
             }
         });
 
-        // 🔥 FIX UTAMA: COPY saat CREATE (INI YANG KAMU BUTUH)
+        // Auto copy saat create agar dapat diakses via symlink public/storage
         static::created(function (self $attachment) {
-
             if (! $attachment->file_path) return;
 
-            $source = storage_path('app/public/' . $attachment->file_path);
-            $destination = public_path('storage/' . $attachment->file_path);
+            $sourcePublic  = storage_path('app/public/' . $attachment->file_path);
+            $sourcePrivate = storage_path('app/private/' . $attachment->file_path);
+            $sourceLocal   = storage_path('app/' . $attachment->file_path);
 
-            if (! file_exists($source)) return;
+            $source = file_exists($sourcePublic)
+                ? $sourcePublic
+                : (file_exists($sourcePrivate) ? $sourcePrivate : (file_exists($sourceLocal) ? $sourceLocal : null));
 
-            // hindari overwrite
-            if (file_exists($destination)) return;
+            if (! $source) return;
 
-            if (! is_dir(dirname($destination))) {
-                mkdir(dirname($destination), 0775, true);
+            // Pastikan file tersedia di storage/app/public untuk symlink
+            if ($source !== $sourcePublic) {
+                if (! is_dir(dirname($sourcePublic))) {
+                    mkdir(dirname($sourcePublic), 0775, true);
+                }
+                @copy($source, $sourcePublic);
             }
-
-            copy($source, $destination);
         });
 
-        // 🔥 DELETE file (storage + public)
+        // Delete file (storage public & private)
         static::deleted(function (self $attachment) {
-
             if (! $attachment->isForceDeleting()) return;
             if (! $attachment->file_path) return;
 
-            $storagePath = storage_path('app/public/' . $attachment->file_path);
-            $publicPath  = public_path('storage/' . $attachment->file_path);
+            $storagePublic  = storage_path('app/public/' . $attachment->file_path);
+            $storagePrivate = storage_path('app/private/' . $attachment->file_path);
 
-            if (file_exists($storagePath)) {
-                @unlink($storagePath);
+            if (file_exists($storagePublic)) {
+                @unlink($storagePublic);
             }
 
-            if (file_exists($publicPath)) {
-                @unlink($publicPath);
+            if (file_exists($storagePrivate)) {
+                @unlink($storagePrivate);
             }
         });
     }
@@ -121,9 +123,11 @@ public function attachments(): MorphMany
 
     public function getFileUrlAttribute(): string
     {
-        return $this->file_path
-            ? asset('storage/' . $this->file_path)
-            : '#';
+        if (! $this->id || ! $this->file_path) {
+            return '#';
+        }
+
+        return route('attachments.show', $this->id);
     }
 
     // ================= HELPER =================

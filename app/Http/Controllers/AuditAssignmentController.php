@@ -90,11 +90,6 @@ class AuditAssignmentController extends Controller
             $detail = AuditProgramDetail::with('auditProgram')->find($pid);
 
             if ($detail && $detail->auditProgram?->approval_status !== AuditProgram::APPROVAL_DITOLAK) {
-                if ($detail->assignment) {
-                    return redirect()->route('audit-assignment.edit', $detail->assignment->id)
-                        ->with('info', 'Sub-program ini sudah memiliki penugasan — dialihkan ke halaman edit penugasan yang ada.');
-                }
-
                 $programId = $detail->audit_program_id;
                 $detailId  = $detail->id;
             }
@@ -245,8 +240,7 @@ class AuditAssignmentController extends Controller
         }
 
         $rules = [
-            // Unique kecuali untuk data yang sedang di-edit itu sendiri
-            'audit_program_detail_id' => 'required|exists:audit_program_details,id|unique:audit_assignments,audit_program_detail_id,' . $auditAssignment->id,
+            'audit_program_detail_id' => 'required|exists:audit_program_details,id',
             'unit_diperiksa_ids'      => 'required|array|min:1',
             'unit_diperiksa_ids.*'    => 'exists:unit_diperiksas,id',
             'ketua_tim_id'            => 'required|exists:users,id',

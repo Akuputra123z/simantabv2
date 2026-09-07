@@ -1326,7 +1326,7 @@ body.dark .theme-switch {
         <div class="brand-mini-logo">
 
             <img
-                src="{{ asset('images/icon.png') }}"
+                src="{{ asset('images/icon.webp') }}"
                 alt="Logo Inspektorat Kabupaten Rembang"
             >
 
@@ -1353,7 +1353,7 @@ body.dark .theme-switch {
 
         <img
             class="logo-character"
-            src="{{ asset('images/icon.png') }}"
+            src="{{ asset('images/icon.webp') }}"
             alt="Karakter Inspektorat Kabupaten Rembang"
         >
 

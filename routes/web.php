@@ -47,12 +47,18 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     Route::resource('temuan', TemuanController::class);
     Route::resource('recommendations', RecommendationController::class);
+    Route::get('/tindak-lanjuts/lhp/{lhp}', [TindakLanjutController::class, 'showLhp'])
+        ->name('tindak-lanjuts.lhp');
+    Route::get('/tindak-lanjuts/rekomendasis-by-lhp/{lhp}', [TindakLanjutController::class, 'getRekomendasisByLhp'])
+        ->name('tindak-lanjuts.rekom-by-lhp');
     Route::resource('tindak-lanjuts', TindakLanjutController::class);
     Route::get('/recommendations-by-program/{programId}', [TindakLanjutController::class, 'getRekomendasisByProgram']);
     Route::patch('/tindak-lanjuts/{tindakLanjut}/buka-kunci-opd', [TindakLanjutController::class, 'bukaKunciOpd'])
         ->name('tindak-lanjuts.buka-kunci-opd');
     Route::post('/tindak-lanjuts/{tindakLanjut}/tolak-opd', [TindakLanjutController::class, 'tolakOpd'])
         ->name('tindak-lanjuts.tolak-opd');
+    Route::post('/tindak-lanjuts/{tindakLanjut}/verifikasi-opd', [TindakLanjutController::class, 'verifikasiOpd'])
+        ->name('tindak-lanjuts.verifikasi-opd');
     
     // Audit Assignment
     Route::resource('audit-assignment', AuditAssignmentController::class);
@@ -165,8 +171,11 @@ Route::middleware(['auth', 'active'])->prefix('laporan')->name('laporan.')->grou
     Route::get('/download/pdf/semua', [LaporanController::class, 'downloadPdfSemua'])->name('download-pdf-semua');
     Route::get('/download/pdf/{lhp}', [LaporanController::class, 'downloadPdfPerLhp'])->name('download-pdf-per-lhp');
     Route::get('/preview/pdf/{lhp}', [LaporanController::class, 'previewPdfPerLhp'])->name('preview-pdf-per-lhp');
-    Route::get('/download/excel/semua', [LaporanController::class, 'downloadExcelSemua'])->name('download-excel-semua');
-    // ── Secure Lampiran Berkas ──
+    Route::get('/download/excel/{lhp}', [LaporanController::class, 'downloadExcelPerLhp'])->name('download-excel-per-lhp');
+});
+
+// ── Secure Lampiran Berkas ──
+Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])->name('attachments.download');
     Route::get('/attachments/{attachment}/view', [AttachmentController::class, 'show'])->name('attachments.show');
 });
@@ -178,6 +187,10 @@ Route::middleware(['auth', 'active', 'role:opd'])
     ->group(function () {
         Route::get('/tindak-lanjut', [OpdTindakLanjutController::class, 'index'])
             ->name('tindak-lanjut.index');
+        Route::get('/tindak-lanjut/lhp/{lhp}', [OpdTindakLanjutController::class, 'showLhp'])
+            ->name('tindak-lanjut.lhp');
+        Route::post('/tindak-lanjut/lhp/{lhp}/kirim-semua', [OpdTindakLanjutController::class, 'kirimSemuaLhp'])
+            ->name('tindak-lanjut.lhp.kirim-semua');
         Route::get('/tindak-lanjut/{tindakLanjut}', [OpdTindakLanjutController::class, 'show'])
             ->name('tindak-lanjut.show');
         Route::post('/tindak-lanjut/{tindakLanjut}/upload', [OpdTindakLanjutController::class, 'upload'])

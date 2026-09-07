@@ -21,6 +21,10 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
+        if ($user->hasRole('opd')) {
+            return redirect()->route('opd.dashboard');
+        }
+
         // ── 1. Filter Tanggal & Kategori Program Audit ──────────────────────────────
         $preset           = $request->input('preset', 'this_year');
         $startDateInput   = $request->input('start_date');
@@ -134,16 +138,17 @@ class DashboardController extends Controller
 
             // ── Trend Monthly Chart (Audit, Temuan, Rekomendasi) ────────────────
             $currentYear = $startDate->year;
+            $monthExpr   = DB::getDriverName() === 'sqlite' ? "CAST(strftime('%m', lhps.tanggal_lhp) AS INTEGER)" : "MONTH(lhps.tanggal_lhp)";
             $bulanData = DB::table('lhps')
                 ->whereIn('lhps.id', $lhpIds)
                 ->leftJoin('temuans', 'temuans.lhp_id', '=', 'lhps.id')
                 ->leftJoin('recommendations', 'recommendations.temuan_id', '=', 'temuans.id')
-                ->selectRaw('
-                    MONTH(lhps.tanggal_lhp) as bulan,
+                ->selectRaw("
+                    {$monthExpr} as bulan,
                     COUNT(DISTINCT lhps.id) as total_audit,
                     COUNT(DISTINCT temuans.id) as total_temuan,
                     COUNT(DISTINCT recommendations.id) as total_rekom
-                ')
+                ")
                 ->groupBy('bulan')
                 ->orderBy('bulan')
                 ->get()
@@ -288,11 +293,11 @@ class DashboardController extends Controller
                 ->whereIn('lhps.id', $lhpIds)
                 ->leftJoin('temuans', 'temuans.lhp_id', '=', 'lhps.id')
                 ->leftJoin('lhp_statistik', 'lhp_statistik.lhp_id', '=', 'lhps.id')
-                ->selectRaw('
-                    MONTH(lhps.tanggal_lhp) as bulan,
+                ->selectRaw("
+                    {$monthExpr} as bulan,
                     SUM(CASE WHEN temuans.nilai_temuan > 0 THEN temuans.nilai_temuan ELSE (COALESCE(temuans.nilai_kerugian_negara, 0) + COALESCE(temuans.nilai_kerugian_daerah, 0) + COALESCE(temuans.nilai_kerugian_desa, 0) + COALESCE(temuans.nilai_kerugian_bos_blud, 0)) END) as total_kerugian,
                     SUM(COALESCE(lhp_statistik.total_nilai_tl_selesai, 0)) as total_penyelamatan
-                ')
+                ")
                 ->groupBy('bulan')
                 ->get()
                 ->keyBy('bulan');

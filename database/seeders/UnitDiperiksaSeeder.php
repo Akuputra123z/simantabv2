@@ -9,6 +9,10 @@ class UnitDiperiksaSeeder extends Seeder
 {
     public function run(): void
     {
+        if (DB::table('unit_diperiksas')->count() > 0) {
+            return;
+        }
+
         $data = [
             // Sumber
             ['kategori' => 'Desa', 'nama_kecamatan' => 'Sumber', 'nama_unit' => 'Desa Ronggomulyo'],

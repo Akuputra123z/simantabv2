@@ -71,10 +71,13 @@ class Recommendation extends Model
             $totalBayar = (float) (clone $query)->sum('total_terbayar');
             $nilaiRekom = (float) ($this->nilai_rekom ?? 0);
             
-            // Cek apakah sudah ada input tindak lanjut (meskipun belum diverifikasi)
-            $hasAnyTl = (clone $query)->exists();
+            // Cek apakah sudah ada pembayaran atau bukti dari OPD
+            $hasValidTl = (clone $query)->where(function ($q) {
+                $q->where('total_terbayar', '>', 0)
+                  ->orWhere('status_opd', 'dikirim')
+                  ->orWhere('status_opd', 'draft');
+            })->exists();
 
-            // Cap agar tidak melebihi nilai_rekom → progress tidak bisa >100%
             $totalBayarCapped = $nilaiRekom > 0 ? min($totalBayar, $nilaiRekom) : $totalBayar;
 
             $this->nilai_tl_selesai = $totalBayarCapped;
@@ -84,13 +87,12 @@ class Recommendation extends Model
                 // Selesai jika nilai yang lunas/diverifikasi >= rekomendasi
                 $nilaiRekom > 0 && $totalBayarCapped >= $nilaiRekom => self::STATUS_SELESAI,
                 
-                // Proses jika sudah ada nilai masuk ATAU sekadar sudah ada data input TL
-                $totalBayar > 0 || $hasAnyTl                        => self::STATUS_PROSES,
+                // Proses jika sudah ada nilai setoran ATAU dokumen bukti dari OPD
+                $totalBayar > 0 || $hasValidTl                       => self::STATUS_PROSES,
                 
                 default                                             => self::STATUS_BELUM,
             };
         } else {
-            // ── Jenis BARANG / ADMINISTRASI ───────────────────────────────────
             $totalTl   = (clone $query)->count();
             $lunas     = (clone $query)->where('status_verifikasi', 'lunas')->count();
             $hasProses = (clone $query)
@@ -181,4 +183,17 @@ class Recommendation extends Model
 
     // ── Events ────────────────────────────────────────────────────────────────
 
+    protected static function booted(): void
+    {
+        static::created(function (self $model) {
+            $model->tindakLanjuts()->firstOrCreate([
+                'recommendation_id' => $model->id,
+            ], [
+                'status_verifikasi'   => 'menunggu_verifikasi',
+                'nilai_tindak_lanjut' => 0,
+                'total_terbayar'      => 0,
+                'sisa_belum_bayar'    => $model->isUang() ? (float) ($model->nilai_rekom ?? 0) : 0,
+            ]);
+        });
+    }
 }

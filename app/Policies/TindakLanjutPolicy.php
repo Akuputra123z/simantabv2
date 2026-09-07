@@ -100,4 +100,17 @@ class TindakLanjutPolicy
 
         return $user->can('tindak-lanjut.tolak-opd');
     }
+
+    public function verifikasi(User $user, TindakLanjut $tindakLanjut): bool
+    {
+        if ($user->hasRole(User::ROLE_SUPER_ADMIN) || $user->hasRole(User::ROLE_KEPALA_INSPEKTORAT)) {
+            return true;
+        }
+
+        if ($user->hasRole(['admin', 'admin_inspektorat'])) {
+            return true;
+        }
+
+        return $user->can('tindak-lanjut.verifikasi');
+    }
 }

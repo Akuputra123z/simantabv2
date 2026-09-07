@@ -149,7 +149,7 @@
                     Upload Bukti Tindak Lanjut
                 </h2>
 
-                @if($tindakLanjut->keterangan_pendukung_opd || $tindakLanjut->attachments->where('jenis_bukti', 'opd_upload')->isNotEmpty())
+                @if($tindakLanjut->keterangan_pendukung_opd || $tindakLanjut->attachments->isNotEmpty())
                     <div class="mb-6 rounded-xl bg-blue-50 border border-blue-100 p-4">
                         <p class="text-xs font-bold uppercase tracking-wider text-blue-600 mb-3">Upload Sebelumnya</p>
 
@@ -163,7 +163,7 @@
                         @endif
 
                         @php
-                            $opdFiles = $tindakLanjut->attachments->where('jenis_bukti', 'opd_upload')->values();
+                            $opdFiles = $tindakLanjut->attachments->values();
                             $hapusUrl = route('opd.tindak-lanjut.hapus-lampiran', [$tindakLanjut, '__ID__']);
                         @endphp
                         @if($opdFiles->isNotEmpty())
@@ -296,7 +296,7 @@
                         </div>
                     </form>
 
-                    @if($tindakLanjut->keterangan_pendukung_opd || $tindakLanjut->attachments->where('jenis_bukti', 'opd_upload')->isNotEmpty())
+                    @if($tindakLanjut->keterangan_pendukung_opd || $tindakLanjut->attachments->isNotEmpty())
                         <div class="mt-6 border-t border-gray-100 pt-6">
                             <form action="{{ route('opd.tindak-lanjut.kirim', $tindakLanjut) }}" method="POST"
                                   onsubmit="return confirm('Kirim tindak lanjut ini? Setelah dikirim tidak bisa diubah.')">

@@ -3,446 +3,655 @@
 @section('content')
 
 @if(!isset($tindakLanjut) || !$tindakLanjut->id)
-<div class="flex h-[70vh] flex-col items-center justify-center text-center">
-    <div class="mb-4 rounded-full bg-gray-100 p-6">
-        <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+<div class="flex h-[60vh] flex-col items-center justify-center text-center">
+    <div class="mb-4 rounded-full bg-gray-100 p-4 dark:bg-gray-800">
+        <svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
     </div>
-    <h2 class="text-2xl font-bold text-gray-900">Data Tidak Ditemukan</h2>
-    <p class="mt-2 text-gray-500">Mohon maaf, data tindak lanjut yang Anda cari tidak tersedia.</p>
-    <a href="{{ route('tindak-lanjuts.index') }}" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-gray-800">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Data Tidak Ditemukan</h2>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Data tindak lanjut tidak tersedia atau telah dihapus.</p>
+    <a href="{{ route('tindak-lanjuts.index') }}" class="mt-5 inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors">
         Kembali ke Daftar
     </a>
 </div>
 @php return; @endphp
 @endif
 
-<div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-    
-    {{-- TOP NAVIGATION & ACTIONS --}}
-    <div class="mb-8 flex flex-wrap items-end justify-between gap-6">
-        <div class="space-y-1">
-            <nav class="flex items-center gap-2 text-sm font-medium text-gray-400">
-                <a href="{{ route('tindak-lanjuts.index') }}" class="transition hover:text-gray-900">Tindak Lanjut</a>
-                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"></path></svg>
-                <span class="text-gray-900">ID #{{ $tindakLanjut->id }}</span>
+@php
+    $rekom = $tindakLanjut->recommendation;
+    $temuan = $rekom?->temuan;
+    $lhp = $temuan?->lhp;
+    $unit = $lhp?->unitDiperiksa;
+    $isUang = ($rekom?->jenis_rekomendasi === 'uang');
+    $targetNilai = (float) ($tindakLanjut->nilai_tindak_lanjut > 0 ? $tindakLanjut->nilai_tindak_lanjut : ($rekom?->nilai_rekom ?? 0));
+    $totalTerbayar = (float) $tindakLanjut->total_terbayar;
+    $sisaBayar = max(0, $targetNilai - $totalTerbayar);
+    $percentRealisasi = $targetNilai > 0 ? min(100, round(($totalTerbayar / $targetNilai) * 100)) : ($tindakLanjut->status_verifikasi === 'lunas' ? 100 : 0);
+
+    $allAttachments = $tindakLanjut->attachments;
+    $hasOpdData = !empty($tindakLanjut->keterangan_pendukung_opd) || $allAttachments->isNotEmpty() || !empty($tindakLanjut->upload_opd_oleh);
+
+    // Parse nomor bukti jika ada
+    $nomorBukti = null;
+    if (preg_match('/(?:No\.?\s*Bukti\s*\/?\s*STS|No\.?\s*STS|STS|No\.?\s*Dokumen|No\.?\s*BAST)\s*[:#]?\s*([A-Za-z0-9\/\-_.]+)/i', $tindakLanjut->keterangan_pendukung_opd ?? '', $matches)) {
+        $nomorBukti = trim($matches[1]);
+    }
+
+    $jenisMap = [
+        'setor_kas' => 'Setor Kas',
+        'cicilan' => 'Cicilan / Bertahap',
+        'pengembalian_barang' => 'Pengembalian Barang / Aset',
+        'perbaikan_administrasi' => 'Perbaikan Administrasi',
+    ];
+    $jenisLabel = $jenisMap[$tindakLanjut->jenis_penyelesaian] ?? ucfirst(str_replace('_', ' ', $tindakLanjut->jenis_penyelesaian ?? '-'));
+
+    $statusVerifBadge = match($tindakLanjut->status_verifikasi) {
+        'lunas' => 'bg-green-50 text-green-700 ring-1 ring-green-600/20 dark:bg-green-900/20 dark:text-green-400',
+        'berjalan' => 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20 dark:bg-blue-900/20 dark:text-blue-400',
+        default => 'bg-gray-100 text-gray-700 ring-1 ring-gray-600/20 dark:bg-gray-800 dark:text-gray-300'
+    };
+
+    $statusOpdBadge = match($tindakLanjut->status_opd) {
+        'dikirim' => 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20 dark:bg-emerald-900/20 dark:text-emerald-400',
+        'draft' => 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400',
+        default => 'bg-gray-100 text-gray-600 ring-1 ring-gray-600/20 dark:bg-gray-800 dark:text-gray-400'
+    };
+    $statusOpdLabel = match($tindakLanjut->status_opd) {
+        'dikirim' => 'Terkirim',
+        'draft' => 'Draft',
+        default => 'Belum Upload'
+    };
+    if ($tindakLanjut->alasan_tolak_opd) {
+        $statusOpdBadge = 'bg-red-50 text-red-700 ring-1 ring-red-600/20 dark:bg-red-900/20 dark:text-red-400';
+        $statusOpdLabel = 'Ditolak';
+    }
+@endphp
+
+<div class="space-y-6">
+
+    {{-- HEADER & ACTIONS --}}
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <nav class="mb-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <a href="{{ route('tindak-lanjuts.index') }}" class="hover:text-gray-900 dark:hover:text-white">Tindak Lanjut</a>
+                <span>/</span>
+                @if($lhp)
+                    <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}" class="hover:text-gray-900 dark:hover:text-white">LHP {{ $lhp->nomor_lhp }}</a>
+                    <span>/</span>
+                @endif
+                <span class="text-gray-900 font-medium dark:text-white">ID #{{ $tindakLanjut->id }}</span>
             </nav>
-            <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">Detail Tindak Lanjut</h1>
+            <div class="flex flex-wrap items-center gap-3">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Detail Tindak Lanjut</h1>
+                @if($unit)
+                    <span class="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+                        {{ $unit->nama_unit }}
+                    </span>
+                @endif
+            </div>
         </div>
-        
-        <div class="flex items-center gap-3">
-            <a href="{{ route('tindak-lanjuts.edit', $tindakLanjut->id) }}" class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+
+        <div class="flex items-center gap-2">
+            @if($lhp)
+                <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
+                   class="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                    Semua Rekomendasi LHP
+                </a>
+            @endif
+
+            <a href="{{ route('tindak-lanjuts.edit', $tindakLanjut->id) }}"
+               class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+                <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                 Edit
             </a>
+
             <form action="{{ route('tindak-lanjuts.destroy', $tindakLanjut->id) }}" method="POST"
-                  onsubmit="return confirm('Yakin ingin menghapus tindak lanjut ini?')" class="inline">
+                  onsubmit="return confirm('Apakah Anda yakin ingin menghapus data tindak lanjut ini?')" class="inline">
                 @csrf @method('DELETE')
                 <button type="submit"
-                        class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-5 py-2.5 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-50">
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3.5 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors dark:border-red-900/40 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     Hapus
                 </button>
             </form>
-            <a href="{{ route('tindak-lanjuts.index') }}" class="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-gray-800">
-                Tutup
+
+            <a href="{{ route('tindak-lanjuts.index') }}"
+               class="inline-flex items-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors dark:bg-gray-700 dark:hover:bg-gray-600">
+                Kembali
             </a>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
-        
-     {{-- LEFT COLUMN: SLIM & EFFICIENT --}}
-<div class="space-y-5 lg:col-span-8">
-    
-    {{-- MAIN CONTENT CARD (COMPACT) --}}
-    <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <div class="border-b border-gray-50 bg-gray-50/30 px-5 py-3 flex items-center justify-between">
-            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Uraian Rekomendasi</span>
-            @php
-                $statusColor = [
-                    'lunas' => 'bg-green-50 text-green-700 ring-green-600/10',
-                    'berjalan' => 'bg-blue-50 text-blue-700 ring-blue-600/10',
-                    'menunggu_verifikasi' => 'bg-amber-50 text-amber-700 ring-amber-600/10',
-                ][$tindakLanjut->status_verifikasi] ?? 'bg-gray-50 text-gray-700 ring-gray-600/10';
-            @endphp
-            <span class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset {{ $statusColor }} uppercase tracking-wider">
-                {{ str_replace('_',' ',$tindakLanjut->status_verifikasi) }}
-            </span>
+    {{-- ALERT NOTIFICATIONS --}}
+    @if(session('success'))
+        <div class="rounded-lg border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-800 dark:border-green-800/40 dark:bg-green-900/20 dark:text-green-300">
+            {{ session('success') }}
         </div>
-        <div class="p-5">
-            <p class="text-base font-medium leading-relaxed text-gray-800">
-                {!! $tindakLanjut->recommendation->uraian_rekom ?? 'Tidak ada uraian rekomendasi.' !!}
-            </p>
+    @endif
 
-            <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3 border-t border-gray-50 pt-5">
-                <div>
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Metode</p>
-                    <p class="mt-0.5 text-sm font-bold text-gray-900">{{ ucfirst($tindakLanjut->jenis_penyelesaian) }}</p>
-                </div>
-                <div>
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Batas Waktu</p>
-                    <p class="mt-0.5 text-sm font-bold text-gray-900">
-                        {{ $tindakLanjut->tanggal_jatuh_tempo ? \Carbon\Carbon::parse($tindakLanjut->tanggal_jatuh_tempo)->format('d M Y') : '-' }}
-                    </p>
-                </div>
-                <div>
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Verifikator</p>
-                    <p class="mt-0.5 text-sm font-bold text-gray-900 truncate" title="{{ $tindakLanjut->verifikator->name ?? '-' }}">
-                        {{ $tindakLanjut->verifikator->name ?? '-' }}
-                    </p>
-                </div>
+    @if(session('error'))
+        <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300">
+            {{ session('error') }}
+        </div>
+    @endif
 
+    {{-- STATUS SINKRONISASI INFO --}}
+    @if($tindakLanjut->status_verifikasi === 'lunas')
+        <div class="rounded-xl border border-green-200 bg-green-50/60 p-4 dark:border-green-800/40 dark:bg-green-900/10">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-green-900 dark:text-green-200">Tindak Lanjut Telah Terverifikasi Lunas</p>
+                        <p class="text-xs text-green-700 dark:text-green-400">
+                            Diverifikasi oleh {{ $tindakLanjut->verifikator->name ?? 'Verifikator' }}
+                            @if($tindakLanjut->diverifikasi_pada)
+                                pada {{ $tindakLanjut->diverifikasi_pada->format('d/m/Y H:i') }}
+                            @endif
+                            . Realisasi setoran Rp{{ number_format($totalTerbayar, 0, ',', '.') }} telah disinkronkan ke rekomendasi.
+                        </p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center rounded-md bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                    LUNAS 100%
+                </span>
             </div>
         </div>
-    </div>
-
-    {{-- CICILAN / RIWAYAT (SLIM TABLE) --}}
-    @if($tindakLanjut->jenis_penyelesaian === 'cicilan')
-    <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-        <div class="mb-4 flex items-center justify-between">
-            <h3 class="text-xs font-bold uppercase tracking-widest text-gray-900">Riwayat Pembayaran</h3>
-            <a href="{{ route('tindak-lanjuts.cicilans.index', $tindakLanjut->id) }}" class="text-[10px] font-bold text-indigo-600 hover:underline uppercase">
-                Lihat Semua
-            </a>
-        </div>
-
-        <div class="overflow-hidden rounded-xl border border-gray-50">
-            <table class="w-full text-xs text-left">
-                <thead class="bg-gray-50/50 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                    <tr>
-                        <th class="px-4 py-2">Ke</th>
-                        <th class="px-4 py-2">Tanggal</th>
-                        <th class="px-4 py-2 text-right">Nominal</th>
-                        <th class="px-4 py-2 text-center">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-50">
-                    @forelse($tindakLanjut->cicilans()->latest()->take(3)->get() as $cicilan)
-                    <tr class="hover:bg-gray-50/30 transition-colors">
-                        <td class="px-4 py-2 font-bold text-gray-900">#{{ $cicilan->ke }}</td>
-                        <td class="px-4 py-2 text-gray-500">
-                            {{ $cicilan->tanggal_bayar ? $cicilan->tanggal_bayar->format('d/m/y') : '-' }}
-                        </td>
-                        <td class="px-4 py-2 text-right font-bold text-gray-900">
-                            Rp{{ number_format($cicilan->nilai_bayar, 0, ',', '.') }}
-                        </td>
-                        <td class="px-4 py-2 text-center">
-                            <span class="rounded px-1.5 py-0.5 text-[9px] font-bold {{ $cicilan->status == 'diterima' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700' }}">
-                                {{ strtoupper($cicilan->status) }}
-                            </span>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="4" class="py-6 text-center text-gray-400">Belum ada riwayat.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-    @endif
-
-    {{-- CATATAN SECTION (REDUCED) --}}
-    <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-        <div class="mb-3 flex items-center gap-2">
-            <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-            <h3 class="text-xs font-bold uppercase tracking-widest text-gray-900">Catatan</h3>
-        </div>
-        <div class="rounded-xl bg-gray-50/50 p-4 border border-gray-50">
-            <p class="text-xs leading-relaxed text-gray-600 italic">
-                {!! $tindakLanjut->catatan_tl ? nl2br(e($tindakLanjut->catatan_tl)) : 'Tidak ada catatan.' !!}
-            </p>
-        </div>
-    </div>
-
-    {{-- HAMBATAN SECTION --}}
-    <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-        <div class="mb-3 flex items-center gap-2">
-            <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-            <h3 class="text-xs font-bold uppercase tracking-widest text-gray-900">Hambatan</h3>
-        </div>
-        <div class="rounded-xl bg-gray-50/50 p-4 border border-gray-50">
-            <p class="text-xs leading-relaxed text-gray-600 italic">
-                {!! $tindakLanjut->hambatan ? nl2br(e($tindakLanjut->hambatan)) : 'Tidak ada hambatan.' !!}
-            </p>
-        </div>
-    </div>
-
-    {{-- LAMPIRAN --}}
-    @if($tindakLanjut->attachments->isNotEmpty())
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-        <div class="px-5 py-4 sm:px-6 sm:py-5">
-            <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Lampiran</h3>
-        </div>
-        <div class="space-y-6 border-t border-gray-100 p-5 sm:p-6 dark:border-gray-800">
-            @foreach($tindakLanjut->attachments as $att)
-            <a href="{{ route('attachments.show', $att->id) }}" target="_blank"
-               class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300 dark:hover:text-blue-400">
-                <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span class="truncate">{{ $att->file_name }}</span>
-            </a>
-            @endforeach
-        </div>
-    </div>
-    @endif
-
-    {{-- UPLOAD DARI OPD --}}
-    @php $opdFiles = $tindakLanjut->attachments->where('jenis_bukti', 'opd_upload'); @endphp
-    @if($tindakLanjut->keterangan_pendukung_opd || $opdFiles->isNotEmpty())
-    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div class="mb-4 flex items-center justify-between">
-            <h3 class="text-xs font-bold uppercase tracking-widest text-gray-900">Upload dari OPD</h3>
-            @php
-                $opdBadgeColors = [
-                    'dikirim' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/10',
-                    'draft' => 'bg-yellow-50 text-yellow-700 ring-yellow-600/10',
-                ];
-                $opdBadgeColor = $opdBadgeColors[$tindakLanjut->status_opd] ?? 'bg-gray-50 text-gray-700 ring-gray-600/10';
-                $opdLabel = $tindakLanjut->status_opd === 'dikirim' ? 'Terkirim' : ($tindakLanjut->status_opd === 'draft' ? 'Draft' : 'Belum Upload');
-            @endphp
-            <span class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset {{ $opdBadgeColor }}">
-                {{ $opdLabel }}
-            </span>
-        </div>
-
-        @if($tindakLanjut->alasan_tolak_opd)
-            <div class="mb-4 rounded-xl bg-red-50 border border-red-200 p-4">
-                <div class="flex items-start gap-3">
-                    <svg class="h-5 w-5 shrink-0 text-red-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                    </svg>
+    @elseif($hasOpdData)
+        <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-800/40 dark:bg-amber-900/10">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
                     <div>
-                        <p class="text-xs font-bold text-red-700 uppercase">Ditolak</p>
-                        <p class="text-sm text-red-600 mt-1">{{ $tindakLanjut->alasan_tolak_opd }}</p>
+                        <p class="text-sm font-bold text-amber-900 dark:text-amber-200">Bukti Tindak Lanjut Menunggu Verifikasi</p>
+                        <p class="text-xs text-amber-800 dark:text-amber-300">
+                            OPD telah mengunggah bukti penyelesaian
+                            @if($targetNilai > 0)
+                                sebesar <strong>Rp{{ number_format($targetNilai, 0, ',', '.') }}</strong>
+                            @endif
+                            @if($nomorBukti)
+                                (No. Bukti/STS: <strong>{{ $nomorBukti }}</strong>)
+                            @endif
+                            . Tinjau bukti lampiran di bawah dan pilih aksi verifikasi.
+                        </p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                    Menunggu Verifikasi
+                </span>
+            </div>
+        </div>
+    @endif
+
+    {{-- MAIN 2-COLUMN LAYOUT --}}
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+
+        {{-- LEFT COLUMN --}}
+        <div class="space-y-6 lg:col-span-8">
+
+            {{-- CARD 1: BUKTI & PENGAJUAN OPD --}}
+            <div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+                <div class="border-b border-gray-100 dark:border-gray-800 px-5 py-3.5 flex items-center justify-between">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        Bukti Tindak Lanjut dari OPD
+                    </h2>
+                    <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold {{ $statusOpdBadge }}">
+                        {{ $statusOpdLabel }}
+                    </span>
+                </div>
+
+                <div class="p-5 space-y-5">
+                    @if($tindakLanjut->alasan_tolak_opd)
+                        <div class="rounded-lg border border-red-200 bg-red-50 p-3.5 text-xs text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+                            <strong class="font-semibold block mb-0.5 text-red-800 dark:text-red-200">Catatan Penolakan / Permintaan Revisi:</strong>
+                            {{ $tindakLanjut->alasan_tolak_opd }}
+                        </div>
+                    @endif
+
+                    {{-- RINGKASAN DATA OPD --}}
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 border-b border-gray-100 pb-4 dark:border-gray-800 text-sm">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Metode Penyelesaian</p>
+                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ $jenisLabel }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Nomor Bukti / STS</p>
+                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ $nomorBukti ?: '-' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Nilai Setoran Diklaim</p>
+                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">
+                                @if($isUang)
+                                    Rp{{ number_format($tindakLanjut->nilai_tindak_lanjut, 0, ',', '.') }}
+                                @else
+                                    Non-Finansial
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- KETERANGAN OPD --}}
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Keterangan / Uraian OPD</p>
+                        <div class="rounded-lg bg-gray-50 p-3.5 border border-gray-100 text-sm text-gray-800 dark:bg-gray-800/50 dark:border-gray-800 dark:text-gray-300">
+                            @if($tindakLanjut->keterangan_pendukung_opd)
+                                <p class="whitespace-pre-line leading-relaxed">{{ $tindakLanjut->keterangan_pendukung_opd }}</p>
+                            @else
+                                <p class="italic text-gray-400">Tidak ada keterangan tertulis dari OPD.</p>
+                            @endif
+
+                            @if($tindakLanjut->uploadOpdOleh)
+                                <div class="mt-3 pt-2.5 border-t border-gray-200/60 dark:border-gray-700/60 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                    <span>Diunggah oleh: <span class="font-medium text-gray-700 dark:text-gray-300">{{ $tindakLanjut->uploadOpdOleh->name }}</span></span>
+                                    <span>{{ $tindakLanjut->dikirim_pada ? $tindakLanjut->dikirim_pada->format('d/m/Y H:i') : ($tindakLanjut->updated_at ? $tindakLanjut->updated_at->format('d/m/Y H:i') : '-') }}</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- FILE LAMPIRAN BUKTI FISIK --}}
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                            Berkas Bukti / Tangkapan Layar ({{ $allAttachments->count() }})
+                        </p>
+
+                        @if($allAttachments->isEmpty())
+                            <div class="rounded-lg border border-dashed border-gray-200 p-4 text-center text-xs text-gray-400 dark:border-gray-800">
+                                Belum ada berkas lampiran yang diunggah.
+                            </div>
+                        @else
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                @foreach($allAttachments as $att)
+                                    @php
+                                        $ext = strtolower(pathinfo($att->file_name, PATHINFO_EXTENSION));
+                                        $isImage = in_array($ext, ['png', 'jpg', 'jpeg', 'webp', 'gif']) || str_starts_with($att->file_type ?? '', 'image/');
+                                        $sizeKb = $att->file_size ? number_format($att->file_size / 1024, 0) . ' KB' : null;
+                                    @endphp
+                                    <div class="flex flex-col rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-800/40">
+                                        @if($isImage)
+                                            <a href="{{ $att->file_url }}" target="_blank" class="block mb-2 overflow-hidden rounded border border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
+                                                <img src="{{ $att->file_url }}" alt="{{ $att->file_name }}" class="h-32 w-full object-cover hover:opacity-90 transition-opacity" loading="lazy">
+                                            </a>
+                                        @else
+                                            <div class="mb-2 flex h-20 w-full items-center justify-center rounded border border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-900 text-gray-400">
+                                                <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                            </div>
+                                        @endif
+
+                                        <div class="flex-1 min-w-0">
+                                            <p class="truncate text-xs font-semibold text-gray-900 dark:text-white" title="{{ $att->file_name }}">
+                                                {{ $att->file_name }}
+                                            </p>
+                                            @if($sizeKb)
+                                                <p class="text-[11px] text-gray-400 mt-0.5">{{ $sizeKb }}</p>
+                                            @endif
+                                        </div>
+
+                                        <div class="mt-2.5 pt-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs font-medium">
+                                            <a href="{{ $att->file_url }}" target="_blank" class="text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                                                Lihat Berkas
+                                            </a>
+                                            <a href="{{ route('attachments.show', $att->id) }}" download class="text-gray-500 hover:text-gray-700 dark:text-gray-400">
+                                                Unduh
+                                            </a>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- TOMBOL AKSI VERIFIKASI SUPERADMIN / VERIFIKATOR --}}
+                    @can('verifikasi', $tindakLanjut)
+                    <div class="pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
+                            Aksi Verifikasi Tindak Lanjut
+                        </p>
+
+                        <div class="flex flex-wrap items-center gap-2.5">
+                            {{-- VERIFIKASI LUNAS --}}
+                            <form action="{{ route('tindak-lanjuts.verifikasi-opd', $tindakLanjut) }}" method="POST"
+                                  onsubmit="return confirm('Verifikasi tindak lanjut ini sebagai LUNAS? Realisasi Rp{{ number_format($targetNilai, 0, ',', '.') }} akan disinkronkan ke rekomendasi.')">
+                                @csrf
+                                <input type="hidden" name="status_verifikasi" value="lunas">
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-xs font-semibold text-white hover:bg-green-700 transition-colors shadow-sm">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    Verifikasi Lunas (Rp{{ number_format($targetNilai, 0, ',', '.') }})
+                                </button>
+                            </form>
+
+                            {{-- VERIFIKASI BERJALAN --}}
+                            <form action="{{ route('tindak-lanjuts.verifikasi-opd', $tindakLanjut) }}" method="POST"
+                                  onsubmit="return confirm('Verifikasi tindak lanjut ini sebagai BERJALAN / Proses?')">
+                                @csrf
+                                <input type="hidden" name="status_verifikasi" value="berjalan">
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shadow-sm">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    Verifikasi Berjalan
+                                </button>
+                            </form>
+
+                            {{-- TOLAK BUKTI --}}
+                            @can('tolakOpd', $tindakLanjut)
+                            <button type="button"
+                                    x-on:click="$store.tolakModal.open()"
+                                    class="inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors dark:border-red-800 dark:bg-gray-800 dark:text-red-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                Tolak Bukti
+                            </button>
+                            @endcan
+
+                            {{-- BUKA KUNCI OPD --}}
+                            @can('bukaKunciOpd', $tindakLanjut)
+                            @if($tindakLanjut->status_opd === 'dikirim')
+                            <form action="{{ route('tindak-lanjuts.buka-kunci-opd', $tindakLanjut) }}" method="POST"
+                                  onsubmit="return confirm('Buka kunci OPD agar OPD dapat mengunggah ulang?')">
+                                @csrf @method('PATCH')
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                    <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+                                    Buka Kunci OPD
+                                </button>
+                            </form>
+                            @endif
+                            @endcan
+                        </div>
+                    </div>
+                    @endcan
+
+                </div>
+            </div>
+
+            {{-- CARD 2: REKOMENDASI & TEMUAN --}}
+            <div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+                <div class="border-b border-gray-100 dark:border-gray-800 px-5 py-3.5 flex items-center justify-between">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        Uraian Rekomendasi & Temuan
+                    </h2>
+                    <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold {{ $statusVerifBadge }}">
+                        {{ strtoupper(str_replace('_', ' ', $tindakLanjut->status_verifikasi)) }}
+                    </span>
+                </div>
+
+                <div class="p-5 space-y-4">
+                    {{-- URAIAN REKOMENDASI --}}
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Rekomendasi</p>
+                        <div class="text-sm text-gray-900 leading-relaxed dark:text-gray-100">
+                            {!! $rekom?->uraian_rekom ?? 'Tidak ada uraian rekomendasi.' !!}
+                        </div>
+                    </div>
+
+                    {{-- TEMUAN KONDISI --}}
+                    @if($temuan)
+                    <div class="rounded-lg bg-gray-50 p-3.5 border border-gray-100 dark:bg-gray-800/40 dark:border-gray-800">
+                        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Temuan: {{ $temuan->kodeTemuan?->kode ?? '-' }} - {{ $temuan->kodeTemuan?->deskripsi ?? 'Kondisi Pemeriksaan' }}
+                        </p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                            {{ $temuan->kondisi ?? '-' }}
+                        </p>
+                    </div>
+                    @endif
+
+                    {{-- DETAIL INFO GRID --}}
+                    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 border-t border-gray-100 pt-4 dark:border-gray-800 text-xs">
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400">Batas Waktu</p>
+                            <p class="mt-0.5 font-semibold text-gray-900 dark:text-white">
+                                {{ $tindakLanjut->tanggal_jatuh_tempo ? \Carbon\Carbon::parse($tindakLanjut->tanggal_jatuh_tempo)->format('d/m/Y') : '-' }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400">Verifikator</p>
+                            <p class="mt-0.5 font-semibold text-gray-900 dark:text-white truncate" title="{{ $tindakLanjut->verifikator->name ?? '-' }}">
+                                {{ $tindakLanjut->verifikator->name ?? '-' }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400">Ketua Tim</p>
+                            <p class="mt-0.5 font-semibold text-gray-900 dark:text-white truncate" title="{{ $lhp?->auditAssignment?->ketuaTim?->name ?? '-' }}">
+                                {{ $lhp?->auditAssignment?->ketuaTim?->name ?? '-' }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400">Kode Rekomendasi</p>
+                            <p class="mt-0.5 font-semibold text-gray-900 dark:text-white">
+                                {{ $rekom?->kodeRekomendasi?->kode_rekomendasi ?? '-' }}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
-        @endif
 
-        @if($tindakLanjut->keterangan_pendukung_opd)
-            <div class="mb-3">
-                <p class="text-[10px] font-bold uppercase text-gray-400 mb-1">Keterangan Pendukung</p>
-                <p class="text-sm text-gray-700 italic bg-gray-50 rounded-lg p-3 border border-gray-100">
-                    {{ $tindakLanjut->keterangan_pendukung_opd }}
-                </p>
-            </div>
-        @endif
-
-        @if($opdFiles->isNotEmpty())
-            <div class="mb-3">
-                <p class="text-[10px] font-bold uppercase text-gray-400 mb-2">File Lampiran OPD</p>
-                <div class="space-y-2">
-                    @foreach($opdFiles as $att)
-                        <a href="{{ $att->file_url }}" target="_blank"
-                           class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                            <svg class="h-4 w-4 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                            <span class="truncate">{{ $att->file_name }}</span>
-                        </a>
-                    @endforeach
+            {{-- CARD 3: RIWAYAT CICILAN (JIKA ADA) --}}
+            @if($tindakLanjut->jenis_penyelesaian === 'cicilan')
+            <div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+                <div class="border-b border-gray-100 dark:border-gray-800 px-5 py-3.5 flex items-center justify-between">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        Riwayat Pembayaran Cicilan
+                    </h2>
+                    <a href="{{ route('tindak-lanjuts.cicilans.index', $tindakLanjut->id) }}" class="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400">
+                        Kelola Cicilan &rarr;
+                    </a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-gray-50 dark:bg-gray-800/50 text-gray-500">
+                            <tr>
+                                <th class="px-4 py-2.5 font-semibold">Ke</th>
+                                <th class="px-4 py-2.5 font-semibold">Tanggal</th>
+                                <th class="px-4 py-2.5 font-semibold">No. Bukti</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">Nominal</th>
+                                <th class="px-4 py-2.5 font-semibold text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                            @forelse($tindakLanjut->cicilans()->latest()->get() as $cicilan)
+                            <tr>
+                                <td class="px-4 py-2.5 font-semibold text-gray-900 dark:text-white">#{{ $cicilan->ke }}</td>
+                                <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400">{{ $cicilan->tanggal_bayar ? $cicilan->tanggal_bayar->format('d/m/Y') : '-' }}</td>
+                                <td class="px-4 py-2.5 text-gray-700 dark:text-gray-300">{{ $cicilan->nomor_bukti ?: '-' }}</td>
+                                <td class="px-4 py-2.5 text-right font-semibold text-gray-900 dark:text-white">Rp{{ number_format($cicilan->nilai_bayar, 0, ',', '.') }}</td>
+                                <td class="px-4 py-2.5 text-center">
+                                    <span class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold {{ $cicilan->status === 'diterima' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700' }}">
+                                        {{ strtoupper($cicilan->status) }}
+                                    </span>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="5" class="py-4 text-center text-gray-400">Belum ada cicilan tercatat.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        @endif
+            @endif
 
-        @if($tindakLanjut->uploadOpdOleh)
-            <p class="text-xs text-gray-400">
-                Diupload oleh: <span class="font-semibold">{{ $tindakLanjut->uploadOpdOleh->name }}</span>
-                @if($tindakLanjut->dikirim_pada)
-                    &middot; Dikirim {{ $tindakLanjut->dikirim_pada->format('d M Y H:i') }}
-                @elseif($tindakLanjut->updated_at)
-                    &middot; {{ $tindakLanjut->updated_at->format('d M Y H:i') }}
+            {{-- CARD 4: CATATAN & HAMBATAN --}}
+            @if($tindakLanjut->catatan_tl || $tindakLanjut->hambatan || $tindakLanjut->catatan_verifikasi)
+            <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] space-y-3">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Catatan & Hambatan
+                </h3>
+
+                @if($tindakLanjut->catatan_verifikasi)
+                <div>
+                    <p class="text-xs font-medium text-blue-700 dark:text-blue-400">Catatan Verifikator:</p>
+                    <p class="mt-1 text-xs text-gray-700 dark:text-gray-300 bg-blue-50/50 p-2.5 rounded border border-blue-100 dark:bg-blue-900/10 dark:border-blue-800">
+                        {{ $tindakLanjut->catatan_verifikasi }}
+                    </p>
+                </div>
                 @endif
-            </p>
-        @endif
 
-        @if($tindakLanjut->status_opd === 'dikirim' && auth()->user()->can('tolakOpd', $tindakLanjut))
-            <div class="mt-4 border-t border-gray-100 pt-4 flex items-center gap-3">
-                <button type="button"
-                        x-on:click="$store.tolakModal.open()"
-                        class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-red-700">
-                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                    Tolak
-                </button>
-                @can('bukaKunciOpd', $tindakLanjut)
-                <form action="{{ route('tindak-lanjuts.buka-kunci-opd', $tindakLanjut) }}" method="POST"
-                      onsubmit="return confirm('Buka kunci OPD? OPD dapat mengirim ulang tindak lanjut.')">
-                    @csrf @method('PATCH')
-                    <button type="submit"
-                            class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-gray-600 shadow-sm transition hover:bg-gray-50">
-                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
-                        </svg>
-                        Buka Kunci
-                    </button>
-                </form>
-                @endcan
+                @if($tindakLanjut->catatan_tl)
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Catatan Tindak Lanjut:</p>
+                    <p class="mt-1 text-xs text-gray-700 dark:text-gray-300 bg-gray-50 p-2.5 rounded border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+                        {!! nl2br(e($tindakLanjut->catatan_tl)) !!}
+                    </p>
+                </div>
+                @endif
+
+                @if($tindakLanjut->hambatan)
+                <div>
+                    <p class="text-xs font-medium text-amber-600 dark:text-amber-400">Hambatan:</p>
+                    <p class="mt-1 text-xs text-gray-700 dark:text-gray-300 bg-amber-50/50 p-2.5 rounded border border-amber-100 dark:bg-amber-900/10 dark:border-amber-800">
+                        {!! nl2br(e($tindakLanjut->hambatan)) !!}
+                    </p>
+                </div>
+                @endif
             </div>
-        @elseif($tindakLanjut->status_opd === 'dikirim' && auth()->user()->can('bukaKunciOpd', $tindakLanjut))
-            <div class="mt-4 border-t border-gray-100 pt-4">
-                <form action="{{ route('tindak-lanjuts.buka-kunci-opd', $tindakLanjut) }}" method="POST"
-                      onsubmit="return confirm('Buka kunci OPD? OPD dapat mengirim ulang tindak lanjut.')">
-                    @csrf @method('PATCH')
-                    <button type="submit"
-                            class="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-bold text-red-600 shadow-sm transition hover:bg-red-50">
-                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
-                        </svg>
-                        Buka Kunci OPD
-                    </button>
-                </form>
+            @endif
+
+        </div>
+
+        {{-- RIGHT COLUMN --}}
+        <div class="space-y-6 lg:col-span-4">
+
+            {{-- REALISASI FINANSIAL CARD (STANDARD CLEAN DESIGN) --}}
+            @if($isUang)
+            <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Realisasi Finansial</span>
+                    <span class="text-lg font-bold {{ $percentRealisasi >= 100 ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400' }}">
+                        {{ $percentRealisasi }}%
+                    </span>
+                </div>
+
+                {{-- PROGRESS BAR --}}
+                <div class="mt-3.5">
+                    <div class="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+                        <div class="h-full {{ $percentRealisasi >= 100 ? 'bg-green-500' : 'bg-blue-600' }} transition-all"
+                             style="width: {{ $percentRealisasi }}%">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 space-y-2.5 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">Target Rekomendasi:</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">Rp{{ number_format($targetNilai, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">Nilai Disetor OPD:</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">Rp{{ number_format($tindakLanjut->nilai_tindak_lanjut, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">Terverifikasi Lunas:</span>
+                        <span class="font-bold text-green-600 dark:text-green-400">Rp{{ number_format($totalTerbayar, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex justify-between border-t border-gray-100 pt-2 dark:border-gray-800">
+                        <span class="text-gray-500 dark:text-gray-400">Sisa Belum Lunas:</span>
+                        <span class="font-semibold {{ $sisaBayar == 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                            Rp{{ number_format($sisaBayar, 0, ',', '.') }}
+                        </span>
+                    </div>
+                </div>
             </div>
-        @endif
+            @endif
+
+            {{-- METADATA INFO CARD --}}
+            <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3 border-b border-gray-100 pb-2.5 dark:border-gray-800">
+                    Informasi Laporan
+                </h3>
+
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <span class="text-gray-500 dark:text-gray-400">Nomor LHP</span>
+                        <p class="font-semibold text-blue-600 dark:text-blue-400 mt-0.5">
+                            @if($lhp)
+                                <a href="{{ route('lhps.show', $lhp->id) }}" class="hover:underline">{{ $lhp->nomor_lhp }}</a>
+                            @else
+                                -
+                            @endif
+                        </p>
+                    </div>
+
+                    <div>
+                        <span class="text-gray-500 dark:text-gray-400">Unit Terperiksa</span>
+                        <p class="font-semibold text-gray-900 dark:text-white mt-0.5">{{ $unit->nama_unit ?? '-' }}</p>
+                    </div>
+
+                    <div>
+                        <span class="text-gray-500 dark:text-gray-400">Kode Temuan</span>
+                        <p class="font-semibold text-gray-900 dark:text-white mt-0.5">{{ $temuan->kodeTemuan?->kode ?? '-' }}</p>
+                    </div>
+
+                    <div class="pt-2.5 border-t border-gray-100 dark:border-gray-800">
+                        <span class="text-gray-500 dark:text-gray-400">Dibuat Oleh</span>
+                        <p class="font-medium text-gray-900 dark:text-white mt-0.5">{{ $tindakLanjut->creator->name ?? 'Sistem' }}</p>
+                        <p class="text-[11px] text-gray-400 mt-0.5">{{ $tindakLanjut->created_at ? $tindakLanjut->created_at->format('d/m/Y H:i') : '-' }}</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
-    @endif
 
     {{-- MODAL TOLAK OPD --}}
     <template x-teleport="body">
         <div x-show="$store.tolakModal.open"
-             class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 p-4"
+             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
              x-cloak>
-            <div class="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-xl"
+            <div class="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-gray-800"
                  @click.outside="$store.tolakModal.close()">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-base font-bold text-gray-900">Tolak Bukti OPD</h3>
-                    <button @click="$store.tolakModal.close()"
-                            class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 transition-colors">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
+                <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3 dark:border-gray-700">
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Tolak Bukti Tindak Lanjut</h3>
+                    <button @click="$store.tolakModal.close()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
+
                 <form action="{{ route('tindak-lanjuts.tolak-opd', $tindakLanjut) }}" method="POST">
                     @csrf
                     <div class="mb-4">
-                        <label for="alasan_tolak" class="block text-sm font-bold text-gray-700 mb-1.5">
-                            Alasan Penolakan
+                        <label for="alasan_tolak" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                            Alasan Penolakan <span class="text-red-500">*</span>
                         </label>
                         <textarea name="alasan_tolak" id="alasan_tolak" rows="4" required
-                                  class="block w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                                  placeholder="Jelaskan alasan penolakan..."></textarea>
+                                  class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                  placeholder="Jelaskan alasan penolakan agar OPD dapat memperbaiki dokumen..."></textarea>
                     </div>
-                    <div class="flex items-center justify-end gap-3">
+
+                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
                         <button type="button" @click="$store.tolakModal.close()"
-                                class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">
+                                class="rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
                             Batal
                         </button>
                         <button type="submit"
-                                class="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-red-700">
-                            Tolak & Kirim Alasan
+                                class="rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700 transition-colors">
+                            Kirim Penolakan
                         </button>
                     </div>
                 </form>
             </div>
         </div>
     </template>
-</div>
-
-        {{-- RIGHT COLUMN: SLIM METRICS & INFO --}}
-<div class="space-y-5 lg:col-span-4">
-    
-    {{-- FINANCIAL CARD (SLIM VERSION) --}}
-    @if($tindakLanjut->recommendation->jenis_rekomendasi === 'uang')
-    <div class="rounded-2xl bg-gray-900 p-6 text-white shadow-sm">
-        <div class="flex items-center justify-between mb-4">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Realisasi</span>
-            <span class="text-xl font-black text-green-400">
-                {{ round(($tindakLanjut->total_terbayar / max($tindakLanjut->nilai_tindak_lanjut, 1)) * 100) }}%
-            </span>
-        </div>
-        
-        <div class="space-y-3">
-            <div class="flex justify-between items-end">
-                <div>
-                    <p class="text-[9px] text-gray-400 uppercase font-bold tracking-tight">Target Nilai</p>
-                    <p class="text-base font-bold">Rp{{ number_format($tindakLanjut->nilai_tindak_lanjut, 0, ',', '.') }}</p>
-                </div>
-                <div class="text-right">
-                    <p class="text-[9px] text-gray-400 uppercase font-bold tracking-tight">Sisa</p>
-                    <p class="text-sm font-bold text-rose-400">Rp{{ number_format($tindakLanjut->nilai_tindak_lanjut - $tindakLanjut->total_terbayar, 0, ',', '.') }}</p>
-                </div>
-            </div>
-
-            <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-800">
-                <div class="h-full bg-green-500 transition-all duration-700"
-                     style="width: {{ ($tindakLanjut->total_terbayar / max($tindakLanjut->nilai_tindak_lanjut,1))*100 }}%">
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
-
-    {{-- METADATA INFO (CLEAN LIST) --}}
-    <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-        <h4 class="mb-4 text-xs font-bold uppercase tracking-widest text-gray-900 border-b border-gray-50 pb-2">Metadata</h4>
-
-        <div class="space-y-4">
-            <div class="flex items-center gap-3">
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-50 text-gray-400">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                </div>
-                <div class="min-w-0">
-                    <p class="text-[9px] font-bold uppercase text-gray-400">No. LHP</p>
-                    <p class="text-xs font-bold text-gray-900 truncate">{{ $tindakLanjut->recommendation->temuan->lhp->nomor_lhp ?? '-' }}</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3">
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-50 text-gray-400">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
-                </div>
-                <div class="min-w-0">
-                    <p class="text-[9px] font-bold uppercase text-gray-400">Kode Temuan</p>
-                    <p class="text-xs font-bold text-gray-900">{{ $tindakLanjut->recommendation->temuan->kodeTemuan->kode ?? '-' }}</p>
-                </div>
-            </div>
-
-            <div class="pt-4 mt-2 border-t border-gray-50">
-                <div class="flex items-center gap-3">
-                    <div class="h-8 w-8 rounded-full bg-indigo-50 flex items-center justify-center text-[10px] font-bold text-indigo-600">
-                        {{ strtoupper(substr($tindakLanjut->creator->name ?? '?', 0, 1)) }}
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-[9px] font-bold uppercase text-gray-400">Oleh</p>
-                        <p class="text-xs font-bold text-gray-900 truncate">{{ $tindakLanjut->creator->name ?? 'Sistem' }}</p>
-                        <p class="text-[9px] text-gray-400 uppercase tracking-tighter">{{ $tindakLanjut->created_at->format('d/m/y H:i') }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- MINIMAL HELP --}}
-    <div class="rounded-2xl border border-dashed border-gray-200 p-5">
-        <p class="text-[11px] font-bold text-gray-900 uppercase mb-1">Butuh Bantuan?</p>
-        <p class="text-[11px] leading-relaxed text-gray-500">Hubungi admin jika terdapat inkonsistensi data finansial atau status verifikasi.</p>
-    </div>
 
 </div>
-    </div>
-</div>
-
-<style>
-    /* Custom smoothing for font rendering */
-    body {
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        background-color: #fcfcfd;
-    }
-</style>
 
 @push('scripts')
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.store('tolakModal', {
         open: false,
-
         open() {
             this.open = true;
         },
-
         close() {
             this.open = false;
         }

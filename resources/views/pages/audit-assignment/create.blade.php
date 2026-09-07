@@ -101,7 +101,7 @@
                             class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:bg-gray-900 dark:border-gray-700 dark:text-white transition-all">
                             <option value="">Semua Kategori</option>
                             @foreach($programCategories as $cat)
-                                <option value="{{ $cat }}">{{ $cat }}</option>
+                                <option value="{{ $cat }}" @selected(old('kategori_program', isset($currentProgId) ? ($programs->firstWhere('id', $currentProgId)?->kategori) : '') == $cat)>{{ $cat }}</option>
                             @endforeach
                         </select>
                     </div>

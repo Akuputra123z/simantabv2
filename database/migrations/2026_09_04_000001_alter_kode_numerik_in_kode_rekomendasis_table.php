@@ -9,11 +9,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement('ALTER TABLE kode_rekomendasis MODIFY kode_numerik INT UNSIGNED NOT NULL');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE kode_rekomendasis MODIFY kode_numerik INT UNSIGNED NOT NULL');
+        }
     }
 
     public function down(): void
     {
-        DB::statement('ALTER TABLE kode_rekomendasis MODIFY kode_numerik TINYINT UNSIGNED NOT NULL');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE kode_rekomendasis MODIFY kode_numerik TINYINT UNSIGNED NOT NULL');
+        }
     }
 };
+

@@ -28,9 +28,9 @@
             </p>
         </div>
 
-        <div class="flex items-center gap-2.5">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
             <a href="{{ route('opd.tindak-lanjut.index') }}"
-               class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 transition-colors shadow-xs">
+               class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 min-h-[44px] text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 transition-colors shadow-xs w-full sm:w-auto">
                 <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
@@ -43,11 +43,11 @@
             @endphp
 
             @if($hasDraft)
-                <form action="{{ route('opd.tindak-lanjut.lhp.kirim-semua', $lhp) }}" method="POST"
+                <form action="{{ route('opd.tindak-lanjut.lhp.kirim-semua', $lhp) }}" method="POST" class="w-full sm:w-auto"
                       onsubmit="return confirm('Kirim seluruh tindak lanjut bertanda draft pada LHP ini ke Inspektorat?')">
                     @csrf
                     <button type="submit"
-                            class="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition-colors shadow-xs cursor-pointer">
+                            class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 min-h-[44px] text-xs font-bold text-white hover:bg-emerald-800 transition-colors shadow-xs cursor-pointer">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                         </svg>

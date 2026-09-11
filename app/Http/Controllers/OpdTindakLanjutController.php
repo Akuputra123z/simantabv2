@@ -61,8 +61,8 @@ class OpdTindakLanjutController extends Controller
             }
         }
 
-        // Filters (Default 'PKPT')
-        $kategori  = $request->input('kategori', 'PKPT');
+        // Filters (Default 'semua' to synchronize with OPD Dashboard)
+        $kategori  = $request->input('kategori', 'semua');
         $statusOpd = $request->input('status_opd');
         $status    = $request->input('status');
         $search    = $request->input('search');
@@ -137,6 +137,12 @@ class OpdTindakLanjutController extends Controller
                 ->whereHas('recommendation.temuan.lhp', function ($q) use ($unitIds) {
                     $q->whereIn('unit_diperiksa_id', $unitIds);
                 });
+        }
+
+        if ($kategori && $kategori !== 'semua') {
+            $baseUnitTlQuery->whereHas('recommendation.temuan.lhp.auditAssignment.auditProgramDetail.auditProgram', function ($q) use ($kategori) {
+                $q->where('kategori', $kategori);
+            });
         }
 
         $stats = (clone $baseUnitTlQuery)

@@ -34,17 +34,17 @@
 }">
 
     {{-- TOP NAVIGATION & HEADER --}}
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 pb-5 dark:border-gray-800">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-gray-200 pb-5 dark:border-gray-800">
         <div>
-            <nav class="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+            <nav class="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">
                 <a href="{{ route('tindak-lanjuts.index') }}" class="hover:text-blue-600 transition-colors">
                     Monitoring Tindak Lanjut
                 </a>
                 <span>/</span>
-                <span class="text-gray-900 dark:text-white font-medium">Detail LHP {{ $lhp->nomor_lhp }}</span>
+                <span class="text-gray-900 dark:text-white font-medium truncate">Detail LHP {{ $lhp->nomor_lhp }}</span>
             </nav>
-            <div class="flex flex-wrap items-center gap-3">
-                <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
                     Tindak Lanjut Rekomendasi LHP
                 </h1>
                 <span class="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-1 text-xs font-mono font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
@@ -56,45 +56,45 @@
                     </span>
                 @endif
             </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Kelola, tinjau bukti fisik dari OPD, dan verifikasi tindak lanjut untuk setiap rekomendasi.
             </p>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
             <a href="{{ route('tindak-lanjuts.create', ['lhp_id' => $lhp->id]) }}"
-               class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700 shadow-sm transition-colors">
+               class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2.5 min-h-[44px] text-xs font-semibold text-white hover:bg-blue-700 shadow-xs transition-colors w-full sm:w-auto">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Input Tindak Lanjut
+                <span>Input Tindak Lanjut</span>
             </a>
             <a href="{{ route('lhps.show', $lhp->id) }}"
-               class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-sm transition-colors">
+               class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 min-h-[44px] text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-xs transition-colors w-full sm:w-auto">
                 <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                Lihat LHP Asli
+                <span>Lihat LHP Asli</span>
             </a>
             <a href="{{ route('tindak-lanjuts.index') }}"
-               class="inline-flex items-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 shadow-sm transition-colors">
+               class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2.5 min-h-[44px] text-xs font-semibold text-white hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 shadow-xs transition-colors w-full sm:w-auto">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                Kembali ke Daftar
+                <span>Kembali</span>
             </a>
         </div>
     </div>
 
     {{-- FLASH MESSAGES --}}
     @if(session('success'))
-        <div class="rounded-lg border border-green-200 bg-green-50 p-4 text-xs font-semibold text-green-800 dark:border-green-800/40 dark:bg-green-900/20 dark:text-green-300 shadow-sm">
+        <div class="rounded-lg border border-green-200 bg-green-50 p-4 text-xs font-semibold text-green-800 dark:border-green-800/40 dark:bg-green-900/20 dark:text-green-300 shadow-xs">
             {{ session('success') }}
         </div>
     @endif
 
     @if(session('error'))
-        <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300 shadow-sm">
+        <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300 shadow-xs">
             {{ session('error') }}
         </div>
     @endif
 
     {{-- EXECUTIVE CARD: KOMULATIF DATA LHP --}}
-    <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/[0.03] space-y-5">
+    <div class="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 shadow-xs dark:border-gray-800 dark:bg-white/[0.03] space-y-5">
         
         {{-- Metadata Row --}}
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 border-b border-gray-100 pb-4 dark:border-gray-800">
@@ -126,19 +126,19 @@
         </div>
 
         {{-- Kumulatif Data Angka --}}
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             
             <div class="rounded-lg bg-gray-50 p-3.5 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
                 <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Temuan & Rekomendasi</p>
-                <p class="text-xl font-extrabold text-gray-900 dark:text-white mt-0.5">
+                <p class="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white mt-0.5">
                     {{ $totalTemuan }} <span class="text-xs font-normal text-gray-500">Temuan</span> {{ $totalRekom }} <span class="text-xs font-normal text-gray-500">Rekom</span>
                 </p>
-                <p class="text-[11px] text-gray-400 mt-1">Nilai Temuan: Rp{{ number_format($totalKerugian, 0, ',', '.') }}</p>
+                <p class="text-[11px] text-gray-400 mt-1 truncate">Nilai Temuan: Rp{{ number_format($totalKerugian, 0, ',', '.') }}</p>
             </div>
 
             <div class="rounded-lg bg-gray-50 p-3.5 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
                 <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Target Nilai Rekomendasi</p>
-                <p class="text-xl font-extrabold text-gray-900 dark:text-white mt-0.5">
+                <p class="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white mt-0.5 font-mono">
                     Rp{{ number_format($totalTargetRekom, 0, ',', '.') }}
                 </p>
                 <p class="text-[11px] text-gray-400 mt-1">Total kewajiban finansial</p>
@@ -146,10 +146,10 @@
 
             <div class="rounded-lg bg-green-50/70 p-3.5 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                 <p class="text-[10px] font-bold uppercase tracking-wider text-green-700 dark:text-green-400">Realisasi Setoran (Lunas)</p>
-                <p class="text-xl font-extrabold text-green-800 dark:text-green-300 mt-0.5">
+                <p class="text-lg sm:text-xl font-extrabold text-green-800 dark:text-green-300 mt-0.5 font-mono">
                     Rp{{ number_format($totalSetor, 0, ',', '.') }}
                 </p>
-                <p class="text-[11px] text-green-600 dark:text-green-400 mt-1">Sisa: Rp{{ number_format($sisa, 0, ',', '.') }}</p>
+                <p class="text-[11px] text-green-600 dark:text-green-400 mt-1 font-mono">Sisa: Rp{{ number_format($sisa, 0, ',', '.') }}</p>
             </div>
 
             <div class="rounded-lg bg-blue-50/70 p-3.5 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
@@ -174,7 +174,7 @@
     <div class="space-y-4">
 
         {{-- Section Header & Global Accordion Buttons --}}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-200 pb-3 dark:border-gray-800">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-200 pb-3 dark:border-gray-800">
             <div>
                 <h2 class="text-base font-bold text-gray-900 dark:text-white">
                     Daftar Temuan & Rekomendasi Tindak Lanjut
@@ -183,12 +183,12 @@
             </div>
             <div class="flex items-center gap-3">
                 <button type="button" @click="$dispatch('toggle-all-temuans', true)"
-                        class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">
-                    Buka Semua Temuan & Rekomendasi
+                        class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 min-h-[36px] flex items-center">
+                    Buka Semua
                 </button>
                 <span class="text-gray-300 dark:text-gray-600">&bull;</span>
                 <button type="button" @click="$dispatch('toggle-all-temuans', false)"
-                        class="text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400">
+                        class="text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 min-h-[36px] flex items-center">
                     Tutup Semua
                 </button>
             </div>
@@ -198,33 +198,33 @@
         @forelse($temuans as $tIndex => $temuan)
             <div x-data="{ openTemuan: true }"
                  @toggle-all-temuans.window="openTemuan = $event.detail"
-                 class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03] overflow-hidden transition-all">
+                 class="rounded-xl border border-gray-200 bg-white shadow-xs dark:border-gray-800 dark:bg-white/[0.03] overflow-hidden transition-all">
                 
                 {{-- TEMUAN ACCORDION HEADER --}}
                 <button type="button" @click="openTemuan = !openTemuan"
-                        class="w-full text-left bg-gray-50/80 hover:bg-gray-100/80 px-5 py-3.5 border-b border-gray-200 dark:bg-gray-800/60 dark:hover:bg-gray-800 dark:border-gray-700 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span class="inline-flex items-center rounded bg-gray-900 px-2 py-0.5 text-xs font-mono font-bold text-white dark:bg-gray-700">
+                        class="w-full text-left bg-gray-50/80 hover:bg-gray-100/80 p-3.5 sm:px-5 sm:py-3.5 border-b border-gray-200 dark:bg-gray-800/60 dark:hover:bg-gray-800 dark:border-gray-700 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[44px]">
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                        <span class="inline-flex items-center rounded bg-gray-900 px-2 py-1 text-xs font-mono font-bold text-white dark:bg-gray-700 shrink-0">
                             TEMUAN {{ $tIndex + 1 }}
                         </span>
-                        <span class="rounded bg-blue-100 px-2 py-0.5 text-xs font-mono font-bold text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                        <span class="rounded bg-blue-100 px-2 py-1 text-xs font-mono font-bold text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 shrink-0">
                             {{ $temuan->kodeTemuan?->kode ?? '-' }}
                         </span>
-                        <span class="text-xs font-bold text-gray-900 dark:text-white truncate">
+                        <span class="text-xs font-bold text-gray-900 dark:text-white line-clamp-2 sm:line-clamp-1 min-w-0">
                             {{ $temuan->kondisi ?: ($temuan->kodeTemuan?->deskripsi ?? 'Kondisi Temuan') }}
                         </span>
                     </div>
 
-                    <div class="flex items-center gap-4 shrink-0">
+                    <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-200/60 dark:border-gray-700">
                         @if($temuan->nilai_temuan > 0)
-                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                Nilai: Rp{{ number_format($temuan->nilai_temuan, 0, ',', '.') }}
+                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 font-mono">
+                                Rp{{ number_format($temuan->nilai_temuan, 0, ',', '.') }}
                             </span>
                         @endif
-                        <span class="rounded bg-gray-200 px-2 py-0.5 text-[11px] font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                        <span class="rounded bg-gray-200 px-2 py-1 text-[11px] font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-300">
                             {{ $temuan->recommendations->count() }} Rekomendasi
                         </span>
-                        <svg class="h-4 w-4 text-gray-500 transition-transform duration-200"
+                        <svg class="h-4 w-4 text-gray-500 transition-transform duration-200 shrink-0 ml-auto sm:ml-0"
                              :class="{ 'rotate-180': openTemuan }"
                              fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -233,7 +233,7 @@
                 </button>
 
                 {{-- TEMUAN ACCORDION BODY --}}
-                <div x-show="openTemuan" class="p-5 space-y-4">
+                <div x-show="openTemuan" class="p-3.5 sm:p-5 space-y-4">
                     
                     {{-- Uraian Kondisi Temuan --}}
                     @if($temuan->kondisi)
@@ -286,8 +286,8 @@
                                 
                                 {{-- REKOMENDASI ACCORDION HEADER --}}
                                 <button type="button" @click="openRekom = !openRekom"
-                                        class="w-full text-left px-4 py-3 bg-white hover:bg-gray-50 dark:bg-gray-800/80 dark:hover:bg-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 transition-colors">
-                                    <div class="flex items-start gap-2.5 min-w-0">
+                                        class="w-full text-left p-3.5 sm:px-4 sm:py-3 bg-white hover:bg-gray-50 dark:bg-gray-800/80 dark:hover:bg-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-gray-100 dark:border-gray-700 transition-colors min-h-[44px]">
+                                    <div class="flex flex-wrap items-center gap-2 min-w-0 flex-1">
                                         <span class="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 shrink-0">
                                             Rekom {{ $tIndex + 1 }}.{{ $rIndex + 1 }}
                                         </span>
@@ -296,14 +296,14 @@
                                                 {{ $rekom->kodeRekomendasi->kode_rekomendasi }}
                                             </span>
                                         @endif
-                                        <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 line-clamp-1">
+                                        <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 sm:line-clamp-1 min-w-0">
                                             {!! strip_tags($rekom->uraian_rekom) !!}
                                         </p>
                                     </div>
 
-                                    <div class="flex items-center gap-3 shrink-0">
+                                    <div class="flex flex-wrap items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100 dark:border-gray-700">
                                         @if($isUang)
-                                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                            <span class="text-xs font-semibold font-mono text-gray-700 dark:text-gray-300">
                                                 Rp{{ number_format($target, 0, ',', '.') }}
                                             </span>
                                         @endif
@@ -313,7 +313,7 @@
                                         <span class="inline-flex rounded px-2 py-0.5 text-[10px] font-bold {{ $oBadge }}">
                                             OPD: {{ $oLabel }}
                                         </span>
-                                        <svg class="h-3.5 w-3.5 text-gray-400 transition-transform duration-200"
+                                        <svg class="h-3.5 w-3.5 text-gray-400 transition-transform duration-200 shrink-0 ml-auto sm:ml-0"
                                              :class="{ 'rotate-180': openRekom }"
                                              fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -322,7 +322,7 @@
                                 </button>
 
                                 {{-- REKOMENDASI ACCORDION BODY --}}
-                                <div x-show="openRekom" class="p-4 space-y-4 text-xs bg-gray-50/30 dark:bg-transparent">
+                                <div x-show="openRekom" class="p-3.5 sm:p-4 space-y-4 text-xs bg-gray-50/30 dark:bg-transparent">
                                     
                                     {{-- Uraian Lengkap Rekomendasi --}}
                                     <div>
@@ -336,7 +336,7 @@
                                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-white p-3 rounded-lg border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
                                         <div>
                                             <p class="text-gray-400 uppercase text-[10px] font-bold">Target Nilai</p>
-                                            <p class="font-bold text-gray-900 dark:text-white mt-0.5">
+                                            <p class="font-bold text-gray-900 dark:text-white mt-0.5 font-mono">
                                                 @if($isUang)
                                                     Rp{{ number_format($target, 0, ',', '.') }}
                                                 @else
@@ -346,13 +346,13 @@
                                         </div>
                                         <div>
                                             <p class="text-gray-400 uppercase text-[10px] font-bold">Terverifikasi Lunas</p>
-                                            <p class="font-bold text-green-600 dark:text-green-400 mt-0.5">
+                                            <p class="font-bold text-green-600 dark:text-green-400 mt-0.5 font-mono">
                                                 Rp{{ number_format($terbayar, 0, ',', '.') }}
                                             </p>
                                         </div>
                                         <div>
                                             <p class="text-gray-400 uppercase text-[10px] font-bold">Sisa Belum Bayar</p>
-                                            <p class="font-bold {{ $sisaRekom == 0 ? 'text-green-600' : 'text-red-600' }} mt-0.5">
+                                            <p class="font-bold {{ $sisaRekom == 0 ? 'text-green-600' : 'text-red-600' }} mt-0.5 font-mono">
                                                 Rp{{ number_format($sisaRekom, 0, ',', '.') }}
                                             </p>
                                         </div>
@@ -366,7 +366,7 @@
 
                                     {{-- Keterangan & Berkas Bukti OPD --}}
                                     <div class="rounded-lg bg-white p-3 border border-gray-100 dark:bg-gray-800 dark:border-gray-700 space-y-2.5">
-                                        <div class="flex items-center justify-between">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                                             <p class="font-semibold text-gray-700 dark:text-gray-300">
                                                 Bukti & Keterangan Pengajuan OPD
                                             </p>
@@ -422,55 +422,55 @@
 
                                     {{-- AKSI VERIFIKASI LANGSUNG UNTUK SUPERADMIN --}}
                                     @if($tl)
-                                        <div class="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 dark:border-gray-700">
-                                            <div class="flex flex-wrap items-center gap-2">
+                                        <div class="pt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-gray-100 dark:border-gray-700">
+                                            <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
                                                 {{-- Verifikasi Lunas --}}
-                                                <form action="{{ route('tindak-lanjuts.verifikasi-opd', $tl) }}" method="POST"
+                                                <form action="{{ route('tindak-lanjuts.verifikasi-opd', $tl) }}" method="POST" class="col-span-1 sm:w-auto"
                                                       onsubmit="return confirm('Verifikasi rekomendasi ini sebagai LUNAS? Realisasi Rp{{ number_format($target, 0, ',', '.') }} akan disetujui.')">
                                                     @csrf
                                                     <input type="hidden" name="status_verifikasi" value="lunas">
                                                     <button type="submit"
-                                                            class="inline-flex items-center gap-1 rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 transition-colors shadow-sm">
+                                                            class="w-full inline-flex items-center justify-center gap-1 rounded bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700 transition-colors shadow-xs min-h-[40px] sm:min-h-[36px]">
                                                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                                        Verifikasi Lunas
+                                                        <span>Verifikasi Lunas</span>
                                                     </button>
                                                 </form>
 
                                                 {{-- Verifikasi Berjalan --}}
-                                                <form action="{{ route('tindak-lanjuts.verifikasi-opd', $tl) }}" method="POST"
+                                                <form action="{{ route('tindak-lanjuts.verifikasi-opd', $tl) }}" method="POST" class="col-span-1 sm:w-auto"
                                                       onsubmit="return confirm('Verifikasi rekomendasi ini sebagai BERJALAN / Proses?')">
                                                     @csrf
                                                     <input type="hidden" name="status_verifikasi" value="berjalan">
                                                     <button type="submit"
-                                                            class="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shadow-sm">
-                                                        Verifikasi Berjalan
+                                                            class="w-full inline-flex items-center justify-center gap-1 rounded bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shadow-xs min-h-[40px] sm:min-h-[36px]">
+                                                        <span>Verifikasi Berjalan</span>
                                                     </button>
                                                 </form>
 
                                                 {{-- Tolak Bukti --}}
                                                 <button type="button"
                                                         @click="openTolak('{{ route('tindak-lanjuts.tolak-opd', $tl) }}')"
-                                                        class="inline-flex items-center gap-1 rounded border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-800 dark:bg-gray-800 dark:text-red-400 transition-colors">
-                                                    Tolak Bukti
+                                                        class="col-span-1 sm:w-auto inline-flex items-center justify-center gap-1 rounded border border-red-300 bg-white px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-800 dark:bg-gray-800 dark:text-red-400 transition-colors min-h-[40px] sm:min-h-[36px]">
+                                                    <span>Tolak Bukti</span>
                                                 </button>
 
                                                 {{-- Buka Kunci --}}
                                                 @if($tl->status_opd === 'dikirim')
-                                                    <form action="{{ route('tindak-lanjuts.buka-kunci-opd', $tl) }}" method="POST"
+                                                    <form action="{{ route('tindak-lanjuts.buka-kunci-opd', $tl) }}" method="POST" class="col-span-1 sm:w-auto"
                                                           onsubmit="return confirm('Buka kunci OPD agar OPD dapat mengunggah ulang?')">
                                                         @csrf @method('PATCH')
                                                         <button type="submit"
-                                                                class="inline-flex items-center gap-1 rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 transition-colors">
-                                                            Buka Kunci
+                                                                class="w-full inline-flex items-center justify-center gap-1 rounded border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 transition-colors min-h-[40px] sm:min-h-[36px]">
+                                                            <span>Buka Kunci</span>
                                                         </button>
                                                     </form>
                                                 @endif
                                             </div>
 
-                                            <div>
+                                            <div class="pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700 text-right sm:text-left">
                                                 <a href="{{ route('tindak-lanjuts.show', $tl->id) }}"
                                                    class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">
-                                                    Halaman Detail Penuh TL #{{ $tl->id }} &rarr;
+                                                    Detail Penuh TL #{{ $tl->id }} &rarr;
                                                 </a>
                                             </div>
                                         </div>
@@ -496,13 +496,13 @@
     {{-- MODAL TOLAK OPD --}}
     <template x-teleport="body">
         <div x-show="tolakOpen"
-             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+             class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto"
              x-cloak>
-            <div class="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+            <div class="w-full max-w-md my-auto rounded-xl border border-gray-200 bg-white p-5 sm:p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-800 max-h-[90vh] overflow-y-auto"
                  @click.outside="closeTolak()">
                 <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3 dark:border-gray-700">
                     <h3 class="text-base font-bold text-gray-900 dark:text-white">Tolak Bukti Tindak Lanjut</h3>
-                    <button @click="closeTolak()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <button @click="closeTolak()" class="p-1 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300 min-h-[40px] min-w-[40px] flex items-center justify-center">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
@@ -514,17 +514,17 @@
                             Alasan Penolakan / Permintaan Revisi <span class="text-red-500">*</span>
                         </label>
                         <textarea name="alasan_tolak" id="alasan_tolak" rows="4" required
-                                  class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                  class="block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                                   placeholder="Jelaskan bagian bukti yang salah atau perlu diperbaiki oleh OPD..."></textarea>
                     </div>
 
                     <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
                         <button type="button" @click="closeTolak()"
-                                class="rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                class="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 min-h-[44px] transition-colors dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
                             Batal
                         </button>
                         <button type="submit"
-                                class="rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700 transition-colors">
+                                class="rounded-lg bg-red-600 px-4 py-2.5 text-xs font-medium text-white hover:bg-red-700 min-h-[44px] transition-colors shadow-xs">
                             Kirim Penolakan
                         </button>
                     </div>

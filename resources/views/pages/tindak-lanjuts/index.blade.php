@@ -5,33 +5,33 @@
 {{-- PAGE HEADER --}}
 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Monitoring Tindak Lanjut LHP</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Monitoring Tindak Lanjut LHP</h1>
+        <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             Daftar LHP dengan komulatif data temuan, rekomendasi, dan status verifikasi tindak lanjut.
         </p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 w-full sm:w-auto">
         <a href="{{ route('tindak-lanjuts.create') }}"
-           class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors shadow-sm">
+           class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 min-h-[44px] text-xs sm:text-sm font-semibold text-white hover:bg-blue-700 transition-colors shadow-xs">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            Tambah Tindak Lanjut
+            <span>Tambah Tindak Lanjut</span>
         </a>
     </div>
 </div>
 
 {{-- FLASH NOTIFICATIONS --}}
 @if(session('success'))
-    <div class="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-800 dark:border-green-800/40 dark:bg-green-900/20 dark:text-green-300">
+    <div class="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-xs sm:text-sm font-medium text-green-800 dark:border-green-800/40 dark:bg-green-900/20 dark:text-green-300 shadow-xs">
         {{ session('success') }}
     </div>
 @endif
 
 {{-- STAT CARDS (KOMULATIF SEMUA DATA) --}}
-<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+<div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
-    <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -39,12 +39,12 @@
         </div>
         <div>
             <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Total LHP TL</p>
-            <p class="mt-0.5 text-2xl font-bold text-gray-900 dark:text-white">{{ $stats->total_lhp ?? 0 }}</p>
+            <p class="mt-0.5 text-2xl font-bold text-gray-900 dark:text-white font-mono">{{ $stats->total_lhp ?? 0 }}</p>
             <p class="text-[11px] text-gray-400">{{ $stats->total_rekomendasi ?? 0 }} Rekomendasi</p>
         </div>
     </div>
 
-    <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400">
             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -52,12 +52,12 @@
         </div>
         <div>
             <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">TL Selesai (Lunas)</p>
-            <p class="mt-0.5 text-2xl font-bold text-green-600 dark:text-green-400">{{ $stats->total_lunas ?? 0 }}</p>
+            <p class="mt-0.5 text-2xl font-bold text-green-600 dark:text-green-400 font-mono">{{ $stats->total_lunas ?? 0 }}</p>
             <p class="text-[11px] text-gray-400">Telah terverifikasi</p>
         </div>
     </div>
 
-    <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -65,12 +65,12 @@
         </div>
         <div>
             <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Proses / Berjalan</p>
-            <p class="mt-0.5 text-2xl font-bold text-amber-600 dark:text-amber-400">{{ $stats->total_berjalan ?? 0 }}</p>
+            <p class="mt-0.5 text-2xl font-bold text-amber-600 dark:text-amber-400 font-mono">{{ $stats->total_berjalan ?? 0 }}</p>
             <p class="text-[11px] text-gray-400">{{ $stats->total_menunggu ?? 0 }} Menunggu Verif</p>
         </div>
     </div>
 
-    <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
@@ -78,7 +78,7 @@
         </div>
         <div>
             <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Realisasi Setoran</p>
-            <p class="mt-0.5 text-lg font-bold text-gray-900 dark:text-white">
+            <p class="mt-0.5 text-lg font-bold text-gray-900 dark:text-white font-mono">
                 Rp{{ number_format(($stats->total_terbayar ?? 0) / 1000000, 1) }}M
             </p>
             <p class="text-[11px] text-gray-400">dari Rp{{ number_format(($stats->total_nilai_rekom ?? 0) / 1000000, 1) }}M target</p>
@@ -88,11 +88,11 @@
 </div>
 
 {{-- FILTER TOOLBAR --}}
-<form method="GET" action="{{ route('tindak-lanjuts.index') }}" class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+<form method="GET" action="{{ route('tindak-lanjuts.index') }}" class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-800 dark:bg-white/[0.03]">
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         
         {{-- Search --}}
-        <div class="lg:col-span-2">
+        <div class="sm:col-span-2 lg:col-span-2">
             <label for="search" class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
                 Cari Nomor LHP / Topik
             </label>
@@ -102,7 +102,7 @@
                 </div>
                 <input type="text" name="search" id="search" value="{{ $search }}"
                        placeholder="Nomor LHP atau nama program..."
-                       class="h-9 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-xs text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                       class="h-10 sm:h-9 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-xs text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
             </div>
         </div>
 
@@ -112,7 +112,7 @@
                 Tahun
             </label>
             <select name="tahun" id="tahun"
-                    class="h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                    class="h-10 sm:h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
                 <option value="">Semua Tahun</option>
                 @foreach(range(date('Y'), date('Y') - 4) as $y)
                     <option value="{{ $y }}" @selected($tahun == $y)>{{ $y }}</option>
@@ -126,7 +126,7 @@
                 Kategori Program
             </label>
             <select name="kategori" id="kategori"
-                    class="h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                    class="h-10 sm:h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
                 <option value="">Semua Kategori</option>
                 @foreach($kategoris as $k)
                     <option value="{{ $k }}" @selected($kategori == $k)>{{ $k }}</option>
@@ -140,7 +140,7 @@
                 Status Verifikasi
             </label>
             <select name="status" id="status"
-                    class="h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                    class="h-10 sm:h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
                 <option value="">Semua Status</option>
                 <option value="lunas" @selected($status == 'lunas')>Lunas</option>
                 <option value="berjalan" @selected($status == 'berjalan')>Sedang Berjalan</option>
@@ -154,7 +154,7 @@
                 Status OPD
             </label>
             <select name="status_opd" id="status_opd"
-                    class="h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                    class="h-10 sm:h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
                 <option value="">Semua Dokumen OPD</option>
                 <option value="dikirim" @selected($statusOpd == 'dikirim')>Terkirim (Ada Upload)</option>
                 <option value="draft" @selected($statusOpd == 'draft')>Draft</option>
@@ -165,35 +165,35 @@
 
     </div>
 
-    <div class="mt-3 flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+    <div class="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
         @if(request()->hasAny(['search', 'tahun', 'kategori', 'status', 'status_opd', 'unit_id']))
             <a href="{{ route('tindak-lanjuts.index') }}"
-               class="inline-flex h-8 items-center px-3 rounded-lg border border-gray-300 bg-white text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
+               class="inline-flex h-10 sm:h-8 items-center justify-center px-3 rounded-lg border border-gray-300 bg-white text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 w-full sm:w-auto">
                 Reset Filter
             </a>
         @endif
         <button type="submit"
-                class="inline-flex h-8 items-center px-4 rounded-lg bg-gray-900 text-xs font-medium text-white hover:bg-gray-800 transition-colors">
+                class="inline-flex h-10 sm:h-8 items-center justify-center px-4 rounded-lg bg-gray-900 text-xs font-semibold text-white hover:bg-gray-800 transition-colors w-full sm:w-auto">
             Terapkan Filter
         </button>
     </div>
 </form>
 
 {{-- TABLE DAFTAR LHP (KOMULATIF TINDAK LANJUT PER LHP) --}}
-<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
-    <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-            <thead class="bg-gray-50/80 text-gray-500 uppercase tracking-wider dark:bg-gray-800/50 dark:text-gray-400">
+<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="overflow-x-auto min-w-full">
+        <table class="w-full text-left text-xs whitespace-nowrap sm:whitespace-normal">
+            <thead class="bg-gray-50/80 text-gray-500 uppercase tracking-wider dark:bg-gray-800/50 dark:text-gray-400 text-[11px]">
                 <tr>
-                    <th class="px-5 py-3.5 font-semibold">Nomor LHP & Program</th>
-                    <th class="px-5 py-3.5 font-semibold">Unit OPD</th>
-                    <th class="px-5 py-3.5 font-semibold">Tanggal / Kat.</th>
-                    <th class="px-5 py-3.5 font-semibold text-center">Temuan & Rekom</th>
-                    <th class="px-5 py-3.5 font-semibold text-right">Nilai Rekomendasi</th>
-                    <th class="px-5 py-3.5 font-semibold text-right">Realisasi Setor</th>
-                    <th class="px-5 py-3.5 font-semibold text-center">Progres TL</th>
-                    <th class="px-5 py-3.5 font-semibold text-center">Status OPD</th>
-                    <th class="px-5 py-3.5 font-semibold text-right">Aksi</th>
+                    <th class="px-4 py-3.5 font-semibold">Nomor LHP & Program</th>
+                    <th class="px-4 py-3.5 font-semibold">Unit OPD</th>
+                    <th class="px-4 py-3.5 font-semibold">Tanggal / Kat.</th>
+                    <th class="px-4 py-3.5 font-semibold text-center">Temuan & Rekom</th>
+                    <th class="px-4 py-3.5 font-semibold text-right">Nilai Rekomendasi</th>
+                    <th class="px-4 py-3.5 font-semibold text-right">Realisasi Setor</th>
+                    <th class="px-4 py-3.5 font-semibold text-center">Progres TL</th>
+                    <th class="px-4 py-3.5 font-semibold text-center">Status OPD</th>
+                    <th class="px-4 py-3.5 font-semibold text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -222,9 +222,9 @@
 
                     <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
                         {{-- Nomor LHP & Program --}}
-                        <td class="px-5 py-4">
+                        <td class="px-4 py-3.5">
                             <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
-                               class="font-bold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 font-mono text-sm block">
+                               class="font-bold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 font-mono text-xs sm:text-sm block">
                                 {{ $lhp->nomor_lhp }}
                             </a>
                             <p class="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5 line-clamp-1">
@@ -233,7 +233,7 @@
                         </td>
 
                         {{-- Unit OPD --}}
-                        <td class="px-5 py-4">
+                        <td class="px-4 py-3.5">
                             <span class="font-semibold text-gray-800 dark:text-gray-200">
                                 {{ $lhp->unitDiperiksa?->nama_unit ?? '-' }}
                             </span>
@@ -243,7 +243,7 @@
                         </td>
 
                         {{-- Tanggal / Kategori --}}
-                        <td class="px-5 py-4">
+                        <td class="px-4 py-3.5">
                             <span class="text-gray-700 dark:text-gray-300">
                                 {{ $lhp->tanggal_lhp ? $lhp->tanggal_lhp->format('d/m/Y') : '-' }}
                             </span>
@@ -255,7 +255,7 @@
                         </td>
 
                         {{-- Temuan & Rekomendasi --}}
-                        <td class="px-5 py-4 text-center">
+                        <td class="px-4 py-3.5 text-center">
                             <span class="font-bold text-gray-900 dark:text-white">{{ $totalTemuan }}</span>
                             <span class="text-gray-400">/</span>
                             <span class="font-semibold text-gray-700 dark:text-gray-300">{{ $totalRekom }}</span>
@@ -263,20 +263,20 @@
                         </td>
 
                         {{-- Nilai Rekomendasi --}}
-                        <td class="px-5 py-4 text-right font-medium text-gray-900 dark:text-white">
+                        <td class="px-4 py-3.5 text-right font-medium font-mono text-gray-900 dark:text-white">
                             Rp{{ number_format($totalNilaiRekom, 0, ',', '.') }}
                         </td>
 
                         {{-- Realisasi Setor --}}
-                        <td class="px-5 py-4 text-right font-bold text-green-600 dark:text-green-400">
+                        <td class="px-4 py-3.5 text-right font-bold font-mono text-green-600 dark:text-green-400">
                             Rp{{ number_format($totalSetor, 0, ',', '.') }}
                         </td>
 
                         {{-- Progres TL --}}
-                        <td class="px-5 py-4 text-center">
+                        <td class="px-4 py-3.5 text-center">
                             <div class="w-24 mx-auto">
                                 <div class="flex justify-between items-center text-[10px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                                    <span>{{ round($progres) }}%</span>
+                                    <span class="font-mono">{{ round($progres) }}%</span>
                                     @if($isAllLunas)
                                         <span class="text-green-600 font-bold">LUNAS</span>
                                     @endif
@@ -289,7 +289,7 @@
                         </td>
 
                         {{-- Status OPD --}}
-                        <td class="px-5 py-4 text-center">
+                        <td class="px-4 py-3.5 text-center">
                             @if($hasDitolak)
                                 <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                                     Ditolak (Revisi)
@@ -310,10 +310,10 @@
                         </td>
 
                         {{-- Aksi --}}
-                        <td class="px-5 py-4 text-right whitespace-nowrap">
+                        <td class="px-4 py-3.5 text-right whitespace-nowrap">
                             <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
-                               class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shadow-sm">
-                                Detail LHP
+                               class="inline-flex items-center justify-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shadow-xs min-h-[38px]">
+                                <span>Detail LHP</span>
                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                             </a>
                         </td>
@@ -330,7 +330,7 @@
     </div>
 
     @if($lhps->hasPages())
-        <div class="border-t border-gray-200 px-5 py-3.5 dark:border-gray-800">
+        <div class="border-t border-gray-200 px-4 py-3 dark:border-gray-800">
             {{ $lhps->links() }}
         </div>
     @endif

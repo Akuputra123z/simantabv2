@@ -862,6 +862,12 @@ $totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
                                         {{ $attachment->file_name ?: 'Lampiran LHP' }}
                                     </p>
 
+                                    @if($attachment->keterangan)
+                                        <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                                            {{ $attachment->keterangan }}
+                                        </p>
+                                    @endif
+
                                     <p class="mt-0.5 text-[10px] text-gray-400">
                                         Klik untuk membuka
                                     </p>

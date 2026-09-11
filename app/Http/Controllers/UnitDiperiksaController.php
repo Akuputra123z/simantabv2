@@ -2,47 +2,91 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\TemplateUnitDiperiksaExport;
+use App\Imports\UnitDiperiksaImport;
 use App\Models\UnitDiperiksa;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 class UnitDiperiksaController extends Controller
 {
-   public function index(Request $request)
-{
-    $query = UnitDiperiksa::query();
+    public function index(Request $request)
+    {
+        $query = UnitDiperiksa::query();
 
-    $perPage = (int) $request->input('per_page', 10);
-    if (!in_array($perPage, [5, 8, 10, 20, 25, 50])) {
-        $perPage = 10;
+        $perPage = (int) $request->input('per_page', 10);
+        if (!in_array($perPage, [5, 8, 10, 20, 25, 50])) {
+            $perPage = 10;
+        }
+
+        $data = $query
+            ->when($request->search, function ($q) use ($request) {
+                $q->where(function ($sub) use ($request) {
+                    $sub->where('nama_unit', 'like', '%' . $request->search . '%')
+                        ->orWhere('nama_kecamatan', 'like', '%' . $request->search . '%')
+                        ->orWhere('alamat', 'like', '%' . $request->search . '%');
+                });
+            })
+            ->when($request->kategori, function ($q) use ($request) {
+                $q->where('kategori', $request->kategori);
+            })
+            ->when($request->kecamatan, function ($q) use ($request) {
+                $q->where('nama_kecamatan', $request->kecamatan);
+            })
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString();
+
+        // ✅ ambil list kecamatan unik dari database
+        $kecamatanList = UnitDiperiksa::select('nama_kecamatan')
+            ->whereNotNull('nama_kecamatan')
+            ->distinct()
+            ->orderBy('nama_kecamatan')
+            ->pluck('nama_kecamatan');
+
+        return view('pages.unit-diperiksa.index', compact('data', 'kecamatanList'));
     }
 
-    $data = $query
-        ->when($request->search, function ($q) use ($request) {
-            $q->where(function ($sub) use ($request) {
-                $sub->where('nama_unit', 'like', '%' . $request->search . '%')
-                    ->orWhere('nama_kecamatan', 'like', '%' . $request->search . '%')
-                    ->orWhere('alamat', 'like', '%' . $request->search . '%');
-            });
-        })
-        ->when($request->kategori, function ($q) use ($request) {
-            $q->where('kategori', $request->kategori);
-        })
-        ->when($request->kecamatan, function ($q) use ($request) {
-            $q->where('nama_kecamatan', $request->kecamatan);
-        })
-        ->latest()
-        ->paginate($perPage)
-        ->withQueryString();
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:10240',
+        ], [
+            'file.required' => 'Pilih file Excel atau CSV untuk diimpor.',
+            'file.mimes'    => 'Format file harus berupa .xlsx, .xls, atau .csv.',
+            'file.max'      => 'Ukuran file tidak boleh melebihi 10MB.',
+        ]);
 
-    // ✅ ambil list kecamatan unik dari database
-    $kecamatanList = UnitDiperiksa::select('nama_kecamatan')
-        ->whereNotNull('nama_kecamatan')
-        ->distinct()
-        ->orderBy('nama_kecamatan')
-        ->pluck('nama_kecamatan');
+        try {
+            $import = new UnitDiperiksaImport();
+            Excel::import($import, $request->file('file'));
 
-    return view('pages.unit-diperiksa.index', compact('data', 'kecamatanList'));
-}
+            $msg = "Proses impor selesai! {$import->importedCount} unit baru ditambahkan";
+            if ($import->updatedCount > 0) {
+                $msg .= ", {$import->updatedCount} unit diperbarui";
+            }
+            if ($import->skippedCount > 0) {
+                $msg .= ", {$import->skippedCount} baris dilewati";
+            }
+            $msg .= ".";
+
+            return redirect()
+                ->route('unit-diperiksa.index')
+                ->with('success', $msg);
+        } catch (\Exception $e) {
+            Log::error('Import UnitDiperiksa Error: ' . $e->getMessage());
+            return redirect()
+                ->back()
+                ->with('error', 'Gagal mengimpor file: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadTemplate()
+    {
+        return Excel::download(new TemplateUnitDiperiksaExport, 'template_import_unit_diperiksa.xlsx');
+    }
+
     public function create()
     {
         $kategoriOptions = ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'];

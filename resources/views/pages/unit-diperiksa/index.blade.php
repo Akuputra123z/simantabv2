@@ -2,8 +2,27 @@
 
 @section('content')
 
+{{-- FLASH NOTIFICATIONS --}}
+@if(session('success'))
+    <div id="alert-success" class="mb-4 rounded-xl border border-green-200 bg-green-50 p-4 text-xs font-semibold text-green-800 dark:border-green-800/40 dark:bg-green-900/20 dark:text-green-300 shadow-xs flex items-center justify-between transition-opacity duration-500">
+        <div class="flex items-center gap-2">
+            <svg class="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>{{ session('success') }}</span>
+        </div>
+        <button type="button" onclick="dismissAlert()" class="text-green-600 hover:text-green-800 dark:text-green-400 text-base leading-none">&times;</button>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300 shadow-xs flex items-center gap-2">
+        <svg class="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <span>{{ session('error') }}</span>
+    </div>
+@endif
+
 {{-- Outer Container --}}
-<div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+<div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]"
+     x-data="{ showImportModal: false }">
     
     {{-- Card Header --}}
     <div class="px-5 py-4 sm:px-6 sm:py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 dark:border-gray-800">
@@ -16,14 +35,92 @@
             </p>
         </div>
         
-        <a href="{{ route('unit-diperiksa.create') }}"
-           class="shadow-theme-xs inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-xs font-semibold text-white hover:bg-blue-700 active:scale-[0.98] transition-all">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            Tambah Unit Baru
-        </a>
+        <div class="flex items-center gap-2">
+            <button type="button" @click="showImportModal = true"
+                    class="shadow-theme-xs inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition-all cursor-pointer">
+                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                Import Unit
+            </button>
+
+            <a href="{{ route('unit-diperiksa.create') }}"
+               class="shadow-theme-xs inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-xs font-semibold text-white hover:bg-blue-700 active:scale-[0.98] transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Tambah Unit Baru
+            </a>
+        </div>
     </div>
+
+    {{-- MODAL IMPORT UNIT --}}
+    <template x-teleport="body">
+        <div x-show="showImportModal" x-cloak
+             class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto"
+             @click.self="showImportModal = false">
+            <div class="w-full max-w-md my-auto rounded-xl border border-gray-200 bg-white p-5 sm:p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-800"
+                 @click.outside="showImportModal = false">
+                
+                <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3 dark:border-gray-700">
+                    <div class="flex items-center gap-2">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Import Data Unit Periksa</h3>
+                    </div>
+                    <button type="button" @click="showImportModal = false" class="p-1 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <form action="{{ route('unit-diperiksa.import') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="space-y-4 mb-5">
+                        <div class="rounded-lg bg-blue-50/80 p-3 text-xs text-blue-800 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300">
+                            <p class="font-semibold mb-1">💡 Petunjuk Impor File:</p>
+                            <ul class="list-disc list-inside space-y-0.5 text-[11px]">
+                                <li>Format yang didukung: <strong>.xlsx, .xls, .csv</strong> (Maks 10MB).</li>
+                                <li>Header kolom: <code>nama_unit</code>, <code>kategori</code>, <code>nama_kecamatan</code>, <code>alamat</code>, <code>telepon</code>, <code>keterangan</code>.</li>
+                                <li>Jika unit sudah ada, data lama akan diperbarui secara otomatis.</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <a href="{{ route('unit-diperiksa.download-template') }}"
+                               class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                                📄 Unduh Template Excel (.xlsx) Resmi
+                            </a>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                Pilih File Excel / CSV <span class="text-red-500">*</span>
+                            </label>
+                            <input type="file" name="file" accept=".xlsx,.xls,.csv" required
+                                   class="block w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/40 dark:file:text-blue-300 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 p-1">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <button type="button" @click="showImportModal = false"
+                                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 min-h-[38px] transition-colors dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                            Batal
+                        </button>
+                        <button type="submit"
+                                class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 min-h-[38px] transition-colors shadow-xs">
+                            Unggah & Impor
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </template>
 
     {{-- DataTable Three Layout Container --}}
     <div class="p-5 sm:p-6">

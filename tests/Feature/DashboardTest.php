@@ -36,12 +36,15 @@ class DashboardTest extends TestCase
         Role::create(['name' => 'opd']);
         $user = User::factory()->create();
         $user->assignRole('opd');
-
         $this->actingAs($user);
-        $this->get('/opd/dashboard')->assertStatus(200);
+        $response = $this->get('/opd/dashboard');
+        $response->assertStatus(200);
+        $response->assertViewIs('pages.opd.dashboard');
+        $response->assertViewHas('totalLhp');
+        $response->assertViewHas('totalPenyelamatan');
     }
 
-    public function test_opd_users_can_visit_opd_tindak_lanjut_index_with_default_pkpt_filter(): void
+    public function test_opd_users_can_visit_opd_tindak_lanjut_index_with_default_semua_filter(): void
     {
         Role::create(['name' => 'opd']);
         $user = User::factory()->create();
@@ -51,7 +54,7 @@ class DashboardTest extends TestCase
         $response = $this->get('/opd/tindak-lanjut');
 
         $response->assertStatus(200);
-        $response->assertViewHas('kategori', 'PKPT');
+        $response->assertViewHas('kategori', 'semua');
     }
 
     public function test_opd_users_can_visit_lhp_detail_page(): void

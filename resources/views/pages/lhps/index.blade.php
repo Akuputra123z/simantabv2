@@ -68,22 +68,21 @@
 <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
     <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
-            <thead class="bg-gray-50/70 dark:bg-gray-900/40">
+            <thead class="bg-gray-50/80 dark:bg-gray-900/60 border-b border-gray-200 dark:border-gray-800">
                 <tr>
-                    <th class="px-5 py-3.5 w-[4%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">
+                    <th class="px-3.5 py-3 w-[4%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center border-r border-gray-200/70 dark:border-gray-800/70">
                         <input type="checkbox" id="check-all"
                             class="h-4 w-4 rounded border-gray-300 text-blue-600 cursor-pointer">
                     </th>
-                    <th class="px-5 py-3.5 w-[24%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nama Program</th>
-                    <th class="px-5 py-3.5 w-[18%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nomor LHP</th>
-                    <th class="px-5 py-3.5 w-[12%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Unit</th>
-                    <th class="px-5 py-3.5 w-[9%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Tanggal</th>
-                    <th class="px-5 py-3.5 w-[12%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Progress TL</th>
-                    <th class="px-5 py-3.5 w-[8%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Kategori</th>
-                    <th class="px-5 py-3.5 w-[13%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-right">Aksi</th>
+                    <th class="px-4 py-3 w-[25%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">Nama Program & Nomor LHP</th>
+                    <th class="px-4 py-3 w-[18%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">Unit Diperiksa</th>
+                    <th class="px-4 py-3 w-[13%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">Tanggal LHP</th>
+                    <th class="px-4 py-3 w-[13%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center border-r border-gray-200/70 dark:border-gray-800/70">Progress TL</th>
+                    <th class="px-4 py-3 w-[8%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center border-r border-gray-200/70 dark:border-gray-800/70">Kategori</th>
+                    <th class="px-4 py-3 w-[10%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-right">Aksi</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800/60">
                 @forelse($lhps as $lhp)
                 @php
                     $persen      = (float) ($lhp->statistik?->persen_selesai_gabungan ?? 0);
@@ -96,86 +95,78 @@
                     };
                     $k = $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori;
                     $kategoriBadge = match($k) {
-                        'PKPT' => 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400',
-                        'BPK'  => 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
-                        'BPKP' => 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400',
-                        'ITPROV' => 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-400',
-                        'ITDA'   => 'bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400',
-                        default  => 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+                        'PKPT' => 'bg-indigo-50 text-indigo-600 border border-indigo-200/60 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/30',
+                        'BPK'  => 'bg-amber-50 text-amber-600 border border-amber-200/60 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/30',
+                        'BPKP' => 'bg-rose-50 text-rose-600 border border-rose-200/60 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800/30',
+                        'ITPROV' => 'bg-cyan-50 text-cyan-600 border border-cyan-200/60 dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800/30',
+                        'ITDA'   => 'bg-teal-50 text-teal-600 border border-teal-200/60 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800/30',
+                        default  => 'bg-gray-50 text-gray-500 border border-gray-200/60 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700/50',
                     };
                 @endphp
-                <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                <tr class="hover:bg-gray-50/60 dark:hover:bg-white/[0.02] transition-colors align-top">
                     {{-- Checkbox --}}
-                    <td class="px-5 py-4 text-center">
+                    <td class="px-3.5 py-4 text-center border-r border-gray-100 dark:border-gray-800/60">
                         <input type="checkbox" name="ids[]" value="{{ $lhp->id }}"
-                            class="check-item h-4 w-4 rounded border-gray-300 cursor-pointer">
+                            class="check-item h-4 w-4 rounded border-gray-300 cursor-pointer mt-0.5">
                     </td>
 
-                    {{-- Nama Program --}}
-                    <td class="px-5 py-4">
-                        <div class="text-sm font-bold text-gray-900 dark:text-white leading-snug">
+                    {{-- Nama Program & Nomor LHP --}}
+                    <td class="px-4 py-4 border-r border-gray-100 dark:border-gray-800/60">
+                        <div class="mb-1.5">
+                            <span class="font-mono text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded border border-blue-200/80 dark:border-blue-800/40">
+                                {{ $lhp->nomor_lhp }}
+                            </span>
+                        </div>
+                        <div class="text-sm font-semibold text-gray-900 dark:text-white leading-snug">
                             {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
                         </div>
                         @if($lhp->auditAssignment?->auditProgramDetail?->nama_detail_program)
-                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
                             {{ $lhp->auditAssignment->auditProgramDetail->nama_detail_program }}
                         </div>
                         @endif
-                        <div class="flex flex-wrap gap-1 mt-1.5">
+                        <div class="flex flex-wrap items-center gap-1.5 mt-2.5">
                             @if($lhp->auditAssignment?->auditProgramDetail?->tim)
-                            <span class="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-[9px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30">
+                            <span class="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-[10px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800/30">
                                 Irban: {{ $lhp->auditAssignment->auditProgramDetail->tim }}
                             </span>
                             @endif
-                            @if($lhp->auditAssignment?->nomor_surat)
-                            <span class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[9px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700" title="Nomor Penugasan">
-                                Surat: {{ $lhp->auditAssignment->nomor_surat }}
-                            </span>
-                            @endif
-                        </div>
-                    </td>
-
-                    {{-- Nomor LHP --}}
-                    <td class="px-5 py-4">
-                        <div class="text-sm font-bold text-gray-900 dark:text-white font-mono">{{ $lhp->nomor_lhp }}</div>
-                        
-                        <div class="flex flex-wrap gap-1 mt-1.5">
-                            <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                            <span class="px-2 py-0.5 rounded bg-gray-50 dark:bg-gray-800/80 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200/80 dark:border-gray-700/60">
                                 {{ $lhp->statistik?->total_temuan ?? 0 }} temuan
                             </span>
-                            <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                            <span class="px-2 py-0.5 rounded bg-gray-50 dark:bg-gray-800/80 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200/80 dark:border-gray-700/60">
                                 {{ $lhp->statistik?->total_rekomendasi ?? 0 }} rekom
                             </span>
                         </div>
                     </td>
 
                     {{-- Unit --}}
-                    <td class="px-5 py-4">
-                        <div class="text-[11px] leading-snug text-gray-600 dark:text-gray-400 break-words max-w-[120px]">
+                    <td class="px-4 py-4 border-r border-gray-100 dark:border-gray-800/60">
+                        <div class="text-xs font-medium text-gray-800 dark:text-gray-300 leading-relaxed break-words">
                             {{ $lhp->unitDiperiksa?->label ?? $lhp->unitDiperiksa?->nama_unit ?? '-' }}
                         </div>
                     </td>
 
                     {{-- Tanggal --}}
-                    <td class="px-5 py-4 whitespace-nowrap">
-                        <div class="text-[11px] text-gray-600 dark:text-gray-400">
+                    <td class="px-4 py-4 whitespace-nowrap border-r border-gray-100 dark:border-gray-800/60">
+                        <div class="text-xs text-gray-600 dark:text-gray-400 font-medium">
                             {{ $lhp->tanggal_lhp->translatedFormat('d M Y') }}
                         </div>
                     </td>
 
                     {{-- Progress TL --}}
-                    <td class="px-5 py-4">
-                        <div class="flex flex-col items-center gap-1">
+                    <td class="px-4 py-4 border-r border-gray-100 dark:border-gray-800/60">
+                        <div class="flex flex-col items-center gap-1.5">
                             <div class="w-full max-w-[100px] bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
                                 <div class="{{ $barColor }} h-1.5 rounded-full transition-all duration-500"
                                     style="width: {{ min($persen, 100) }}%"></div>
                             </div>
-                            <span class="text-[10px] font-semibold
+                            <span class="text-[11px] font-bold
                                 {{ $persen >= 100 ? 'text-green-600' : ($persen >= 50 ? 'text-amber-500' : 'text-gray-500') }}">
                                 {{ $persenLabel }}%
                             </span>
                             @if($lhp->statistik)
-                            <span class="text-[9px] text-gray-400">
+                            <span class="text-[10px] text-gray-400">
                                 {{ $lhp->statistik->rekom_selesai }}/{{ $lhp->statistik->total_rekomendasi }} rekom
                             </span>
                             @endif
@@ -183,27 +174,27 @@
                     </td>
 
                     {{-- Kategori --}}
-                    <td class="px-5 py-4 text-center">
-                        <span class="px-2 py-1 rounded text-[10px] font-bold uppercase {{ $kategoriBadge }}">
+                    <td class="px-4 py-4 text-center border-r border-gray-100 dark:border-gray-800/60">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider {{ $kategoriBadge }}">
                             {{ $k ?? '-' }}
                         </span>
                     </td>
 
                     {{-- Aksi --}}
-                    <td class="px-5 py-4 text-right">
-                        <div class="flex justify-end gap-2">
-                            <a href="{{ route('lhps.show', $lhp->id) }}" class="p-1.5 text-gray-400 hover:text-blue-600 transition-colors" title="Lihat">
+                    <td class="px-4 py-4 text-right">
+                        <div class="flex justify-end items-center gap-1">
+                            <a href="{{ route('lhps.show', $lhp->id) }}" class="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors" title="Lihat">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"/></svg>
                             </a>
-                            <a href="{{ route('lhps.edit', $lhp->id) }}" class="p-1.5 text-gray-400 hover:text-amber-600 transition-colors" title="Edit">
+                            <a href="{{ route('lhps.edit', $lhp->id) }}" class="p-1.5 text-gray-400 hover:text-amber-600 rounded-md hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors" title="Edit">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 17H9v-2.828l9.414-9.586z" stroke-width="2"/></svg>
                             </a>
                             <a href="{{ route('laporan.preview-pdf-per-lhp', $lhp->id) }}" target="_blank"
-                               class="p-1.5 text-gray-400 hover:text-green-600 transition-colors" title="Unduh PDF">
+                               class="p-1.5 text-gray-400 hover:text-green-600 rounded-md hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors" title="Unduh PDF">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-width="2"/></svg>
                             </a>
                             <button type="button" onclick="openDeleteModal('single', '{{ $lhp->id }}')"
-                                    class="p-1.5 text-gray-400 hover:text-red-600 transition-colors" title="Hapus">
+                                    class="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Hapus">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
                             </button>
                         </div>
@@ -211,10 +202,10 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-5 py-20 text-center">
+                    <td colspan="7" class="px-5 py-20 text-center">
                         <div class="flex flex-col items-center gap-3">
                             <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-full text-gray-300">
-                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-width="1.5"/></svg>
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012 2h2a2 2 0 002-2M9 5a2 2 0 012 2h2a2 2 0 012 2" stroke-width="1.5"/></svg>
                             </div>
                             <p class="text-sm text-gray-400 font-medium italic">Tidak ada data LHP.</p>
                         </div>

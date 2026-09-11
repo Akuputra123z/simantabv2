@@ -143,6 +143,7 @@ public function getTemuans($lhpId) {
         'attachments'                     => 'nullable|array',
         'attachments.*.file_path'         => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
         'attachments.*.file_name'         => 'nullable|string',
+        'attachments.*.keterangan'        => 'nullable|string',
     ]);
 
     try {
@@ -212,6 +213,7 @@ public function getTemuans($lhpId) {
                     $lhp->attachments()->create([
                         'file_path'   => $path,
                         'file_name'   => $item['file_name'] ?? $item['file_path']->getClientOriginalName(),
+                        'keterangan'  => $item['keterangan'] ?? null,
                         'jenis_bukti' => 'lhp',
                         'uploaded_by' => auth()->id(),
                     ]);
@@ -314,6 +316,7 @@ public function update(Request $request, Lhp $lhp)
         'attachments'                       => 'nullable|array',
         'attachments.*.file_path'           => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
         'attachments.*.file_name'           => 'nullable|string',
+        'attachments.*.keterangan'          => 'nullable|string',
     ]);
 
     try {
@@ -409,7 +412,7 @@ public function update(Request $request, Lhp $lhp)
             }
         }
 
-        // ✅ BLOK INI YANG HILANG — SIMPAN ATTACHMENT BARU
+        // SIMPAN ATTACHMENT BARU
         if ($request->has('attachments')) {
             foreach ($request->attachments as $item) {
                 if (
@@ -420,6 +423,7 @@ public function update(Request $request, Lhp $lhp)
                     $lhp->attachments()->create([
                         'file_path'   => $path,
                         'file_name'   => $item['file_name'] ?? $item['file_path']->getClientOriginalName(),
+                        'keterangan'  => $item['keterangan'] ?? null,
                         'jenis_bukti' => 'lhp',
                         'uploaded_by' => auth()->id(),
                     ]);

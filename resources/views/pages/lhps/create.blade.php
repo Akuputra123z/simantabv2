@@ -494,7 +494,7 @@ function lhpCreateWizard() {
 
         // Logika Lampiran File (Step 1)
         addAttachment() {
-            this.attachments.push({ id: Date.now(), file_name: '' });
+            this.attachments.push({ id: Date.now(), file_name: '', keterangan: '' });
         },
 
         removeAttachment(index) {
@@ -671,19 +671,22 @@ function lhpCreateWizard() {
         <div class="lg:col-span-4 xl:col-span-3 space-y-5 lg:sticky lg:top-6">
             
             {{-- Stepper Nav Card --}}
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <h2 class="mb-4 text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Tahapan Pengisian</h2>
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900">
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Tahapan Pengisian</h2>
+                    <span class="text-xs font-semibold text-gray-400 dark:text-gray-500" x-text="`Langkah ${step} dari 4`"></span>
+                </div>
                 
-                <nav class="space-y-3">
+                <nav class="space-y-2.5">
                     {{-- Step 1 Button --}}
                     <button type="button" @click="setStep(1)"
-                            class="w-full group relative flex items-center gap-3.5 rounded-xl border p-3.5 text-left transition-all duration-200"
+                            class="w-full flex items-center gap-3.5 rounded-xl border p-3 text-left transition-colors"
                             :class="step === 1
-                                ? 'border-blue-600 bg-blue-50/80 text-blue-900 shadow-sm dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-200 ring-2 ring-blue-500/20'
-                                : 'border-gray-100 bg-gray-50/60 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300'">
-                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold shadow-xs transition-all"
-                             :class="step === 1 ? 'bg-blue-600 text-white' : (canGoToStep(2) ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300')">
-                            <span x-text="canGoToStep(2) ? '✓' : '1'"></span>
+                                ? 'border-blue-600 bg-blue-50/70 text-blue-900 dark:border-blue-500 dark:bg-blue-950/40 dark:text-blue-200 font-semibold'
+                                : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/70 dark:border-gray-800/80 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300'">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors"
+                             :class="step === 1 ? 'bg-blue-600 text-white' : (canGoToStep(2) ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300')">
+                            <span x-text="canGoToStep(2) &amp;&amp; step !== 1 ? '✓' : '1'"></span>
                         </div>
                         <div class="min-w-0 flex-1">
                             <p class="text-xs font-bold">1. Informasi LHP</p>
@@ -693,58 +696,49 @@ function lhpCreateWizard() {
 
                     {{-- Step 2 Button --}}
                     <button type="button" @click="setStep(2)" :disabled="!canGoToStep(2)"
-                            class="w-full group relative flex items-center gap-3.5 rounded-xl border p-3.5 text-left transition-all duration-200"
+                            class="w-full flex items-center gap-3.5 rounded-xl border p-3 text-left transition-colors"
                             :class="step === 2
-                                ? 'border-blue-600 bg-blue-50/80 text-blue-900 shadow-sm dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-200 ring-2 ring-blue-500/20'
-                                : (canGoToStep(2) ? 'border-gray-100 bg-gray-50/60 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300' : 'border-gray-100 bg-gray-100/40 text-gray-400 dark:border-gray-800 dark:bg-gray-800/20 cursor-not-allowed opacity-60')">
-                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold shadow-xs transition-all"
-                             :class="step === 2 ? 'bg-blue-600 text-white' : (canGoToStep(3) ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400')">
-                            <span x-text="canGoToStep(3) ? '✓' : (canGoToStep(2) ? '2' : '🔒')"></span>
+                                ? 'border-blue-600 bg-blue-50/70 text-blue-900 dark:border-blue-500 dark:bg-blue-950/40 dark:text-blue-200 font-semibold'
+                                : (canGoToStep(2) ? 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/70 dark:border-gray-800/80 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300' : 'border-gray-100 bg-gray-100/40 text-gray-400 dark:border-gray-800/40 dark:bg-gray-800/20 cursor-not-allowed opacity-60')">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors"
+                             :class="step === 2 ? 'bg-blue-600 text-white' : (canGoToStep(3) ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400')">
+                            <span x-text="canGoToStep(3) &amp;&amp; step !== 2 ? '✓' : (canGoToStep(2) ? '2' : '2')"></span>
                         </div>
-                        <div class="min-w-0 flex-1 flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold">2. Temuan Audit</p>
-                                <p class="mt-0.5 truncate text-[11px] opacity-75" x-text="`${temuans.length} Temuan`"></p>
-                            </div>
-                            <span x-show="!canGoToStep(2)" class="text-[10px] font-bold uppercase text-gray-400">Terkunci</span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-bold">2. Temuan Audit</p>
+                            <p class="mt-0.5 truncate text-[11px] opacity-75" x-text="`${temuans.length} Temuan`"></p>
                         </div>
                     </button>
 
                     {{-- Step 3 Button --}}
                     <button type="button" @click="setStep(3)" :disabled="!canGoToStep(3)"
-                            class="w-full group relative flex items-center gap-3.5 rounded-xl border p-3.5 text-left transition-all duration-200"
+                            class="w-full flex items-center gap-3.5 rounded-xl border p-3 text-left transition-colors"
                             :class="step === 3
-                                ? 'border-blue-600 bg-blue-50/80 text-blue-900 shadow-sm dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-200 ring-2 ring-blue-500/20'
-                                : (canGoToStep(3) ? 'border-gray-100 bg-gray-50/60 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300' : 'border-gray-100 bg-gray-100/40 text-gray-400 dark:border-gray-800 dark:bg-gray-800/20 cursor-not-allowed opacity-60')">
-                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold shadow-xs transition-all"
-                             :class="step === 3 ? 'bg-blue-600 text-white' : (canGoToStep(4) ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400')">
-                            <span x-text="canGoToStep(4) ? '✓' : (canGoToStep(3) ? '3' : '🔒')"></span>
+                                ? 'border-blue-600 bg-blue-50/70 text-blue-900 dark:border-blue-500 dark:bg-blue-950/40 dark:text-blue-200 font-semibold'
+                                : (canGoToStep(3) ? 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/70 dark:border-gray-800/80 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300' : 'border-gray-100 bg-gray-100/40 text-gray-400 dark:border-gray-800/40 dark:bg-gray-800/20 cursor-not-allowed opacity-60')">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors"
+                             :class="step === 3 ? 'bg-blue-600 text-white' : (canGoToStep(4) ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400')">
+                            <span x-text="canGoToStep(4) &amp;&amp; step !== 3 ? '✓' : (canGoToStep(3) ? '3' : '3')"></span>
                         </div>
-                        <div class="min-w-0 flex-1 flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold">3. Rekomendasi</p>
-                                <p class="mt-0.5 truncate text-[11px] opacity-75" x-text="`${totalRekomCount} Rekomendasi`"></p>
-                            </div>
-                            <span x-show="!canGoToStep(3)" class="text-[10px] font-bold uppercase text-gray-400">Terkunci</span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-bold">3. Rekomendasi</p>
+                            <p class="mt-0.5 truncate text-[11px] opacity-75" x-text="`${totalRekomCount} Rekomendasi`"></p>
                         </div>
                     </button>
 
                     {{-- Step 4 Button --}}
                     <button type="button" @click="setStep(4)" :disabled="!canGoToStep(4)"
-                            class="w-full group relative flex items-center gap-3.5 rounded-xl border p-3.5 text-left transition-all duration-200"
+                            class="w-full flex items-center gap-3.5 rounded-xl border p-3 text-left transition-colors"
                             :class="step === 4
-                                ? 'border-blue-600 bg-blue-50/80 text-blue-900 shadow-sm dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-200 ring-2 ring-blue-500/20'
-                                : (canGoToStep(4) ? 'border-gray-100 bg-gray-50/60 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300' : 'border-gray-100 bg-gray-100/40 text-gray-400 dark:border-gray-800 dark:bg-gray-800/20 cursor-not-allowed opacity-60')">
-                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold shadow-xs transition-all"
+                                ? 'border-blue-600 bg-blue-50/70 text-blue-900 dark:border-blue-500 dark:bg-blue-950/40 dark:text-blue-200 font-semibold'
+                                : (canGoToStep(4) ? 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/70 dark:border-gray-800/80 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300' : 'border-gray-100 bg-gray-100/40 text-gray-400 dark:border-gray-800/40 dark:bg-gray-800/20 cursor-not-allowed opacity-60')">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors"
                              :class="step === 4 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'">
-                            <span x-text="canGoToStep(4) ? '4' : '🔒'"></span>
+                            <span>4</span>
                         </div>
-                        <div class="min-w-0 flex-1 flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold">4. Finalisasi LHP</p>
-                                <p class="mt-0.5 truncate text-[11px] opacity-75">Review &amp; Submit</p>
-                            </div>
-                            <span x-show="!canGoToStep(4)" class="text-[10px] font-bold uppercase text-gray-400">Terkunci</span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-bold">4. Finalisasi LHP</p>
+                            <p class="mt-0.5 truncate text-[11px] opacity-75">Review &amp; Submit</p>
                         </div>
                     </button>
                 </nav>
@@ -886,6 +880,7 @@ function lhpCreateWizard() {
                                     Berkas Lampiran LHP (Opsional)
                                 </h3>
                                 <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Unggah bukti pendukung LHP dalam format PDF, JPG, PNG, atau JPEG.</p>
+                                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Ukuran file maksimal 5MB</p>    
                             </div>
                             <button type="button" @click="addAttachment()"
                                     class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-white/[0.03] dark:text-gray-300 transition">
@@ -904,19 +899,26 @@ function lhpCreateWizard() {
                                             Hapus Lampiran
                                         </button>
                                     </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div>
-                                            <label class="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-400">
+                                            <label class="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">
                                                 Upload File
                                             </label>
                                             <input type="file" :name="`attachments[${aIdx}][file_path]`" accept=".pdf,.jpg,.jpeg,.png"
                                                    class="focus:border-ring-brand-300 shadow-theme-xs focus:file:ring-brand-300 h-11 w-full overflow-hidden rounded-lg border border-gray-300 bg-transparent text-sm text-gray-500 transition-colors file:mr-5 file:border-collapse file:cursor-pointer file:rounded-l-lg file:border-0 file:border-r file:border-solid file:border-gray-200 file:bg-gray-50 file:py-3 file:pr-3 file:pl-3.5 file:text-sm file:text-gray-700 placeholder:text-gray-400 hover:file:bg-gray-100 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:text-white/90 dark:file:border-gray-800 dark:file:bg-white/[0.03] dark:file:text-gray-400 dark:placeholder:text-gray-400">
                                         </div>
                                         <div>
-                                            <label class="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-400">
-                                                Nama / Keterangan File
+                                            <label class="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                                Nama / Judul File
                                             </label>
-                                            <input type="text" :name="`attachments[${aIdx}][file_name]`" x-model="att.file_name" placeholder="cth: Laporan Hasil Audit (PDF)..."
+                                            <input type="text" :name="`attachments[${aIdx}][file_name]`" x-model="att.file_name" placeholder="cth: LHP Final T.A 2024"
+                                                   class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-400">
+                                        </div>
+                                        <div>
+                                            <label class="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                                Keterangan File
+                                            </label>
+                                            <input type="text" :name="`attachments[${aIdx}][keterangan]`" x-model="att.keterangan" placeholder="cth: Lampiran Surat Pengantar & Matriks..."
                                                    class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-400">
                                         </div>
                                     </div>

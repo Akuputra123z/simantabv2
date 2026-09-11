@@ -116,6 +116,8 @@ Route::post('/audit-assignment/{auditAssignment}/sign', [AuditAssignmentControll
 
     // Master Data & Audit Program Utama
     Route::resource('kode-temuan', KodeTemuanController::class);
+    Route::get('/unit-diperiksa/download-template', [UnitDiperiksaController::class, 'downloadTemplate'])->name('unit-diperiksa.download-template');
+    Route::post('/unit-diperiksa/import', [UnitDiperiksaController::class, 'import'])->name('unit-diperiksa.import');
     Route::resource('unit-diperiksa', UnitDiperiksaController::class);
     Route::resource('audit-program', AuditProgramController::class);
     Route::get('/audit-program/{auditProgram}/preview', [AuditProgramController::class, 'preview'])->name('audit-program.preview');
@@ -171,6 +173,7 @@ Route::middleware(['auth', 'active'])->prefix('laporan')->name('laporan.')->grou
     Route::get('/download/pdf/semua', [LaporanController::class, 'downloadPdfSemua'])->name('download-pdf-semua');
     Route::get('/download/pdf/{lhp}', [LaporanController::class, 'downloadPdfPerLhp'])->name('download-pdf-per-lhp');
     Route::get('/preview/pdf/{lhp}', [LaporanController::class, 'previewPdfPerLhp'])->name('preview-pdf-per-lhp');
+    Route::get('/download/excel/semua', [LaporanController::class, 'downloadExcelSemua'])->name('download-excel-semua');
     Route::get('/download/excel/{lhp}', [LaporanController::class, 'downloadExcelPerLhp'])->name('download-excel-per-lhp');
 });
 
@@ -178,6 +181,7 @@ Route::middleware(['auth', 'active'])->prefix('laporan')->name('laporan.')->grou
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])->name('attachments.download');
     Route::get('/attachments/{attachment}/view', [AttachmentController::class, 'show'])->name('attachments.show');
+    Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
 });
 
 // --- GRUP 4: OPD (User Eksternal) ---

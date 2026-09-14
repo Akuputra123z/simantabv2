@@ -49,10 +49,8 @@
             </button>
 
             <!-- Logo (mobile only) -->
-           <a href="/" class="xl:hidden flex items-center">
-                {{-- FIX: Ukuran dibesarkan sedikit menjadi h-11 (44px) --}}
-                <img class="h-11 w-auto dark:hidden" src="{{ asset('images/logo/coba.png') }}" alt="Logo Inspektorat" />
-                <img class="h-11 w-auto hidden dark:block" src="{{ asset('images/logo/inspektorat.png') }}" alt="Logo Inspektorat" />
+            <a href="/" class="xl:hidden flex items-center">
+                <img class="h-14 w-auto object-contain" src="{{ asset('images/logo/coba.png') }}" alt="Logo Inspektorat" />
             </a>
 
             <!-- Application Menu Toggle (mobile only) -->

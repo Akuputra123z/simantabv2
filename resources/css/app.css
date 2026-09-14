@@ -993,3 +993,18 @@ pre[class*='language-'] {
         fill: none !important;
     }
 }
+
+/* WPO & RWD Performance Utilities */
+html {
+    scroll-behavior: smooth;
+}
+
+.cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 500px;
+}
+
+.touch-scroll {
+    -webkit-overflow-scrolling: touch;
+}
+

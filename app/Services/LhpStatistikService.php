@@ -41,18 +41,28 @@ class LhpStatistikService
             if ($totalRekom === 0) {
                 $this->resetStatistik($lhpId);
                 $totalKerugian = (float) $lhp->temuans->sum('nilai_temuan');
+                $progresFinal  = $lhp->is_nihil ? 100.0 : 0.0;
 
                 LhpStatistik::updateOrCreate(
                     ['lhp_id' => $lhpId],
                     [
-                        'total_temuan'   => $lhp->temuans->count(),
-                        'total_kerugian' => $totalKerugian,
-                        'dihitung_pada'  => now(),
+                        'total_temuan'            => $lhp->temuans->count(),
+                        'total_rekomendasi'       => 0,
+                        'rekom_selesai'           => 0,
+                        'rekom_proses'            => 0,
+                        'rekom_belum'             => 0,
+                        'total_kerugian'          => $totalKerugian,
+                        'total_nilai_tl_selesai'  => 0,
+                        'total_sisa_kerugian'     => 0,
+                        'persen_selesai'          => $progresFinal,
+                        'persen_selesai_nilai'    => $progresFinal,
+                        'persen_selesai_gabungan' => $progresFinal,
+                        'dihitung_pada'           => now(),
                     ]
                 );
 
-                // ✅ Sinkronisasi assignment meski 0 rekomendasi
-                $this->sinkronStatusAssignment($lhp, 0);
+                // ✅ Sinkronisasi assignment (100% jika NIHIL, 0% jika biasa)
+                $this->sinkronStatusAssignment($lhp, $progresFinal);
 
                 event(new LhpStatistikUpdated($lhp->fresh()));
                 return;

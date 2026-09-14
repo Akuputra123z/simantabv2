@@ -1,0 +1,25 @@
+{
+  "name": "SIMANTAB - Inspektorat Kabupaten Rembang",
+  "short_name": "SIMANTAB",
+  "description": "Sistem Informasi Manajemen Pengawasan & Tindak Lanjut Inspektorat Kabupaten Rembang",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#1e3a8a",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

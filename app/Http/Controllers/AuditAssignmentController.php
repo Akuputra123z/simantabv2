@@ -340,7 +340,7 @@ public function getProgramDetails(Request $request, $programId)
     
     public function getKecamatan(string $kategori)
     {
-        $kecamatan = UnitDiperiksa::where('kategori', $kategori)->distinct()->orderBy('nama_kecamatan')->pluck('nama_kecamatan');
+        $kecamatan = UnitDiperiksa::getKecamatanList($kategori);
         return response()->json($kecamatan);
     }
 

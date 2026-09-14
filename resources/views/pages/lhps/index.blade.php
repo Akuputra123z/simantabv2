@@ -2,6 +2,26 @@
 
 @section('content')
 
+@php
+    $sort = request('sort');
+    $direction = request('direction', 'desc');
+
+    $sortUrl = fn(string $col) => request()->fullUrlWithQuery([
+        'sort'      => $col,
+        'direction' => ($sort === $col && $direction === 'desc') ? 'asc' : 'desc',
+        'page'      => 1,
+    ]);
+
+    $renderSortIcons = function(string $col) use ($sort, $direction): string {
+        $activeAsc = ($sort === $col && $direction === 'asc') ? 'fill-blue-600 dark:fill-blue-400' : 'fill-gray-300 dark:fill-gray-700';
+        $activeDesc = ($sort === $col && $direction === 'desc') ? 'fill-blue-600 dark:fill-blue-400' : 'fill-gray-300 dark:fill-gray-700';
+        return '<span class="flex flex-col gap-0.5 ml-1.5 shrink-0">
+            <svg class="'.$activeAsc.'" width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.40962 0.585167C4.21057 0.300808 3.78943 0.300807 3.59038 0.585166L1.05071 4.21327C0.81874 4.54466 1.05582 5 1.46033 5H6.53967C6.94418 5 7.18126 4.54466 6.94929 4.21327L4.40962 0.585167Z" fill=""></path></svg>
+            <svg class="'.$activeDesc.'" width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.40962 4.41483C4.21057 4.69919 3.78943 4.69919 3.59038 4.41483L1.05071 0.786732C0.81874 0.455343 1.05582 0 1.46033 0H6.53967C6.94418 0 7.18126 0.455342 6.94929 0.786731L4.40962 4.41483Z" fill=""></path></svg>
+        </span>';
+    };
+@endphp
+
 {{-- Header --}}
 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
@@ -51,7 +71,7 @@
                 class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg bg-gray-950 text-sm font-medium text-white hover:bg-gray-850 focus:outline-none focus:ring-2 focus:ring-gray-950/20 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-500/20 transition-colors whitespace-nowrap">
             Filter
         </button>
-        @if (request()->hasAny(['search', 'tahun', 'kategori']))
+        @if (request()->hasAny(['search', 'tahun', 'kategori', 'sort', 'direction']))
         <a href="{{ route('lhps.index') }}"
            class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors whitespace-nowrap">
             Reset
@@ -61,11 +81,39 @@
 </form>
 
 {{-- Table --}}
-<form id="main-form" action="{{ route('lhps.bulkDelete') }}" method="POST">
+<form id="main-form" action="{{ route('lhps.bulkDelete') }}" method="POST" onsubmit="return false;">
     @csrf
     @method('DELETE')
 
-<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+    {{-- Bulk Action Banner Bar (User Friendly Top Position) --}}
+    <div id="bulk-action-bar" class="hidden mb-4 p-3 px-4 rounded-xl bg-red-50/90 dark:bg-red-950/40 border border-red-200/80 dark:border-red-800/60 flex items-center justify-between shadow-xs transition-all duration-300">
+        <div class="flex items-center gap-3">
+            <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-600 text-white font-bold text-xs shadow-xs" id="count-selected-badge">
+                0
+            </div>
+            <div>
+                <p class="text-xs font-bold text-red-900 dark:text-red-200">
+                    <span id="count-selected-text">0</span> data LHP terpilih
+                </p>
+                <p class="text-[11px] text-red-700/80 dark:text-red-300/70">
+                    Hapus semua data LHP yang dicentang secara bersamaan.
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="uncheckAll()" class="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100/50 dark:border-red-800 dark:bg-gray-800 dark:text-red-300 dark:hover:bg-red-900/30 transition-colors cursor-pointer">
+                Batal Pilihan
+            </button>
+            <button type="button" id="btn-bulk-delete" class="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-red-700 active:scale-[0.98] transition-all cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v2m3 3h7M3 7h18"/>
+                </svg>
+                <span>Hapus Terpilih (<span id="count-selected">0</span>)</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
     <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
             <thead class="bg-gray-50/80 dark:bg-gray-900/60 border-b border-gray-200 dark:border-gray-800">
@@ -74,11 +122,56 @@
                         <input type="checkbox" id="check-all"
                             class="h-4 w-4 rounded border-gray-300 text-blue-600 cursor-pointer">
                     </th>
-                    <th class="px-4 py-3 w-[25%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">Nama Program & Nomor LHP</th>
-                    <th class="px-4 py-3 w-[18%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">Unit Diperiksa</th>
-                    <th class="px-4 py-3 w-[13%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">Tanggal LHP</th>
-                    <th class="px-4 py-3 w-[13%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center border-r border-gray-200/70 dark:border-gray-800/70">Progress TL</th>
-                    <th class="px-4 py-3 w-[8%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center border-r border-gray-200/70 dark:border-gray-800/70">Kategori</th>
+                    <th class="px-4 py-3 w-[25%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">
+                        <div class="flex items-center justify-between">
+                            <a href="{{ $sortUrl('nama_program') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                <span>Nama Program & Nomor LHP</span>
+                            </a>
+                            <a href="{{ $sortUrl('nama_program') }}">
+                                {!! $renderSortIcons('nama_program') !!}
+                            </a>
+                        </div>
+                    </th>
+                    <th class="px-4 py-3 w-[18%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">
+                        <div class="flex items-center justify-between">
+                            <a href="{{ $sortUrl('unit_diperiksa') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                <span>Unit Diperiksa</span>
+                            </a>
+                            <a href="{{ $sortUrl('unit_diperiksa') }}">
+                                {!! $renderSortIcons('unit_diperiksa') !!}
+                            </a>
+                        </div>
+                    </th>
+                    <th class="px-4 py-3 w-[13%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">
+                        <div class="flex items-center justify-between">
+                            <a href="{{ $sortUrl('tanggal_lhp') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                <span>Tanggal LHP</span>
+                            </a>
+                            <a href="{{ $sortUrl('tanggal_lhp') }}">
+                                {!! $renderSortIcons('tanggal_lhp') !!}
+                            </a>
+                        </div>
+                    </th>
+                    <th class="px-4 py-3 w-[13%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center border-r border-gray-200/70 dark:border-gray-800/70">
+                        <div class="flex items-center justify-center">
+                            <a href="{{ $sortUrl('progress') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                <span>Progress TL</span>
+                            </a>
+                            <a href="{{ $sortUrl('progress') }}">
+                                {!! $renderSortIcons('progress') !!}
+                            </a>
+                        </div>
+                    </th>
+                    <th class="px-4 py-3 w-[8%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center border-r border-gray-200/70 dark:border-gray-800/70">
+                        <div class="flex items-center justify-center">
+                            <a href="{{ $sortUrl('kategori') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                <span>Kategori</span>
+                            </a>
+                            <a href="{{ $sortUrl('kategori') }}">
+                                {!! $renderSortIcons('kategori') !!}
+                            </a>
+                        </div>
+                    </th>
                     <th class="px-4 py-3 w-[10%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-right">Aksi</th>
                 </tr>
             </thead>
@@ -118,58 +211,45 @@
                             </span>
                         </div>
                         <div class="text-sm font-semibold text-gray-900 dark:text-white leading-snug">
-                            {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
+                            <a href="{{ route('lhps.show', $lhp->id) }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
+                            </a>
                         </div>
+                        @if($lhp->is_nihil)
+                        <div class="mt-1.5">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40">
+                                🌿 Bebas Temuan (Nihil)
+                            </span>
+                        </div>
+                        @endif
                         @if($lhp->auditAssignment?->auditProgramDetail?->nama_detail_program)
                         <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
                             {{ $lhp->auditAssignment->auditProgramDetail->nama_detail_program }}
                         </div>
                         @endif
-                        <div class="flex flex-wrap items-center gap-1.5 mt-2.5">
-                            @if($lhp->auditAssignment?->auditProgramDetail?->tim)
-                            <span class="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-[10px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-800/30">
-                                Irban: {{ $lhp->auditAssignment->auditProgramDetail->tim }}
-                            </span>
-                            @endif
-                            <span class="px-2 py-0.5 rounded bg-gray-50 dark:bg-gray-800/80 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200/80 dark:border-gray-700/60">
-                                {{ $lhp->statistik?->total_temuan ?? 0 }} temuan
-                            </span>
-                            <span class="px-2 py-0.5 rounded bg-gray-50 dark:bg-gray-800/80 text-[10px] font-medium text-gray-600 dark:text-gray-400 border border-gray-200/80 dark:border-gray-700/60">
-                                {{ $lhp->statistik?->total_rekomendasi ?? 0 }} rekom
-                            </span>
-                        </div>
                     </td>
 
-                    {{-- Unit --}}
+                    {{-- Unit Diperiksa --}}
                     <td class="px-4 py-4 border-r border-gray-100 dark:border-gray-800/60">
-                        <div class="text-xs font-medium text-gray-800 dark:text-gray-300 leading-relaxed break-words">
+                        <div class="text-xs font-medium text-gray-800 dark:text-gray-300 leading-relaxed">
                             {{ $lhp->unitDiperiksa?->label ?? $lhp->unitDiperiksa?->nama_unit ?? '-' }}
                         </div>
                     </td>
 
-                    {{-- Tanggal --}}
+                    {{-- Tanggal LHP --}}
                     <td class="px-4 py-4 whitespace-nowrap border-r border-gray-100 dark:border-gray-800/60">
                         <div class="text-xs text-gray-600 dark:text-gray-400 font-medium">
-                            {{ $lhp->tanggal_lhp->translatedFormat('d M Y') }}
+                            {{ $lhp->tanggal_lhp ? $lhp->tanggal_lhp->translatedFormat('d M Y') : '-' }}
                         </div>
                     </td>
 
                     {{-- Progress TL --}}
                     <td class="px-4 py-4 border-r border-gray-100 dark:border-gray-800/60">
-                        <div class="flex flex-col items-center gap-1.5">
-                            <div class="w-full max-w-[100px] bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
-                                <div class="{{ $barColor }} h-1.5 rounded-full transition-all duration-500"
-                                    style="width: {{ min($persen, 100) }}%"></div>
+                        <div class="flex flex-col items-center gap-1">
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                                <div class="{{ $barColor }} h-2 rounded-full transition-all duration-500" style="width: {{ min(100, max(0, $persen)) }}%"></div>
                             </div>
-                            <span class="text-[11px] font-bold
-                                {{ $persen >= 100 ? 'text-green-600' : ($persen >= 50 ? 'text-amber-500' : 'text-gray-500') }}">
-                                {{ $persenLabel }}%
-                            </span>
-                            @if($lhp->statistik)
-                            <span class="text-[10px] text-gray-400">
-                                {{ $lhp->statistik->rekom_selesai }}/{{ $lhp->statistik->total_rekomendasi }} rekom
-                            </span>
-                            @endif
+                            <span class="text-[11px] font-bold text-gray-600 dark:text-gray-400">{{ $persenLabel }}% Selesai</span>
                         </div>
                     </td>
 
@@ -216,16 +296,11 @@
         </table>
     </div>
 
-    <div class="flex items-center justify-between border-t border-gray-100 px-5 py-3.5 dark:border-gray-800">
-        <button type="button" id="btn-bulk-delete" class="hidden text-xs font-bold text-red-600 hover:text-red-700 transition-all uppercase">
-            Hapus Terpilih (<span id="count-selected">0</span>)
-        </button>
-        <div class="flex-1 flex justify-center">
-            @if($lhps->hasPages())
-            {{ $lhps->links() }}
-            @endif
-        </div>
+    @if($lhps->hasPages())
+    <div class="flex items-center justify-center border-t border-gray-100 px-5 py-3.5 dark:border-gray-800">
+        {{ $lhps->links() }}
     </div>
+    @endif
 </div>
 </form>
 
@@ -283,9 +358,33 @@
 
     // Checkbox bulk
     function toggleBulkUI() {
-        const checked = document.querySelectorAll('.check-item:checked');
-        btnBulk.classList.toggle('hidden', checked.length === 0);
-        countSpan.innerText = checked.length;
+        const checked   = document.querySelectorAll('.check-item:checked');
+        const actionBar = document.getElementById('bulk-action-bar');
+        const badgeSpan = document.getElementById('count-selected-badge');
+        const textSpan  = document.getElementById('count-selected-text');
+
+        if (actionBar) {
+            if (checked.length > 0) {
+                actionBar.classList.remove('hidden');
+                actionBar.classList.add('flex');
+            } else {
+                actionBar.classList.add('hidden');
+                actionBar.classList.remove('flex');
+            }
+        }
+        if (badgeSpan) badgeSpan.innerText = checked.length;
+        if (textSpan)  textSpan.innerText  = checked.length;
+        if (countSpan) countSpan.innerText = checked.length;
+
+        if (checkAll && checkboxes.length > 0) {
+            checkAll.checked = checked.length === checkboxes.length;
+        }
+    }
+
+    function uncheckAll() {
+        if (checkAll) checkAll.checked = false;
+        checkboxes.forEach(cb => cb.checked = false);
+        toggleBulkUI();
     }
 
     if (checkAll) {
@@ -330,9 +429,11 @@
     if (confirmBtn) {
         confirmBtn.addEventListener('click', function () {
             this.disabled  = true;
-            this.innerText = 'Processing...';
+            this.innerText = 'Memproses...';
             if (currentDeleteType === 'bulk') {
-                document.getElementById('main-form').submit();
+                const mainForm = document.getElementById('main-form');
+                mainForm.onsubmit = null;
+                mainForm.submit();
             } else {
                 const form   = document.getElementById('delete-single-form');
                 form.action  = `/lhps/${currentId}`;

@@ -37,68 +37,67 @@
 
         {{-- Filter Card --}}
         <form method="GET" id="filter-form"
-              class="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-4 mb-4 space-y-4">
-            <div class="flex flex-col gap-3 md:flex-row md:items-center">
+              class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 mb-4 shadow-sm">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 items-end">
                 {{-- Search --}}
-                <div class="flex-1 min-w-0">
-                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Pencarian</label>
+                <div class="lg:col-span-4">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Pencarian</label>
                     <div class="relative">
                         <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
-                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama, email, NIP..." class="w-full h-10 pl-10 pr-4 text-sm border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all">
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama, email, NIP..." class="w-full h-10 pl-10 pr-4 text-xs border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
                     </div>
                 </div>
 
-                {{-- Filters Group --}}
-                <div class="flex flex-wrap items-end gap-2 w-full md:w-auto">
-                    {{-- Sub Unit Organisasi --}}
-                    <div class="flex-1 min-w-[140px] sm:flex-initial sm:w-48">
-                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sub Unit</label>
-                        <select name="unit_kerja" id="unit-kerja-select" data-no-ts
-                                class="h-10 w-full px-3 text-sm border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg">
-                            <option value="">Semua Sub Unit</option>
-                            @foreach($unitKerjaOptions as $option)
-                                <option value="{{ $option }}" {{ request('unit_kerja') === $option ? 'selected' : '' }}>
-                                    {{ $option }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                {{-- Sub Unit Organisasi --}}
+                <div class="lg:col-span-3">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Sub Unit</label>
+                    <select name="unit_kerja" id="unit-kerja-select" data-no-ts
+                            class="h-10 w-full px-3 text-xs border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none cursor-pointer">
+                        <option value="">Semua Sub Unit</option>
+                        @foreach($unitKerjaOptions as $option)
+                            <option value="{{ $option }}" {{ request('unit_kerja') === $option ? 'selected' : '' }}>
+                                {{ $option }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-                    {{-- Pilihan Jabatan --}}
-                    <div class="flex-1 min-w-[140px] sm:flex-initial sm:w-44">
-                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Jabatan</label>
-                        <select name="jabatan" id="jabatan-select" data-no-ts
-                                class="h-10 w-full px-3 text-sm border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg">
-                            <option value="">Semua Jabatan</option>
-                            @foreach($jabatanOptions as $option)
-                                <option value="{{ $option }}" {{ request('jabatan') === $option ? 'selected' : '' }}>
-                                    {{ $option }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                {{-- Pilihan Jabatan --}}
+                <div class="lg:col-span-3">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Jabatan</label>
+                    <select name="jabatan" id="jabatan-select" data-no-ts
+                            class="h-10 w-full px-3 text-xs border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none cursor-pointer">
+                        <option value="">Semua Jabatan</option>
+                        @foreach($jabatanOptions as $option)
+                            <option value="{{ $option }}" {{ request('jabatan') === $option ? 'selected' : '' }}>
+                                {{ $option }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-                    {{-- Per Page --}}
-                    <div class="flex-1 min-w-[70px] sm:flex-initial sm:w-20">
-                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tampil</label>
-                        <select name="per_page" id="per-page-select"
-                                class="h-10 w-full px-2 text-sm border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg">
-                            <option value="15" {{ (request('per_page', '15') == '15') ? 'selected' : '' }}>15</option>
-                            <option value="25" {{ request('per_page') == '25' ? 'selected' : '' }}>25</option>
-                            <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50</option>
-                        </select>
-                    </div>
+                {{-- Per Page --}}
+                <div class="lg:col-span-1">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Tampil</label>
+                    <select name="per_page" id="per-page-select" data-no-ts
+                            class="h-10 w-full px-2 text-xs border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none cursor-pointer">
+                        <option value="15" {{ (request('per_page', '15') == '15') ? 'selected' : '' }}>15</option>
+                        <option value="25" {{ request('per_page') == '25' ? 'selected' : '' }}>25</option>
+                        <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50</option>
+                    </select>
+                </div>
 
-                    {{-- Buttons --}}
+                {{-- Buttons --}}
+                <div class="lg:col-span-1 flex gap-1.5">
                     <button type="submit"
-                            class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors shadow-sm">
+                            class="h-10 w-full inline-flex items-center justify-center rounded-xl bg-indigo-600 text-xs font-bold text-white hover:bg-indigo-700 active:scale-95 transition-all shadow-sm">
                         Filter
                     </button>
                     @if(request()->hasAny(['search', 'unit_kerja', 'jabatan']))
                         <a href="{{ route('pegawai.inspektorat.index') }}"
-                           class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg border dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                           class="h-10 px-3 inline-flex items-center justify-center rounded-xl border border-gray-300 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                             Reset
                         </a>
                     @endif
@@ -107,7 +106,7 @@
 
             {{-- Active Filter Badges --}}
             @if(request()->hasAny(['search', 'unit_kerja', 'jabatan']))
-                <div class="flex flex-wrap items-center gap-2 pt-1 border-t dark:border-gray-800">
+                <div class="flex flex-wrap items-center gap-2 pt-3 mt-3 border-t border-gray-100 dark:border-gray-800">
                     <span class="text-xs text-gray-400 font-medium">Filter aktif:</span>
                     @if($search = request('search'))
                         <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full">
@@ -145,7 +144,7 @@
         </div>
 
         {{-- Table Card --}}
-        <div class="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl overflow-hidden">
+        <div class="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
             <div class="overflow-x-auto max-h-[600px]">
                 <table class="w-full text-sm">
                     <thead class="sticky top-0 z-10">
@@ -157,11 +156,9 @@
                             <th class="px-5 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase text-right">Aksi</th>
                         </tr>
                     </thead>
-
                     <tbody class="divide-y dark:divide-gray-800">
                         @forelse($users as $user)
                         <tr class="{{ ! $user->is_active ? 'opacity-60' : '' }} hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-
                             <td class="px-5 py-4">
                                 <div class="flex items-center gap-3">
                                     <div class="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-sm font-bold text-indigo-700 dark:text-indigo-400 shrink-0">
@@ -228,7 +225,6 @@
                                     @endcan
                                 </div>
                             </td>
-
                         </tr>
                         @empty
                         <tr>
@@ -259,36 +255,6 @@
                 perPage.addEventListener('change', function () {
                     document.getElementById('filter-form').submit();
                 });
-            }
-
-            var unitSelect = document.getElementById('unit-kerja-select');
-            if (unitSelect) {
-                try {
-                    new TomSelect(unitSelect, {
-                        placeholder: 'Cari sub unit...',
-                        maxItems: 1,
-                        allowEmptyOption: true,
-                        selectOnTab: true,
-                        maxOptions: null,
-                    });
-                } catch (e) {
-                    console.warn('TomSelect failed:', e);
-                }
-            }
-
-            var jabatanSelect = document.getElementById('jabatan-select');
-            if (jabatanSelect) {
-                try {
-                    new TomSelect(jabatanSelect, {
-                        placeholder: 'Cari jabatan...',
-                        maxItems: 1,
-                        allowEmptyOption: true,
-                        selectOnTab: true,
-                        maxOptions: null,
-                    });
-                } catch (e) {
-                    console.warn('TomSelect failed:', e);
-                }
             }
         });
         </script>

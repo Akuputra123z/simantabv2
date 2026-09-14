@@ -2,8 +2,17 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>Masuk — SIPUAS Inspektorat Kabupaten Rembang</title>
+
+<!-- PWA & Mobile Optimization -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1e3a8a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SIMANTAB">
+<link rel="apple-touch-icon" href="/images/logo.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1326,7 +1335,7 @@ body.dark .theme-switch {
         <div class="brand-mini-logo">
 
             <img
-                src="{{ asset('images/icon.webp') }}"
+                src="{{ asset('images/logo/coba.png') }}"
                 alt="Logo Inspektorat Kabupaten Rembang"
             >
 
@@ -1335,11 +1344,11 @@ body.dark .theme-switch {
         <div class="brand-header-text">
 
             <strong>
-                SIPUAS
+                SIMANTAB
             </strong>
 
             <span>
-                Sistem Informasi Pengawasan
+            Sistem Pemantauan Tindak Lanjut Itda Kab. Rembang
             </span>
 
         </div>
@@ -1604,7 +1613,7 @@ body.dark .theme-switch {
 
             <p>
                 Silakan masuk untuk melanjutkan ke
-                dashboard SIPUAS Inspektorat Kabupaten Rembang.
+                dashboard SIMANTAB Inspektorat Kabupaten Rembang.
             </p>
 
         </div>
@@ -2182,6 +2191,19 @@ style.innerHTML = `
 
 document.head.appendChild(style);
 
+</script>
+
+<!-- PWA Service Worker Registration -->
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                console.log('PWA ServiceWorker registered with scope: ', reg.scope);
+            }).catch(function(err) {
+                console.warn('PWA ServiceWorker registration failed: ', err);
+            });
+        });
+    }
 </script>
 
 </body>

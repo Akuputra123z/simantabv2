@@ -229,7 +229,7 @@
                         <div class="space-y-1.5">
                             <label class="field-label">Status <span class="text-rose-500">*</span></label>
                             <div class="relative">
-                                <select name="status" required class="field-input appearance-none pr-10">
+                                <select name="status" data-no-ts required class="field-input appearance-none pr-10">
                                     <option value="menunggu_verifikasi" {{ old('status', 'menunggu_verifikasi') === 'menunggu_verifikasi' ? 'selected' : '' }}>
                                         Menunggu Verifikasi
                                     </option>

@@ -69,21 +69,22 @@
     </div>
 
     {{-- FILTER --}}
-    <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+    <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <form action="{{ route('laporan.index') }}" method="GET" id="filter-form">
-            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
 
                 <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Cari</label>
+                    <label class="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">Cari Keyword</label>
                     <input type="text" name="search" value="{{ request('search') }}"
-                           placeholder="Nomor LHP, program, ST..."
-                           class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                           placeholder="Nomor LHP, program..."
+                           class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-white">
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">IRBAN</label>
-                    <select name="irban" class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        <option value="">Semua</option>
+                    <label class="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">IRBAN</label>
+                    <select name="irban" data-no-ts
+                            class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-white cursor-pointer">
+                        <option value="">Semua Irban</option>
                         @foreach ($irbanList as $irban)
                             <option value="{{ $irban }}" {{ request('irban') == $irban ? 'selected' : '' }}>{{ $irban }}</option>
                         @endforeach
@@ -91,9 +92,10 @@
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Kategori</label>
-                    <select name="kategori" class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        <option value="">Semua</option>
+                    <label class="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">Kategori</label>
+                    <select name="kategori" data-no-ts
+                            class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-white cursor-pointer">
+                        <option value="">Semua Kategori</option>
                         @foreach ($kategoris as $k)
                             <option value="{{ $k }}" {{ request('kategori') == $k ? 'selected' : '' }}>{{ $k }}</option>
                         @endforeach
@@ -101,37 +103,41 @@
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Status</label>
-                    <select name="status" class="h-9 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        <option value="">Semua</option>
-                        <option value="lunas"    {{ request('status') == 'lunas'    ? 'selected' : '' }}>Lunas</option>
-                        <option value="sebagian" {{ request('status') == 'sebagian' ? 'selected' : '' }}>Sebagian</option>
-                        <option value="belum"    {{ request('status') == 'belum'    ? 'selected' : '' }}>Belum</option>
+                    <label class="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">Status TL</label>
+                    <select name="status" data-no-ts
+                            class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-white cursor-pointer">
+                        <option value="">Semua Status</option>
+                        <option value="lunas"    {{ request('status') == 'lunas'    ? 'selected' : '' }}>Selesai (Lunas)</option>
+                        <option value="sebagian" {{ request('status') == 'sebagian' ? 'selected' : '' }}>Dalam Proses</option>
+                        <option value="belum"    {{ request('status') == 'belum'    ? 'selected' : '' }}>Belum TL</option>
                     </select>
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Dari Tanggal</label>
-                    <input type="date" name="dari" value="{{ request('dari') }}"
-                        class="h-9 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                    <label class="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">Dari Tanggal</label>
+                    <input type="date" name="dari" value="{{ request('dari') }}" onclick="this.showPicker()"
+                        class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-white">
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Sampai Tanggal</label>
-                    <input type="date" name="sampai" value="{{ request('sampai') }}"
-                        class="h-9 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                    <label class="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">Sampai Tanggal</label>
+                    <input type="date" name="sampai" value="{{ request('sampai') }}" onclick="this.showPicker()"
+                        class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-white">
                 </div>
 
             </div>
-            <div class="mt-4 flex gap-2">
+            <div class="mt-4 flex items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
                 <button type="submit"
-                    class="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+                    class="h-9 px-5 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 text-xs font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                     Terapkan Filter
                 </button>
+                @if(request()->hasAny(['search', 'irban', 'kategori', 'status', 'dari', 'sampai']))
                 <a href="{{ route('laporan.index') }}"
-                    class="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                    class="h-9 px-4 inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">
                     Reset
                 </a>
+                @endif
             </div>
         </form>
     </div>

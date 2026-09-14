@@ -75,6 +75,7 @@ function lhpCreateWizard() {
         nomorLhp: '{{ old("nomor_lhp", "") }}',
         tanggalLhp: '{{ old("tanggal_lhp", date("Y-m-d")) }}',
         catatanUmum: '{{ old("catatan_umum", "") }}',
+        isNihil: {{ old("is_nihil", 0) ? 'true' : 'false' }},
 
         // Step 2 & 3 Dynamic Data Arrays
         temuans: [],
@@ -174,19 +175,15 @@ function lhpCreateWizard() {
             const unitVal = hiddenUnit ? hiddenUnit.value : this.unitId;
             const isStep1Valid = Boolean(assVal && unitVal && this.nomorLhp && this.nomorLhp.trim() && this.tanggalLhp);
 
-            if (targetStep === 2) return isStep1Valid;
-
-            // Step 2 check
-            const isStep2Valid = isStep1Valid && this.temuans.length > 0 && this.temuans.every(t => t.kondisi && t.kondisi.trim());
-
-            if (targetStep === 3) return isStep2Valid;
-
-            // Step 3 check
-            const isStep3Valid = isStep2Valid && this.temuans.every(t => 
-                t.recommendations.every(r => r.kode_rekomendasi_id && r.uraian_rekom && r.uraian_rekom.trim())
-            );
-
-            if (targetStep === 4) return isStep3Valid;
+            if (targetStep === 2) return isStep1Valid && !this.isNihil;
+            if (targetStep === 3) return isStep1Valid && !this.isNihil;
+            if (targetStep === 4) {
+                if (this.isNihil) return isStep1Valid;
+                const isStep2Valid = isStep1Valid && this.temuans.length > 0 && this.temuans.every(t => t.kondisi && t.kondisi.trim());
+                return isStep2Valid && this.temuans.every(t => 
+                    t.recommendations.every(r => r.kode_rekomendasi_id && r.uraian_rekom && r.uraian_rekom.trim())
+                );
+            }
 
             return false;
         },
@@ -229,11 +226,11 @@ function lhpCreateWizard() {
 
                 if (!assVal) this.stepErrors.push('Pilih Penugasan Audit (Surat Tugas) terlebih dahulu.');
                 if (!unitVal) this.stepErrors.push('Pilih Unit Kerja / Objek Audit terlebih dahulu.');
-                if (!this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
+                if (!this.nomorLhp || !this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
                 if (!this.tanggalLhp) this.stepErrors.push('Tanggal LHP wajib diisi.');
             }
 
-            if (this.step === 2) {
+            if (!this.isNihil && this.step === 2) {
                 if (this.temuans.length === 0) {
                     this.stepErrors.push('Tambahkan minimal 1 Temuan Pemeriksaan.');
                 } else {
@@ -245,7 +242,7 @@ function lhpCreateWizard() {
                 }
             }
 
-            if (this.step === 3) {
+            if (!this.isNihil && this.step === 3) {
                 this.temuans.forEach((t, i) => {
                     t.recommendations.forEach((r, j) => {
                         if (!r.kode_rekomendasi_id) {
@@ -273,6 +270,10 @@ function lhpCreateWizard() {
             if (!unitVal) this.stepErrors.push('Pilih Unit Kerja / Objek Audit terlebih dahulu.');
             if (!this.nomorLhp || !this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
             if (!this.tanggalLhp) this.stepErrors.push('Tanggal LHP wajib diisi.');
+
+            if (this.isNihil) {
+                return this.stepErrors.length === 0;
+            }
 
             if (this.temuans.length === 0) {
                 this.stepErrors.push('Tambahkan minimal 1 Temuan Pemeriksaan.');
@@ -409,16 +410,23 @@ function lhpCreateWizard() {
         },
 
         recalcTemuanTotal(t) {
+            const prevTotal = parseFloat(t.nilai_temuan || 0);
             const negara = parseFloat(t.nilai_kerugian_negara || 0);
             const daerah = parseFloat(t.nilai_kerugian_daerah || 0);
             const desa   = parseFloat(t.nilai_kerugian_desa || 0);
             const bos    = parseFloat(t.nilai_kerugian_bos_blud || 0);
-            t.nilai_temuan = negara + daerah + desa + bos;
+            const newTotal = negara + daerah + desa + bos;
+            t.nilai_temuan = newTotal;
 
-            // Auto-update plafon nilai rekomendasi pertama jika nilainya belum diubah manual
-            if (t.recommendations.length > 0 && t.nilai_temuan > 0) {
-                if (!t.recommendations[0].nilai_rekom || t.recommendations[0].nilai_rekom === 0) {
-                    t.recommendations[0].nilai_rekom = t.nilai_temuan;
+            // Auto-update plafon nilai rekomendasi pertama jika nilainya belum diubah manual oleh pengguna
+            if (t.recommendations && t.recommendations.length > 0) {
+                const r0 = t.recommendations[0];
+                const currentRekomVal = parseFloat(r0.nilai_rekom || 0);
+                if (!r0._is_manual_nilai || currentRekomVal === 0 || currentRekomVal === prevTotal) {
+                    r0.nilai_rekom = newTotal;
+                    if (newTotal > 0) {
+                        r0.jenis_rekomendasi = 'uang';
+                    }
                 }
             }
         },
@@ -470,13 +478,15 @@ function lhpCreateWizard() {
             const defaultBatas = new Date();
             defaultBatas.setDate(defaultBatas.getDate() + 60);
 
+            const isFirst = temuan.recommendations.length === 0;
             const newRekom = {
                 id: Date.now() + Math.random(),
                 kode_rekomendasi_id: '',
-                jenis_rekomendasi: temuan.nilai_temuan > 0 ? 'uang' : 'administrasi',
-                nilai_rekom: temuan.recommendations.length === 0 ? temuan.nilai_temuan : 0,
+                jenis_rekomendasi: (isFirst && temuan.nilai_temuan > 0) ? 'uang' : 'administrasi',
+                nilai_rekom: isFirst ? temuan.nilai_temuan : 0,
                 uraian_rekom: '',
                 batas_waktu: defaultBatas.toISOString().split('T')[0],
+                _is_manual_nilai: false
             };
 
             // Prefill kode rekomendasi pertama dari opsi yang cocok jika ada
@@ -863,6 +873,36 @@ function lhpCreateWizard() {
                                    class="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                         </div>
 
+                        {{-- Status Temuan LHP (Ada Temuan / Nihil) --}}
+                        <div class="md:col-span-2 rounded-2xl border p-4 transition-all duration-300"
+                             :class="isNihil ? 'bg-emerald-50/70 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/40' : 'bg-gray-50/70 border-gray-200 dark:bg-gray-900/50 dark:border-gray-800'">
+                            <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                Hasil Pemeriksaan (Status Temuan) <span class="text-red-500">*</span>
+                            </label>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {{-- Opsi 1: Memiliki Temuan --}}
+                                <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all"
+                                       :class="!isNihil ? 'bg-white border-blue-500 ring-2 ring-blue-500/20 dark:bg-gray-800 dark:border-blue-400' : 'bg-transparent border-gray-300 dark:border-gray-700 hover:bg-white/60'">
+                                    <input type="radio" name="is_nihil" value="0" :checked="!isNihil" @change="isNihil = false" class="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                    <div>
+                                        <span class="block text-xs font-bold text-gray-900 dark:text-white"> Memiliki Temuan Pemeriksaan</span>
+                                        <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">LHP berisi daftar temuan &amp; rekomendasi yang wajib ditindaklanjuti.</span>
+                                    </div>
+                                </label>
+
+                                {{-- Opsi 2: Bebas Temuan (Nihil) --}}
+                                <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all"
+                                       :class="isNihil ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/20 dark:bg-gray-800 dark:border-emerald-400' : 'bg-transparent border-gray-300 dark:border-gray-700 hover:bg-white/60'">
+                                    <input type="radio" name="is_nihil" value="1" :checked="isNihil" @change="isNihil = true" class="mt-0.5 h-4 w-4 text-emerald-600 focus:ring-emerald-500">
+                                    <div>
+                                        <span class="block text-xs font-bold text-emerald-700 dark:text-emerald-400"> Bebas Temuan / Nihil (Tanpa Temuan)</span>
+                                        <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Pemeriksaan selesai tanpa temuan. Progress LHP otomatis 100% Selesai.</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
                         {{-- Catatan Umum --}}
                         <div class="md:col-span-2">
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Catatan Umum / Ringkasan LHP</label>
@@ -933,11 +973,28 @@ function lhpCreateWizard() {
                 </div>
 
                 {{-- Stepper Footer Step 1 --}}
-                <div class="flex items-center justify-end border-t border-gray-100 bg-gray-50/50 px-6 py-4 dark:border-gray-800 dark:bg-gray-900/30">
-                    <button type="button" @click="nextStep()"
-                            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 active:scale-95 transition-all">
-                        Lanjut ke Langkah 2: Input Temuan →
-                    </button>
+                <div class="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-6 py-4 dark:border-gray-800 dark:bg-gray-900/30">
+                    <div>
+                        <template x-if="isNihil">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                🌿 Status LHP: Bebas Temuan (Nihil) — Progress 100%
+                            </span>
+                        </template>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <template x-if="isNihil">
+                            <button type="button" @click="setStep(4)"
+                                    class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95 transition-all">
+                                Lanjut ke Pratinjau &amp; Simpan (Bebas Temuan) →
+                            </button>
+                        </template>
+                        <template x-if="!isNihil">
+                            <button type="button" @click="nextStep()"
+                                    class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 active:scale-95 transition-all">
+                                Lanjut ke Langkah 2: Input Temuan →
+                            </button>
+                        </template>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1242,7 +1299,7 @@ function lhpCreateWizard() {
                                                 <div class="relative flex items-center">
                                                     <span class="pointer-events-none absolute left-3.5 text-xs font-bold text-gray-400">Rp</span>
                                                     <input type="number" :name="`temuans[${tIdx}][recommendations][${rIdx}][nilai_rekom]`" x-model.number="r.nilai_rekom"
-                                                           @input="if (r.nilai_rekom > 0) r.jenis_rekomendasi = 'uang'" placeholder="0"
+                                                           @input="r._is_manual_nilai = Boolean(r.nilai_rekom && r.nilai_rekom > 0); if (r.nilai_rekom > 0) r.jenis_rekomendasi = 'uang'" placeholder="0"
                                                            class="w-full rounded-xl border border-gray-300 bg-white pl-10 pr-3.5 py-2.5 text-xs font-bold text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-blue-500 outline-none">
                                                 </div>
                                                 
@@ -1315,40 +1372,57 @@ function lhpCreateWizard() {
                         </div>
                         <div class="rounded-xl border border-gray-200/80 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-900/40">
                             <span class="text-[10px] font-bold uppercase text-gray-400">Total Temuan</span>
-                            <p class="mt-1 text-xl font-bold text-gray-900 dark:text-white" x-text="`${temuans.length} Temuan`"></p>
-                            <p class="text-xs font-semibold text-red-600" x-text="`Nilai Kerugian: ${fmtRupiah(totalKerugianSum)}`"></p>
+                            <p class="mt-1 text-xl font-bold" :class="isNihil ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'" x-text="isNihil ? '0 Temuan (Nihil)' : `${temuans.length} Temuan`"></p>
+                            <p class="text-xs font-semibold" :class="isNihil ? 'text-emerald-600' : 'text-red-600'" x-text="isNihil ? 'Bebas Kerugian' : `Nilai Kerugian: ${fmtRupiah(totalKerugianSum)}`"></p>
                         </div>
                         <div class="rounded-xl border border-gray-200/80 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-900/40">
-                            <span class="text-[10px] font-bold uppercase text-gray-400">Total Rekomendasi</span>
-                            <p class="mt-1 text-xl font-bold text-blue-600 dark:text-blue-400" x-text="`${totalRekomCount} Rekomendasi`"></p>
-                            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300" x-text="`Nilai Rekomendasi: ${fmtRupiah(totalNilaiRekomSum)}`"></p>
+                            <span class="text-[10px] font-bold uppercase text-gray-400">Status Progress TL</span>
+                            <p class="mt-1 text-xl font-bold" :class="isNihil ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'" x-text="isNihil ? '100% Selesai' : `${totalRekomCount} Rekomendasi`"></p>
+                            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300" x-text="isNihil ? 'Tidak ada tunggakan' : `Nilai Rekomendasi: ${fmtRupiah(totalNilaiRekomSum)}`"></p>
                         </div>
                     </div>
 
                     {{-- Summary Tree List --}}
                     <div class="rounded-xl border border-gray-200/80 bg-white p-4 space-y-4 dark:border-gray-700 dark:bg-gray-900/30">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">Rincian Temuan &amp; Rekomendasi</h3>
-                        <div class="space-y-3">
-                            <template x-for="(t, i) in temuans" :key="t.id">
-                                <div class="rounded-lg border border-gray-100 bg-gray-50/70 p-3 text-xs space-y-2 dark:border-gray-800 dark:bg-gray-800/40">
-                                    <div class="flex items-center justify-between">
-                                        <span class="font-bold text-gray-900 dark:text-white" x-text="`Temuan #${i + 1}: ${getKodeTemuanLabel(t.kode_temuan_id)}`"></span>
-                                        <span class="font-semibold text-red-600" x-text="fmtRupiah(t.nilai_temuan)"></span>
-                                    </div>
-                                    <p class="text-gray-600 dark:text-gray-400" x-text="t.kondisi"></p>
-
-                                    {{-- Nested Rekom list --}}
-                                    <div class="mt-2 space-y-1 pl-3 border-l-2 border-blue-400">
-                                        <template x-for="(r, j) in t.recommendations" :key="r.id">
-                                            <div class="flex items-start justify-between text-[11px]">
-                                                <span class="text-gray-700 dark:text-gray-300" x-text="`• Rekom #${j + 1}: ${r.uraian_rekom}`"></span>
-                                                <span class="font-semibold text-gray-900 dark:text-white" x-text="r.jenis_rekomendasi === 'uang' ? fmtRupiah(r.nilai_rekom) : r.jenis_rekomendasi"></span>
-                                            </div>
-                                        </template>
-                                    </div>
+                        
+                        <template x-if="isNihil">
+                            <div class="p-5 rounded-xl bg-emerald-50/80 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/50 text-center space-y-2">
+                                <div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
                                 </div>
-                            </template>
-                        </div>
+                                <h4 class="text-sm font-bold text-emerald-900 dark:text-emerald-200">LHP Ini Dinyatakan Bebas Temuan (Nihil)</h4>
+                                <p class="text-xs text-emerald-700 dark:text-emerald-300/80 max-w-lg mx-auto">
+                                    Hasil pemeriksaan tidak mencatat adanya temuan ketidakpatuhan, kelemahan SPI, maupun kerugian negara/daerah. Status Tindak Lanjut otomatis 100% Tuntas.
+                                </p>
+                            </div>
+                        </template>
+
+                        <template x-if="!isNihil">
+                            <div class="space-y-3">
+                                <template x-for="(t, i) in temuans" :key="t.id">
+                                    <div class="rounded-lg border border-gray-100 bg-gray-50/70 p-3 text-xs space-y-2 dark:border-gray-800 dark:bg-gray-800/40">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-gray-900 dark:text-white" x-text="`Temuan #${i + 1}: ${getKodeTemuanLabel(t.kode_temuan_id)}`"></span>
+                                            <span class="font-semibold text-red-600" x-text="fmtRupiah(t.nilai_temuan)"></span>
+                                        </div>
+                                        <p class="text-gray-600 dark:text-gray-400" x-text="t.kondisi"></p>
+
+                                        {{-- Nested Rekom list --}}
+                                        <div class="mt-2 space-y-1 pl-3 border-l-2 border-blue-400">
+                                            <template x-for="(r, j) in t.recommendations" :key="r.id">
+                                                <div class="flex items-start justify-between text-[11px]">
+                                                    <span class="text-gray-700 dark:text-gray-300" x-text="`• Rekom #${j + 1}: ${r.uraian_rekom}`"></span>
+                                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="r.jenis_rekomendasi === 'uang' ? fmtRupiah(r.nilai_rekom) : r.jenis_rekomendasi"></span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
                     </div>
                 </div>
 
@@ -1356,14 +1430,15 @@ function lhpCreateWizard() {
                 <div class="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-6 py-4 dark:border-gray-800 dark:bg-gray-900/30">
                     <button type="button" @click="prevStep()"
                             class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                        ← Kembali ke Edit Step 3
+                        <span x-text="isNihil ? '← Kembali ke Step 1' : '← Kembali ke Edit Step 3'"></span>
                     </button>
                     <button type="submit" id="btn-submit-final"
-                            class="inline-flex items-center gap-2 rounded-xl bg-green-600 px-6 py-3 text-xs font-bold text-white shadow-lg shadow-green-600/20 hover:bg-green-700 active:scale-95 transition-all">
+                            class="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-xs font-bold text-white shadow-lg transition-all"
+                            :class="isNihil ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20' : 'bg-green-600 hover:bg-green-700 shadow-green-600/20'">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                         </svg>
-                        <span id="btn-submit-text">Simpan &amp; Terbitkan LHP</span>
+                        <span id="btn-submit-text" x-text="isNihil ? 'Simpan &amp; Terbitkan LHP (Bebas Temuan)' : 'Simpan &amp; Terbitkan LHP'"></span>
                     </button>
                 </div>
             </div>

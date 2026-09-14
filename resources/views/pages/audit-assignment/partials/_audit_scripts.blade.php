@@ -419,7 +419,11 @@ async function loadProgramDetails(programId, selectedDetailId = null) {
         const cur = $filterKec?.value;
         const set = new Set();
         ALL_UNITS.forEach(u => {
-            if (!kat || u.kategori === kat) { if (u.kecamatan_nama) set.add(u.kecamatan_nama); }
+            if (!kat || u.kategori === kat) {
+                if (u.kecamatan_nama && u.kecamatan_nama.trim() !== '') {
+                    set.add(u.kecamatan_nama.trim());
+                }
+            }
         });
         if ($filterKec) {
             $filterKec.innerHTML = '<option value="">Semua kecamatan</option>' + [...set].sort().map(k => `<option ${k === cur ? 'selected' : ''}>${esc(k)}</option>`).join('');

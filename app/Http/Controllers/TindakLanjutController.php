@@ -121,7 +121,54 @@ class TindakLanjutController extends Controller
             });
         }
 
-        $lhps = $query->latest('tanggal_lhp')->paginate(10)->withQueryString();
+        $sort = $request->input('sort');
+        $direction = strtolower($request->input('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        if ($sort) {
+            switch ($sort) {
+                case 'nomor_lhp':
+                    $query->orderBy('lhps.nomor_lhp', $direction);
+                    break;
+                case 'nama_program':
+                    $query->orderBy(
+                        AuditProgram::select('nama_program')
+                            ->join('audit_program_details', 'audit_program_details.audit_program_id', '=', 'audit_programs.id')
+                            ->join('audit_assignments', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
+                            ->whereColumn('audit_assignments.id', 'lhps.audit_assignment_id')
+                            ->limit(1),
+                        $direction
+                    )->orderBy('lhps.nomor_lhp', $direction);
+                    break;
+                case 'unit_diperiksa':
+                    $query->orderBy(
+                        UnitDiperiksa::select('nama_unit')
+                            ->whereColumn('unit_diperiksas.id', 'lhps.unit_diperiksa_id')
+                            ->limit(1),
+                        $direction
+                    );
+                    break;
+                case 'tanggal_lhp':
+                    $query->orderBy('lhps.tanggal_lhp', $direction);
+                    break;
+                case 'kategori':
+                    $query->orderBy(
+                        AuditProgram::select('kategori')
+                            ->join('audit_program_details', 'audit_program_details.audit_program_id', '=', 'audit_programs.id')
+                            ->join('audit_assignments', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
+                            ->whereColumn('audit_assignments.id', 'lhps.audit_assignment_id')
+                            ->limit(1),
+                        $direction
+                    );
+                    break;
+                default:
+                    $query->latest('lhps.created_at')->latest('lhps.id');
+                    break;
+            }
+        } else {
+            $query->latest('lhps.created_at')->latest('lhps.id');
+        }
+
+        $lhps = $query->paginate(10)->withQueryString();
 
         $stats = (object) [
             'total_lhp'         => Lhp::whereHas('temuans.recommendations')->count(),

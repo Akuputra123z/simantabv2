@@ -7,8 +7,10 @@ use App\Models\AuditProgram;
 use App\Models\KodeRekomendasi;
 use App\Models\KodeTemuan;
 use App\Models\Lhp;
+use App\Models\LhpStatistik;
 use App\Models\Recommendation;
 use App\Models\Temuan;
+use App\Models\UnitDiperiksa;
 use App\Services\LhpStatistikService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -57,11 +59,69 @@ use Illuminate\Support\Facades\Storage;
         );
     }
 
-    $lhps = $query->latest()->paginate(10)->withQueryString();
+    $sort = $request->input('sort');
+    $direction = strtolower($request->input('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+    if ($sort) {
+        switch ($sort) {
+            case 'nomor_lhp':
+            case 'nama_program':
+                $query->orderBy(
+                    AuditProgram::select('nama_program')
+                        ->join('audit_program_details', 'audit_program_details.audit_program_id', '=', 'audit_programs.id')
+                        ->join('audit_assignments', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
+                        ->whereColumn('audit_assignments.id', 'lhps.audit_assignment_id')
+                        ->limit(1),
+                    $direction
+                )->orderBy('lhps.nomor_lhp', $direction);
+                break;
+
+            case 'unit_diperiksa':
+                $query->orderBy(
+                    UnitDiperiksa::select('nama_unit')
+                        ->whereColumn('unit_diperiksas.id', 'lhps.unit_diperiksa_id')
+                        ->limit(1),
+                    $direction
+                );
+                break;
+
+            case 'tanggal_lhp':
+                $query->orderBy('lhps.tanggal_lhp', $direction);
+                break;
+
+            case 'progress':
+                $query->orderBy(
+                    LhpStatistik::select('persen_selesai_gabungan')
+                        ->whereColumn('lhp_statistik.lhp_id', 'lhps.id')
+                        ->limit(1),
+                    $direction
+                );
+                break;
+
+            case 'kategori':
+                $query->orderBy(
+                    AuditProgram::select('kategori')
+                        ->join('audit_program_details', 'audit_program_details.audit_program_id', '=', 'audit_programs.id')
+                        ->join('audit_assignments', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
+                        ->whereColumn('audit_assignments.id', 'lhps.audit_assignment_id')
+                        ->limit(1),
+                    $direction
+                );
+                break;
+
+            default:
+                $query->latest('lhps.created_at')->latest('lhps.id');
+                break;
+        }
+    } else {
+        $query->latest('lhps.created_at')->latest('lhps.id');
+    }
+
+    $lhps = $query->paginate(10)->withQueryString();
 
     $kategoris = AuditProgram::KATEGORI;
 
-    return view('pages.lhps.index', compact('lhps', 'kategoris'));
+    return view('pages.lhps.index', compact('lhps', 'kategoris', 'sort', 'direction'));
 }
 
         public function create()
@@ -124,6 +184,7 @@ public function getTemuans($lhpId) {
         'unit_diperiksa_id'               => 'required|exists:unit_diperiksas,id',
         'nomor_lhp'                       => 'required|string|unique:lhps,nomor_lhp',
         'tanggal_lhp'                     => 'required|date',
+        'is_nihil'                        => 'nullable|boolean',
         'catatan_umum'                    => 'nullable|string',
         'temuans'                         => 'nullable|array',
         'temuans.*.kode_temuan_id'        => 'nullable|exists:kode_temuans,id',
@@ -149,17 +210,20 @@ public function getTemuans($lhpId) {
     try {
         DB::beginTransaction();
 
+        $isNihil = $request->boolean('is_nihil');
+
         $lhp = Lhp::create([
             'audit_assignment_id' => $validated['audit_assignment_id'],
             'unit_diperiksa_id'   => $validated['unit_diperiksa_id'],
             'nomor_lhp'           => $validated['nomor_lhp'],
             'tanggal_lhp'         => $validated['tanggal_lhp'],
+            'is_nihil'            => $isNihil,
             'catatan_umum'        => $validated['catatan_umum'] ?? null,
             'status'              => 'draft',
             'created_by'          => auth()->id(),
         ]);
 
-        if (! empty($request->temuans)) {
+        if (! $isNihil && ! empty($request->temuans)) {
             foreach ($request->temuans as $temuan) {
                 // Skip jika baris temuan kosong
                 if (empty($temuan['kode_temuan_id']) && empty($temuan['kondisi'])) continue;
@@ -295,6 +359,7 @@ public function update(Request $request, Lhp $lhp)
     $validated = $request->validate([
         'nomor_lhp'                         => 'required|string|unique:lhps,nomor_lhp,' . $lhp->id,
         'tanggal_lhp'                       => 'required|date',
+        'is_nihil'                          => 'nullable|boolean',
         'catatan_umum'                      => 'nullable|string',
         'temuans'                           => 'nullable|array',
         'temuans.*.id'                      => 'nullable',
@@ -322,9 +387,21 @@ public function update(Request $request, Lhp $lhp)
     try {
         DB::beginTransaction();
 
-        $lhp->update(collect($validated)->except(['temuans', 'attachments'])->toArray());
+        $isNihil = $request->boolean('is_nihil');
+        $updateData = collect($validated)->except(['temuans', 'attachments'])->toArray();
+        $updateData['is_nihil'] = $isNihil;
 
-        if ($request->has('temuans')) {
+        $lhp->update($updateData);
+
+        if ($isNihil) {
+            // Jika diubah menjadi NIHIL, hapus seluruh temuan & rekomendasi eksisting
+            $lhp->temuans()->each(function ($oldTemuan) {
+                $oldTemuan->recommendations()->each(function ($rekom) {
+                    $rekom->tindakLanjuts()->delete();
+                });
+                $oldTemuan->delete();
+            });
+        } elseif ($request->has('temuans')) {
             $existingIds = collect($request->temuans)->pluck('id')->filter()->toArray();
 
             $lhp->temuans()->whereNotIn('id', $existingIds)->each(function ($oldTemuan) {

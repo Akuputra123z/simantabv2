@@ -2,6 +2,26 @@
 
 @section('content')
 
+@php
+    $sort = request('sort');
+    $direction = request('direction', 'desc');
+
+    $sortUrl = fn(string $col) => request()->fullUrlWithQuery([
+        'sort'      => $col,
+        'direction' => ($sort === $col && $direction === 'desc') ? 'asc' : 'desc',
+        'page'      => 1,
+    ]);
+
+    $renderSortIcons = function(string $col) use ($sort, $direction): string {
+        $activeAsc = ($sort === $col && $direction === 'asc') ? 'fill-blue-600 dark:fill-blue-400' : 'fill-gray-300 dark:fill-gray-700';
+        $activeDesc = ($sort === $col && $direction === 'desc') ? 'fill-blue-600 dark:fill-blue-400' : 'fill-gray-300 dark:fill-gray-700';
+        return '<span class="flex flex-col gap-0.5 ml-1.5 shrink-0">
+            <svg class="'.$activeAsc.'" width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.40962 0.585167C4.21057 0.300808 3.78943 0.300807 3.59038 0.585166L1.05071 4.21327C0.81874 4.54466 1.05582 5 1.46033 5H6.53967C6.94418 5 7.18126 4.54466 6.94929 4.21327L4.40962 0.585167Z" fill=""></path></svg>
+            <svg class="'.$activeDesc.'" width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.40962 4.41483C4.21057 4.69919 3.78943 4.69919 3.59038 4.41483L1.05071 0.786732C0.81874 0.455343 1.05582 0 1.46033 0H6.53967C6.94418 0 7.18126 0.455342 6.94929 0.786731L4.40962 4.41483Z" fill=""></path></svg>
+        </span>';
+    };
+@endphp
+
 {{-- PAGE HEADER --}}
 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
@@ -88,12 +108,12 @@
 </div>
 
 {{-- FILTER TOOLBAR --}}
-<form method="GET" action="{{ route('tindak-lanjuts.index') }}" class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-800 dark:bg-white/[0.03]">
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+<form method="GET" action="{{ route('tindak-lanjuts.index') }}" class="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 items-end">
         
         {{-- Search --}}
-        <div class="sm:col-span-2 lg:col-span-2">
-            <label for="search" class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+        <div class="lg:col-span-4">
+            <label for="search" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                 Cari Nomor LHP / Topik
             </label>
             <div class="relative">
@@ -102,17 +122,17 @@
                 </div>
                 <input type="text" name="search" id="search" value="{{ $search }}"
                        placeholder="Nomor LHP atau nama program..."
-                       class="h-10 sm:h-9 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-xs text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                       class="h-10 w-full rounded-xl border border-gray-300 bg-white pl-9 pr-3 text-xs text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
             </div>
         </div>
 
         {{-- Tahun --}}
-        <div>
-            <label for="tahun" class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+        <div class="lg:col-span-2">
+            <label for="tahun" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                 Tahun
             </label>
-            <select name="tahun" id="tahun"
-                    class="h-10 sm:h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+            <select name="tahun" id="tahun" data-no-ts
+                    class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer">
                 <option value="">Semua Tahun</option>
                 @foreach(range(date('Y'), date('Y') - 4) as $y)
                     <option value="{{ $y }}" @selected($tahun == $y)>{{ $y }}</option>
@@ -121,12 +141,12 @@
         </div>
 
         {{-- Kategori --}}
-        <div>
-            <label for="kategori" class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+        <div class="lg:col-span-2">
+            <label for="kategori" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                 Kategori Program
             </label>
-            <select name="kategori" id="kategori"
-                    class="h-10 sm:h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+            <select name="kategori" id="kategori" data-no-ts
+                    class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer">
                 <option value="">Semua Kategori</option>
                 @foreach($kategoris as $k)
                     <option value="{{ $k }}" @selected($kategori == $k)>{{ $k }}</option>
@@ -135,12 +155,12 @@
         </div>
 
         {{-- Status TL --}}
-        <div>
-            <label for="status" class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+        <div class="lg:col-span-2">
+            <label for="status" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                 Status Verifikasi
             </label>
-            <select name="status" id="status"
-                    class="h-10 sm:h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+            <select name="status" id="status" data-no-ts
+                    class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer">
                 <option value="">Semua Status</option>
                 <option value="lunas" @selected($status == 'lunas')>Lunas</option>
                 <option value="berjalan" @selected($status == 'berjalan')>Sedang Berjalan</option>
@@ -149,13 +169,13 @@
         </div>
 
         {{-- Status OPD --}}
-        <div>
-            <label for="status_opd" class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                Status OPD
+        <div class="lg:col-span-2">
+            <label for="status_opd" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                Status Dokumen OPD
             </label>
-            <select name="status_opd" id="status_opd"
-                    class="h-10 sm:h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white">
-                <option value="">Semua Dokumen OPD</option>
+            <select name="status_opd" id="status_opd" data-no-ts
+                    class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer">
+                <option value="">Semua Dokumen</option>
                 <option value="dikirim" @selected($statusOpd == 'dikirim')>Terkirim (Ada Upload)</option>
                 <option value="draft" @selected($statusOpd == 'draft')>Draft</option>
                 <option value="ditolak" @selected($statusOpd == 'ditolak')>Ditolak (Perlu Revisi)</option>
@@ -165,17 +185,18 @@
 
     </div>
 
-    <div class="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-        @if(request()->hasAny(['search', 'tahun', 'kategori', 'status', 'status_opd', 'unit_id']))
-            <a href="{{ route('tindak-lanjuts.index') }}"
-               class="inline-flex h-10 sm:h-8 items-center justify-center px-3 rounded-lg border border-gray-300 bg-white text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 w-full sm:w-auto">
-                Reset Filter
-            </a>
-        @endif
+    <div class="mt-4 flex items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
         <button type="submit"
-                class="inline-flex h-10 sm:h-8 items-center justify-center px-4 rounded-lg bg-gray-900 text-xs font-semibold text-white hover:bg-gray-800 transition-colors w-full sm:w-auto">
+                class="h-9 px-5 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 text-xs font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-sm">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
             Terapkan Filter
         </button>
+        @if(request()->hasAny(['search', 'tahun', 'kategori', 'status', 'status_opd', 'unit_id']))
+            <a href="{{ route('tindak-lanjuts.index') }}"
+               class="h-9 px-4 inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">
+                Reset
+            </a>
+        @endif
     </div>
 </form>
 
@@ -185,9 +206,36 @@
         <table class="w-full text-left text-xs whitespace-nowrap sm:whitespace-normal">
             <thead class="bg-gray-50/80 text-gray-500 uppercase tracking-wider dark:bg-gray-800/50 dark:text-gray-400 text-[11px]">
                 <tr>
-                    <th class="px-4 py-3.5 font-semibold">Nomor LHP & Program</th>
-                    <th class="px-4 py-3.5 font-semibold">Unit OPD</th>
-                    <th class="px-4 py-3.5 font-semibold">Tanggal / Kat.</th>
+                    <th class="px-4 py-3.5 font-semibold">
+                        <div class="flex items-center justify-between">
+                            <a href="{{ $sortUrl('nama_program') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                <span>Nomor LHP & Program</span>
+                            </a>
+                            <a href="{{ $sortUrl('nama_program') }}">
+                                {!! $renderSortIcons('nama_program') !!}
+                            </a>
+                        </div>
+                    </th>
+                    <th class="px-4 py-3.5 font-semibold">
+                        <div class="flex items-center justify-between">
+                            <a href="{{ $sortUrl('unit_diperiksa') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                <span>Unit OPD</span>
+                            </a>
+                            <a href="{{ $sortUrl('unit_diperiksa') }}">
+                                {!! $renderSortIcons('unit_diperiksa') !!}
+                            </a>
+                        </div>
+                    </th>
+                    <th class="px-4 py-3.5 font-semibold">
+                        <div class="flex items-center justify-between">
+                            <a href="{{ $sortUrl('tanggal_lhp') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                <span>Tanggal / Kat.</span>
+                            </a>
+                            <a href="{{ $sortUrl('tanggal_lhp') }}">
+                                {!! $renderSortIcons('tanggal_lhp') !!}
+                            </a>
+                        </div>
+                    </th>
                     <th class="px-4 py-3.5 font-semibold text-center">Temuan & Rekom</th>
                     <th class="px-4 py-3.5 font-semibold text-right">Nilai Rekomendasi</th>
                     <th class="px-4 py-3.5 font-semibold text-right">Realisasi Setor</th>

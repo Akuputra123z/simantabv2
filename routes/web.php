@@ -118,6 +118,7 @@ Route::post('/audit-assignment/{auditAssignment}/sign', [AuditAssignmentControll
     Route::resource('kode-temuan', KodeTemuanController::class);
     Route::get('/unit-diperiksa/download-template', [UnitDiperiksaController::class, 'downloadTemplate'])->name('unit-diperiksa.download-template');
     Route::post('/unit-diperiksa/import', [UnitDiperiksaController::class, 'import'])->name('unit-diperiksa.import');
+    Route::delete('/unit-diperiksa/bulk-delete', [UnitDiperiksaController::class, 'bulkDelete'])->name('unit-diperiksa.bulkDelete');
     Route::resource('unit-diperiksa', UnitDiperiksaController::class);
     Route::resource('audit-program', AuditProgramController::class);
     Route::get('/audit-program/{auditProgram}/preview', [AuditProgramController::class, 'preview'])->name('audit-program.preview');

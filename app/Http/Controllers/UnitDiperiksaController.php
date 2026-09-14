@@ -38,12 +38,8 @@ class UnitDiperiksaController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        // ✅ ambil list kecamatan unik dari database
-        $kecamatanList = UnitDiperiksa::select('nama_kecamatan')
-            ->whereNotNull('nama_kecamatan')
-            ->distinct()
-            ->orderBy('nama_kecamatan')
-            ->pluck('nama_kecamatan');
+        // ✅ ambil list kecamatan unik dari database via model helper
+        $kecamatanList = UnitDiperiksa::getKecamatanList();
 
         return view('pages.unit-diperiksa.index', compact('data', 'kecamatanList'));
     }
@@ -90,11 +86,7 @@ class UnitDiperiksaController extends Controller
     public function create()
     {
         $kategoriOptions = ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'];
-        $kecamatanList = UnitDiperiksa::select('nama_kecamatan')
-            ->whereNotNull('nama_kecamatan')
-            ->distinct()
-            ->orderBy('nama_kecamatan')
-            ->pluck('nama_kecamatan');
+        $kecamatanList = UnitDiperiksa::getKecamatanList();
         return view('pages.unit-diperiksa.create', compact('kategoriOptions', 'kecamatanList'));
     }
 
@@ -124,11 +116,7 @@ class UnitDiperiksaController extends Controller
     public function edit(UnitDiperiksa $unitDiperiksa)
     {
         $kategoriOptions = ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'];
-        $kecamatanList = UnitDiperiksa::select('nama_kecamatan')
-            ->whereNotNull('nama_kecamatan')
-            ->distinct()
-            ->orderBy('nama_kecamatan')
-            ->pluck('nama_kecamatan');
+        $kecamatanList = UnitDiperiksa::getKecamatanList();
         return view('pages.unit-diperiksa.edit', [
             'data' => $unitDiperiksa,
             'kategoriOptions' => $kategoriOptions,
@@ -158,5 +146,17 @@ class UnitDiperiksaController extends Controller
     {
         $unitDiperiksa->delete();
         return redirect()->back()->with('success', 'Unit berhasil dihapus.');
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        if (!$request->ids || !is_array($request->ids)) {
+            return back()->with('error', 'Pilih minimal satu data unit yang akan dihapus.');
+        }
+
+        $count = UnitDiperiksa::whereIn('id', $request->ids)->delete();
+
+        return redirect()->route('unit-diperiksa.index')
+            ->with('success', "{$count} data unit diperiksa berhasil dihapus.");
     }
 }

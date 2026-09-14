@@ -68,4 +68,27 @@ class UnitDiperiksa extends Model
             $this->nama_unit,
         ]));
     }
+
+    /**
+     * Mutator otomatis untuk membersihkan spasi awal/akhir pada nama_kecamatan.
+     */
+    public function setNamaKecamatanAttribute(?string $value): void
+    {
+        $this->attributes['nama_kecamatan'] = ($value !== null && trim($value) !== '') ? trim($value) : null;
+    }
+
+    /**
+     * Helper query terpusat untuk mengambil daftar kecamatan unik tanpa duplikasi.
+     */
+    public static function getKecamatanList(?string $kategori = null): \Illuminate\Support\Collection
+    {
+        return static::query()
+            ->when($kategori, fn($q) => $q->where('kategori', $kategori))
+            ->whereNotNull('nama_kecamatan')
+            ->where('nama_kecamatan', '!=', '')
+            ->select('nama_kecamatan')
+            ->distinct()
+            ->orderBy('nama_kecamatan')
+            ->pluck('nama_kecamatan');
+    }
 }

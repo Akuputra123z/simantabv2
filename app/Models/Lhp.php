@@ -25,7 +25,7 @@ class Lhp extends Model
     protected $primaryKey = 'id';   
 
     protected $fillable = [
-        'audit_assignment_id', 'nomor_lhp', 'tanggal_lhp','unit_diperiksa_id','catatan_umum', 
+        'audit_assignment_id', 'nomor_lhp', 'tanggal_lhp','unit_diperiksa_id','is_nihil','catatan_umum', 
         'status_batal_keterangan', 'status_batal_user_id', 'status_batal_at',
         'status', 'created_by', 'updated_by',
     ];
@@ -33,6 +33,7 @@ class Lhp extends Model
     protected function casts(): array
     {
         return [
+            'is_nihil'       => 'boolean',
             'tanggal_lhp'    => 'date',
             'semester'       => 'integer',
             'deleted_at'     => 'datetime',

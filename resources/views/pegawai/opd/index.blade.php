@@ -37,27 +37,27 @@
 
         {{-- Filter Card --}}
         <form method="GET" id="filter-form"
-              class="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-4 mb-4 space-y-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+              class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 mb-4 shadow-sm">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 items-end">
                 {{-- Search --}}
-                <div class="sm:col-span-1 lg:col-span-5 relative">
-                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Pencarian</label>
+                <div class="lg:col-span-5">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Pencarian</label>
                     <div class="relative">
                         <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                         <input type="text" name="search" value="{{ request('search') }}"
                                placeholder="Cari nama, email, NIP..."
-                               class="w-full h-10 pl-10 pr-4 text-sm border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all">
+                               class="w-full h-10 pl-10 pr-4 text-xs border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
                     </div>
                 </div>
 
-                {{-- Unit OPD (searchable) --}}
-                <div class="sm:col-span-1 lg:col-span-3">
-                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Unit OPD</label>
+                {{-- Unit OPD --}}
+                <div class="lg:col-span-4">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Unit OPD</label>
                     <select name="unit_opd" id="unit-opd-select" data-no-ts
-                            class="h-10 w-full px-3 text-sm border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg">
-                        <option value="">Semua Unit</option>
+                            class="h-10 w-full px-3 text-xs border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none cursor-pointer">
+                        <option value="">Semua Unit OPD</option>
                         @foreach($opdUnitOptions as $unit)
                             <option value="{{ $unit->id }}" {{ request('unit_opd') == $unit->id ? 'selected' : '' }}>
                                 {{ $unit->nama_unit }}
@@ -68,9 +68,9 @@
 
                 {{-- Per Page --}}
                 <div class="lg:col-span-1">
-                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tampil</label>
-                    <select name="per_page" id="per-page-select"
-                            class="h-10 w-full px-2 text-sm border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Tampil</label>
+                    <select name="per_page" id="per-page-select" data-no-ts
+                            class="h-10 w-full px-2 text-xs border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none cursor-pointer">
                         <option value="15" {{ (request('per_page', '15') == '15') ? 'selected' : '' }}>15</option>
                         <option value="25" {{ request('per_page') == '25' ? 'selected' : '' }}>25</option>
                         <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50</option>
@@ -78,14 +78,14 @@
                 </div>
 
                 {{-- Buttons --}}
-                <div class="flex items-center gap-2 lg:col-span-2">
+                <div class="lg:col-span-2 flex gap-1.5">
                     <button type="submit"
-                            class="h-10 flex-1 lg:flex-none px-5 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm">
+                            class="h-10 w-full inline-flex items-center justify-center rounded-xl bg-indigo-600 text-xs font-bold text-white hover:bg-indigo-700 active:scale-95 transition-all shadow-sm">
                         Filter
                     </button>
                     @if(request()->hasAny(['search', 'unit_opd']))
                         <a href="{{ route('pegawai.opd.index') }}"
-                           class="h-10 px-4 text-sm border dark:border-gray-700 rounded-lg flex items-center text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                           class="h-10 px-3 inline-flex items-center justify-center rounded-xl border border-gray-300 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                             Reset
                         </a>
                     @endif
@@ -94,7 +94,7 @@
 
             {{-- Active Filter Badges --}}
             @if(request()->hasAny(['search', 'unit_opd']))
-                <div class="flex flex-wrap items-center gap-2 pt-1 border-t dark:border-gray-800">
+                <div class="flex flex-wrap items-center gap-2 pt-3 mt-3 border-t border-gray-100 dark:border-gray-800">
                     <span class="text-xs text-gray-400 font-medium">Filter aktif:</span>
                     @if($search = request('search'))
                         <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full">
@@ -127,7 +127,7 @@
         </div>
 
         {{-- Table Card --}}
-        <div class="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl overflow-hidden">
+        <div class="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
             <div class="overflow-x-auto max-h-[600px]">
                 <table class="w-full text-sm">
                     <thead class="sticky top-0 z-10">
@@ -146,7 +146,7 @@
 
                             <td class="px-5 py-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-sm font-bold text-emerald-700 dark:text-emerald-400 shrink-0">
+                                    <div class="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-sm font-bold text-indigo-700 dark:text-indigo-400 shrink-0">
                                         {{ $user->initials ?? '-' }}
                                     </div>
                                     <div class="min-w-0">
@@ -161,23 +161,21 @@
                             </td>
 
                             <td class="px-5 py-4">
-                                @if($user->opdUnits->isNotEmpty())
-                                    <div class="flex flex-wrap gap-1">
-                                        @foreach($user->opdUnits as $unit)
-                                            <span class="inline-block px-2 py-1 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
-                                                {{ $unit->nama_unit }}
-                                            </span>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <span class="text-xs text-gray-400 dark:text-gray-600">—</span>
-                                @endif
+                                <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ $user->unit_opd_name ?: '-' }}</span>
                             </td>
 
                             <td class="px-5 py-4">
-                                <span class="inline-block px-2.5 py-1 text-xs font-medium rounded {{ $user->is_active ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' }}">
-                                    {{ $user->is_active ? 'Aktif' : 'Nonaktif' }}
-                                </span>
+                                @if($user->is_active)
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        Aktif
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                        Nonaktif
+                                    </span>
+                                @endif
                             </td>
 
                             <td class="px-5 py-4">
@@ -206,7 +204,7 @@
 
                                     @can('user.delete')
                                     <form action="{{ route('pegawai.opd.destroy', $user) }}" method="POST"
-                                          onsubmit="return confirm('Hapus pegawai {{ $user->name }}?')">
+                                          onsubmit="return confirm('Hapus pegawai OPD {{ $user->name }}?')">
                                         @csrf @method('DELETE')
                                         <button type="submit"
                                                 class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 transition hover:border-red-200 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400"
@@ -254,22 +252,6 @@ document.addEventListener('DOMContentLoaded', function () {
         perPage.addEventListener('change', function () {
             document.getElementById('filter-form').submit();
         });
-    }
-
-    // Tom Select for unit dropdown (searchable)
-    const unitSelect = document.getElementById('unit-opd-select');
-    if (unitSelect) {
-        try {
-            new TomSelect(unitSelect, {
-                placeholder: 'Cari unit OPD...',
-                maxItems: 1,
-                allowEmptyOption: true,
-                selectOnTab: true,
-                maxOptions: null,
-            });
-        } catch (e) {
-            console.warn('TomSelect failed:', e);
-        }
     }
 });
 </script>

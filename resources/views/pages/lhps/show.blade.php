@@ -41,7 +41,11 @@ $totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
                     Detail Laporan Hasil Pemeriksaan
                 </h1>
 
-                @if(($lhp->status ?? null) === 'published' || ($lhp->status ?? null) === 'final')
+                @if($lhp->is_nihil)
+                    <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-400">
+                        🌿 Bebas Temuan (Nihil)
+                    </span>
+                @elseif(($lhp->status ?? null) === 'published' || ($lhp->status ?? null) === 'final')
                     <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-400">
                         <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                         Diterbitkan

@@ -191,7 +191,7 @@
                                 Status Verifikasi <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
-                                <select name="status_verifikasi" required
+                                <select name="status_verifikasi" data-no-ts required
                                     class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:bg-gray-900 dark:border-gray-700 dark:text-white">
                                     <option value="menunggu_verifikasi" {{ old('status_verifikasi', $tindakLanjut->status_verifikasi) == 'menunggu_verifikasi' ? 'selected' : '' }}>Menunggu Verifikasi</option>
                                     <option value="berjalan"            {{ old('status_verifikasi', $tindakLanjut->status_verifikasi) == 'berjalan'            ? 'selected' : '' }}>Berjalan</option>

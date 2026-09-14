@@ -32,11 +32,11 @@ class UnitDiperiksaImport implements ToCollection, WithHeadingRow
 
             $namaUnit = trim((string)$namaUnit);
 
-            $kategori = $row['kategori'] ?? $row['kat'] ?? $row['jenis'] ?? null;
-            $kategori = $kategori ? trim((string)$kategori) : null;
+            $rawKategori = $row['kategori'] ?? $row['kat'] ?? $row['jenis'] ?? null;
+            $kategori    = $this->normalizeKategori($rawKategori);
 
-            $kecamatan = $row['nama_kecamatan'] ?? $row['kecamatan'] ?? $row['kec'] ?? null;
-            $kecamatan = $kecamatan ? trim((string)$kecamatan) : null;
+            $rawKecamatan = $row['nama_kecamatan'] ?? $row['kecamatan'] ?? $row['kec'] ?? null;
+            $kecamatan    = $this->normalizeKecamatan($rawKecamatan);
 
             if (!$kategori) {
                 if ($kecamatan) {
@@ -55,13 +55,16 @@ class UnitDiperiksaImport implements ToCollection, WithHeadingRow
             $keterangan = $row['keterangan'] ?? $row['ket'] ?? $row['catatan'] ?? null;
             $keterangan = $keterangan ? trim((string)$keterangan) : null;
 
-            // Search for existing unit by nama_unit and optional nama_kecamatan
-            $existingQuery = UnitDiperiksa::where('nama_unit', $namaUnit);
-            if ($kecamatan) {
-                $existingQuery->where('nama_kecamatan', $kecamatan);
-            }
-
-            $existing = $existingQuery->first();
+            // Search for existing unit by nama_unit (case-insensitive)
+            $existing = UnitDiperiksa::whereRaw('LOWER(nama_unit) = ?', [mb_strtolower($namaUnit)])
+                ->when($kecamatan, function ($q) use ($kecamatan) {
+                    $q->where(function ($sub) use ($kecamatan) {
+                        $sub->whereNull('nama_kecamatan')
+                            ->orWhere('nama_kecamatan', $kecamatan)
+                            ->orWhereRaw('LOWER(nama_kecamatan) = ?', [mb_strtolower($kecamatan)]);
+                    });
+                })
+                ->first();
 
             if ($existing) {
                 $updateData = [];
@@ -99,5 +102,46 @@ class UnitDiperiksaImport implements ToCollection, WithHeadingRow
                 $this->importedCount++;
             }
         }
+    }
+
+    /**
+     * Normalisasi nama kecamatan (menghapus awalan 'Kecamatan' / 'Kec.', trim spasi, Titlecase).
+     */
+    private function normalizeKecamatan(?string $input): ?string
+    {
+        if (!$input) return null;
+
+        $clean = trim((string) $input);
+        if ($clean === '') return null;
+
+        // Hapus awalan 'Kecamatan ', 'Kec. ', 'Kec ' (case-insensitive)
+        $clean = preg_replace('/^(kecamatan|kec\.|kec)\s+/i', '', $clean);
+        $clean = trim($clean);
+
+        if ($clean === '') return null;
+
+        // Ubah menjadi Title Case (misal: "SULANG" / "sulang" -> "Sulang")
+        return ucwords(strtolower($clean));
+    }
+
+    /**
+     * Normalisasi nama kategori ke format baku.
+     */
+    private function normalizeKategori(?string $input): ?string
+    {
+        if (!$input) return null;
+
+        $clean = trim((string) $input);
+        if ($clean === '') return null;
+
+        $lower = strtolower($clean);
+        return match (true) {
+            str_contains($lower, 'desa')    => 'Desa',
+            str_contains($lower, 'opd')     => 'OPD',
+            str_contains($lower, 'sekolah') => 'Sekolah',
+            str_contains($lower, 'bumd')    => 'BUMD',
+            str_contains($lower, 'blud')    => 'BLUD',
+            default                          => ucwords($lower),
+        };
     }
 }

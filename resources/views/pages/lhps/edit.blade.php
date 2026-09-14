@@ -54,6 +54,7 @@
                     'nilai_rekom'         => (float)($r->nilai_rekom ?? 0),
                     'uraian_rekom'        => $r->uraian_rekom ?? '',
                     'batas_waktu'         => $r->batas_waktu ? \Carbon\Carbon::parse($r->batas_waktu)->format('Y-m-d') : '',
+                    '_is_manual_nilai'    => true,
                 ];
             })->values()->toArray(),
         ];
@@ -72,6 +73,7 @@ function lhpEditWizard() {
         nomorLhp: '{{ old("nomor_lhp", $lhp->nomor_lhp) }}',
         tanggalLhp: '{{ old("tanggal_lhp", $lhp->tanggal_lhp?->format("Y-m-d")) }}',
         catatanUmum: '{{ old("catatan_umum", $lhp->catatan_umum) }}',
+        isNihil: {{ old("is_nihil", $lhp->is_nihil ? 1 : 0) ? 'true' : 'false' }},
 
         temuans: INITIAL_TEMUANS.length > 0 ? INITIAL_TEMUANS : [],
         attachments: [],
@@ -119,7 +121,7 @@ function lhpEditWizard() {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': CSRF_TOKEN
                     }
                 });
 
@@ -130,7 +132,7 @@ function lhpEditWizard() {
                     this.redirectUrl = data.redirect || '{{ route("lhps.index") }}';
                     this.showSuccessModal = true;
                 } else {
-                    alert(data.message || 'Gagal memperbarui LHP. Silakan periksa kembali data Anda.');
+                    alert(data.message || 'Gagal memperbarui LHP.');
                     if (btn) btn.disabled = false;
                     if (txt) txt.textContent = 'Simpan Perubahan LHP';
                     this.isSubmitting = false;
@@ -158,15 +160,15 @@ function lhpEditWizard() {
             if (targetStep <= 1) return true;
 
             const isStep1Valid = Boolean(this.nomorLhp && this.nomorLhp.trim() && this.tanggalLhp);
-            if (targetStep === 2) return isStep1Valid;
-
-            const isStep2Valid = isStep1Valid && this.temuans.length > 0 && this.temuans.every(t => t.kondisi && t.kondisi.trim());
-            if (targetStep === 3) return isStep2Valid;
-
-            const isStep3Valid = isStep2Valid && this.temuans.every(t => 
-                t.recommendations.every(r => r.kode_rekomendasi_id && r.uraian_rekom && r.uraian_rekom.trim())
-            );
-            if (targetStep === 4) return isStep3Valid;
+            if (targetStep === 2) return isStep1Valid && !this.isNihil;
+            if (targetStep === 3) return isStep1Valid && !this.isNihil;
+            if (targetStep === 4) {
+                if (this.isNihil) return isStep1Valid;
+                const isStep2Valid = isStep1Valid && this.temuans.length > 0 && this.temuans.every(t => t.kondisi && t.kondisi.trim());
+                return isStep2Valid && this.temuans.every(t => 
+                    t.recommendations.every(r => r.kode_rekomendasi_id && r.uraian_rekom && r.uraian_rekom.trim())
+                );
+            }
 
             return false;
         },
@@ -201,11 +203,11 @@ function lhpEditWizard() {
             this.stepErrors = [];
 
             if (this.step === 1) {
-                if (!this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
+                if (!this.nomorLhp || !this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
                 if (!this.tanggalLhp) this.stepErrors.push('Tanggal LHP wajib diisi.');
             }
 
-            if (this.step === 2) {
+            if (!this.isNihil && this.step === 2) {
                 if (this.temuans.length === 0) {
                     this.stepErrors.push('Minimal harus ada 1 temuan.');
                 } else {
@@ -217,7 +219,7 @@ function lhpEditWizard() {
                 }
             }
 
-            if (this.step === 3) {
+            if (!this.isNihil && this.step === 3) {
                 this.temuans.forEach((t, i) => {
                     t.recommendations.forEach((r, j) => {
                         if (!r.kode_rekomendasi_id) {
@@ -256,11 +258,25 @@ function lhpEditWizard() {
         },
 
         recalcTemuanTotal(t) {
+            const prevTotal = parseFloat(t.nilai_temuan || 0);
             const negara = parseFloat(t.nilai_kerugian_negara || 0);
             const daerah = parseFloat(t.nilai_kerugian_daerah || 0);
             const desa   = parseFloat(t.nilai_kerugian_desa || 0);
             const bos    = parseFloat(t.nilai_kerugian_bos_blud || 0);
-            t.nilai_temuan = negara + daerah + desa + bos;
+            const newTotal = negara + daerah + desa + bos;
+            t.nilai_temuan = newTotal;
+
+            // Auto-update plafon nilai rekomendasi pertama jika nilainya belum diubah manual oleh pengguna
+            if (t.recommendations && t.recommendations.length > 0) {
+                const r0 = t.recommendations[0];
+                const currentRekomVal = parseFloat(r0.nilai_rekom || 0);
+                if (!r0._is_manual_nilai || currentRekomVal === 0 || currentRekomVal === prevTotal) {
+                    r0.nilai_rekom = newTotal;
+                    if (newTotal > 0) {
+                        r0.jenis_rekomendasi = 'uang';
+                    }
+                }
+            }
         },
 
         getKodeTemuanLabel(kodeId) {
@@ -309,13 +325,15 @@ function lhpEditWizard() {
             const defaultBatas = new Date();
             defaultBatas.setDate(defaultBatas.getDate() + 60);
 
+            const isFirst = temuan.recommendations.length === 0;
             const newRekom = {
                 id: null,
                 kode_rekomendasi_id: '',
-                jenis_rekomendasi: temuan.nilai_temuan > 0 ? 'uang' : 'administrasi',
-                nilai_rekom: temuan.recommendations.length === 0 ? temuan.nilai_temuan : 0,
+                jenis_rekomendasi: (isFirst && temuan.nilai_temuan > 0) ? 'uang' : 'administrasi',
+                nilai_rekom: isFirst ? temuan.nilai_temuan : 0,
                 uraian_rekom: '',
                 batas_waktu: defaultBatas.toISOString().split('T')[0],
+                _is_manual_nilai: false
             };
 
             const availableKodes = this.getFilteredKodeRekoms(temuan.kode_temuan_id);
@@ -1109,7 +1127,7 @@ function lhpEditWizard() {
                                                 <div class="relative flex items-center">
                                                     <span class="pointer-events-none absolute left-3.5 text-xs font-bold text-gray-400">Rp</span>
                                                     <input type="number" :name="`temuans[${tIdx}][recommendations][${rIdx}][nilai_rekom]`" x-model.number="r.nilai_rekom"
-                                                           @input="if (r.nilai_rekom > 0) r.jenis_rekomendasi = 'uang'" placeholder="0"
+                                                           @input="r._is_manual_nilai = Boolean(r.nilai_rekom && r.nilai_rekom > 0); if (r.nilai_rekom > 0) r.jenis_rekomendasi = 'uang'" placeholder="0"
                                                            class="w-full rounded-xl border border-gray-300 bg-white pl-10 pr-3.5 py-2.5 text-xs font-bold text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-blue-500 outline-none">
                                                 </div>
                                                 

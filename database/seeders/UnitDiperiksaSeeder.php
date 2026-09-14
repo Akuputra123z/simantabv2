@@ -14,6 +14,8 @@ class UnitDiperiksaSeeder extends Seeder
         }
 
         $data = [
+
+            
             // Sumber
             ['kategori' => 'Desa', 'nama_kecamatan' => 'Sumber', 'nama_unit' => 'Desa Ronggomulyo'],
             ['kategori' => 'Desa', 'nama_kecamatan' => 'Sumber', 'nama_unit' => 'Desa Logede'],

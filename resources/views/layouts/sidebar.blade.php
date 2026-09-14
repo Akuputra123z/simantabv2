@@ -60,9 +60,9 @@
     @mouseenter="if (!$store.sidebar.isExpanded) $store.sidebar.setHovered(true)"
     @mouseleave="$store.sidebar.setHovered(false)">
     <!-- Logo Section -->
-   <div class="pt-8 pb-7 flex flex-col border-b border-gray-100 dark:border-gray-800 mb-4 transition-all duration-300"
+   <div class="py-4 flex flex-col border-b border-gray-100 dark:border-gray-800 mb-4 transition-all duration-300"
     :class="(!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ? 
-    'items-center px-0' : 'items-start px-6'">
+    'items-center px-0' : 'items-start px-4'">
     
     <a href="/" class="flex flex-col items-center w-full">
         <div x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen" 
@@ -70,7 +70,7 @@
              x-transition:enter-start="opacity-0 transform scale-95"
              x-transition:enter-end="opacity-100 transform scale-100"
              class="w-full flex justify-center">
-            <img class="h-16 w-auto object-contain" 
+            <img class="h-20 w-auto object-contain max-w-full transition-transform duration-300 hover:scale-105" 
                  src="{{ asset('images/logo/coba.png') }}" 
                  alt="Logo Inspektorat Rembang" />
         </div>
@@ -79,7 +79,7 @@
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="opacity-0 transform scale-95"
              x-transition:enter-end="opacity-100 transform scale-100">
-            <img src="/images/logo/logo-icon.svg" 
+            <img src="{{ asset('images/logo/coba.png') }}" 
                  alt="Icon" 
                  class="h-10 w-10 object-contain" />
         </div>

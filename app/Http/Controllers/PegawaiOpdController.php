@@ -22,7 +22,7 @@ class PegawaiOpdController extends Controller
             })
             ->when($request->filled('unit_opd'), fn ($q) =>
                 $q->whereHas('opdUnits', fn ($q2) =>
-                    $q2->where('unit_diperiksa_id', $request->unit_opd)
+                    $q2->where('unit_diperiksas.id', $request->unit_opd)
                 )
             )
             ->latest()

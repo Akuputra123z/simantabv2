@@ -10,6 +10,21 @@
 </style>
 
 @php
+    $assignmentData = $assignments->map(function ($a) {
+        return [
+            'id'                      => $a->id,
+            'audit_program_detail_id' => $a->audit_program_detail_id,
+            'program_id'              => $a->auditProgramDetail?->audit_program_id,
+            'program_nama'            => $a->auditProgramDetail?->auditProgram?->nama_program ?? '-',
+            'detail_nama'             => $a->auditProgramDetail?->nama_detail_program ?? '-',
+            'nomor_surat'             => $a->nomor_surat,
+            'units'                   => $a->unitDiperiksas->map(fn($u) => [
+                'id'   => $u->id,
+                'nama' => $u->nama_unit,
+            ])->values(),
+        ];
+    });
+
     $kodeTemuanData = $kodeTemuans->map(function ($k) {
         $rawAlt = $k->alternatif_rekom;
         if ($rawAlt instanceof \Illuminate\Support\Collection) {
@@ -62,6 +77,9 @@
 @endphp
 
 <script>
+const CSRF_TOKEN      = '{{ csrf_token() }}';
+const ALL_ASSIGNMENTS = @json($assignmentData);
+const USED_UNIT_MAP   = @json($usedUnitMap);
 const KODE_TEMUANS_EDIT = @json($kodeTemuanData);
 const KODE_REKOMS_EDIT  = @json($kodeRekomData);
 const INITIAL_TEMUANS   = @json($temuansInitial);
@@ -69,6 +87,10 @@ const INITIAL_TEMUANS   = @json($temuansInitial);
 function lhpEditWizard() {
     return {
         step: 1,
+
+        programId: '{{ old("program_id", $lhp->auditAssignment?->auditProgramDetail?->audit_program_id) }}',
+        assignmentId: '{{ old("audit_assignment_id", $lhp->audit_assignment_id) }}',
+        unitId: '{{ old("unit_diperiksa_id", $lhp->unit_diperiksa_id) }}',
 
         nomorLhp: '{{ old("nomor_lhp", $lhp->nomor_lhp) }}',
         tanggalLhp: '{{ old("tanggal_lhp", $lhp->tanggal_lhp?->format("Y-m-d")) }}',
@@ -151,15 +173,129 @@ function lhpEditWizard() {
             if (this.temuans.length === 0) {
                 this.addTemuan();
             }
+            this.initCascadeDropdowns();
             this.$nextTick(() => {
                 if (window.RupiahInput?.initAll) window.RupiahInput.initAll();
             });
         },
 
+        initCascadeDropdowns() {
+            const selProgram    = document.getElementById('select-program');
+            const selAssignment = document.getElementById('select-assignment');
+            const selUnit       = document.getElementById('select-unit');
+
+            if (!selProgram || !selAssignment || !selUnit) return;
+
+            const seen = new Set();
+            ALL_ASSIGNMENTS.forEach(a => {
+                if (a.program_id && !seen.has(a.program_id)) {
+                    seen.add(a.program_id);
+                    selProgram.add(new Option(a.program_nama, a.program_id));
+                }
+            });
+
+            const tsProgram = new TomSelect('#select-program', {
+                create: false, placeholder: '-- Pilih Program Kerja (PKPT) --', controlInput: '<input>', maxOptions: null
+            });
+            const tsAssignment = new TomSelect('#select-assignment', {
+                create: false, placeholder: '-- Pilih Penugasan Audit --', controlInput: '<input>', maxOptions: null
+            });
+            tsAssignment.disable();
+
+            const tsUnit = new TomSelect('#select-unit', {
+                create: false, placeholder: '-- Pilih Unit Kerja / Objek Audit --', controlInput: '<input>', maxOptions: null
+            });
+            tsUnit.disable();
+
+            let isInit = true;
+
+            const populateAssignments = (progId, selectedAssId = null) => {
+                tsAssignment.clear(); tsAssignment.clearOptions(); tsAssignment.disable();
+                tsUnit.clear(); tsUnit.clearOptions(); tsUnit.disable();
+
+                if (!progId) return;
+                const filtered = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(progId));
+                filtered.forEach(a => {
+                    const label = a.detail_nama + (a.nomor_surat ? ' — ' + a.nomor_surat : '');
+                    tsAssignment.addOption({ value: a.id, text: label });
+                });
+                if (filtered.length > 0) {
+                    tsAssignment.enable();
+                    if (selectedAssId) {
+                        tsAssignment.setValue(selectedAssId, true);
+                    }
+                }
+            };
+
+            const populateUnits = (assId, selectedUnitId = null) => {
+                tsUnit.clear(); tsUnit.clearOptions(); tsUnit.disable();
+                if (!assId) return;
+
+                const assignment = ALL_ASSIGNMENTS.find(a => String(a.id) === String(assId));
+                const usedIds    = USED_UNIT_MAP[assId] || [];
+
+                if (assignment && assignment.units.length > 0) {
+                    const available = assignment.units.filter(u => String(u.id) === String(selectedUnitId) || !usedIds.includes(u.id));
+                    if (available.length === 0) {
+                        tsUnit.addOption({ value: '', text: '-- Semua unit sudah dibuatkan LHP --' });
+                        return;
+                    }
+                    available.forEach(u => tsUnit.addOption({ value: u.id, text: u.nama }));
+                    tsUnit.enable();
+                    if (selectedUnitId) {
+                        tsUnit.setValue(selectedUnitId, true);
+                    }
+                }
+            };
+
+            tsProgram.on('change', (progId) => {
+                if (isInit) return;
+                this.programId = progId;
+                this.assignmentId = '';
+                this.unitId = '';
+                const hiddenAss = document.getElementById('hidden-assignment-id');
+                if (hiddenAss) hiddenAss.value = '';
+                const hiddenUnit = document.getElementById('hidden-unit-id');
+                if (hiddenUnit) hiddenUnit.value = '';
+
+                populateAssignments(progId);
+            });
+
+            tsAssignment.on('change', (assId) => {
+                if (isInit) return;
+                this.assignmentId = assId;
+                const hiddenAss = document.getElementById('hidden-assignment-id');
+                if (hiddenAss) hiddenAss.value = assId;
+
+                this.unitId = '';
+                const hiddenUnit = document.getElementById('hidden-unit-id');
+                if (hiddenUnit) hiddenUnit.value = '';
+
+                populateUnits(assId);
+            });
+
+            tsUnit.on('change', (uId) => {
+                if (isInit) return;
+                this.unitId = uId;
+                const hiddenUnit = document.getElementById('hidden-unit-id');
+                if (hiddenUnit) hiddenUnit.value = uId;
+            });
+
+            if (this.programId) {
+                tsProgram.setValue(this.programId, true);
+                populateAssignments(this.programId, this.assignmentId);
+                if (this.assignmentId) {
+                    populateUnits(this.assignmentId, this.unitId);
+                }
+            }
+
+            isInit = false;
+        },
+
         canGoToStep(targetStep) {
             if (targetStep <= 1) return true;
 
-            const isStep1Valid = Boolean(this.nomorLhp && this.nomorLhp.trim() && this.tanggalLhp);
+            const isStep1Valid = Boolean(this.assignmentId && this.unitId && this.nomorLhp && this.nomorLhp.trim() && this.tanggalLhp);
             if (targetStep === 2) return isStep1Valid && !this.isNihil;
             if (targetStep === 3) return isStep1Valid && !this.isNihil;
             if (targetStep === 4) {
@@ -203,6 +339,8 @@ function lhpEditWizard() {
             this.stepErrors = [];
 
             if (this.step === 1) {
+                if (!this.assignmentId) this.stepErrors.push('Penugasan Audit wajib dipilih.');
+                if (!this.unitId) this.stepErrors.push('Unit Kerja / Objek Audit wajib dipilih.');
                 if (!this.nomorLhp || !this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
                 if (!this.tanggalLhp) this.stepErrors.push('Tanggal LHP wajib diisi.');
             }
@@ -377,29 +515,33 @@ function lhpEditWizard() {
         validateAllSteps() {
             this.stepErrors = [];
 
+            if (!this.assignmentId) this.stepErrors.push('Penugasan Audit wajib dipilih.');
+            if (!this.unitId) this.stepErrors.push('Unit Kerja / Objek Audit wajib dipilih.');
             if (!this.nomorLhp || !this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
             if (!this.tanggalLhp) this.stepErrors.push('Tanggal LHP wajib diisi.');
 
-            if (this.temuans.length === 0) {
-                this.stepErrors.push('Minimal harus ada 1 temuan.');
-            } else {
-                this.temuans.forEach((t, i) => {
-                    if (!t.kondisi || !t.kondisi.trim()) {
-                        this.stepErrors.push(`Uraian kondisi pada Temuan #${i + 1} belum diisi.`);
-                    }
-                });
-            }
+            if (!this.isNihil) {
+                if (this.temuans.length === 0) {
+                    this.stepErrors.push('Minimal harus ada 1 temuan.');
+                } else {
+                    this.temuans.forEach((t, i) => {
+                        if (!t.kondisi || !t.kondisi.trim()) {
+                            this.stepErrors.push(`Uraian kondisi pada Temuan #${i + 1} belum diisi.`);
+                        }
+                    });
 
-            this.temuans.forEach((t, i) => {
-                t.recommendations.forEach((r, j) => {
-                    if (!r.kode_rekomendasi_id) {
-                        this.stepErrors.push(`Pilih Kode Rekomendasi pada Rekomendasi #${j + 1} (Temuan #${i + 1}).`);
-                    }
-                    if (!r.uraian_rekom || !r.uraian_rekom.trim()) {
-                        this.stepErrors.push(`Uraian rekomendasi pada Rekomendasi #${j + 1} (Temuan #${i + 1}) belum diisi.`);
-                    }
-                });
-            });
+                    this.temuans.forEach((t, i) => {
+                        t.recommendations.forEach((r, j) => {
+                            if (!r.kode_rekomendasi_id) {
+                                this.stepErrors.push(`Pilih Kode Rekomendasi pada Rekomendasi #${j + 1} (Temuan #${i + 1}).`);
+                            }
+                            if (!r.uraian_rekom || !r.uraian_rekom.trim()) {
+                                this.stepErrors.push(`Uraian rekomendasi pada Rekomendasi #${j + 1} (Temuan #${i + 1}) belum diisi.`);
+                            }
+                        });
+                    });
+                }
+            }
 
             return this.stepErrors.length === 0;
         }
@@ -680,29 +822,49 @@ function lhpEditWizard() {
                 @csrf
                 @method('PUT')
 
+                {{-- Hidden Cascade Values --}}
+                <input type="hidden" name="audit_assignment_id" id="hidden-assignment-id" :value="assignmentId">
+                <input type="hidden" name="unit_diperiksa_id" id="hidden-unit-id" :value="unitId">
+
         {{-- ── STEP 1: INFORMASI UTAMA & LAMPIRAN ── --}}
         <div x-show="step === 1" x-cloak>
             <div class="mb-6 rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-800">
                 <div class="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
                     <h2 class="text-sm font-bold text-gray-900 dark:text-white">Langkah 1: Informasi Utama &amp; Administrasi LHP</h2>
+                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Pilih penugasan audit, unit kerja diperiksa, serta nomor dan tanggal LHP.</p>
                 </div>
 
                 <div class="p-6 space-y-6">
-                    {{-- Readonly Context --}}
-                    <div class="rounded-xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/30 dark:bg-blue-900/20">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                            <div>
-                                <span class="text-gray-500 uppercase font-bold text-[10px]">Program Audit</span>
-                                <p class="font-bold text-gray-900 dark:text-white">{{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}</p>
-                            </div>
-                            <div>
-                                <span class="text-gray-500 uppercase font-bold text-[10px]">Unit Kerja Diperiksa</span>
-                                <p class="font-bold text-gray-900 dark:text-white">{{ $lhp->unitDiperiksa?->nama_unit ?? '-' }}</p>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+                        {{-- 1. Program Kerja PKPT --}}
+                        <div class="md:col-span-2">
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                Program Kerja (PKPT) <span class="text-red-500">*</span>
+                            </label>
+                            <select id="select-program" data-no-ts class="w-full">
+                                <option value="">-- Pilih Program Kerja --</option>
+                            </select>
+                        </div>
+
+                        {{-- 2. Penugasan Audit --}}
+                        <div class="md:col-span-1">
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                Penugasan Audit / Surat Tugas <span class="text-red-500">*</span>
+                            </label>
+                            <select id="select-assignment" data-no-ts disabled class="ts-assignment-tall w-full">
+                                <option value="">-- Pilih Program Terlebih Dahulu --</option>
+                            </select>
+                        </div>
+
+                        {{-- 3. Unit Kerja / Objek Audit --}}
+                        <div class="md:col-span-1">
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                Unit Kerja / Objek Audit <span class="text-red-500">*</span>
+                            </label>
+                            <select id="select-unit" data-no-ts disabled class="w-full">
+                                <option value="">-- Pilih Penugasan Terlebih Dahulu --</option>
+                            </select>
+                        </div>
                         {{-- Nomor LHP --}}
                         <div>
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">

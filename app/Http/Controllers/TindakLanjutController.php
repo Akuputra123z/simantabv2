@@ -630,35 +630,117 @@ class TindakLanjutController extends Controller
     }
 
     public function destroy(TindakLanjut $tindakLanjut)
-{
-    $lhpId = $tindakLanjut->recommendation?->temuan?->lhp_id;
-    
-    // Hapus file lampiran dari storage
-    foreach ($tindakLanjut->attachments as $att) {
-        Storage::disk('public')->delete($att->file_path);
-        $att->delete();
-    }
-    
-    // Simpan recommendation sebelum TL dihapus untuk sync setelahnya
-    $recommendation = $tindakLanjut->recommendation;
-    
-    $tindakLanjut->delete();
+    {
+        if (! auth()->user()->hasRole('super_admin')) {
+            abort(403, 'Hanya Super Admin yang berhak menghapus data tindak lanjut.');
+        }
 
-    // ✅ Sync recommendation setelah TL dihapus
-    if ($recommendation) {
-        $recommendation->refresh();
-        $recommendation->load('tindakLanjuts.cicilans');
-        $recommendation->syncStatus();
+        $lhpId = $tindakLanjut->recommendation?->temuan?->lhp_id;
+        
+        // Hapus file lampiran dari storage
+        foreach ($tindakLanjut->attachments as $att) {
+            Storage::disk('public')->delete($att->file_path);
+            $att->delete();
+        }
+        
+        // Simpan recommendation sebelum TL dihapus untuk sync setelahnya
+        $recommendation = $tindakLanjut->recommendation;
+        
+        $tindakLanjut->delete();
+
+        // Sync recommendation setelah TL dihapus
+        if ($recommendation) {
+            $recommendation->refresh();
+            $recommendation->load('tindakLanjuts.cicilans');
+            $recommendation->syncStatus();
+        }
+
+        if ($lhpId) {
+            $this->statistikService->updateStatistik($lhpId);
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', 'Data tindak lanjut berhasil dihapus.');
     }
 
-    if ($lhpId) {
-        $this->statistikService->updateStatistik($lhpId);
-    }
+    public function bulkDelete(Request $request)
+    {
+        if (! auth()->user()->hasRole('super_admin')) {
+            abort(403, 'Hanya Super Admin yang berhak menghapus data tindak lanjut.');
+        }
 
-    return redirect()
-        ->route('tindak-lanjuts.index')
-        ->with('success', 'Tindak lanjut dihapus.');
-}
+        $validated = $request->validate([
+            'ids'       => 'nullable|array',
+            'ids.*'     => 'exists:tindak_lanjuts,id',
+            'lhp_ids'   => 'nullable|array',
+            'lhp_ids.*' => 'exists:lhps,id',
+        ]);
+
+        if (empty($validated['ids']) && empty($validated['lhp_ids'])) {
+            return redirect()->back()->with('error', 'Tidak ada data yang dipilih untuk dihapus.');
+        }
+
+        $tindakLanjuts = collect();
+
+        if (! empty($validated['ids'])) {
+            $tindakLanjuts = $tindakLanjuts->merge(
+                TindakLanjut::whereIn('id', $validated['ids'])->get()
+            );
+        }
+
+        if (! empty($validated['lhp_ids'])) {
+            $tindakLanjuts = $tindakLanjuts->merge(
+                TindakLanjut::whereHas('recommendation.temuan', function ($q) use ($validated) {
+                    $q->whereIn('lhp_id', $validated['lhp_ids']);
+                })->get()
+            );
+        }
+
+        $tindakLanjuts = $tindakLanjuts->unique('id');
+
+        if ($tindakLanjuts->isEmpty()) {
+            return redirect()->back()->with('error', 'Tidak ditemukan data tindak lanjut untuk dihapus.');
+        }
+
+        $recomIds = [];
+        $lhpIds   = [];
+
+        foreach ($tindakLanjuts as $tl) {
+            $lhpId = $tl->recommendation?->temuan?->lhp_id;
+            if ($lhpId) {
+                $lhpIds[] = $lhpId;
+            }
+
+            if ($tl->recommendation_id) {
+                $recomIds[] = $tl->recommendation_id;
+            }
+
+            foreach ($tl->attachments as $att) {
+                Storage::disk('public')->delete($att->file_path);
+                $att->delete();
+            }
+
+            $tl->delete();
+        }
+
+        // Sync all affected recommendations
+        $recoms = \App\Models\Recommendation::whereIn('id', array_unique($recomIds))->get();
+        foreach ($recoms as $rec) {
+            $rec->refresh();
+            $rec->load('tindakLanjuts.cicilans');
+            $rec->syncStatus();
+        }
+
+        // Sync all affected LHP statistics
+        foreach (array_unique($lhpIds) as $lhpId) {
+            $this->statistikService->updateStatistik($lhpId);
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', $tindakLanjuts->count() . ' data tindak lanjut berhasil dihapus.');
+    }
 
     public function bukaKunciOpd(TindakLanjut $tindakLanjut): RedirectResponse
     {

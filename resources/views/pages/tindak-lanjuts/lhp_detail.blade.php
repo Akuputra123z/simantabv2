@@ -80,6 +80,8 @@
         </div>
     </div>
 
+
+
     {{-- FLASH MESSAGES --}}
     @if(session('success'))
         <div class="rounded-lg border border-green-200 bg-green-50 p-4 text-xs font-semibold text-green-800 dark:border-green-800/40 dark:bg-green-900/20 dark:text-green-300 shadow-xs">
@@ -182,6 +184,7 @@
                 <p class="text-xs text-gray-500">Klik judul temuan atau rekomendasi untuk membuka / menutup dropdown rincian</p>
             </div>
             <div class="flex items-center gap-3">
+
                 <button type="button" @click="$dispatch('toggle-all-temuans', true)"
                         class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 min-h-[36px] flex items-center">
                     Buka Semua
@@ -420,11 +423,13 @@
                                         @endif
                                     </div>
 
-                                    {{-- AKSI VERIFIKASI LANGSUNG UNTUK SUPERADMIN --}}
-                                    @if($tl)
-                                        <div class="pt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-gray-100 dark:border-gray-700">
-                                            <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
-                                                {{-- Verifikasi Lunas --}}
+                                     {{-- AKSI VERIFIKASI LANGSUNG UNTUK SUPERADMIN --}}
+                                     @if($tl)
+                                         <div class="pt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-gray-100 dark:border-gray-700">
+                                             <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+
+
+                                                 {{-- Verifikasi Lunas --}}
                                                 <form action="{{ route('tindak-lanjuts.verifikasi-opd', $tl) }}" method="POST" class="col-span-1 sm:w-auto"
                                                       onsubmit="return confirm('Verifikasi rekomendasi ini sebagai LUNAS? Realisasi Rp{{ number_format($target, 0, ',', '.') }} akan disetujui.')">
                                                     @csrf
@@ -454,7 +459,7 @@
                                                     <span>Tolak Bukti</span>
                                                 </button>
 
-                                                {{-- Buka Kunci --}}
+                                                 {{-- Buka Kunci --}}
                                                 @if($tl->status_opd === 'dikirim')
                                                     <form action="{{ route('tindak-lanjuts.buka-kunci-opd', $tl) }}" method="POST" class="col-span-1 sm:w-auto"
                                                           onsubmit="return confirm('Buka kunci OPD agar OPD dapat mengunggah ulang?')">
@@ -465,6 +470,8 @@
                                                         </button>
                                                     </form>
                                                 @endif
+
+
                                             </div>
 
                                             <div class="pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700 text-right sm:text-left">

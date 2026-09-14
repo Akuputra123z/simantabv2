@@ -51,6 +51,8 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->name('tindak-lanjuts.lhp');
     Route::get('/tindak-lanjuts/rekomendasis-by-lhp/{lhp}', [TindakLanjutController::class, 'getRekomendasisByLhp'])
         ->name('tindak-lanjuts.rekom-by-lhp');
+    Route::delete('/tindak-lanjuts/bulk-delete', [TindakLanjutController::class, 'bulkDelete'])
+        ->name('tindak-lanjuts.bulkDelete');
     Route::resource('tindak-lanjuts', TindakLanjutController::class);
     Route::get('/recommendations-by-program/{programId}', [TindakLanjutController::class, 'getRekomendasisByProgram']);
     Route::patch('/tindak-lanjuts/{tindakLanjut}/buka-kunci-opd', [TindakLanjutController::class, 'bukaKunciOpd'])

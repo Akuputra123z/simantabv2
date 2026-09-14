@@ -30,13 +30,23 @@
             <div class="p-8">
 
                 {{-- Alert Error --}}
-                @if($errors->any())
-                <div class="mb-8 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-800 dark:text-red-400">
-                    <div class="flex items-center gap-2 font-bold mb-2">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
-                        <span>Mohon perbaiki kesalahan berikut:</span>
+                @if(session('error'))
+                <div class="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 text-red-800 dark:text-red-300 flex items-start gap-3 shadow-xs">
+                    <svg class="w-5 h-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                    <div>
+                        <p class="font-bold text-sm">Gagal Menyimpan Data:</p>
+                        <p class="text-xs mt-0.5 opacity-90">{{ session('error') }}</p>
                     </div>
-                    <ul class="list-disc list-inside text-sm opacity-90">
+                </div>
+                @endif
+
+                @if($errors->any())
+                <div class="mb-8 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-800 dark:text-red-400 shadow-xs">
+                    <div class="flex items-center gap-2 font-bold mb-2">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                        <span>Mohon perbaiki isian data di bawah ini:</span>
+                    </div>
+                    <ul class="list-disc list-inside text-xs sm:text-sm font-medium space-y-1">
                         @foreach($errors->all() as $e)
                             <li>{{ $e }}</li>
                         @endforeach
@@ -44,7 +54,7 @@
                 </div>
                 @endif
 
-                <form action="{{ route('pegawai.' . $type . '.store') }}" method="POST" id="form-user" class="space-y-8">
+                <form action="{{ route('pegawai.' . $type . '.store') }}" method="POST" id="form-user" class="space-y-8" novalidate>
                     @csrf
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -57,23 +67,25 @@
                         <div class="md:col-span-2">
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nama Lengkap *</label>
                             <input type="text" name="name" value="{{ old('name') }}" required
-                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all @error('name') border-red-500 @enderror"
+                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all @error('name') border-red-500 ring-2 ring-red-500/10 @enderror"
                                    placeholder="Masukkan nama sesuai identitas">
-                            @error('name') <p class="text-xs text-red-500 mt-1.5 font-medium">{{ $message }}</p> @enderror
+                            @error('name') <p class="text-xs text-red-500 mt-1.5 font-semibold">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Email *</label>
                             <input type="email" name="email" value="{{ old('email') }}" required
-                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all @error('email') border-red-500 @enderror"
+                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all @error('email') border-red-500 ring-2 ring-red-500/10 @enderror"
                                    placeholder="contoh@email.com">
+                            @error('email') <p class="text-xs text-red-500 mt-1.5 font-semibold">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">No. HP</label>
                             <input type="text" name="phone" value="{{ old('phone') }}"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
+                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all @error('phone') border-red-500 @enderror"
                                    placeholder="0812xxxx">
+                            @error('phone') <p class="text-xs text-red-500 mt-1.5 font-semibold">{{ $message }}</p> @enderror
                         </div>
 
                         {{-- Data Kepegawaian --}}
@@ -84,41 +96,58 @@
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">NIP</label>
                             <input type="text" name="nip" value="{{ old('nip') }}"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-mono"
+                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-mono @error('nip') border-red-500 ring-2 ring-red-500/10 @enderror"
                                    placeholder="19xxxxxxxxxxxxxx">
+                            @error('nip') <p class="text-xs text-red-500 mt-1.5 font-semibold">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Jenis Kelamin</label>
-                            <select name="jenis_kelamin" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer">
-                                <option value="">-- Pilih --</option>
-                                <option value="L" {{ old('jenis_kelamin') == 'L' ? 'selected' : '' }}>Laki-laki</option>
-                                <option value="P" {{ old('jenis_kelamin') == 'P' ? 'selected' : '' }}>Perempuan</option>
-                            </select>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Jenis Kelamin *</label>
+                            <div class="relative">
+                                <select name="jenis_kelamin" required data-no-ts class="w-full appearance-none px-4 py-2.5 pr-10 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer @error('jenis_kelamin') border-red-500 ring-2 ring-red-500/10 @enderror">
+                                    <option value="">-- Pilih Jenis Kelamin --</option>
+                                    <option value="L" {{ old('jenis_kelamin') == 'L' ? 'selected' : '' }}>Laki-laki</option>
+                                    <option value="P" {{ old('jenis_kelamin') == 'P' ? 'selected' : '' }}>Perempuan</option>
+                                </select>
+                                <span class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </span>
+                            </div>
+                            @error('jenis_kelamin') <p class="text-xs text-red-500 mt-1.5 font-semibold">{{ $message }}</p> @enderror
                         </div>
 
                         @if($type !== 'opd')
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Jabatan</label>
-                            <select name="jabatan"
-                                    class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer @error('jabatan') border-red-500 @enderror">
-                                <option value="">-- Pilih Jabatan --</option>
-                                @foreach($jabatanOptions as $opt)
-                                    <option value="{{ $opt }}" {{ old('jabatan') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <select name="jabatan" data-no-ts
+                                        class="w-full appearance-none px-4 py-2.5 pr-10 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer @error('jabatan') border-red-500 @enderror">
+                                    <option value="">-- Pilih Jabatan --</option>
+                                    @foreach($jabatanOptions as $opt)
+                                        <option value="{{ $opt }}" {{ old('jabatan') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                    @endforeach
+                                </select>
+                                <span class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </span>
+                            </div>
                             @error('jabatan') <p class="text-xs text-red-500 mt-1.5 font-medium">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Sub Unit Organisasi</label>
-                            <select name="unit_kerja"
-                                    class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer @error('unit_kerja') border-red-500 @enderror">
-                                <option value="">-- Pilih Sub Unit --</option>
-                                @foreach($unitKerjaOptions as $opt)
-                                    <option value="{{ $opt }}" {{ old('unit_kerja') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <select name="unit_kerja" data-no-ts
+                                        class="w-full appearance-none px-4 py-2.5 pr-10 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer @error('unit_kerja') border-red-500 @enderror">
+                                    <option value="">-- Pilih Sub Unit --</option>
+                                    @foreach($unitKerjaOptions as $opt)
+                                        <option value="{{ $opt }}" {{ old('unit_kerja') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                    @endforeach
+                                </select>
+                                <span class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </span>
+                            </div>
                             @error('unit_kerja') <p class="text-xs text-red-500 mt-1.5 font-medium">{{ $message }}</p> @enderror
                         </div>
                         @endif
@@ -132,42 +161,48 @@
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Role Akses</label>
                             <input type="hidden" name="role" value="opd">
-                            <div class="px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50 text-sm font-semibold text-gray-700">
-                                OPD
+                            <div class="px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50 text-sm font-semibold text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
+                                OPD (Organisasi Perangkat Daerah)
                             </div>
                         </div>
                         @else
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Role Akses *</label>
-                            <select name="role" id="role-select" required
-                                    class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer">
-                                <option value="">-- Pilih Role --</option>
-                                @foreach($roles as $role)
-                                    <option value="{{ $role->name }}" {{ old('role') == $role->name ? 'selected' : '' }}>
-                                        {{ \App\Models\User::ROLES[$role->name] ?? ucfirst($role->name) }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <select name="role" id="role-select" required data-no-ts
+                                        class="w-full appearance-none px-4 py-2.5 pr-10 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer @error('role') border-red-500 ring-2 ring-red-500/10 @enderror">
+                                    <option value="">-- Pilih Role --</option>
+                                    @foreach($roles as $role)
+                                        <option value="{{ $role->name }}" {{ old('role') == $role->name ? 'selected' : '' }}>
+                                            {{ \App\Models\User::ROLES[$role->name] ?? ucfirst($role->name) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </span>
+                            </div>
+                            @error('role') <p class="text-xs text-red-500 mt-1.5 font-semibold">{{ $message }}</p> @enderror
                         </div>
                         @endif
 
-                        <div id="opd-unit-section" class="md:col-span-2 {{ $type === 'opd' ? '' : 'hidden' }}">
+                        <div id="opd-unit-section" class="md:col-span-2 {{ $type === 'opd' || old('role') === 'opd' ? '' : 'hidden' }}">
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                Unit OPD <span class="text-xs text-gray-400 font-normal">(pilih unit yang bisa diakses)</span>
+                                Unit OPD <span class="text-xs text-gray-400 font-normal">(pilih minimal 1 unit yang bisa diakses)</span> *
                             </label>
                             <div class="relative mb-3">
                                 <input type="text" id="opd-unit-search" placeholder="Cari unit OPD..."
                                        class="w-full px-4 py-2 pl-10 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all">
                                 <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                             </div>
-                            <div id="opd-unit-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 rounded-xl border border-gray-200 bg-gray-50">
+                            <div id="opd-unit-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 rounded-xl border border-gray-200 bg-gray-50 dark:bg-gray-800/40 dark:border-gray-700 @error('opd_unit_ids') border-red-500 ring-2 ring-red-500/10 @enderror">
                                 @forelse($opdUnits as $unit)
-                                <label class="flex items-start gap-3 p-2 rounded-lg hover:bg-white transition-colors cursor-pointer">
+                                <label class="flex items-start gap-3 p-2 rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-colors cursor-pointer">
                                     <input type="checkbox" name="opd_unit_ids[]" value="{{ $unit->id }}"
                                            {{ in_array($unit->id, old('opd_unit_ids', [])) ? 'checked' : '' }}
                                            class="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
                                     <div>
-                                        <p class="text-sm font-medium text-gray-800">{{ $unit->nama_unit }}</p>
+                                        <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ $unit->nama_unit }}</p>
                                         <p class="text-xs text-gray-400">{{ $unit->nama_kecamatan ? 'Kec. ' . $unit->nama_kecamatan : '-' }}</p>
                                     </div>
                                 </label>
@@ -175,13 +210,16 @@
                                 <p class="text-sm text-gray-400 col-span-2">Belum ada data unit.</p>
                                 @endforelse
                             </div>
+                            @error('opd_unit_ids') <p class="text-xs text-red-500 mt-2 font-semibold">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Password *</label>
                             <input type="password" name="password" required
-                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
-                                   placeholder="Minimal 8 karakter">
+                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all @error('password') border-red-500 ring-2 ring-red-500/10 @enderror"
+                                   placeholder="Minimal 8 karakter (huruf & angka)">
+                            <p class="text-[11px] text-gray-400 mt-1">Minimal 8 karakter, wajib mengombinasikan huruf dan angka.</p>
+                            @error('password') <p class="text-xs text-red-500 mt-1.5 font-semibold">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="md:col-span-2">
@@ -226,6 +264,14 @@
 
 <script>
     document.getElementById('form-user').addEventListener('submit', function (e) {
+        const nameInput = document.querySelector('input[name="name"]');
+        const emailInput = document.querySelector('input[name="email"]');
+        const passwordInput = document.querySelector('input[name="password"]');
+
+        if (!nameInput.value.trim() || !emailInput.value.trim() || !passwordInput.value.trim()) {
+            return;
+        }
+
         const btn = document.getElementById('btn-submit');
         const label = document.getElementById('btn-label');
         const icon = document.getElementById('btn-icon');

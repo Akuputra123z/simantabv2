@@ -330,11 +330,17 @@ public function getTemuans($lhpId) {
         {
             $user = auth()->user();
 
-            $assignments = AuditAssignment::query()
+            $assignments = AuditAssignment::with(['auditProgramDetail.auditProgram', 'unitDiperiksas'])
                 ->when(! $user->hasRole('super_admin'), function ($q) use ($user) {
                     $q->where('ketua_tim_id', $user->id)
                         ->orWhereHas('members', fn ($q2) => $q2->where('user_id', $user->id));
                 })->get();
+
+            $usedUnitMap = Lhp::where('id', '!=', $lhp->id)
+                ->select('audit_assignment_id', 'unit_diperiksa_id')
+                ->get()
+                ->groupBy('audit_assignment_id')
+                ->map(fn($items) => $items->pluck('unit_diperiksa_id')->toArray());
 
             $kodeTemuans = KodeTemuan::orderBy('kode')->get();
             $kodeRekoms  = KodeRekomendasi::where('is_active', true)->orderBy('kode')->get();
@@ -346,7 +352,7 @@ public function getTemuans($lhpId) {
                 'attachments',
             ]);
 
-            return view('pages.lhps.edit', compact('lhp', 'assignments', 'kodeTemuans', 'kodeRekoms'));
+            return view('pages.lhps.edit', compact('lhp', 'assignments', 'kodeTemuans', 'kodeRekoms', 'usedUnitMap'));
         }
 
 public function update(Request $request, Lhp $lhp)
@@ -357,16 +363,18 @@ public function update(Request $request, Lhp $lhp)
     };
 
     $validated = $request->validate([
-        'nomor_lhp'                         => 'required|string|unique:lhps,nomor_lhp,' . $lhp->id,
-        'tanggal_lhp'                       => 'required|date',
-        'is_nihil'                          => 'nullable|boolean',
-        'catatan_umum'                      => 'nullable|string',
-        'temuans'                           => 'nullable|array',
-        'temuans.*.id'                      => 'nullable',
-        'temuans.*.kode_temuan_id'          => 'nullable|exists:kode_temuans,id',
-        'temuans.*.kondisi'                 => 'nullable|string',
-        'temuans.*.sebab'                   => 'nullable|string',
-        'temuans.*.akibat'                  => 'nullable|string',
+        'audit_assignment_id'             => 'required|exists:audit_assignments,id',
+        'unit_diperiksa_id'               => 'required|exists:unit_diperiksas,id',
+        'nomor_lhp'                       => 'required|string|unique:lhps,nomor_lhp,' . $lhp->id,
+        'tanggal_lhp'                     => 'required|date',
+        'is_nihil'                        => 'nullable|boolean',
+        'catatan_umum'                    => 'nullable|string',
+        'temuans'                         => 'nullable|array',
+        'temuans.*.id'                    => 'nullable',
+        'temuans.*.kode_temuan_id'        => 'nullable|exists:kode_temuans,id',
+        'temuans.*.kondisi'               => 'nullable|string',
+        'temuans.*.sebab'                 => 'nullable|string',
+        'temuans.*.akibat'                => 'nullable|string',
         'temuans.*.nilai_kerugian_negara'   => 'nullable',
         'temuans.*.nilai_kerugian_daerah'   => 'nullable',
         'temuans.*.nilai_kerugian_desa'     => 'nullable',

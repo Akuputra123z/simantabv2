@@ -27,24 +27,34 @@
 
                 <div>
                     <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Kategori</label>
-                    <select name="kategori" required
-                            class="h-11 w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
-                        @foreach($kategoriOptions as $opt)
-                            <option value="{{ $opt }}" {{ old('kategori', $data->kategori) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
-                        @endforeach
-                    </select>
+                    <div class="relative z-20">
+                        <select name="kategori" required data-no-ts
+                                class="h-11 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer pr-10">
+                            @foreach($kategoriOptions as $opt)
+                                <option value="{{ $opt }}" {{ old('kategori', $data->kategori) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                            @endforeach
+                        </select>
+                        <span class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </span>
+                    </div>
                     @error('kategori') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Kecamatan</label>
-                    <select name="nama_kecamatan" required
-                            class="h-11 w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
-                        <option value="" disabled {{ old('nama_kecamatan', $data->nama_kecamatan) ? '' : 'selected' }}>Pilih Kecamatan</option>
-                        @foreach($kecamatanList as $kec)
-                            <option value="{{ $kec }}" {{ old('nama_kecamatan', $data->nama_kecamatan) == $kec ? 'selected' : '' }}>{{ $kec }}</option>
-                        @endforeach
-                    </select>
+                    <div class="relative z-20">
+                        <select name="nama_kecamatan" data-no-ts
+                                class="h-11 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer pr-10">
+                            <option value="" {{ old('nama_kecamatan', $data->nama_kecamatan) ? '' : 'selected' }}>-- Pilih Kecamatan (Opsional) --</option>
+                            @foreach($kecamatanList as $kec)
+                                <option value="{{ $kec }}" {{ old('nama_kecamatan', $data->nama_kecamatan) == $kec ? 'selected' : '' }}>{{ $kec }}</option>
+                            @endforeach
+                        </select>
+                        <span class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </span>
+                    </div>
                     @error('nama_kecamatan') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 

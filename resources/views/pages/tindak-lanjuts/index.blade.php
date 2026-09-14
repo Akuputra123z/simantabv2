@@ -200,188 +200,367 @@
     </div>
 </form>
 
-{{-- TABLE DAFTAR LHP (KOMULATIF TINDAK LANJUT PER LHP) --}}
-<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs dark:border-gray-800 dark:bg-white/[0.03]">
-    <div class="overflow-x-auto min-w-full">
-        <table class="w-full text-left text-xs whitespace-nowrap sm:whitespace-normal">
-            <thead class="bg-gray-50/80 text-gray-500 uppercase tracking-wider dark:bg-gray-800/50 dark:text-gray-400 text-[11px]">
-                <tr>
-                    <th class="px-4 py-3.5 font-semibold">
-                        <div class="flex items-center justify-between">
-                            <a href="{{ $sortUrl('nama_program') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                <span>Nomor LHP & Program</span>
-                            </a>
-                            <a href="{{ $sortUrl('nama_program') }}">
-                                {!! $renderSortIcons('nama_program') !!}
-                            </a>
-                        </div>
-                    </th>
-                    <th class="px-4 py-3.5 font-semibold">
-                        <div class="flex items-center justify-between">
-                            <a href="{{ $sortUrl('unit_diperiksa') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                <span>Unit OPD</span>
-                            </a>
-                            <a href="{{ $sortUrl('unit_diperiksa') }}">
-                                {!! $renderSortIcons('unit_diperiksa') !!}
-                            </a>
-                        </div>
-                    </th>
-                    <th class="px-4 py-3.5 font-semibold">
-                        <div class="flex items-center justify-between">
-                            <a href="{{ $sortUrl('tanggal_lhp') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                <span>Tanggal / Kat.</span>
-                            </a>
-                            <a href="{{ $sortUrl('tanggal_lhp') }}">
-                                {!! $renderSortIcons('tanggal_lhp') !!}
-                            </a>
-                        </div>
-                    </th>
-                    <th class="px-4 py-3.5 font-semibold text-center">Temuan & Rekom</th>
-                    <th class="px-4 py-3.5 font-semibold text-right">Nilai Rekomendasi</th>
-                    <th class="px-4 py-3.5 font-semibold text-right">Realisasi Setor</th>
-                    <th class="px-4 py-3.5 font-semibold text-center">Progres TL</th>
-                    <th class="px-4 py-3.5 font-semibold text-center">Status OPD</th>
-                    <th class="px-4 py-3.5 font-semibold text-right">Aksi</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                @forelse($lhps as $lhp)
-                    @php
-                        $temuans = $lhp->temuans;
-                        $rekomendasis = $temuans->flatMap->recommendations;
-                        $tindakLanjuts = $rekomendasis->flatMap->tindakLanjuts;
+{{-- FORM BULK DELETE & TABLE DAFTAR LHP --}}
+<form id="main-form" action="{{ route('tindak-lanjuts.bulkDelete') }}" method="POST" onsubmit="return false;">
+    @csrf
+    @method('DELETE')
 
-                        $totalTemuan = $temuans->count();
-                        $totalRekom = $rekomendasis->count();
-                        $totalNilaiRekom = (float) $rekomendasis->sum('nilai_rekom');
-                        $totalSetor = (float) $tindakLanjuts->sum('total_terbayar');
-                        
-                        $progres = (float) ($lhp->statistik?->persen_selesai_gabungan ?? 0);
-                        if ($progres == 0 && $totalNilaiRekom > 0 && $totalSetor > 0) {
-                            $progres = min(100, round(($totalSetor / $totalNilaiRekom) * 100));
-                        }
-
-                        // Status OPD kumulatif
-                        $hasDikirim = $tindakLanjuts->contains(fn($t) => $t->status_opd === 'dikirim');
-                        $hasDraft   = $tindakLanjuts->contains(fn($t) => $t->status_opd === 'draft');
-                        $hasDitolak = $tindakLanjuts->contains(fn($t) => !empty($t->alasan_tolak_opd));
-                        $isAllLunas = $totalRekom > 0 && $tindakLanjuts->where('status_verifikasi', 'lunas')->count() === $totalRekom;
-                    @endphp
-
-                    <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                        {{-- Nomor LHP & Program --}}
-                        <td class="px-4 py-3.5">
-                            <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
-                               class="font-bold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 font-mono text-xs sm:text-sm block">
-                                {{ $lhp->nomor_lhp }}
-                            </a>
-                            <p class="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5 line-clamp-1">
-                                {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
-                            </p>
-                        </td>
-
-                        {{-- Unit OPD --}}
-                        <td class="px-4 py-3.5">
-                            <span class="font-semibold text-gray-800 dark:text-gray-200">
-                                {{ $lhp->unitDiperiksa?->nama_unit ?? '-' }}
-                            </span>
-                            @if($lhp->auditAssignment?->ketuaTim)
-                                <p class="text-[10px] text-gray-400 mt-0.5">Ketua: {{ $lhp->auditAssignment->ketuaTim->name }}</p>
-                            @endif
-                        </td>
-
-                        {{-- Tanggal / Kategori --}}
-                        <td class="px-4 py-3.5">
-                            <span class="text-gray-700 dark:text-gray-300">
-                                {{ $lhp->tanggal_lhp ? $lhp->tanggal_lhp->format('d/m/Y') : '-' }}
-                            </span>
-                            <div class="mt-1">
-                                <span class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                                    {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori ?? 'PKPT' }}
-                                </span>
-                            </div>
-                        </td>
-
-                        {{-- Temuan & Rekomendasi --}}
-                        <td class="px-4 py-3.5 text-center">
-                            <span class="font-bold text-gray-900 dark:text-white">{{ $totalTemuan }}</span>
-                            <span class="text-gray-400">/</span>
-                            <span class="font-semibold text-gray-700 dark:text-gray-300">{{ $totalRekom }}</span>
-                            <p class="text-[10px] text-gray-400">Temuan / Rekom</p>
-                        </td>
-
-                        {{-- Nilai Rekomendasi --}}
-                        <td class="px-4 py-3.5 text-right font-medium font-mono text-gray-900 dark:text-white">
-                            Rp{{ number_format($totalNilaiRekom, 0, ',', '.') }}
-                        </td>
-
-                        {{-- Realisasi Setor --}}
-                        <td class="px-4 py-3.5 text-right font-bold font-mono text-green-600 dark:text-green-400">
-                            Rp{{ number_format($totalSetor, 0, ',', '.') }}
-                        </td>
-
-                        {{-- Progres TL --}}
-                        <td class="px-4 py-3.5 text-center">
-                            <div class="w-24 mx-auto">
-                                <div class="flex justify-between items-center text-[10px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                                    <span class="font-mono">{{ round($progres) }}%</span>
-                                    @if($isAllLunas)
-                                        <span class="text-green-600 font-bold">LUNAS</span>
-                                    @endif
-                                </div>
-                                <div class="h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                                    <div class="h-full rounded-full {{ $progres >= 100 ? 'bg-green-500' : ($progres > 0 ? 'bg-blue-600' : 'bg-gray-300') }}"
-                                         style="width: {{ min(100, max(0, $progres)) }}%"></div>
-                                </div>
-                            </div>
-                        </td>
-
-                        {{-- Status OPD --}}
-                        <td class="px-4 py-3.5 text-center">
-                            @if($hasDitolak)
-                                <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                                    Ditolak (Revisi)
-                                </span>
-                            @elseif($hasDikirim)
-                                <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                    Ada Kiriman
-                                </span>
-                            @elseif($hasDraft)
-                                <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                    Draft OPD
-                                </span>
-                            @else
-                                <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                                    Belum Upload
-                                </span>
-                            @endif
-                        </td>
-
-                        {{-- Aksi --}}
-                        <td class="px-4 py-3.5 text-right whitespace-nowrap">
-                            <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
-                               class="inline-flex items-center justify-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shadow-xs min-h-[38px]">
-                                <span>Detail LHP</span>
-                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                            </a>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="9" class="py-8 text-center text-gray-400 dark:text-gray-500">
-                            Tidak ada data LHP tindak lanjut yang sesuai filter.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    @if($lhps->hasPages())
-        <div class="border-t border-gray-200 px-4 py-3 dark:border-gray-800">
-            {{ $lhps->links() }}
+    {{-- BULK ACTION BANNER (KHUSUS SUPER ADMIN) --}}
+    @if(auth()->user()?->hasRole('super_admin'))
+        <div id="bulk-action-bar" class="hidden mb-4 p-3.5 px-4 rounded-2xl bg-red-50/90 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 flex flex-wrap items-center justify-between gap-3 shadow-md backdrop-blur-sm transition-all duration-300">
+            <div class="flex items-center gap-3">
+                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-600 text-white font-bold text-xs shadow-xs" id="count-selected-badge">
+                    0
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-red-900 dark:text-red-200">
+                        <span id="count-selected-text">0</span> LHP Terpilih
+                    </p>
+                    <p class="text-[11px] text-red-700/80 dark:text-red-300/70">
+                        Hapus seluruh data tindak lanjut dan file pendukung dari LHP yang dicentang.
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="uncheckAll()" class="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100/50 dark:border-red-800 dark:bg-gray-800 dark:text-red-300 dark:hover:bg-red-900/30 transition-colors cursor-pointer">
+                    Batal Pilihan
+                </button>
+                <button type="button" id="btn-bulk-delete" class="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-red-700 active:scale-[0.98] transition-all cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    <span>Hapus Terpilih (<span id="count-selected">0</span>)</span>
+                </button>
+            </div>
         </div>
     @endif
-</div>
+
+    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs dark:border-gray-800 dark:bg-white/[0.03]">
+        <div class="overflow-x-auto min-w-full">
+            <table class="w-full text-left text-xs whitespace-nowrap sm:whitespace-normal">
+                <thead class="bg-gray-50/80 text-gray-500 uppercase tracking-wider dark:bg-gray-800/50 dark:text-gray-400 text-[11px]">
+                    <tr>
+                        @if(auth()->user()?->hasRole('super_admin'))
+                            <th class="px-3.5 py-3.5 w-10 text-center border-r border-gray-200/70 dark:border-gray-800/70">
+                                <input type="checkbox" id="check-all" class="h-4 w-4 rounded border-gray-300 text-blue-600 cursor-pointer">
+                            </th>
+                        @endif
+                        <th class="px-4 py-3.5 font-semibold">
+                            <div class="flex items-center justify-between">
+                                <a href="{{ $sortUrl('nama_program') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                    <span>Nomor LHP & Program</span>
+                                </a>
+                                <a href="{{ $sortUrl('nama_program') }}">
+                                    {!! $renderSortIcons('nama_program') !!}
+                                </a>
+                            </div>
+                        </th>
+                        <th class="px-4 py-3.5 font-semibold">
+                            <div class="flex items-center justify-between">
+                                <a href="{{ $sortUrl('unit_diperiksa') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                    <span>Unit OPD</span>
+                                </a>
+                                <a href="{{ $sortUrl('unit_diperiksa') }}">
+                                    {!! $renderSortIcons('unit_diperiksa') !!}
+                                </a>
+                            </div>
+                        </th>
+                        <th class="px-4 py-3.5 font-semibold">
+                            <div class="flex items-center justify-between">
+                                <a href="{{ $sortUrl('tanggal_lhp') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                    <span>Tanggal / Kat.</span>
+                                </a>
+                                <a href="{{ $sortUrl('tanggal_lhp') }}">
+                                    {!! $renderSortIcons('tanggal_lhp') !!}
+                                </a>
+                            </div>
+                        </th>
+                        <th class="px-4 py-3.5 font-semibold text-center">Temuan & Rekom</th>
+                        <th class="px-4 py-3.5 font-semibold text-right">Nilai Rekomendasi</th>
+                        <th class="px-4 py-3.5 font-semibold text-right">Realisasi Setor</th>
+                        <th class="px-4 py-3.5 font-semibold text-center">Progres TL</th>
+                        <th class="px-4 py-3.5 font-semibold text-center">Status OPD</th>
+                        <th class="px-4 py-3.5 font-semibold text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                    @forelse($lhps as $lhp)
+                        @php
+                            $temuans = $lhp->temuans;
+                            $rekomendasis = $temuans->flatMap->recommendations;
+                            $tindakLanjuts = $rekomendasis->flatMap->tindakLanjuts;
+
+                            $totalTemuan = $temuans->count();
+                            $totalRekom = $rekomendasis->count();
+                            $totalNilaiRekom = (float) $rekomendasis->sum('nilai_rekom');
+                            $totalSetor = (float) $tindakLanjuts->sum('total_terbayar');
+                            
+                            $progres = (float) ($lhp->statistik?->persen_selesai_gabungan ?? 0);
+                            if ($progres == 0 && $totalNilaiRekom > 0 && $totalSetor > 0) {
+                                $progres = min(100, round(($totalSetor / $totalNilaiRekom) * 100));
+                            }
+
+                            // Status OPD kumulatif
+                            $hasDikirim = $tindakLanjuts->contains(fn($t) => $t->status_opd === 'dikirim');
+                            $hasDraft   = $tindakLanjuts->contains(fn($t) => $t->status_opd === 'draft');
+                            $hasDitolak = $tindakLanjuts->contains(fn($t) => !empty($t->alasan_tolak_opd));
+                            $isAllLunas = $totalRekom > 0 && $tindakLanjuts->where('status_verifikasi', 'lunas')->count() === $totalRekom;
+                        @endphp
+
+                        <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                            @if(auth()->user()?->hasRole('super_admin'))
+                                <td class="px-3.5 py-3.5 text-center">
+                                    <input type="checkbox" name="lhp_ids[]" value="{{ $lhp->id }}" class="check-item h-4 w-4 rounded border-gray-300 text-blue-600 cursor-pointer">
+                                </td>
+                            @endif
+
+                            {{-- Nomor LHP & Program --}}
+                            <td class="px-4 py-3.5">
+                                <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
+                                   class="font-bold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 font-mono text-xs sm:text-sm block">
+                                    {{ $lhp->nomor_lhp }}
+                                </a>
+                                <p class="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5 line-clamp-1">
+                                    {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
+                                </p>
+                            </td>
+
+                            {{-- Unit OPD --}}
+                            <td class="px-4 py-3.5">
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">
+                                    {{ $lhp->unitDiperiksa?->nama_unit ?? '-' }}
+                                </span>
+                                @if($lhp->auditAssignment?->ketuaTim)
+                                    <p class="text-[10px] text-gray-400 mt-0.5">Ketua: {{ $lhp->auditAssignment->ketuaTim->name }}</p>
+                                @endif
+                            </td>
+
+                            {{-- Tanggal / Kategori --}}
+                            <td class="px-4 py-3.5">
+                                <span class="text-gray-700 dark:text-gray-300">
+                                    {{ $lhp->tanggal_lhp ? $lhp->tanggal_lhp->format('d/m/Y') : '-' }}
+                                </span>
+                                <div class="mt-1">
+                                    <span class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                                        {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori ?? 'PKPT' }}
+                                    </span>
+                                </div>
+                            </td>
+
+                            {{-- Temuan & Rekomendasi --}}
+                            <td class="px-4 py-3.5 text-center">
+                                <span class="font-bold text-gray-900 dark:text-white">{{ $totalTemuan }}</span>
+                                <span class="text-gray-400">/</span>
+                                <span class="font-semibold text-gray-700 dark:text-gray-300">{{ $totalRekom }}</span>
+                                <p class="text-[10px] text-gray-400">Temuan / Rekom</p>
+                            </td>
+
+                            {{-- Nilai Rekomendasi --}}
+                            <td class="px-4 py-3.5 text-right font-medium font-mono text-gray-900 dark:text-white">
+                                Rp{{ number_format($totalNilaiRekom, 0, ',', '.') }}
+                            </td>
+
+                            {{-- Realisasi Setor --}}
+                            <td class="px-4 py-3.5 text-right font-bold font-mono text-green-600 dark:text-green-400">
+                                Rp{{ number_format($totalSetor, 0, ',', '.') }}
+                            </td>
+
+                            {{-- Progres TL --}}
+                            <td class="px-4 py-3.5 text-center">
+                                <div class="w-24 mx-auto">
+                                    <div class="flex justify-between items-center text-[10px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                                        <span class="font-mono">{{ round($progres) }}%</span>
+                                        @if($isAllLunas)
+                                            <span class="text-green-600 font-bold">LUNAS</span>
+                                        @endif
+                                    </div>
+                                    <div class="h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                                        <div class="h-full rounded-full {{ $progres >= 100 ? 'bg-green-500' : ($progres > 0 ? 'bg-blue-600' : 'bg-gray-300') }}"
+                                             style="width: {{ min(100, max(0, $progres)) }}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            {{-- Status OPD --}}
+                            <td class="px-4 py-3.5 text-center">
+                                @if($hasDitolak)
+                                    <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                        Ditolak (Revisi)
+                                    </span>
+                                @elseif($hasDikirim)
+                                    <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                        Ada Kiriman
+                                    </span>
+                                @elseif($hasDraft)
+                                    <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                        Draft OPD
+                                    </span>
+                                @else
+                                    <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                        Belum Upload
+                                    </span>
+                                @endif
+                            </td>
+
+                            {{-- Aksi --}}
+                            <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    {{-- Detail LHP Icon --}}
+                                    <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
+                                       class="h-9 w-9 inline-flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-200 shadow-xs hover:shadow-md hover:scale-105 cursor-pointer"
+                                       title="Detail LHP & Rekomendasi">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                    </a>
+
+                                    {{-- Hapus TL Icon (Khusus Super Admin) --}}
+                                    @if(auth()->user()?->hasRole('super_admin'))
+                                        <button type="button"
+                                                onclick="deleteSingleLhp({{ $lhp->id }}, '{{ addslashes($lhp->nomor_lhp) }}')"
+                                                class="h-9 w-9 inline-flex items-center justify-center rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white transition-all duration-200 shadow-xs hover:shadow-md hover:scale-105 cursor-pointer"
+                                                title="Hapus Seluruh Tindak Lanjut LHP Ini">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ auth()->user()?->hasRole('super_admin') ? 10 : 9 }}" class="py-8 text-center text-gray-400 dark:text-gray-500">
+                                Tidak ada data LHP tindak lanjut yang sesuai filter.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        @if($lhps->hasPages())
+            <div class="border-t border-gray-200 px-4 py-3 dark:border-gray-800">
+                {{ $lhps->links() }}
+            </div>
+        @endif
+    </div>
+</form>
+
+{{-- MODAL KONFIRMASI DELETE --}}
+@if(auth()->user()?->hasRole('super_admin'))
+    <div id="delete-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-xs">
+        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 mb-4 mx-auto">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h3 class="text-center text-lg font-bold text-gray-900 dark:text-white" id="modal-title">Konfirmasi Hapus Data</h3>
+            <p class="mt-2 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400" id="modal-desc">
+                Apakah Anda yakin ingin menghapus data tindak lanjut dari LHP yang dipilih? Tindakan ini tidak dapat dibatalkan.
+            </p>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" onclick="closeModal()"
+                        class="w-full sm:w-auto rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">
+                    Batal
+                </button>
+                <button type="button" onclick="submitDelete()"
+                        class="w-full sm:w-auto rounded-xl bg-red-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-red-700 transition-all">
+                    Ya, Hapus Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let singleLhpId = null;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const checkAll = document.getElementById('check-all');
+            const checkItems = document.querySelectorAll('.check-item');
+            const bulkActionBar = document.getElementById('bulk-action-bar');
+            const countSelectedBadge = document.getElementById('count-selected-badge');
+            const countSelectedText = document.getElementById('count-selected-text');
+            const countSelected = document.getElementById('count-selected');
+            const btnBulkDelete = document.getElementById('btn-bulk-delete');
+
+            function updateBulkBar() {
+                const checked = document.querySelectorAll('.check-item:checked');
+                const count = checked.length;
+
+                if (countSelectedBadge) countSelectedBadge.textContent = count;
+                if (countSelectedText) countSelectedText.textContent = count;
+                if (countSelected) countSelected.textContent = count;
+
+                if (count > 0) {
+                    bulkActionBar?.classList.remove('hidden');
+                } else {
+                    bulkActionBar?.classList.add('hidden');
+                }
+
+                if (checkAll) {
+                    checkAll.checked = (checkItems.length > 0 && checked.length === checkItems.length);
+                }
+            }
+
+            if (checkAll) {
+                checkAll.addEventListener('change', function () {
+                    checkItems.forEach(item => item.checked = this.checked);
+                    updateBulkBar();
+                });
+            }
+
+            checkItems.forEach(item => {
+                item.addEventListener('change', updateBulkBar);
+            });
+
+            if (btnBulkDelete) {
+                btnBulkDelete.addEventListener('click', function () {
+                    singleLhpId = null;
+                    const checkedCount = document.querySelectorAll('.check-item:checked').length;
+                    document.getElementById('modal-title').textContent = 'Hapus Bulk Tindak Lanjut';
+                    document.getElementById('modal-desc').textContent = `Apakah Anda yakin ingin menghapus data tindak lanjut dari ${checkedCount} LHP yang dicentang?`;
+                    document.getElementById('delete-modal').classList.remove('hidden');
+                });
+            }
+        });
+
+        function uncheckAll() {
+            document.querySelectorAll('.check-item').forEach(item => item.checked = false);
+            const checkAll = document.getElementById('check-all');
+            if (checkAll) checkAll.checked = false;
+            document.getElementById('bulk-action-bar')?.classList.add('hidden');
+        }
+
+        function deleteSingleLhp(id, lhpNo) {
+            singleLhpId = id;
+            document.getElementById('modal-title').textContent = 'Hapus Tindak Lanjut LHP';
+            document.getElementById('modal-desc').textContent = `Apakah Anda yakin ingin menghapus seluruh data tindak lanjut dari LHP No "${lhpNo}"?`;
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('delete-modal').classList.add('hidden');
+            singleLhpId = null;
+        }
+
+        function submitDelete() {
+            const form = document.getElementById('main-form');
+            if (singleLhpId) {
+                // Clear all checked items and create single hidden input
+                uncheckAll();
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'lhp_ids[]';
+                input.value = singleLhpId;
+                form.appendChild(input);
+            }
+            form.submit();
+        }
+    </script>
+@endif
 
 @endsection

@@ -350,10 +350,14 @@
 
                 {{-- Action Buttons --}}
                 <div class="w-full mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-6 dark:border-gray-800">
-                    <button type="button" onclick="confirmDelete()"
-                            class="flex h-11 items-center justify-center rounded-lg border border-red-200 bg-white px-5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-800 dark:bg-transparent">
-                        Hapus
-                    </button>
+                    <div>
+                        @if(auth()->user()?->hasRole('super_admin'))
+                            <button type="button" onclick="confirmDelete()"
+                                    class="flex h-11 items-center justify-center rounded-lg border border-red-200 bg-white px-5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-800 dark:bg-transparent cursor-pointer">
+                                Hapus
+                            </button>
+                        @endif
+                    </div>
                     <div class="flex gap-3">
                         <a href="{{ route('tindak-lanjuts.index') }}"
                             class="flex h-11 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-transparent dark:text-gray-300">

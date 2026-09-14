@@ -25,6 +25,16 @@
 
             <div class="p-8">
                 {{-- Error Alerts --}}
+                @if(session('error'))
+                <div class="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 text-red-800 dark:text-red-300 flex items-start gap-3 shadow-xs">
+                    <svg class="w-5 h-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                    <div>
+                        <p class="font-bold text-sm">Gagal Memperbarui Data:</p>
+                        <p class="text-xs mt-0.5 opacity-90">{{ session('error') }}</p>
+                    </div>
+                </div>
+                @endif
+
                 @if($errors->any())
                 <div class="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                     <div class="flex">
@@ -32,7 +42,7 @@
                             <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
                         </div>
                         <div class="ml-3">
-                            <ul class="list-disc list-inside text-sm text-red-700 dark:text-red-400">
+                            <ul class="list-disc list-inside text-sm text-red-700 dark:text-red-400 font-medium">
                                 @foreach($errors->all() as $e) <li>{{ $e }}</li> @endforeach
                             </ul>
                         </div>
@@ -63,12 +73,13 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jenis Kelamin</label>
-                                <select name="jenis_kelamin" class="form-input-styled">
-                                    <option value="">Pilih</option>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jenis Kelamin <span class="text-red-500">*</span></label>
+                                <select name="jenis_kelamin" required data-no-ts class="form-input-styled cursor-pointer @error('jenis_kelamin') border-red-500 @enderror">
+                                    <option value="">-- Pilih Jenis Kelamin --</option>
                                     <option value="L" {{ old('jenis_kelamin', $user->jenis_kelamin) == 'L' ? 'selected' : '' }}>Laki-laki</option>
                                     <option value="P" {{ old('jenis_kelamin', $user->jenis_kelamin) == 'P' ? 'selected' : '' }}>Perempuan</option>
                                 </select>
+                                @error('jenis_kelamin') <p class="text-xs text-red-500 mt-1 font-semibold">{{ $message }}</p> @enderror
                             </div>
 
                             <div>
@@ -95,7 +106,7 @@
                             @if($type !== 'opd')
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jabatan</label>
-                                <select name="jabatan" class="form-input-styled">
+                                <select name="jabatan" data-no-ts class="form-input-styled cursor-pointer">
                                     <option value="">-- Pilih Jabatan --</option>
                                     @foreach($jabatanOptions as $opt)
                                         <option value="{{ $opt }}" {{ old('jabatan', $user->jabatan) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
@@ -104,7 +115,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sub Unit Organisasi</label>
-                                <select name="unit_kerja" class="form-input-styled">
+                                <select name="unit_kerja" data-no-ts class="form-input-styled cursor-pointer">
                                     <option value="">-- Pilih Sub Unit --</option>
                                     @foreach($unitKerjaOptions as $opt)
                                         <option value="{{ $opt }}" {{ old('unit_kerja', $user->unit_kerja) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
@@ -132,7 +143,7 @@
                             @else
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role Akses <span class="text-red-500">*</span></label>
-                                <select name="role" id="role-select" required class="form-input-styled">
+                                <select name="role" id="role-select" required data-no-ts class="form-input-styled cursor-pointer">
                                     @foreach($roles as $role)
                                     <option value="{{ $role->name }}" {{ old('role', $user->getRoleNames()->first()) === $role->name ? 'selected' : '' }}>
                                         {{ \App\Models\User::ROLES[$role->name] ?? $role->name }}
@@ -142,20 +153,20 @@
                             </div>
                             @endif
 
-                            <div id="opd-unit-section" class="md:col-span-2 {{ $type === 'opd' ? '' : 'hidden' }}">
+                            <div id="opd-unit-section" class="md:col-span-2 {{ $type === 'opd' || old('role', $user->getRoleNames()->first()) === 'opd' ? '' : 'hidden' }}">
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    Unit OPD <span class="text-xs text-gray-400 font-normal">(pilih unit yang bisa diakses)</span>
+                                    Unit OPD <span class="text-xs text-gray-400 font-normal">(pilih minimal 1 unit yang bisa diakses)</span> *
                                 </label>
                                 <div class="relative mb-3">
                                     <input type="text" id="opd-unit-search" placeholder="Cari unit OPD..."
                                            class="w-full px-4 py-2 pl-10 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all">
                                     <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                 </div>
-                                <div id="opd-unit-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
+                                <div id="opd-unit-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50 @error('opd_unit_ids') border-red-500 ring-2 ring-red-500/10 @enderror">
                                     @forelse($opdUnits as $unit)
                                     <label class="flex items-start gap-3 p-2 rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-colors cursor-pointer">
                                         <input type="checkbox" name="opd_unit_ids[]" value="{{ $unit->id }}"
-                                               {{ $user->opdUnits->contains($unit->id) ? 'checked' : '' }}
+                                               {{ in_array($unit->id, old('opd_unit_ids', $user->opdUnits->pluck('id')->toArray())) ? 'checked' : '' }}
                                                class="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
                                         <div>
                                             <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ $unit->nama_unit }}</p>
@@ -166,6 +177,7 @@
                                     <p class="text-sm text-gray-400 col-span-2">Belum ada data unit.</p>
                                     @endforelse
                                 </div>
+                                @error('opd_unit_ids') <p class="text-xs text-red-500 mt-2 font-semibold">{{ $message }}</p> @enderror
                             </div>
 
                             <div>

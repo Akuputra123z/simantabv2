@@ -29,7 +29,7 @@ class UserService
             'role'                => ['required', 'string', 'exists:roles,name'],
             'is_active'           => ['boolean'],
             'unit_kerja'          => ['nullable', 'string', Rule::in(User::UNIT_KERJA_OPTIONS)],
-            'jenis_kelamin'       => ['nullable', 'string', Rule::in(['L', 'P'])],
+            'jenis_kelamin'       => ['required', 'string', Rule::in(['L', 'P'])],
             'pendidikan_terakhir' => ['nullable', 'string', 'max:100'],
             'pangkat_gol'         => ['nullable', 'string', 'max:50'],
         ];
@@ -57,7 +57,7 @@ class UserService
             'phone'               => $data['phone'] ?? null,
             'password'            => Hash::make($data['password']),
             'is_active'           => $data['is_active'] ?? true,
-            'jenis_kelamin'       => $data['jenis_kelamin'] ?? null,
+            'jenis_kelamin'       => $data['jenis_kelamin'] ?? 'L',
             'pendidikan_terakhir' => $data['pendidikan_terakhir'] ?? null,
             'pangkat_gol'         => $data['pangkat_gol'] ?? null,
         ]);

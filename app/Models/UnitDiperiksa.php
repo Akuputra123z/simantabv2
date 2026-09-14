@@ -70,25 +70,34 @@ class UnitDiperiksa extends Model
     }
 
     /**
-     * Mutator otomatis untuk membersihkan spasi awal/akhir pada nama_kecamatan.
+     * Mutator otomatis untuk membersihkan spasi dan menormalisasi kapitalisasi (Title Case).
      */
     public function setNamaKecamatanAttribute(?string $value): void
     {
-        $this->attributes['nama_kecamatan'] = ($value !== null && trim($value) !== '') ? trim($value) : null;
+        $this->attributes['nama_kecamatan'] = ($value !== null && trim($value) !== '') ? ucwords(strtolower(trim($value))) : null;
     }
 
     /**
-     * Helper query terpusat untuk mengambil daftar kecamatan unik tanpa duplikasi.
+     * Helper query terpusat untuk mengambil daftar kecamatan unik tanpa duplikasi (Title Case).
      */
     public static function getKecamatanList(?string $kategori = null): \Illuminate\Support\Collection
     {
-        return static::query()
+        $standardKecamatan = collect([
+            'Bulu', 'Gunem', 'Kaliori', 'Kragan', 'Lasem', 'Pamotan',
+            'Pancur', 'Rembang', 'Sale', 'Sarang', 'Sedan', 'Sluke', 'Sulang', 'Sumber'
+        ]);
+
+        $dbList = static::query()
             ->when($kategori, fn($q) => $q->where('kategori', $kategori))
             ->whereNotNull('nama_kecamatan')
             ->where('nama_kecamatan', '!=', '')
-            ->select('nama_kecamatan')
-            ->distinct()
-            ->orderBy('nama_kecamatan')
-            ->pluck('nama_kecamatan');
+            ->pluck('nama_kecamatan')
+            ->map(fn($val) => ucwords(strtolower(trim($val))));
+
+        return $standardKecamatan
+            ->merge($dbList)
+            ->unique()
+            ->sort()
+            ->values();
     }
 }

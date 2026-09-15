@@ -28,21 +28,23 @@ class TindakLanjutController extends Controller
     {
         $user = auth()->user();
 
-        // Pastikan stub TindakLanjut terbuat untuk semua rekomendasi yang belum memiliki TL
+        // Pastikan stub TindakLanjut terbuat jika ada rekomendasi yang belum memiliki TL (bulk insert efisien)
         $missingRekomIds = Recommendation::whereHas('temuan.lhp')
             ->doesntHave('tindakLanjuts')
             ->pluck('id');
 
-        foreach ($missingRekomIds as $rekomId) {
-            TindakLanjut::firstOrCreate(
-                ['recommendation_id' => $rekomId],
-                [
-                    'status_verifikasi'   => 'menunggu_verifikasi',
-                    'nilai_tindak_lanjut' => 0,
-                    'total_terbayar'      => 0,
-                    'sisa_belum_bayar'    => 0,
-                ]
-            );
+        if ($missingRekomIds->isNotEmpty()) {
+            $now = now();
+            $stubs = $missingRekomIds->map(fn($rekomId) => [
+                'recommendation_id'   => $rekomId,
+                'status_verifikasi'   => 'menunggu_verifikasi',
+                'nilai_tindak_lanjut' => 0,
+                'total_terbayar'      => 0,
+                'sisa_belum_bayar'    => 0,
+                'created_at'          => $now,
+                'updated_at'          => $now,
+            ])->toArray();
+            TindakLanjut::insert($stubs);
         }
 
         $search    = $request->input('search');
@@ -170,14 +172,35 @@ class TindakLanjutController extends Controller
 
         $lhps = $query->paginate(10)->withQueryString();
 
+        // Hitung statistik kumulatif KESELURUHAN data tindak lanjut secara optimal & akurat
+        $rekomUangQuery = Recommendation::whereHas('temuan.lhp')->where('jenis_rekomendasi', 'uang');
+        $totalNilaiRekomUang = (float) (clone $rekomUangQuery)->sum('nilai_rekom');
+        $rekomUangIds = (clone $rekomUangQuery)->pluck('id');
+
+        $tlAggregates = TindakLanjut::whereHas('recommendation.temuan.lhp')
+            ->selectRaw("
+                COUNT(CASE WHEN status_verifikasi = 'lunas' THEN 1 END) as total_lunas,
+                COUNT(CASE WHEN status_verifikasi = 'berjalan' THEN 1 END) as total_berjalan,
+                COUNT(CASE WHEN status_verifikasi = 'menunggu_verifikasi' THEN 1 END) as total_menunggu,
+                COALESCE(SUM(CASE WHEN recommendation_id IN (" . ($rekomUangIds->isNotEmpty() ? $rekomUangIds->implode(',') : '0') . ") THEN total_terbayar ELSE 0 END), 0) as total_terbayar
+            ")
+            ->first();
+
+        $totalTerbayarUang = (float) ($tlAggregates->total_terbayar ?? 0);
+        $persenSetor = $totalNilaiRekomUang > 0 
+            ? min(100, round(($totalTerbayarUang / $totalNilaiRekomUang) * 100, 1)) 
+            : 0;
+
         $stats = (object) [
             'total_lhp'         => Lhp::whereHas('temuans.recommendations')->count(),
             'total_rekomendasi' => Recommendation::whereHas('temuan.lhp')->count(),
-            'total_lunas'       => TindakLanjut::where('status_verifikasi', 'lunas')->count(),
-            'total_berjalan'    => TindakLanjut::where('status_verifikasi', 'berjalan')->count(),
-            'total_menunggu'    => TindakLanjut::where('status_verifikasi', 'menunggu_verifikasi')->count(),
-            'total_nilai_rekom' => (float) Recommendation::whereHas('temuan.lhp')->sum('nilai_rekom'),
-            'total_terbayar'    => (float) TindakLanjut::sum('total_terbayar'),
+            'total_lunas'       => (int) ($tlAggregates->total_lunas ?? 0),
+            'total_berjalan'    => (int) ($tlAggregates->total_berjalan ?? 0),
+            'total_menunggu'    => (int) ($tlAggregates->total_menunggu ?? 0),
+            'total_nilai_rekom' => $totalNilaiRekomUang,
+            'total_terbayar'    => $totalTerbayarUang,
+            'persen_setor'      => $persenSetor,
+            'sisa_setor'        => max(0, $totalNilaiRekomUang - $totalTerbayarUang),
         ];
 
         $kategoris = AuditProgram::KATEGORI;
@@ -631,17 +654,22 @@ class TindakLanjutController extends Controller
 
     public function destroy(TindakLanjut $tindakLanjut)
     {
-        if (! auth()->user()->hasRole('super_admin')) {
-            abort(403, 'Hanya Super Admin yang berhak menghapus data tindak lanjut.');
+        if (! auth()->user()->hasRole(['super_admin', 'kepala_inspektorat'])) {
+            abort(403, 'Hanya Super Admin atau Kepala Inspektorat yang berhak menghapus data tindak lanjut.');
         }
 
         $lhpId = $tindakLanjut->recommendation?->temuan?->lhp_id;
         
-        // Hapus file lampiran dari storage
+        // Hapus file lampiran dari storage & DB
         foreach ($tindakLanjut->attachments as $att) {
-            Storage::disk('public')->delete($att->file_path);
+            if ($att->file_path && Storage::disk('public')->exists($att->file_path)) {
+                Storage::disk('public')->delete($att->file_path);
+            }
             $att->delete();
         }
+
+        // Hapus cicilan jika ada
+        $tindakLanjut->cicilans()->delete();
         
         // Simpan recommendation sebelum TL dihapus untuk sync setelahnya
         $recommendation = $tindakLanjut->recommendation;
@@ -659,15 +687,16 @@ class TindakLanjutController extends Controller
             $this->statistikService->updateStatistik($lhpId);
         }
 
-        return redirect()
-            ->back()
+        $redirectUrl = $lhpId ? route('tindak-lanjuts.lhp', $lhpId) : route('tindak-lanjuts.index');
+
+        return redirect($redirectUrl)
             ->with('success', 'Data tindak lanjut berhasil dihapus.');
     }
 
     public function bulkDelete(Request $request)
     {
-        if (! auth()->user()->hasRole('super_admin')) {
-            abort(403, 'Hanya Super Admin yang berhak menghapus data tindak lanjut.');
+        if (! auth()->user()->hasRole(['super_admin', 'kepala_inspektorat'])) {
+            abort(403, 'Hanya Super Admin atau Kepala Inspektorat yang berhak menghapus data tindak lanjut.');
         }
 
         $validated = $request->validate([
@@ -677,69 +706,78 @@ class TindakLanjutController extends Controller
             'lhp_ids.*' => 'exists:lhps,id',
         ]);
 
-        if (empty($validated['ids']) && empty($validated['lhp_ids'])) {
+        $ids    = array_filter($validated['ids'] ?? []);
+        $lhpIds = array_filter($validated['lhp_ids'] ?? []);
+
+        if (empty($ids) && empty($lhpIds)) {
             return redirect()->back()->with('error', 'Tidak ada data yang dipilih untuk dihapus.');
         }
 
         $tindakLanjuts = collect();
 
-        if (! empty($validated['ids'])) {
+        if (! empty($ids)) {
             $tindakLanjuts = $tindakLanjuts->merge(
-                TindakLanjut::whereIn('id', $validated['ids'])->get()
+                TindakLanjut::whereIn('id', $ids)->get()
             );
         }
 
-        if (! empty($validated['lhp_ids'])) {
+        if (! empty($lhpIds)) {
             $tindakLanjuts = $tindakLanjuts->merge(
-                TindakLanjut::whereHas('recommendation.temuan', function ($q) use ($validated) {
-                    $q->whereIn('lhp_id', $validated['lhp_ids']);
+                TindakLanjut::whereHas('recommendation.temuan', function ($q) use ($lhpIds) {
+                    $q->whereIn('lhp_id', $lhpIds);
                 })->get()
             );
         }
 
         $tindakLanjuts = $tindakLanjuts->unique('id');
 
-        if ($tindakLanjuts->isEmpty()) {
-            return redirect()->back()->with('error', 'Tidak ditemukan data tindak lanjut untuk dihapus.');
-        }
-
-        $recomIds = [];
-        $lhpIds   = [];
+        $recomIds        = [];
+        $affectedLhpIds  = $lhpIds;
+        $deletedCount    = $tindakLanjuts->count();
 
         foreach ($tindakLanjuts as $tl) {
             $lhpId = $tl->recommendation?->temuan?->lhp_id;
             if ($lhpId) {
-                $lhpIds[] = $lhpId;
+                $affectedLhpIds[] = $lhpId;
             }
 
             if ($tl->recommendation_id) {
                 $recomIds[] = $tl->recommendation_id;
             }
 
+            // Hapus file lampiran dari storage & DB
             foreach ($tl->attachments as $att) {
-                Storage::disk('public')->delete($att->file_path);
+                if ($att->file_path && Storage::disk('public')->exists($att->file_path)) {
+                    Storage::disk('public')->delete($att->file_path);
+                }
                 $att->delete();
             }
 
+            // Hapus cicilan jika ada
+            $tl->cicilans()->delete();
+
+            // Hapus record tindak lanjut
             $tl->delete();
         }
 
         // Sync all affected recommendations
-        $recoms = \App\Models\Recommendation::whereIn('id', array_unique($recomIds))->get();
-        foreach ($recoms as $rec) {
-            $rec->refresh();
-            $rec->load('tindakLanjuts.cicilans');
-            $rec->syncStatus();
+        if (! empty($recomIds)) {
+            $recoms = \App\Models\Recommendation::whereIn('id', array_unique($recomIds))->get();
+            foreach ($recoms as $rec) {
+                $rec->refresh();
+                $rec->load('tindakLanjuts.cicilans');
+                $rec->syncStatus();
+            }
         }
 
         // Sync all affected LHP statistics
-        foreach (array_unique($lhpIds) as $lhpId) {
+        foreach (array_unique($affectedLhpIds) as $lhpId) {
             $this->statistikService->updateStatistik($lhpId);
         }
 
         return redirect()
             ->back()
-            ->with('success', $tindakLanjuts->count() . ' data tindak lanjut berhasil dihapus.');
+            ->with('success', 'Data tindak lanjut berhasil dihapus.');
     }
 
     public function bukaKunciOpd(TindakLanjut $tindakLanjut): RedirectResponse

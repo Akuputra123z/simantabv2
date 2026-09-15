@@ -55,18 +55,26 @@ class UnitDiperiksaImport implements ToCollection, WithHeadingRow
             $keterangan = $row['keterangan'] ?? $row['ket'] ?? $row['catatan'] ?? null;
             $keterangan = $keterangan ? trim((string)$keterangan) : null;
 
-            // Search for existing unit by nama_unit (case-insensitive)
-            $existing = UnitDiperiksa::whereRaw('LOWER(nama_unit) = ?', [mb_strtolower($namaUnit)])
-                ->when($kecamatan, function ($q) use ($kecamatan) {
-                    $q->where(function ($sub) use ($kecamatan) {
+            // Search for existing unit by nama_unit (case-insensitive & trimmed), including trashed
+            $cleanUnitLower = mb_strtolower(trim($namaUnit));
+            $cleanKecLower  = $kecamatan ? mb_strtolower(trim($kecamatan)) : null;
+
+            $existing = UnitDiperiksa::withTrashed()
+                ->whereRaw('LOWER(TRIM(nama_unit)) = ?', [$cleanUnitLower])
+                ->when($cleanKecLower, function ($q) use ($cleanKecLower) {
+                    $q->where(function ($sub) use ($cleanKecLower) {
                         $sub->whereNull('nama_kecamatan')
-                            ->orWhere('nama_kecamatan', $kecamatan)
-                            ->orWhereRaw('LOWER(nama_kecamatan) = ?', [mb_strtolower($kecamatan)]);
+                            ->orWhereRaw('LOWER(TRIM(nama_kecamatan)) = ?', [$cleanKecLower]);
                     });
                 })
                 ->first();
 
             if ($existing) {
+                // Jika data pernah terhapus, pulihkan kembali (restore)
+                if ($existing->trashed()) {
+                    $existing->restore();
+                }
+
                 $updateData = [];
                 if ($kategori && $existing->kategori !== $kategori) {
                     $updateData['kategori'] = $kategori;

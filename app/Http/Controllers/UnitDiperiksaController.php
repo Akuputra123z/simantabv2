@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\TemplateUnitDiperiksaExport;
+use App\Exports\UnitDiperiksaExport;
 use App\Imports\UnitDiperiksaImport;
 use App\Models\UnitDiperiksa;
 use Illuminate\Http\Request;
@@ -83,6 +84,34 @@ class UnitDiperiksaController extends Controller
         return Excel::download(new TemplateUnitDiperiksaExport, 'template_import_unit_diperiksa.xlsx');
     }
 
+    public function export(Request $request)
+    {
+        $query = UnitDiperiksa::query();
+
+        $units = $query
+            ->when($request->search, function ($q) use ($request) {
+                $q->where(function ($sub) use ($request) {
+                    $sub->where('nama_unit', 'like', '%' . $request->search . '%')
+                        ->orWhere('nama_kecamatan', 'like', '%' . $request->search . '%')
+                        ->orWhere('alamat', 'like', '%' . $request->search . '%');
+                });
+            })
+            ->when($request->kategori, function ($q) use ($request) {
+                $q->where('kategori', $request->kategori);
+            })
+            ->when($request->kecamatan, function ($q) use ($request) {
+                $q->where('nama_kecamatan', $request->kecamatan);
+            })
+            ->orderBy('kategori')
+            ->orderBy('nama_kecamatan')
+            ->orderBy('nama_unit')
+            ->get();
+
+        $filename = 'data_unit_diperiksa_' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(new UnitDiperiksaExport($units), $filename);
+    }
+
     public function create()
     {
         $kategoriOptions = ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'];
@@ -144,8 +173,13 @@ class UnitDiperiksaController extends Controller
 
     public function destroy(UnitDiperiksa $unitDiperiksa)
     {
-        $unitDiperiksa->delete();
-        return redirect()->back()->with('success', 'Unit berhasil dihapus.');
+        // Cegah hapus jika unit sudah terikat dengan LHP
+        if ($unitDiperiksa->lhps()->exists()) {
+            return redirect()->back()->with('error', 'Unit ini tidak dapat dihapus karena sudah memiliki data LHP terkait.');
+        }
+
+        $unitDiperiksa->forceDelete();
+        return redirect()->back()->with('success', 'Unit berhasil dihapus permanen dari database.');
     }
 
     public function bulkDelete(Request $request)
@@ -154,9 +188,29 @@ class UnitDiperiksaController extends Controller
             return back()->with('error', 'Pilih minimal satu data unit yang akan dihapus.');
         }
 
-        $count = UnitDiperiksa::whereIn('id', $request->ids)->delete();
+        $units = UnitDiperiksa::whereIn('id', $request->ids)->get();
+        $deletedCount = 0;
+        $skippedCount = 0;
 
-        return redirect()->route('unit-diperiksa.index')
-            ->with('success', "{$count} data unit diperiksa berhasil dihapus.");
+        foreach ($units as $unit) {
+            if ($unit->lhps()->exists()) {
+                $skippedCount++;
+                continue;
+            }
+            $unit->forceDelete();
+            $deletedCount++;
+        }
+
+        if ($skippedCount > 0 && $deletedCount === 0) {
+            return redirect()->route('unit-diperiksa.index')
+                ->with('error', 'Data unit tidak dapat dihapus karena seluruh unit terpilih sudah memiliki data LHP terkait.');
+        }
+
+        $msg = "{$deletedCount} data unit berhasil dihapus permanen dari database.";
+        if ($skippedCount > 0) {
+            $msg .= " ({$skippedCount} unit dilewati karena sudah terhubung dengan LHP).";
+        }
+
+        return redirect()->route('unit-diperiksa.index')->with('success', $msg);
     }
 }

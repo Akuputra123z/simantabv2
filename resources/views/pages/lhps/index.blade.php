@@ -232,7 +232,7 @@
                     {{-- Unit Diperiksa --}}
                     <td class="px-4 py-4 border-r border-gray-100 dark:border-gray-800/60">
                         <div class="text-xs font-medium text-gray-800 dark:text-gray-300 leading-relaxed">
-                            {{ $lhp->unitDiperiksa?->label ?? $lhp->unitDiperiksa?->nama_unit ?? '-' }}
+                            {{  $lhp->unitDiperiksa?->nama_unit ?? '-' }}
                         </div>
                     </td>
 

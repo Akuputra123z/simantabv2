@@ -276,7 +276,22 @@ public function update(Request $request, Temuan $temuan)
             $file->delete();
         }
 
-        // 2. Hapus data Temuan
+        // 2. Hapus anak rekomendasi beserta tindak lanjut dan cicilannya
+        foreach ($temuan->recommendations as $rec) {
+            foreach ($rec->tindakLanjuts as $tl) {
+                foreach ($tl->attachments as $file) {
+                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($file->file_path)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($file->file_path);
+                    }
+                    $file->delete();
+                }
+                $tl->cicilans()->delete();
+                $tl->delete();
+            }
+            $rec->delete();
+        }
+
+        // 3. Hapus data Temuan
         $temuan->delete();
 
         DB::commit();

@@ -48,6 +48,12 @@
     </div>
 @endif
 
+@if(session('error'))
+    <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-xs sm:text-sm font-medium text-red-800 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300 shadow-xs">
+        {{ session('error') }}
+    </div>
+@endif
+
 {{-- STAT CARDS (KOMULATIF SEMUA DATA) --}}
 <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
@@ -96,12 +102,41 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
             </svg>
         </div>
-        <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Realisasi Setoran</p>
+        @php
+            $terbayar = (float) ($stats->total_terbayar ?? 0);
+            $target   = (float) ($stats->total_nilai_rekom ?? 0);
+            $persen   = $stats->persen_setor ?? ($target > 0 ? min(100, round(($terbayar / $target) * 100, 1)) : 0);
+
+            // Format singkatan satuan mata uang yang tepat
+            if ($terbayar >= 1000000000) {
+                $terbayarFmt = 'Rp' . number_format($terbayar / 1000000000, 2, ',', '.') . ' M';
+            } elseif ($terbayar >= 1000000) {
+                $terbayarFmt = 'Rp' . number_format($terbayar / 1000000, 1, ',', '.') . ' Jt';
+            } else {
+                $terbayarFmt = 'Rp' . number_format($terbayar, 0, ',', '.');
+            }
+
+            if ($target >= 1000000000) {
+                $targetFmt = 'Rp' . number_format($target / 1000000000, 2, ',', '.') . ' M';
+            } elseif ($target >= 1000000) {
+                $targetFmt = 'Rp' . number_format($target / 1000000, 1, ',', '.') . ' Jt';
+            } else {
+                $targetFmt = 'Rp' . number_format($target, 0, ',', '.');
+            }
+        @endphp
+        <div class="min-w-0 flex-1" title="Terbayar: Rp {{ number_format($terbayar, 0, ',', '.') }} dari Target: Rp {{ number_format($target, 0, ',', '.') }}">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Realisasi Setoran</p>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold {{ $persen >= 100 ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : ($persen > 0 ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400') }}">
+                    {{ $persen }}%
+                </span>
+            </div>
             <p class="mt-0.5 text-lg font-bold text-gray-900 dark:text-white font-mono">
-                Rp{{ number_format(($stats->total_terbayar ?? 0) / 1000000, 1) }}M
+                {{ $terbayarFmt }}
             </p>
-            <p class="text-[11px] text-gray-400">dari Rp{{ number_format(($stats->total_nilai_rekom ?? 0) / 1000000, 1) }}M target</p>
+            <p class="text-[11px] text-gray-400 truncate">
+                dari {{ $targetFmt }} target
+            </p>
         </div>
     </div>
 
@@ -201,12 +236,12 @@
 </form>
 
 {{-- FORM BULK DELETE & TABLE DAFTAR LHP --}}
-<form id="main-form" action="{{ route('tindak-lanjuts.bulkDelete') }}" method="POST" onsubmit="return false;">
+<form id="main-form" action="{{ route('tindak-lanjuts.bulkDelete') }}" method="POST">
     @csrf
     @method('DELETE')
 
-    {{-- BULK ACTION BANNER (KHUSUS SUPER ADMIN) --}}
-    @if(auth()->user()?->hasRole('super_admin'))
+    {{-- BULK ACTION BANNER (KHUSUS SUPER ADMIN & KEPALA INSPEKTORAT) --}}
+    @if(auth()->user()?->hasRole(['super_admin', 'kepala_inspektorat']))
         <div id="bulk-action-bar" class="hidden mb-4 p-3.5 px-4 rounded-2xl bg-red-50/90 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 flex flex-wrap items-center justify-between gap-3 shadow-md backdrop-blur-sm transition-all duration-300">
             <div class="flex items-center gap-3">
                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-600 text-white font-bold text-xs shadow-xs" id="count-selected-badge">
@@ -240,7 +275,7 @@
             <table class="w-full text-left text-xs whitespace-nowrap sm:whitespace-normal">
                 <thead class="bg-gray-50/80 text-gray-500 uppercase tracking-wider dark:bg-gray-800/50 dark:text-gray-400 text-[11px]">
                     <tr>
-                        @if(auth()->user()?->hasRole('super_admin'))
+                        @if(auth()->user()?->hasRole(['super_admin', 'kepala_inspektorat']))
                             <th class="px-3.5 py-3.5 w-10 text-center border-r border-gray-200/70 dark:border-gray-800/70">
                                 <input type="checkbox" id="check-all" class="h-4 w-4 rounded border-gray-300 text-blue-600 cursor-pointer">
                             </th>
@@ -415,8 +450,8 @@
                                         </svg>
                                     </a>
 
-                                    {{-- Hapus TL Icon (Khusus Super Admin) --}}
-                                    @if(auth()->user()?->hasRole('super_admin'))
+                                    {{-- Hapus TL Icon (Khusus Super Admin & Kepala Inspektorat) --}}
+                                    @if(auth()->user()?->hasRole(['super_admin', 'kepala_inspektorat']))
                                         <button type="button"
                                                 onclick="deleteSingleLhp({{ $lhp->id }}, '{{ addslashes($lhp->nomor_lhp) }}')"
                                                 class="h-9 w-9 inline-flex items-center justify-center rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white transition-all duration-200 shadow-xs hover:shadow-md hover:scale-105 cursor-pointer"
@@ -431,7 +466,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ auth()->user()?->hasRole('super_admin') ? 10 : 9 }}" class="py-8 text-center text-gray-400 dark:text-gray-500">
+                            <td colspan="{{ auth()->user()?->hasRole(['super_admin', 'kepala_inspektorat']) ? 10 : 9 }}" class="py-8 text-center text-gray-400 dark:text-gray-500">
                                 Tidak ada data LHP tindak lanjut yang sesuai filter.
                             </td>
                         </tr>
@@ -449,7 +484,7 @@
 </form>
 
 {{-- MODAL KONFIRMASI DELETE --}}
-@if(auth()->user()?->hasRole('super_admin'))
+@if(auth()->user()?->hasRole(['super_admin', 'kepala_inspektorat']))
     <div id="delete-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-xs">
         <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
             <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 mb-4 mx-auto">

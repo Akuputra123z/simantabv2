@@ -103,6 +103,7 @@ function lhpEditWizard() {
         // Modal & AJAX submit state
         showConfirmModal: false,
         showSuccessModal: false,
+        showErrorModal: false,
         successMessage: '',
         redirectUrl: '',
         isSubmitting: false,
@@ -114,11 +115,15 @@ function lhpEditWizard() {
             if (event) event.preventDefault();
 
             if (!this.validateAllSteps()) {
+                this.showErrorModal = true;
                 window.scrollTo({ top: 100, behavior: 'smooth' });
                 return false;
             }
 
-            this.formTarget = event ? event.target : document.getElementById('form-lhp-edit');
+            const target = event ? event.target : null;
+            this.formTarget = (target && target.tagName === 'FORM')
+                ? target
+                : (target && target.closest ? target.closest('form') : document.getElementById('form-lhp-edit'));
             this.showConfirmModal = true;
         },
 
@@ -133,11 +138,15 @@ function lhpEditWizard() {
             if (btn) btn.disabled = true;
             if (txt) txt.textContent = 'Menyimpan Perubahan...';
 
-            const form = this.formTarget || document.getElementById('form-lhp-edit');
-            const formData = new FormData(form);
+            const form = (this.formTarget && this.formTarget.tagName === 'FORM')
+                ? this.formTarget
+                : document.getElementById('form-lhp-edit');
+
+            const actionUrl = form ? (form.getAttribute('action') || form.action) : '{{ route("lhps.update", $lhp) }}';
+            const formData = form ? new FormData(form) : new FormData();
 
             try {
-                const response = await fetch(form.action, {
+                const response = await fetch(actionUrl, {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -147,21 +156,50 @@ function lhpEditWizard() {
                     }
                 });
 
-                const data = await response.json();
+                let data = {};
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const textContent = await response.text();
+                    if (response.status === 419) {
+                        data = { message: 'Sesi login Anda telah berakhir. Silakan muat ulang (refresh) halaman lalu coba lagi.' };
+                    } else if (response.status === 413) {
+                        data = { message: 'Ukuran berkas lampiran terlalu besar untuk dikirim ke server.' };
+                    } else {
+                        data = { message: `Gagal memperbarui LHP (Status Server ${response.status}). Silakan periksa koneksi atau log server.` };
+                    }
+                }
 
                 if (response.ok && data.success) {
                     this.successMessage = data.message || 'LHP berhasil diperbarui.';
                     this.redirectUrl = data.redirect || '{{ route("lhps.index") }}';
                     this.showSuccessModal = true;
                 } else {
-                    alert(data.message || 'Gagal memperbarui LHP.');
+                    let errList = [];
+                    if (data.errors) {
+                        errList = Object.values(data.errors).flat();
+                    }
+                    if (errList.length === 0 && data.message) {
+                        errList = [data.message];
+                    }
+                    if (errList.length === 0) {
+                        errList = ['Gagal memperbarui LHP. Silakan periksa kembali data Anda.'];
+                    }
+
+                    this.stepErrors = errList;
+                    this.showErrorModal = true;
+                    window.scrollTo({ top: 100, behavior: 'smooth' });
+
                     if (btn) btn.disabled = false;
                     if (txt) txt.textContent = 'Simpan Perubahan LHP';
                     this.isSubmitting = false;
                 }
             } catch (err) {
                 console.error(err);
-                alert('Terjadi kesalahan sistem/koneksi saat memperbarui LHP.');
+                this.stepErrors = ['Terjadi kesalahan sistem/koneksi saat memperbarui LHP: ' + (err.message || err)];
+                this.showErrorModal = true;
+                window.scrollTo({ top: 100, behavior: 'smooth' });
                 if (btn) btn.disabled = false;
                 if (txt) txt.textContent = 'Simpan Perubahan LHP';
                 this.isSubmitting = false;
@@ -186,9 +224,17 @@ function lhpEditWizard() {
 
             if (!selProgram || !selAssignment || !selUnit) return;
 
+            // Helper untuk mengecek sisa unit pada penugasan (memperhitungkan unit LHP saat ini)
+            const getRemainingUnitsCount = (ass) => {
+                const usedIds = (USED_UNIT_MAP[ass.id] || []).map(String);
+                if (!ass.units || ass.units.length === 0) return 0;
+                return ass.units.filter(u => String(u.id) === String(this.unitId) || !usedIds.includes(String(u.id))).length;
+            };
+
             const seen = new Set();
             ALL_ASSIGNMENTS.forEach(a => {
-                if (a.program_id && !seen.has(a.program_id)) {
+                const hasAvailableUnit = getRemainingUnitsCount(a) > 0 || (this.assignmentId && String(a.id) === String(this.assignmentId));
+                if (a.program_id && hasAvailableUnit && !seen.has(a.program_id)) {
                     seen.add(a.program_id);
                     selProgram.add(new Option(a.program_nama, a.program_id));
                 }
@@ -214,16 +260,30 @@ function lhpEditWizard() {
                 tsUnit.clear(); tsUnit.clearOptions(); tsUnit.disable();
 
                 if (!progId) return;
-                const filtered = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(progId));
+
+                // Hanya tampilkan penugasan yang masih memiliki sisa unit kerja yang belum dibuatkan LHP (atau penugasan LHP saat ini)
+                const filtered = ALL_ASSIGNMENTS.filter(a => {
+                    if (String(a.program_id) !== String(progId)) return false;
+                    const isSelected = selectedAssId && String(a.id) === String(selectedAssId);
+                    return isSelected || getRemainingUnitsCount(a) > 0;
+                });
+
                 filtered.forEach(a => {
-                    const label = a.detail_nama + (a.nomor_surat ? ' — ' + a.nomor_surat : '');
+                    const remaining = getRemainingUnitsCount(a);
+                    const label = a.detail_nama + (a.nomor_surat ? ' — ' + a.nomor_surat : '') + (remaining > 0 ? ` (${remaining} unit belum LHP)` : '');
                     tsAssignment.addOption({ value: a.id, text: label });
                 });
+
                 if (filtered.length > 0) {
                     tsAssignment.enable();
                     if (selectedAssId) {
-                        tsAssignment.setValue(selectedAssId, true);
+                        tsAssignment.setValue(String(selectedAssId), true);
+                        this.assignmentId = String(selectedAssId);
+                        const hiddenAss = document.getElementById('hidden-assignment-id');
+                        if (hiddenAss) hiddenAss.value = String(selectedAssId);
                     }
+                } else {
+                    tsAssignment.addOption({ value: '', text: '-- Semua penugasan pada program ini sudah selesai LHP --' });
                 }
             };
 
@@ -232,19 +292,30 @@ function lhpEditWizard() {
                 if (!assId) return;
 
                 const assignment = ALL_ASSIGNMENTS.find(a => String(a.id) === String(assId));
-                const usedIds    = USED_UNIT_MAP[assId] || [];
+                const usedIds    = (USED_UNIT_MAP[assId] || []).map(String);
 
-                if (assignment && assignment.units.length > 0) {
-                    const available = assignment.units.filter(u => String(u.id) === String(selectedUnitId) || !usedIds.includes(u.id));
+                if (assignment && assignment.units && assignment.units.length > 0) {
+                    const available = assignment.units.filter(u =>
+                        String(u.id) === String(selectedUnitId) || !usedIds.includes(String(u.id))
+                    );
+
                     if (available.length === 0) {
                         tsUnit.addOption({ value: '', text: '-- Semua unit sudah dibuatkan LHP --' });
+                        tsUnit.enable();
                         return;
                     }
+
                     available.forEach(u => tsUnit.addOption({ value: u.id, text: u.nama }));
                     tsUnit.enable();
+
                     if (selectedUnitId) {
-                        tsUnit.setValue(selectedUnitId, true);
+                        tsUnit.setValue(String(selectedUnitId), true);
+                        this.unitId = String(selectedUnitId);
+                        const hiddenUnit = document.getElementById('hidden-unit-id');
+                        if (hiddenUnit) hiddenUnit.value = String(selectedUnitId);
                     }
+                } else {
+                    tsUnit.addOption({ value: '', text: '-- Tidak ada unit pada penugasan ini --' });
                 }
             };
 
@@ -281,8 +352,15 @@ function lhpEditWizard() {
                 if (hiddenUnit) hiddenUnit.value = uId;
             });
 
+            if (!this.programId && this.assignmentId) {
+                const found = ALL_ASSIGNMENTS.find(a => String(a.id) === String(this.assignmentId));
+                if (found) {
+                    this.programId = found.program_id;
+                }
+            }
+
             if (this.programId) {
-                tsProgram.setValue(this.programId, true);
+                tsProgram.setValue(String(this.programId), true);
                 populateAssignments(this.programId, this.assignmentId);
                 if (this.assignmentId) {
                     populateUnits(this.assignmentId, this.unitId);
@@ -295,7 +373,12 @@ function lhpEditWizard() {
         canGoToStep(targetStep) {
             if (targetStep <= 1) return true;
 
-            const isStep1Valid = Boolean(this.assignmentId && this.unitId && this.nomorLhp && this.nomorLhp.trim() && this.tanggalLhp);
+            const hiddenAss = document.getElementById('hidden-assignment-id');
+            const hiddenUnit = document.getElementById('hidden-unit-id');
+            const assVal = (hiddenAss && hiddenAss.value) || this.assignmentId;
+            const unitVal = (hiddenUnit && hiddenUnit.value) || this.unitId;
+
+            const isStep1Valid = Boolean(assVal && unitVal && this.nomorLhp && this.nomorLhp.trim() && this.tanggalLhp);
             if (targetStep === 2) return isStep1Valid && !this.isNihil;
             if (targetStep === 3) return isStep1Valid && !this.isNihil;
             if (targetStep === 4) {
@@ -317,6 +400,8 @@ function lhpEditWizard() {
             }
             if (!this.canGoToStep(targetStep)) {
                 this.validateCurrentStep();
+                this.showErrorModal = true;
+                window.scrollTo({ top: 100, behavior: 'smooth' });
                 return;
             }
             this.step = targetStep;
@@ -326,6 +411,9 @@ function lhpEditWizard() {
         nextStep() {
             if (this.validateCurrentStep()) {
                 this.step = Math.min(4, this.step + 1);
+                window.scrollTo({ top: 100, behavior: 'smooth' });
+            } else {
+                this.showErrorModal = true;
                 window.scrollTo({ top: 100, behavior: 'smooth' });
             }
         },
@@ -339,8 +427,13 @@ function lhpEditWizard() {
             this.stepErrors = [];
 
             if (this.step === 1) {
-                if (!this.assignmentId) this.stepErrors.push('Penugasan Audit wajib dipilih.');
-                if (!this.unitId) this.stepErrors.push('Unit Kerja / Objek Audit wajib dipilih.');
+                const hiddenAss = document.getElementById('hidden-assignment-id');
+                const hiddenUnit = document.getElementById('hidden-unit-id');
+                const assVal = (hiddenAss && hiddenAss.value) || this.assignmentId;
+                const unitVal = (hiddenUnit && hiddenUnit.value) || this.unitId;
+
+                if (!assVal) this.stepErrors.push('Penugasan Audit wajib dipilih.');
+                if (!unitVal) this.stepErrors.push('Unit Kerja / Objek Audit wajib dipilih.');
                 if (!this.nomorLhp || !this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
                 if (!this.tanggalLhp) this.stepErrors.push('Tanggal LHP wajib diisi.');
             }
@@ -359,11 +452,18 @@ function lhpEditWizard() {
 
             if (!this.isNihil && this.step === 3) {
                 this.temuans.forEach((t, i) => {
-                    t.recommendations.forEach((r, j) => {
-                        if (!r.kode_rekomendasi_id) {
-                            this.stepErrors.push(`Pilih Kode Rekomendasi pada Rekomendasi #${j + 1} (Temuan #${i + 1}).`);
-                        }
-                    });
+                    if (!t.recommendations || t.recommendations.length === 0) {
+                        this.stepErrors.push(`Tambahkan minimal 1 Rekomendasi pada Temuan #${i + 1}.`);
+                    } else {
+                        t.recommendations.forEach((r, j) => {
+                            if (!r.kode_rekomendasi_id) {
+                                this.stepErrors.push(`Pilih Kode Rekomendasi pada Rekomendasi #${j + 1} (Temuan #${i + 1}).`);
+                            }
+                            if (!r.uraian_rekom || !r.uraian_rekom.trim()) {
+                                this.stepErrors.push(`Uraian rekomendasi pada Rekomendasi #${j + 1} (Temuan #${i + 1}) belum diisi.`);
+                            }
+                        });
+                    }
                 });
             }
 
@@ -515,8 +615,13 @@ function lhpEditWizard() {
         validateAllSteps() {
             this.stepErrors = [];
 
-            if (!this.assignmentId) this.stepErrors.push('Penugasan Audit wajib dipilih.');
-            if (!this.unitId) this.stepErrors.push('Unit Kerja / Objek Audit wajib dipilih.');
+            const hiddenAss = document.getElementById('hidden-assignment-id');
+            const hiddenUnit = document.getElementById('hidden-unit-id');
+            const assVal = (hiddenAss && hiddenAss.value) || this.assignmentId;
+            const unitVal = (hiddenUnit && hiddenUnit.value) || this.unitId;
+
+            if (!assVal) this.stepErrors.push('Penugasan Audit wajib dipilih.');
+            if (!unitVal) this.stepErrors.push('Unit Kerja / Objek Audit wajib dipilih.');
             if (!this.nomorLhp || !this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
             if (!this.tanggalLhp) this.stepErrors.push('Tanggal LHP wajib diisi.');
 
@@ -550,6 +655,73 @@ function lhpEditWizard() {
 </script>
 
 <div class="w-full space-y-6" x-data="lhpEditWizard()" x-cloak>
+
+    {{-- ⚠️ Pop-Up Alert Error Modal Ultra-Smooth (Muncul jika ada kesalahan/data belum lengkap) --}}
+    <div x-show="showErrorModal"
+         x-cloak
+         class="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        
+        <!-- Backdrop overlay -->
+        <div x-show="showErrorModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="showErrorModal = false"
+             class="fixed inset-0 bg-slate-900/60 backdrop-blur-md"></div>
+
+        <!-- Modal Card -->
+        <div x-show="showErrorModal"
+             x-transition:enter="transition cubic-bezier(0.16, 1, 0.3, 1) duration-400 transform"
+             x-transition:enter-start="opacity-0 scale-90 translate-y-4 blur-sm"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0 blur-none"
+             x-transition:leave="transition cubic-bezier(0.7, 0, 0.84, 0) duration-200 transform"
+             x-transition:leave-start="opacity-100 scale-100 translate-y-0 blur-none"
+             x-transition:leave-end="opacity-0 scale-95 translate-y-2 blur-sm"
+             class="relative w-full max-w-[520px] rounded-[32px] bg-white p-6 sm:p-8 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] dark:bg-gray-900 border border-slate-100 dark:border-gray-800 text-center overflow-hidden">
+            
+            <!-- Glowing background aura -->
+            <div class="absolute -top-24 -left-24 h-48 w-48 rounded-full bg-rose-500/10 blur-3xl pointer-events-none"></div>
+
+            <!-- Icon Error Badge -->
+            <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-rose-50 text-rose-500 dark:bg-rose-900/30 dark:text-rose-400 ring-8 ring-rose-50/50 dark:ring-rose-900/20">
+                <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Gagal Menyimpan Perubahan
+            </h3>
+
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+                Mohon perbaiki atau lengkapi data berikut sebelum menyimpan LHP:
+            </p>
+
+            <!-- Error List Box -->
+            <div class="mb-6 max-h-52 overflow-y-auto rounded-2xl bg-rose-50/80 p-4 border border-rose-100 text-left dark:bg-rose-950/30 dark:border-rose-900/50">
+                <ul class="space-y-2 text-xs font-semibold text-rose-700 dark:text-rose-300">
+                    <template x-for="(err, idx) in stepErrors" :key="idx">
+                        <li class="flex items-start gap-2">
+                            <span class="text-rose-500 shrink-0 font-bold">•</span>
+                            <span x-text="err" class="leading-tight"></span>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+
+            <!-- Action Button -->
+            <div class="flex items-center justify-center">
+                <button type="button"
+                        @click="showErrorModal = false"
+                        class="w-full rounded-2xl bg-gradient-to-r from-rose-600 to-red-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-rose-600/25 transition-all hover:from-rose-500 hover:to-red-500 active:scale-95 cursor-pointer">
+                    Mengerti &amp; Perbaiki Data
+                </button>
+            </div>
+        </div>
+    </div>
 
     {{-- ❓ Pop-Up Confirmation Modal (Tanyakan Sebelum Simpan Edit LHP) --}}
     <div x-show="showConfirmModal"

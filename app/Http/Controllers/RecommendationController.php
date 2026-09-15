@@ -348,6 +348,17 @@ public function update(Request $request, Recommendation $recommendation)
 
         DB::beginTransaction();
         try {
+            foreach ($recommendation->tindakLanjuts as $tl) {
+                foreach ($tl->attachments as $file) {
+                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($file->file_path)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($file->file_path);
+                    }
+                    $file->delete();
+                }
+                $tl->cicilans()->delete();
+                $tl->delete();
+            }
+
             $recommendation->delete();
             DB::commit();
 

@@ -351,7 +351,7 @@
                 {{-- Action Buttons --}}
                 <div class="w-full mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-6 dark:border-gray-800">
                     <div>
-                        @if(auth()->user()?->hasRole('super_admin'))
+                        @if(auth()->user()?->hasRole(['super_admin', 'kepala_inspektorat']))
                             <button type="button" onclick="confirmDelete()"
                                     class="flex h-11 items-center justify-center rounded-lg border border-red-200 bg-white px-5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-800 dark:bg-transparent cursor-pointer">
                                 Hapus

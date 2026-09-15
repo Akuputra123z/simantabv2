@@ -442,6 +442,10 @@ public function getProgramDetails(Request $request, $programId)
 
    public function destroy(AuditAssignment $auditAssignment)
 {
+    if ($auditAssignment->lhps()->exists()) {
+        return redirect()->back()->with('error', 'Penugasan ini tidak dapat dihapus karena sudah memiliki data LHP terkait.');
+    }
+
     $detailId = $auditAssignment->audit_program_detail_id;
 
     try {

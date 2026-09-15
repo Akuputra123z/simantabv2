@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\KodeTemuan;
 use App\Models\KodeRekomendasi;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class KodeTemuanController extends Controller
 {
@@ -31,8 +32,12 @@ class KodeTemuanController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->filled('kode')) {
+            KodeTemuan::onlyTrashed()->where('kode', trim($request->kode))->forceDelete();
+        }
+
         $validated = $request->validate([
-            'kode'               => 'required|unique:kode_temuans,kode',
+            'kode'               => ['required', 'string', 'max:50', Rule::unique('kode_temuans', 'kode')->whereNull('deleted_at')],
             'kode_numerik'       => 'required',
             'kel'                => 'required|integer',
             'sub_kel'            => 'required|integer',
@@ -41,7 +46,9 @@ class KodeTemuanController extends Controller
             'sub_kelompok'       => 'required|string|max:150',
             'deskripsi'          => 'required',
             'alternatif_rekom'   => 'nullable|array',
-            'alternatif_rekom.*' => 'string', // Ubah ke string jika kode berupa "01", "02"
+            'alternatif_rekom.*' => 'string',
+        ], [
+            'kode.unique' => 'Kode temuan ini sudah digunakan.',
         ]);
 
         KodeTemuan::create($validated);
@@ -55,8 +62,12 @@ class KodeTemuanController extends Controller
 
     public function update(Request $request, KodeTemuan $kodeTemuan)
     {
+        if ($request->filled('kode')) {
+            KodeTemuan::onlyTrashed()->where('kode', trim($request->kode))->where('id', '!=', $kodeTemuan->id)->forceDelete();
+        }
+
         $validated = $request->validate([
-            'kode'               => 'required|unique:kode_temuans,kode,' . $kodeTemuan->id,
+            'kode'               => ['required', 'string', 'max:50', Rule::unique('kode_temuans', 'kode')->ignore($kodeTemuan->id)->whereNull('deleted_at')],
             'kode_numerik'       => 'required',
             'kel'                => 'required|integer',
             'sub_kel'            => 'required|integer',
@@ -66,6 +77,8 @@ class KodeTemuanController extends Controller
             'deskripsi'          => 'required',
             'alternatif_rekom'   => 'nullable|array',
             'alternatif_rekom.*' => 'string',
+        ], [
+            'kode.unique' => 'Kode temuan ini sudah digunakan oleh kode lain.',
         ]);
 
         $kodeTemuan->update($validated);
@@ -74,10 +87,8 @@ class KodeTemuanController extends Controller
 
     public function show(KodeTemuan $kodeTemuan)
     {
-        // Ambil detail rekomendasi berdasarkan kode yang tersimpan di array alternatif_rekom
-        // Pastikan model KodeRekomendasi sudah benar
         $rekomendasiTerkait = KodeRekomendasi::whereIn('kode', $kodeTemuan->alternatif_rekom ?? [])
-            ->active() // Menggunakan scope active() jika tersedia di model
+            ->active()
             ->get();
 
         return view('pages.kode-temuan.show', [
@@ -88,7 +99,11 @@ class KodeTemuanController extends Controller
 
     public function destroy(KodeTemuan $kodeTemuan)
     {
-        $kodeTemuan->delete();
-        return back()->with('success', 'Data berhasil dihapus');
+        if (\App\Models\Temuan::where('kode_temuan_id', $kodeTemuan->id)->exists()) {
+            return back()->with('error', 'Kode temuan ini tidak dapat dihapus karena sudah digunakan dalam data temuan LHP.');
+        }
+
+        $kodeTemuan->forceDelete();
+        return back()->with('success', 'Kode temuan berhasil dihapus permanen.');
     }
 }

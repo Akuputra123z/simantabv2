@@ -541,13 +541,13 @@ $totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
                                 {{-- SEBAB DAN AKIBAT --}}
                                 @if($temuan->sebab || $temuan->akibat)
 
-                                    <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <div class="mt-5 space-y-4">
 
                                         @if($temuan->sebab)
                                             <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/60">
 
                                                 <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">
-                                                    Sebab
+                                                    Penyebab (Sebab)
                                                 </p>
 
                                                 <div class="prose prose-sm max-w-none text-xs leading-6 text-gray-600 dark:text-gray-300 dark:prose-invert">
@@ -562,7 +562,7 @@ $totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
                                             <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/60">
 
                                                 <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">
-                                                    Akibat
+                                                    Dampak (Akibat)
                                                 </p>
 
                                                 <div class="prose prose-sm max-w-none text-xs leading-6 text-gray-600 dark:text-gray-300 dark:prose-invert">

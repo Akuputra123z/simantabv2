@@ -51,27 +51,58 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-        <div class="flex-1 min-w-[140px] sm:flex-initial sm:w-44">
-            <select name="tahun" data-auto-submit>
-                <option value="">Semua Tahun</option>
-                @foreach(range(date('Y'), date('Y') - 3) as $y)
-                    <option value="{{ $y }}" @selected(request('tahun') == $y)>{{ $y }}</option>
+        {{-- Tahun Dropdown --}}
+        <div class="relative z-20 flex-1 min-w-[140px] sm:flex-initial sm:w-40">
+            <select name="tahun" onchange="this.form.submit()" data-no-ts
+                    class="h-10 w-full appearance-none cursor-pointer rounded-lg border border-gray-300 bg-white py-2 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                <option value="" @selected(!request()->filled('tahun'))>Semua Tahun</option>
+                @foreach($tahuns ?? range(date('Y'), date('Y') - 4) as $y)
+                    <option value="{{ $y }}" @selected(request()->filled('tahun') && request('tahun') == $y)>{{ $y }}</option>
                 @endforeach
             </select>
+            <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
+                <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </span>
         </div>
-        <div class="flex-1 min-w-[140px] sm:flex-initial sm:w-44">
-            <select name="kategori" data-auto-submit>
-                <option value="">Semua Kategori</option>
+
+        {{-- Kategori Dropdown --}}
+        <div class="relative z-20 flex-1 min-w-[140px] sm:flex-initial sm:w-44">
+            <select name="kategori" onchange="this.form.submit()" data-no-ts
+                    class="h-10 w-full appearance-none cursor-pointer rounded-lg border border-gray-300 bg-white py-2 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                <option value="" @selected(!request()->filled('kategori'))>Semua Kategori</option>
                 @foreach($kategoris as $k)
-                    <option value="{{ $k }}" @selected(request('kategori') == $k)>{{ $k }}</option>
+                    <option value="{{ $k }}" @selected(request()->filled('kategori') && request('kategori') == $k)>{{ $k }}</option>
                 @endforeach
             </select>
+            <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
+                <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </span>
         </div>
+
+        {{-- Entries Per Page --}}
+        <div class="relative z-20 flex-1 min-w-[120px] sm:flex-initial sm:w-32">
+            <select name="per_page" onchange="this.form.submit()" data-no-ts
+                    class="h-10 w-full appearance-none cursor-pointer rounded-lg border border-gray-300 bg-white py-2 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                @foreach([10, 20, 30, 50, 100] as $size)
+                    <option value="{{ $size }}" @selected(request('per_page', 10) == $size)>{{ $size }} Data</option>
+                @endforeach
+            </select>
+            <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
+                <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </span>
+        </div>
+
         <button type="submit"
                 class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg bg-gray-950 text-sm font-medium text-white hover:bg-gray-850 focus:outline-none focus:ring-2 focus:ring-gray-950/20 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-500/20 transition-colors whitespace-nowrap">
             Filter
         </button>
-        @if (request()->hasAny(['search', 'tahun', 'kategori', 'sort', 'direction']))
+        @if (request()->filled('search') || request()->filled('tahun') || request()->filled('kategori') || request()->filled('sort') || (request()->filled('per_page') && request('per_page') != 10))
         <a href="{{ route('lhps.index') }}"
            class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors whitespace-nowrap">
             Reset
@@ -225,6 +256,19 @@
                         @if($lhp->auditAssignment?->auditProgramDetail?->nama_detail_program)
                         <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
                             {{ $lhp->auditAssignment->auditProgramDetail->nama_detail_program }}
+                        </div>
+                        @endif
+                        @php
+                            $irban = $lhp->irban ?? $lhp->auditAssignment?->auditProgramDetail?->tim;
+                        @endphp
+                        @if($irban)
+                        <div class="mt-2 flex items-center">
+                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700 border border-gray-200/80 dark:bg-gray-800/80 dark:text-gray-300 dark:border-gray-700">
+                                <svg class="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                                <span>{{ Str::startsWith(strtolower($irban), ['irban', 'tim', 'semua']) ? $irban : 'Irban ' . $irban }}</span>
+                            </span>
                         </div>
                         @endif
                     </td>

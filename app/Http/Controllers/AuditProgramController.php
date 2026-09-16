@@ -34,7 +34,13 @@ class AuditProgramController extends Controller
 
         // Logika Filter
         if ($request->filled('search')) {
-            $query->where('nama_program', 'like', "%{$request->search}%");
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_program', 'like', "%{$search}%")
+                  ->orWhereHas('details', function ($dq) use ($search) {
+                      $dq->where('nama_detail_program', 'like', "%{$search}%");
+                  });
+            });
         }
 
         if ($request->filled('tahun')) {
@@ -46,12 +52,33 @@ class AuditProgramController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $status = strtolower($request->status);
+            $isDetailSelesai = function ($q) {
+                $q->where(function ($sq) {
+                    $sq->whereHas('assignments.lhps', function ($lq) {
+                        $lq->whereIn('status', ['final', 'ditandatangani'])
+                           ->whereHas('statistik', fn ($s) => $s->where('persen_selesai_gabungan', 100));
+                    })->orWhereHas('assignments', fn ($aq) => $aq->where('status', 'selesai'));
+                });
+            };
+
+            if ($status === 'draft') {
+                $query->whereDoesntHave('details');
+            } elseif ($status === 'selesai') {
+                $query->whereHas('details')
+                      ->whereDoesntHave('details', function ($dq) use ($isDetailSelesai) {
+                          $dq->whereNot($isDetailSelesai);
+                      });
+            } elseif ($status === 'berjalan') {
+                $query->whereHas('details', function ($dq) use ($isDetailSelesai) {
+                    $dq->whereNot($isDetailSelesai);
+                });
+            }
         }
 
         // Per page & Sorting dinamis
         $perPage = (int) $request->input('per_page', 10);
-        if (!in_array($perPage, [5, 8, 10, 25, 50])) {
+        if (!in_array($perPage, [5, 8, 10, 20, 25, 30, 50, 100])) {
             $perPage = 10;
         }
 
@@ -66,7 +93,16 @@ class AuditProgramController extends Controller
 
         $kategoris = AuditProgram::KATEGORI;
 
-        return view('pages.audit-program.index', compact('data', 'kategoris', 'sort', 'direction'));
+        $tahuns = AuditProgram::select('tahun')
+            ->whereNotNull('tahun')
+            ->distinct()
+            ->pluck('tahun')
+            ->merge(range((int) date('Y') + 1, (int) date('Y') - 3))
+            ->unique()
+            ->sortDesc()
+            ->values();
+
+        return view('pages.audit-program.index', compact('data', 'kategoris', 'tahuns', 'sort', 'direction'));
     }
 
     /**

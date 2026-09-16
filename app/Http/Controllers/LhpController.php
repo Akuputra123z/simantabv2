@@ -118,11 +118,27 @@ use Illuminate\Validation\Rule;
         $query->latest('lhps.created_at')->latest('lhps.id');
     }
 
-    $lhps = $query->paginate(10)->withQueryString();
+    $perPage = (int) $request->input('per_page', 10);
+    if (!in_array($perPage, [10, 20, 30, 50, 100])) {
+        $perPage = 10;
+    }
+
+    $lhps = $query->paginate($perPage)->withQueryString();
 
     $kategoris = AuditProgram::KATEGORI;
 
-    return view('pages.lhps.index', compact('lhps', 'kategoris', 'sort', 'direction'));
+    $tahuns = Lhp::selectRaw('YEAR(tanggal_lhp) as tahun')
+        ->whereNotNull('tanggal_lhp')
+        ->distinct()
+        ->pluck('tahun')
+        ->filter()
+        ->map(fn($y) => (int) $y)
+        ->merge(range((int) date('Y') + 1, (int) date('Y') - 4))
+        ->unique()
+        ->sortDesc()
+        ->values();
+
+    return view('pages.lhps.index', compact('lhps', 'kategoris', 'tahuns', 'sort', 'direction', 'perPage'));
 }
 
         public function create()

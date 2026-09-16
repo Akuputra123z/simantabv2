@@ -60,30 +60,35 @@
 
             {{-- Quick Presets --}}
             <div class="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-gray-800/80">
-                <button type="button" @click="submitPreset('today')"
+                <button type="button" @click="submitPreset('all')"
                         class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
-                        :class="selectedPreset === 'today' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
-                    Hari Ini
+                        :class="selectedPreset === 'all' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
+                    Semua
                 </button>
-                <button type="button" @click="submitPreset('7days')"
+                <button type="button" @click="submitPreset('this_year')"
                         class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
-                        :class="selectedPreset === '7days' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
-                    7 Hari
-                </button>
-                <button type="button" @click="submitPreset('30days')"
-                        class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
-                        :class="selectedPreset === '30days' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
-                    30 Hari
+                        :class="selectedPreset === 'this_year' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
+                    Tahun Ini
                 </button>
                 <button type="button" @click="submitPreset('this_month')"
                         class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
                         :class="selectedPreset === 'this_month' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
                     Bulan Ini
                 </button>
-                <button type="button" @click="submitPreset('this_year')"
+                <button type="button" @click="submitPreset('30days')"
                         class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
-                        :class="selectedPreset === 'this_year' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
-                    Tahun Ini
+                        :class="selectedPreset === '30days' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
+                    30 Hari
+                </button>
+                <button type="button" @click="submitPreset('7days')"
+                        class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
+                        :class="selectedPreset === '7days' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
+                    7 Hari
+                </button>
+                <button type="button" @click="submitPreset('today')"
+                        class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
+                        :class="selectedPreset === 'today' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
+                    Hari Ini
                 </button>
             </div>
 

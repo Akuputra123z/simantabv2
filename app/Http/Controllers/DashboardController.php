@@ -50,6 +50,11 @@ class DashboardController extends Controller
                 $startDate = $now->copy()->startOfMonth();
                 $endDate   = $now->copy()->endOfMonth();
                 break;
+            case 'all':
+                $preset    = 'all';
+                $startDate = Carbon::create(2000, 1, 1)->startOfDay();
+                $endDate   = Carbon::create(2099, 12, 31)->endOfDay();
+                break;
             case 'custom':
                 $startDate = $startDateInput ? Carbon::parse($startDateInput)->startOfDay() : $now->copy()->startOfYear();
                 $endDate   = $endDateInput ? Carbon::parse($endDateInput)->endOfDay() : $now->copy()->endOfYear();
@@ -289,26 +294,35 @@ class DashboardController extends Controller
             }
 
             // ── Monthly Financial Bar Chart Data (Kerugian vs Penyelamatan Aset) ──────────
-            $financialBulan = DB::table('lhps')
-                ->whereIn('lhps.id', $lhpIds)
-                ->leftJoin('temuans', 'temuans.lhp_id', '=', 'lhps.id')
-                ->leftJoin('lhp_statistik', 'lhp_statistik.lhp_id', '=', 'lhps.id')
+            $kerugianBulan = DB::table('temuans')
+                ->join('lhps', 'temuans.lhp_id', '=', 'lhps.id')
+                ->whereIn('lhps.id', count($lhpIds) > 0 ? $lhpIds : [0])
+                ->whereNull('temuans.deleted_at')
+                ->whereNull('lhps.deleted_at')
                 ->selectRaw("
                     {$monthExpr} as bulan,
-                    SUM(CASE WHEN temuans.nilai_temuan > 0 THEN temuans.nilai_temuan ELSE (COALESCE(temuans.nilai_kerugian_negara, 0) + COALESCE(temuans.nilai_kerugian_daerah, 0) + COALESCE(temuans.nilai_kerugian_desa, 0) + COALESCE(temuans.nilai_kerugian_bos_blud, 0)) END) as total_kerugian,
-                    SUM(COALESCE(lhp_statistik.total_nilai_tl_selesai, 0)) as total_penyelamatan
+                    SUM(CASE WHEN temuans.nilai_temuan > 0 THEN temuans.nilai_temuan ELSE (COALESCE(temuans.nilai_kerugian_negara, 0) + COALESCE(temuans.nilai_kerugian_daerah, 0) + COALESCE(temuans.nilai_kerugian_desa, 0) + COALESCE(temuans.nilai_kerugian_bos_blud, 0)) END) as total
                 ")
                 ->groupBy('bulan')
-                ->get()
-                ->keyBy('bulan');
+                ->pluck('total', 'bulan');
+
+            $penyelamatanBulan = DB::table('lhp_statistik')
+                ->join('lhps', 'lhp_statistik.lhp_id', '=', 'lhps.id')
+                ->whereIn('lhps.id', count($lhpIds) > 0 ? $lhpIds : [0])
+                ->whereNull('lhps.deleted_at')
+                ->selectRaw("
+                    {$monthExpr} as bulan,
+                    SUM(COALESCE(lhp_statistik.total_nilai_tl_selesai, 0)) as total
+                ")
+                ->groupBy('bulan')
+                ->pluck('total', 'bulan');
 
             $chartKerugian = [];
             $chartPenyelamatan = [];
 
             for ($m = 1; $m <= 12; $m++) {
-                $item = $financialBulan->get($m);
-                $chartKerugian[] = $item ? (float)$item->total_kerugian : 0;
-                $chartPenyelamatan[] = $item ? (float)$item->total_penyelamatan : 0;
+                $chartKerugian[] = (float) ($kerugianBulan->get($m) ?? 0);
+                $chartPenyelamatan[] = (float) ($penyelamatanBulan->get($m) ?? 0);
             }
 
             // ── Dynamic Matriks Rekapitulasi Kode Temuan & Nilai (Database Powered) ───────
@@ -317,6 +331,8 @@ class DashboardController extends Controller
                 ->leftJoin('unit_diperiksas', 'lhps.unit_diperiksa_id', '=', 'unit_diperiksas.id')
                 ->leftJoin('kode_temuans', 'temuans.kode_temuan_id', '=', 'kode_temuans.id')
                 ->whereIn('lhps.id', count($lhpIds) > 0 ? $lhpIds : [0])
+                ->whereNull('temuans.deleted_at')
+                ->whereNull('lhps.deleted_at')
                 ->selectRaw('
                     COALESCE(kode_temuans.kel, 1) as kel,
                     COALESCE(kode_temuans.kelompok, "Temuan Ketidakpatuhan Terhadap Peraturan") as kelompok,
@@ -325,7 +341,7 @@ class DashboardController extends Controller
                     COALESCE(kode_temuans.kode, "1.01.00") as kode,
                     COALESCE(unit_diperiksas.nama_unit, "Unit Tidak Diketahui") as nama_unit,
                     COUNT(temuans.id) as jumlah,
-                    SUM(COALESCE(temuans.nilai_temuan, 0)) as nilai
+                    SUM(CASE WHEN temuans.nilai_temuan > 0 THEN temuans.nilai_temuan ELSE (COALESCE(temuans.nilai_kerugian_negara, 0) + COALESCE(temuans.nilai_kerugian_daerah, 0) + COALESCE(temuans.nilai_kerugian_desa, 0) + COALESCE(temuans.nilai_kerugian_bos_blud, 0)) END) as nilai
                 ')
                 ->groupBy('kel', 'kelompok', 'sub_kel', 'sub_kelompok', 'kode', 'nama_unit')
                 ->get();

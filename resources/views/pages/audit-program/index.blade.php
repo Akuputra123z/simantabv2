@@ -9,10 +9,10 @@
     <div class="px-5 py-4 sm:px-6 sm:py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 dark:border-gray-800">
         <div>
             <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">
-                Program Kerja Pengawasan Tahunan (PKPT)
+                Program Kerja Pengawasan
             </h3>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Monitoring progres audit, sub-program, dan penerbitan LHP
+                Monitoring progres audit, sub-program, dan penerbitan LHP/LHA/LHR 
             </p>
         </div>
         
@@ -21,7 +21,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            Tambah PKPT Baru
+            Tambah Program
         </a>
     </div>
 
@@ -40,13 +40,11 @@
                         <div class="flex items-center gap-1.5">
                             <span class="text-xs text-gray-500 dark:text-gray-400">Show</span>
                             <div class="relative z-20">
-                                <select name="per_page" onchange="this.form.submit()" data-no-ts
+                                <select name="per_page" onchange="document.getElementById('filterForm').submit()" data-no-ts
                                         class="appearance-none cursor-pointer dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 rounded-lg border border-gray-300 bg-transparent py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                                    <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5</option>
-                                    <option value="8" {{ request('per_page') == 8 ? 'selected' : '' }}>8</option>
-                                    <option value="10" {{ request('per_page') == 10 || !request('per_page') ? 'selected' : '' }}>10</option>
-                                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
-                                    <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                                    @foreach([5, 8, 10, 20, 25, 30, 50, 100] as $sz)
+                                        <option value="{{ $sz }}" @selected(request('per_page', 10) == $sz)>{{ $sz }}</option>
+                                    @endforeach
                                 </select>
                                 <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
                                     <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -59,7 +57,7 @@
 
                         {{-- Kategori Dropdown --}}
                         <div class="relative z-20">
-                            <select name="kategori" onchange="this.form.submit()" data-no-ts
+                            <select name="kategori" onchange="document.getElementById('filterForm').submit()" data-no-ts
                                     class="appearance-none cursor-pointer dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 rounded-lg border border-gray-300 bg-transparent py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                                 <option value="">Semua Kategori</option>
                                 @foreach($kategoris as $kat)
@@ -75,7 +73,7 @@
 
                         {{-- Status Dropdown --}}
                         <div class="relative z-20">
-                            <select name="status" onchange="this.form.submit()" data-no-ts
+                            <select name="status" onchange="document.getElementById('filterForm').submit()" data-no-ts
                                     class="appearance-none cursor-pointer dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 rounded-lg border border-gray-300 bg-transparent py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                                 <option value="">Semua Status</option>
                                 <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>Draft</option>
@@ -89,46 +87,20 @@
                             </span>
                         </div>
 
-                        {{-- Tahun Picker Filter --}}
-                        <div class="relative z-20"
-                             x-data="yearPickerFilter({{ (int) (request('tahun') ?: 0) }}, {{ (int) date('Y') }})"
-                             x-init="init()">
-                            <input type="hidden" name="tahun" :value="selected || ''">
-                            <button type="button" @click="open = !open"
-                                    class="shadow-theme-xs flex h-9 items-center justify-between gap-2 rounded-lg border border-gray-300 bg-transparent px-3 text-xs font-semibold text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                                <span class="flex items-center gap-1.5">
-                                    <span>📅</span>
-                                    <span x-text="label"></span>
-                                </span>
-                                <svg class="h-3 w-3 text-gray-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                            </button>
-
-                            <div x-show="open" x-cloak @click.outside="open = false"
-                                 x-transition:enter="transition ease-out duration-150"
-                                 x-transition:enter-start="opacity-0 -translate-y-1 scale-95"
-                                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                                 x-transition:leave="transition ease-in duration-100"
-                                 x-transition:leave-end="opacity-0 scale-95"
-                                 class="absolute left-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
-                                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-3 py-2">
-                                    <button type="button" @click.stop="pageStart -= 12" class="text-gray-400 hover:text-gray-700 dark:hover:text-white">&larr;</button>
-                                    <span class="text-xs font-bold text-gray-700 dark:text-gray-200" x-text="pageStart + ' – ' + (pageStart + 11)"></span>
-                                    <button type="button" @click.stop="pageStart += 12" class="text-gray-400 hover:text-gray-700 dark:hover:text-white">&rarr;</button>
-                                </div>
-                                <div class="grid grid-cols-4 gap-1 p-2">
-                                    <template x-for="y in years" :key="y">
-                                        <button type="button" @click.stop="pick(y)"
-                                                class="rounded-lg py-1.5 text-[11px] font-semibold transition-all"
-                                                :class="selected === y ? 'bg-blue-600 text-white font-bold' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'">
-                                            <span x-text="y"></span>
-                                        </button>
-                                    </template>
-                                </div>
-                                <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 px-3 py-1.5">
-                                    <button type="button" @click.stop="pick(null)" class="text-[10px] font-bold text-gray-400 hover:text-red-500">✕ Semua</button>
-                                    <button type="button" @click.stop="pick(now)" class="text-[10px] font-bold text-blue-600 dark:text-blue-400">Tahun Ini</button>
-                                </div>
-                            </div>
+                        {{-- Tahun Dropdown --}}
+                        <div class="relative z-20">
+                            <select name="tahun" onchange="document.getElementById('filterForm').submit()" data-no-ts
+                                    class="appearance-none cursor-pointer dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 rounded-lg border border-gray-300 bg-transparent py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                                <option value="" @selected(!request()->filled('tahun'))>Semua Tahun</option>
+                                @foreach($tahuns as $thn)
+                                    <option value="{{ $thn }}" @selected(request()->filled('tahun') && request('tahun') == $thn)>{{ $thn }}</option>
+                                @endforeach
+                            </select>
+                            <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
+                                <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                </svg>
+                            </span>
                         </div>
 
                     </div>
@@ -146,7 +118,7 @@
                                    class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 w-full sm:w-[220px] rounded-lg border border-gray-300 bg-transparent py-2 pr-3 pl-9 text-xs text-gray-800 placeholder:text-gray-400 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30">
                         </div>
 
-                        @if (request()->hasAny(['search','tahun','kategori','status','per_page']))
+                        @if (request()->filled('search') || request()->filled('tahun') || request()->filled('kategori') || request()->filled('status') || (request()->filled('per_page') && request('per_page') != 10))
                         <a href="{{ route('audit-program.index') }}"
                            class="shadow-theme-xs inline-flex h-9 items-center justify-center rounded-lg border border-gray-300 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
                             Reset
@@ -395,40 +367,6 @@ function dismissAlert() {
     }
 }
 setTimeout(() => { dismissAlert(); }, 4000);
-
-// Year Picker Filter
-function yearPickerFilter(initial, now) {
-    return {
-        selected: initial || null,
-        now: now,
-        open: false,
-        pageStart: 0,
-
-        init() {
-            const base = this.selected || this.now;
-            this.pageStart = base - 3;
-        },
-
-        get years() {
-            return Array.from({ length: 12 }, (_, i) => this.pageStart + i);
-        },
-
-        get label() {
-            if (!this.selected) return 'Semua Tahun';
-            const suffix = this.selected === this.now     ? ' (Tahun Ini)'
-                         : this.selected === this.now + 1 ? ' (Tahun Depan)'
-                         : this.selected === this.now - 1 ? ' (Tahun Lalu)'
-                         : '';
-            return this.selected + suffix;
-        },
-
-        pick(y) {
-            this.selected = y;
-            this.open = false;
-            this.$el.closest('form').submit();
-        }
-    };
-}
 </script>
 
 <style>[x-cloak] { display: none !important; }</style>

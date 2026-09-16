@@ -76,7 +76,19 @@ class AuditAssignmentController extends Controller
             ->withQueryString();
 
         $kategoriOptions = AuditProgram::KATEGORI;
-        return view('pages.audit-assignment.index', compact('assignments', 'kategoriOptions'));
+
+        $tahuns = AuditProgram::select('tahun')
+            ->whereNotNull('tahun')
+            ->distinct()
+            ->pluck('tahun')
+            ->filter()
+            ->map(fn($y) => (int) $y)
+            ->merge(range((int) date('Y') + 1, (int) date('Y') - 4))
+            ->unique()
+            ->sortDesc()
+            ->values();
+
+        return view('pages.audit-assignment.index', compact('assignments', 'kategoriOptions', 'tahuns'));
     }
 
     // ── create ────────────────────────────────────────────────────────

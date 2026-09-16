@@ -206,6 +206,17 @@ class TindakLanjutController extends Controller
         $kategoris = AuditProgram::KATEGORI;
         $units = UnitDiperiksa::orderBy('nama_unit')->get();
 
+        $tahuns = Lhp::selectRaw('YEAR(tanggal_lhp) as tahun')
+            ->whereNotNull('tanggal_lhp')
+            ->distinct()
+            ->pluck('tahun')
+            ->filter()
+            ->map(fn($y) => (int) $y)
+            ->merge(range((int) date('Y') + 1, (int) date('Y') - 4))
+            ->unique()
+            ->sortDesc()
+            ->values();
+
         return view('pages.tindak-lanjuts.index', compact(
             'lhps',
             'stats',
@@ -213,6 +224,7 @@ class TindakLanjutController extends Controller
             'units',
             'search',
             'tahun',
+            'tahuns',
             'kategori',
             'status',
             'statusOpd',

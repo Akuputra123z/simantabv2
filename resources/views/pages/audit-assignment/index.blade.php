@@ -93,9 +93,9 @@
                         <div class="relative z-20">
                             <select name="tahun" onchange="this.form.submit()" data-no-ts
                                     class="appearance-none cursor-pointer dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 rounded-lg border border-gray-300 bg-transparent py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                                <option value="">Semua Tahun</option>
-                                @foreach(range(date('Y'), date('Y') - 5) as $y)
-                                    <option value="{{ $y }}" @selected(request('tahun') == $y)>{{ $y }}</option>
+                                <option value="" @selected(!request()->filled('tahun'))>Semua Tahun</option>
+                                @foreach($tahuns ?? range(date('Y'), date('Y') - 5) as $y)
+                                    <option value="{{ $y }}" @selected(request()->filled('tahun') && request('tahun') == $y)>{{ $y }}</option>
                                 @endforeach
                             </select>
                             <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
@@ -120,7 +120,7 @@
                                    class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 w-full sm:w-[220px] rounded-lg border border-gray-300 bg-transparent py-2 pr-3 pl-9 text-xs text-gray-800 placeholder:text-gray-400 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30">
                         </div>
 
-                        @if (request()->hasAny(['search','tahun','kategori','status','per_page']))
+                        @if (request()->filled('search') || request()->filled('tahun') || request()->filled('kategori') || request()->filled('status') || (request()->filled('per_page') && request('per_page') != 10))
                         <a href="{{ route('audit-assignment.index') }}"
                            class="shadow-theme-xs inline-flex h-9 items-center justify-center rounded-lg border border-gray-300 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
                             Reset

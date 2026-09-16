@@ -7,11 +7,21 @@
 @section('content')
 <style>
     [x-cloak] { display: none !important; }
-    .ts-assignment-tall .ts-control {
-        height: auto;
-        min-height: 56px;
-        padding: 10px 14px;
-        align-items: flex-start;
+    .ts-assignment-tall .ts-control,
+    .ts-wrapper .ts-control {
+        height: auto !important;
+        min-height: 42px;
+        padding: 6px 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .ts-wrapper .ts-control .item {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: unset !important;
+        max-width: 100% !important;
+        word-break: break-word !important;
+        line-height: 1.4 !important;
     }
 </style>
 
@@ -1032,7 +1042,7 @@ function lhpCreateWizard() {
                         </div>
 
                         {{-- 2. Penugasan Audit --}}
-                        <div class="md:col-span-1">
+                        <div class="md:col-span-2">
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                                 Penugasan Audit / Surat Tugas <span class="text-red-500">*</span>
                             </label>
@@ -1042,7 +1052,7 @@ function lhpCreateWizard() {
                         </div>
 
                         {{-- 3. Unit Kerja / Objek Audit --}}
-                        <div class="md:col-span-1">
+                        <div class="md:col-span-2">
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                                 Unit Kerja / Objek Audit <span class="text-red-500">*</span>
                             </label>
@@ -1290,17 +1300,17 @@ function lhpCreateWizard() {
                                 </div>
 
                                 {{-- Sebab --}}
-                                <div>
+                                <div class="md:col-span-2">
                                     <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Penyebab (Sebab)</label>
                                     <textarea :name="`temuans[${tIdx}][sebab]`" x-model="t.sebab" rows="2" placeholder="Uraikan penyebab temuan..."
-                                              class="w-full resize-none rounded-xl border border-gray-300 bg-white p-2.5 text-xs text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none"></textarea>
+                                              class="w-full resize-none rounded-xl border border-gray-300 bg-white p-2.5 text-xs text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:border-blue-500"></textarea>
                                 </div>
 
                                 {{-- Akibat --}}
-                                <div>
+                                <div class="md:col-span-2">
                                     <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Dampak (Akibat)</label>
                                     <textarea :name="`temuans[${tIdx}][akibat]`" x-model="t.akibat" rows="2" placeholder="Uraikan dampak temuan..."
-                                              class="w-full resize-none rounded-xl border border-gray-300 bg-white p-2.5 text-xs text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none"></textarea>
+                                              class="w-full resize-none rounded-xl border border-gray-300 bg-white p-2.5 text-xs text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:border-blue-500"></textarea>
                                 </div>
 
                                 {{-- Kerugian Finance Breakdown --}}

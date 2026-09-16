@@ -71,15 +71,23 @@ class Lhp extends Model
         )->with('kodeRekomendasi');
     }
     public function unitDiperiksa(): BelongsTo
-{
-    return $this->belongsTo(UnitDiperiksa::class, 'unit_diperiksa_id');
-}
+    {
+        return $this->belongsTo(UnitDiperiksa::class, 'unit_diperiksa_id');
+    }
+
+    public function getIrbanAttribute(): ?string
+    {
+        return $this->auditAssignment?->auditProgramDetail?->tim;
+    }
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
     public function scopeStatus(Builder $q, string $s): Builder  { return $q->where('status', $s); }
     public function scopeSemester(Builder $q, int $s): Builder   { return $q->where('semester', $s); }
-    public function scopeIrban(Builder $q, string $i): Builder   { return $q->where('irban', $i); }
+    public function scopeIrban(Builder $q, string $i): Builder
+    {
+        return $q->whereHas('auditAssignment.auditProgramDetail', fn($sq) => $sq->where('tim', $i));
+    }
 
     public function scopeForUser(Builder $query, ?User $user): Builder
     {

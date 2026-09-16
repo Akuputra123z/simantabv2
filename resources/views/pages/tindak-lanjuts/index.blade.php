@@ -168,8 +168,8 @@
             </label>
             <select name="tahun" id="tahun" data-no-ts
                     class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer">
-                <option value="">Semua Tahun</option>
-                @foreach(range(date('Y'), date('Y') - 4) as $y)
+                <option value="" @selected(!$tahun)>Semua Tahun</option>
+                @foreach($tahuns ?? range(date('Y'), date('Y') - 4) as $y)
                     <option value="{{ $y }}" @selected($tahun == $y)>{{ $y }}</option>
                 @endforeach
             </select>

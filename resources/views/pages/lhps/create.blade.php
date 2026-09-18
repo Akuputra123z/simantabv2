@@ -26,9 +26,24 @@
 </style>
 
 @php
+    $programData = ($allPrograms ?? collect())->map(function ($p) {
+        $kat = trim($p->kategori ?? '');
+        return [
+            'id'                => $p->id,
+            'kategori'          => !empty($kat) ? $kat : 'PKPT',
+            'nama'              => $p->nama_program,
+            'tahun'             => $p->tahun,
+            'details_count'     => (int)($p->details_count ?? 0),
+            'assignments_count' => (int)($p->assignments_count ?? 0),
+        ];
+    });
+
+    $kategoriList = $kategoris ?? \App\Models\AuditProgram::KATEGORI;
+
     $assignmentData = $assignments->map(function ($a) {
         return [
             'id'                      => $a->id,
+            'kategori'                => $a->auditProgramDetail?->auditProgram?->kategori ?? 'PKPT',
             'audit_program_detail_id' => $a->audit_program_detail_id,
             'program_id'              => $a->auditProgramDetail?->audit_program_id,
             'program_nama'            => $a->auditProgramDetail?->auditProgram?->nama_program ?? '-',
@@ -69,23 +84,141 @@
 
 <script>
 const ALL_ASSIGNMENTS = @json($assignmentData);
+const ALL_PROGRAMS    = @json($programData);
+const KATEGORI_LIST   = @json($kategoriList);
 const KODE_TEMUANS    = @json($kodeTemuanData);
 const KODE_REKOMS     = @json($kodeRekomData);
 const USED_UNIT_MAP   = @json($usedUnitMap);
+const EXISTING_LHPS   = @json($existingLhpsData ?? []);
 const CSRF_TOKEN      = '{{ $csrfToken }}';
 
 function lhpCreateWizard() {
     return {
         step: 1,
 
-        // Step 1 Form Data
+        // Step 1 Form Data & Kategori Filter
+        selectedKategori: '',
+        kategoriWarningMessage: '',
+        kategoriWarningUrl: '',
+        kategoriWarningBtn: '',
+        lhpInputMode: 'new', // 'new' | 'existing'
+        selectedExistingLhpNo: '',
         programId: '',
         assignmentId: '{{ old("audit_assignment_id", "") }}',
         unitId: '{{ old("unit_diperiksa_id", "") }}',
+        unitIds: {!! json_encode(array_values(array_map('strval', (array)old('unit_diperiksa_ids', old('unit_diperiksa_id') ? [old('unit_diperiksa_id')] : [])))) !!},
+        availableUnits: [],
+        currentKategori: '',
+        isExternalAudit: false,
         nomorLhp: '{{ old("nomor_lhp", "") }}',
         tanggalLhp: '{{ old("tanggal_lhp", date("Y-m-d")) }}',
         catatanUmum: '{{ old("catatan_umum", "") }}',
         isNihil: {{ old("is_nihil", 0) ? 'true' : 'false' }},
+
+        getProgramCountByKategori(kat) {
+            if (!kat) return ALL_PROGRAMS.length;
+            return ALL_PROGRAMS.filter(p => (p.kategori || '').toUpperCase() === kat.toUpperCase()).length;
+        },
+
+        get activeFilterKategori() {
+            if (this.selectedKategori) return this.selectedKategori;
+            if (this.programId) {
+                const prog = ALL_PROGRAMS.find(p => String(p.id) === String(this.programId));
+                if (prog && prog.kategori) return prog.kategori;
+            }
+            return '';
+        },
+
+        get filteredExistingLhps() {
+            const kat = this.activeFilterKategori;
+            let list = EXISTING_LHPS;
+            if (kat) {
+                list = list.filter(item => (item.kategori || '').toUpperCase() === kat.toUpperCase());
+            }
+            return list.slice().sort((a, b) => {
+                // If not filtered by specific category, sort by category first
+                if (!kat && (a.kategori || '') !== (b.kategori || '')) {
+                    return (a.kategori || '').localeCompare(b.kategori || '');
+                }
+                // Then sort by tanggal_lhp descending
+                if ((b.tanggal_lhp || '') !== (a.tanggal_lhp || '')) {
+                    return (b.tanggal_lhp || '').localeCompare(a.tanggal_lhp || '');
+                }
+                // Then by nomor_lhp
+                return (a.nomor_lhp || '').localeCompare(b.nomor_lhp || '');
+            });
+        },
+
+        filterKategori(kat) {
+            this.selectedKategori = kat;
+            if (this.selectedExistingLhpNo) {
+                const found = EXISTING_LHPS.find(l => l.nomor_lhp === this.selectedExistingLhpNo);
+                if (found && kat && (found.kategori || '').toUpperCase() !== kat.toUpperCase()) {
+                    this.selectedExistingLhpNo = '';
+                    if (this.lhpInputMode === 'existing') {
+                        this.nomorLhp = '';
+                    }
+                    if (window.tsExistingInstance) {
+                        window.tsExistingInstance.setValue('', true);
+                    }
+                }
+            }
+            if (window.populateProgramsCascade) {
+                window.populateProgramsCascade(kat);
+            }
+            if (window.populateExistingLhpOptions) {
+                window.populateExistingLhpOptions(kat);
+            }
+        },
+
+        setLhpInputMode(mode) {
+            this.lhpInputMode = mode;
+            if (mode === 'new') {
+                this.selectedExistingLhpNo = '';
+                this.nomorLhp = '';
+                if (window.tsExistingInstance) {
+                    window.tsExistingInstance.setValue('', true);
+                }
+            } else if (mode === 'existing') {
+                if (window.populateExistingLhpOptions) {
+                    window.populateExistingLhpOptions(this.activeFilterKategori);
+                }
+            }
+        },
+
+        onSelectExistingLhp(nomor) {
+            this.selectedExistingLhpNo = nomor;
+            if (!nomor) {
+                if (this.lhpInputMode === 'existing') {
+                    this.nomorLhp = '';
+                }
+                return;
+            }
+            const found = EXISTING_LHPS.find(l => l.nomor_lhp === nomor);
+            if (found) {
+                this.nomorLhp = found.nomor_lhp;
+                if (found.tanggal_lhp) {
+                    this.tanggalLhp = found.tanggal_lhp;
+                }
+                if (found.catatan_umum && !this.catatanUmum) {
+                    this.catatanUmum = found.catatan_umum;
+                }
+                if (found.kategori) {
+                    this.selectedKategori = found.kategori;
+                    if (window.populateProgramsCascade) {
+                        window.populateProgramsCascade(found.kategori);
+                    }
+                }
+                if (found.program_id && window.tsProgramInstance) {
+                    window.tsProgramInstance.setValue(String(found.program_id));
+                }
+                if (found.audit_assignment_id && window.tsAssignmentInstance) {
+                    setTimeout(() => {
+                        window.tsAssignmentInstance.setValue(String(found.audit_assignment_id));
+                    }, 100);
+                }
+            }
+        },
 
         // Step 2 & 3 Dynamic Data Arrays
         temuans: [],
@@ -220,8 +353,8 @@ function lhpCreateWizard() {
             const hiddenAss = document.getElementById('hidden-assignment-id');
             const hiddenUnit = document.getElementById('hidden-unit-id');
             const assVal = (hiddenAss && hiddenAss.value) || this.assignmentId;
-            const unitVal = (hiddenUnit && hiddenUnit.value) || this.unitId;
-            const isStep1Valid = Boolean(assVal && unitVal && this.nomorLhp && this.nomorLhp.trim() && this.tanggalLhp);
+            const hasUnit = (this.unitIds && this.unitIds.length > 0) || Boolean((hiddenUnit && hiddenUnit.value) || this.unitId);
+            const isStep1Valid = Boolean(assVal && hasUnit && this.nomorLhp && this.nomorLhp.trim() && this.tanggalLhp);
 
             if (targetStep === 2) return isStep1Valid && !this.isNihil;
             if (targetStep === 3) return isStep1Valid && !this.isNihil;
@@ -275,10 +408,10 @@ function lhpCreateWizard() {
                 const hiddenAss = document.getElementById('hidden-assignment-id');
                 const hiddenUnit = document.getElementById('hidden-unit-id');
                 const assVal = (hiddenAss && hiddenAss.value) || this.assignmentId;
-                const unitVal = (hiddenUnit && hiddenUnit.value) || this.unitId;
+                const hasUnit = (this.unitIds && this.unitIds.length > 0) || Boolean((hiddenUnit && hiddenUnit.value) || this.unitId);
 
                 if (!assVal) this.stepErrors.push('Pilih Penugasan Audit (Surat Tugas) terlebih dahulu.');
-                if (!unitVal) this.stepErrors.push('Pilih Unit Kerja / Objek Audit terlebih dahulu.');
+                if (!hasUnit) this.stepErrors.push('Pilih minimal 1 Unit Kerja / Objek Audit terlebih dahulu.');
                 if (!this.nomorLhp || !this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
                 if (!this.tanggalLhp) this.stepErrors.push('Tanggal LHP wajib diisi.');
             }
@@ -321,10 +454,10 @@ function lhpCreateWizard() {
             const hiddenAss = document.getElementById('hidden-assignment-id');
             const hiddenUnit = document.getElementById('hidden-unit-id');
             const assVal = (hiddenAss && hiddenAss.value) || this.assignmentId;
-            const unitVal = (hiddenUnit && hiddenUnit.value) || this.unitId;
+            const hasUnit = (this.unitIds && this.unitIds.length > 0) || Boolean((hiddenUnit && hiddenUnit.value) || this.unitId);
 
             if (!assVal) this.stepErrors.push('Pilih Penugasan Audit (Surat Tugas) terlebih dahulu.');
-            if (!unitVal) this.stepErrors.push('Pilih Unit Kerja / Objek Audit terlebih dahulu.');
+            if (!hasUnit) this.stepErrors.push('Pilih minimal 1 Unit Kerja / Objek Audit terlebih dahulu.');
             if (!this.nomorLhp || !this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
             if (!this.tanggalLhp) this.stepErrors.push('Tanggal LHP wajib diisi.');
 
@@ -375,30 +508,150 @@ function lhpCreateWizard() {
                 return ass.units.filter(u => !usedIds.includes(String(u.id))).length;
             };
 
-            const seen = new Set();
-            ALL_ASSIGNMENTS.forEach(a => {
-                // Tampilkan program hanya jika memiliki penugasan dengan unit yang belum dibuatkan LHP (atau sedang dipilih)
-                const hasAvailableUnit = getRemainingUnitsCount(a) > 0 || (this.assignmentId && String(a.id) === String(this.assignmentId));
-                if (a.program_id && hasAvailableUnit && !seen.has(a.program_id)) {
-                    seen.add(a.program_id);
-                    selProgram.add(new Option(a.program_nama, a.program_id));
-                }
-            });
-
             const tsProgram = new TomSelect('#select-program', {
-                create: false, placeholder: '-- Pilih Program Kerja (PKPT) --', controlInput: '<input>', maxOptions: null
+                create: false,
+                placeholder: '-- Pilih Program Kerja / Pengawasan --',
+                controlInput: '<input>',
+                maxOptions: null
             });
+            window.tsProgramInstance = tsProgram;
+
             const tsAssignment = new TomSelect('#select-assignment', {
-                create: false, placeholder: '-- Pilih Penugasan Audit --', controlInput: '<input>', maxOptions: null
+                create: false,
+                placeholder: '-- Pilih Penugasan Audit / Surat Tugas --',
+                controlInput: '<input>',
+                maxOptions: null
             });
+            window.tsAssignmentInstance = tsAssignment;
             tsAssignment.disable();
 
             const tsUnit = new TomSelect('#select-unit', {
-                create: false, placeholder: '-- Pilih Unit Kerja / Objek Audit --', controlInput: '<input>', maxOptions: null
+                create: false,
+                placeholder: '-- Pilih 1 Unit Kerja / Objek Audit --',
+                controlInput: '<input>',
+                maxOptions: null
             });
+            window.tsUnitInstance = tsUnit;
             tsUnit.disable();
 
+            const tsExisting = new TomSelect('#select-existing-lhp', {
+                create: false,
+                placeholder: '-- Cari / Pilih Nomor LHP Terdaftar --',
+                controlInput: '<input>',
+                maxOptions: null
+            });
+            window.tsExistingInstance = tsExisting;
+
+            const populateExistingLhpOptions = (filterKat = '') => {
+                tsExisting.clear();
+                tsExisting.clearOptions();
+
+                let list = EXISTING_LHPS;
+                if (filterKat) {
+                    list = list.filter(item => (item.kategori || '').toUpperCase() === filterKat.toUpperCase());
+                }
+
+                list = list.slice().sort((a, b) => {
+                    if (!filterKat && (a.kategori || '') !== (b.kategori || '')) {
+                        return (a.kategori || '').localeCompare(b.kategori || '');
+                    }
+                    if ((b.tanggal_lhp || '') !== (a.tanggal_lhp || '')) {
+                        return (b.tanggal_lhp || '').localeCompare(a.tanggal_lhp || '');
+                    }
+                    return (a.nomor_lhp || '').localeCompare(b.nomor_lhp || '');
+                });
+
+                if (list.length === 0) {
+                    tsExisting.addOption({
+                        value: '',
+                        text: filterKat ? `-- Tidak ada nomor LHP terdaftar untuk kategori ${filterKat} --` : '-- Belum ada nomor LHP terdaftar --'
+                    });
+                    tsExisting.setValue('', true);
+                    return;
+                }
+
+                list.forEach(item => {
+                    tsExisting.addOption({
+                        value: item.nomor_lhp,
+                        text: `[${item.kategori}] ${item.nomor_lhp} — ${item.program_nama} (${item.total_units_created} unit diinput, Tgl: ${item.tanggal_lhp})`
+                    });
+                });
+
+                if (this.selectedExistingLhpNo && list.some(i => i.nomor_lhp === this.selectedExistingLhpNo)) {
+                    tsExisting.setValue(this.selectedExistingLhpNo, true);
+                } else {
+                    tsExisting.setValue('', true);
+                }
+            };
+            window.populateExistingLhpOptions = populateExistingLhpOptions;
+
             let isInit = true;
+
+            const populateProgramsCascade = (filterKat = '') => {
+                tsProgram.clear();
+                tsProgram.clearOptions();
+                tsAssignment.clear();
+                tsAssignment.clearOptions();
+                tsAssignment.disable();
+                tsUnit.clear();
+                tsUnit.clearOptions();
+                tsUnit.disable();
+
+                let filteredPrograms = ALL_PROGRAMS;
+                if (filterKat) {
+                    filteredPrograms = ALL_PROGRAMS.filter(p => (p.kategori || '').toUpperCase() === filterKat.toUpperCase());
+                }
+
+                // Check warning status
+                if (filterKat) {
+                    if (filteredPrograms.length === 0) {
+                        this.kategoriWarningMessage = `Belum ada data Program Kerja dengan kategori "${filterKat}".`;
+                        this.kategoriWarningUrl = '{{ route("audit-program.create") }}';
+                        this.kategoriWarningBtn = `+ Buat Program Kerja ${filterKat}`;
+                    } else {
+                        const hasAssignments = filteredPrograms.some(p => p.assignments_count > 0);
+                        if (!hasAssignments) {
+                            this.kategoriWarningMessage = `Program Kerja kategori "${filterKat}" ditemukan (${filteredPrograms.map(p => p.nama).join(', ')}), namun belum memiliki Surat Tugas / Penugasan Audit. LHP dibuat berdasarkan Surat Tugas.`;
+                            this.kategoriWarningUrl = '{{ route("audit-assignment.create") }}';
+                            this.kategoriWarningBtn = `+ Buat Surat Tugas / Penugasan`;
+                        } else {
+                            this.kategoriWarningMessage = '';
+                            this.kategoriWarningUrl = '';
+                            this.kategoriWarningBtn = '';
+                        }
+                    }
+                } else {
+                    this.kategoriWarningMessage = '';
+                    this.kategoriWarningUrl = '';
+                    this.kategoriWarningBtn = '';
+                }
+
+                filteredPrograms.forEach(p => {
+                    const progAss = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(p.id));
+                    let totalRemainingUnits = 0;
+                    progAss.forEach(a => {
+                        totalRemainingUnits += getRemainingUnitsCount(a);
+                    });
+
+                    let label = `[${p.kategori}] ${p.nama} (${p.tahun})`;
+                    if (p.assignments_count === 0) {
+                        label += ` — (Belum ada Surat Tugas)`;
+                    } else if (totalRemainingUnits === 0 && (!this.assignmentId || !progAss.some(a => String(a.id) === String(this.assignmentId)))) {
+                        label += ` — (Semua unit selesai LHP)`;
+                    } else {
+                        label += ` — (${totalRemainingUnits} unit siap LHP)`;
+                    }
+
+                    tsProgram.addOption({
+                        value: String(p.id),
+                        text: label
+                    });
+                });
+
+                tsProgram.refreshOptions(false);
+            };
+
+            window.populateProgramsCascade = populateProgramsCascade;
 
             const populateAssignments = (progId, selectedAssId = null) => {
                 tsAssignment.clear(); tsAssignment.clearOptions(); tsAssignment.disable();
@@ -406,43 +659,60 @@ function lhpCreateWizard() {
 
                 if (!progId) return;
 
-                // Hanya tampilkan penugasan yang masih memiliki sisa unit kerja yang belum dibuatkan LHP
-                const filtered = ALL_ASSIGNMENTS.filter(a => {
-                    if (String(a.program_id) !== String(progId)) return false;
-                    const isSelected = selectedAssId && String(a.id) === String(selectedAssId);
-                    return isSelected || getRemainingUnitsCount(a) > 0;
-                });
+                const filtered = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(progId));
+
+                if (filtered.length === 0) {
+                    tsAssignment.addOption({ value: '', text: '-- Belum ada Surat Tugas pada program ini --' });
+                    tsAssignment.disable();
+                    return;
+                }
 
                 filtered.forEach(a => {
                     const remaining = getRemainingUnitsCount(a);
-                    const label = a.detail_nama + (a.nomor_surat ? ' — ' + a.nomor_surat : '') + (remaining > 0 ? ` (${remaining} unit belum LHP)` : '');
+                    const isSelected = selectedAssId && String(a.id) === String(selectedAssId);
+                    let label = `[${a.kategori}] ${a.detail_nama}` + (a.nomor_surat ? ' — ' + a.nomor_surat : '');
+                    if (remaining > 0) {
+                        label += ` (${remaining} unit belum LHP)`;
+                    } else if (isSelected) {
+                        label += ` (LHP Saat Ini)`;
+                    } else {
+                        label += ` (Semua unit selesai LHP)`;
+                    }
                     tsAssignment.addOption({ value: a.id, text: label });
                 });
 
-                if (filtered.length > 0) {
-                    tsAssignment.enable();
-                    if (selectedAssId) {
-                        tsAssignment.setValue(String(selectedAssId), true);
-                        this.assignmentId = String(selectedAssId);
-                        const hiddenAss = document.getElementById('hidden-assignment-id');
-                        if (hiddenAss) hiddenAss.value = String(selectedAssId);
-                    }
-                } else {
-                    tsAssignment.addOption({ value: '', text: '-- Semua penugasan pada program ini sudah selesai LHP --' });
+                tsAssignment.enable();
+                if (selectedAssId) {
+                    tsAssignment.setValue(String(selectedAssId), true);
+                    this.assignmentId = String(selectedAssId);
+                    const hiddenAss = document.getElementById('hidden-assignment-id');
+                    if (hiddenAss) hiddenAss.value = String(selectedAssId);
+                } else if (filtered.length === 1 && (getRemainingUnitsCount(filtered[0]) > 0)) {
+                    tsAssignment.setValue(String(filtered[0].id), false);
                 }
             };
 
-            const populateUnits = (assId, selectedUnitId = null) => {
+            const populateUnits = (assId, selectedUnitIds = null) => {
                 tsUnit.clear(); tsUnit.clearOptions(); tsUnit.disable();
+                this.availableUnits = [];
                 if (!assId) return;
 
                 const assignment = ALL_ASSIGNMENTS.find(a => String(a.id) === String(assId));
                 const usedIds    = (USED_UNIT_MAP[assId] || []).map(String);
 
+                this.currentKategori = assignment?.kategori || 'PKPT';
+                this.isExternalAudit = ['BPK', 'BPKP', 'ITPROV', 'ITDA'].includes(this.currentKategori);
+
                 if (assignment && assignment.units && assignment.units.length > 0) {
+                    let selArray = [];
+                    if (selectedUnitIds) {
+                        selArray = Array.isArray(selectedUnitIds) ? selectedUnitIds.map(String) : [String(selectedUnitIds)];
+                    }
+
                     const available = assignment.units.filter(u =>
-                        String(u.id) === String(selectedUnitId) || !usedIds.includes(String(u.id))
+                        selArray.includes(String(u.id)) || !usedIds.includes(String(u.id))
                     );
+                    this.availableUnits = available;
 
                     if (available.length === 0) {
                         tsUnit.addOption({ value: '', text: '-- Semua unit sudah dibuatkan LHP --' });
@@ -450,19 +720,20 @@ function lhpCreateWizard() {
                         return;
                     }
 
-                    available.forEach(u => tsUnit.addOption({ value: u.id, text: u.nama }));
+                    available.forEach(u => tsUnit.addOption({ value: String(u.id), text: u.nama }));
                     tsUnit.enable();
 
-                    if (selectedUnitId) {
-                        tsUnit.setValue(String(selectedUnitId), true);
-                        this.unitId = String(selectedUnitId);
-                        const hiddenUnit = document.getElementById('hidden-unit-id');
-                        if (hiddenUnit) hiddenUnit.value = String(selectedUnitId);
+                    if (selArray.length > 0 && available.some(u => String(u.id) === String(selArray[0]))) {
+                        tsUnit.setValue(String(selArray[0]), true);
+                        this.unitId = String(selArray[0]);
+                        this.unitIds = [this.unitId];
                     } else if (available.length === 1) {
                         tsUnit.setValue(String(available[0].id), true);
                         this.unitId = String(available[0].id);
-                        const hiddenUnit = document.getElementById('hidden-unit-id');
-                        if (hiddenUnit) hiddenUnit.value = String(available[0].id);
+                        this.unitIds = [this.unitId];
+                    } else {
+                        this.unitIds = [];
+                        this.unitId = '';
                     }
                 } else {
                     tsUnit.addOption({ value: '', text: '-- Tidak ada unit pada penugasan ini --' });
@@ -474,10 +745,27 @@ function lhpCreateWizard() {
                 this.programId = progId;
                 this.assignmentId = '';
                 this.unitId = '';
+                this.unitIds = [];
                 const hiddenAss = document.getElementById('hidden-assignment-id');
                 if (hiddenAss) hiddenAss.value = '';
                 const hiddenUnit = document.getElementById('hidden-unit-id');
                 if (hiddenUnit) hiddenUnit.value = '';
+
+                // If selected program has no assignments, show alert
+                const prog = ALL_PROGRAMS.find(p => String(p.id) === String(progId));
+                if (prog && prog.assignments_count === 0) {
+                    this.kategoriWarningMessage = `Program "${prog.nama}" belum memiliki Surat Tugas / Penugasan Audit. LHP dibuat berdasarkan Surat Tugas.`;
+                    this.kategoriWarningUrl = '{{ route("audit-assignment.create") }}';
+                    this.kategoriWarningBtn = `+ Buat Surat Tugas / Penugasan`;
+                } else if (!this.selectedKategori) {
+                    this.kategoriWarningMessage = '';
+                    this.kategoriWarningUrl = '';
+                    this.kategoriWarningBtn = '';
+                }
+
+                if (prog && prog.kategori && !this.selectedKategori) {
+                    populateExistingLhpOptions(prog.kategori);
+                }
 
                 populateAssignments(progId);
             });
@@ -489,23 +777,38 @@ function lhpCreateWizard() {
                 if (hiddenAss) hiddenAss.value = assId;
 
                 this.unitId = '';
+                this.unitIds = [];
                 const hiddenUnit = document.getElementById('hidden-unit-id');
                 if (hiddenUnit) hiddenUnit.value = '';
 
                 populateUnits(assId);
             });
 
-            tsUnit.on('change', (uId) => {
+            tsUnit.on('change', (val) => {
                 if (isInit) return;
-                this.unitId = uId;
+                this.unitId = val ? String(val) : '';
+                this.unitIds = this.unitId ? [this.unitId] : [];
                 const hiddenUnit = document.getElementById('hidden-unit-id');
-                if (hiddenUnit) hiddenUnit.value = uId;
+                if (hiddenUnit) hiddenUnit.value = this.unitId;
             });
+
+            tsExisting.on('change', (val) => {
+                if (isInit) return;
+                this.onSelectExistingLhp(val);
+            });
+
+            // Initial population
+            populateProgramsCascade(this.selectedKategori);
+            populateExistingLhpOptions(this.selectedKategori);
 
             if (!this.programId && this.assignmentId) {
                 const found = ALL_ASSIGNMENTS.find(a => String(a.id) === String(this.assignmentId));
                 if (found) {
                     this.programId = found.program_id;
+                    const prog = ALL_PROGRAMS.find(p => String(p.id) === String(found.program_id));
+                    if (prog && prog.kategori) {
+                        this.selectedKategori = prog.kategori;
+                    }
                 }
             }
 
@@ -513,12 +816,15 @@ function lhpCreateWizard() {
                 tsProgram.setValue(String(this.programId), true);
                 populateAssignments(this.programId, this.assignmentId);
                 if (this.assignmentId) {
-                    populateUnits(this.assignmentId, this.unitId);
+                    populateUnits(this.assignmentId, (this.unitIds && this.unitIds.length > 0) ? this.unitIds : this.unitId);
                 }
             }
 
             isInit = false;
         },
+
+        selectAllUnits() {},
+        clearAllUnits() {},
 
         // Logika Temuan (Step 2)
         addTemuan() {
@@ -1016,7 +1322,10 @@ function lhpCreateWizard() {
 
                 {{-- Hidden Cascade Values --}}
                 <input type="hidden" name="audit_assignment_id" id="hidden-assignment-id" :value="assignmentId">
-                <input type="hidden" name="unit_diperiksa_id" id="hidden-unit-id" :value="unitId">
+                <template x-for="uid in unitIds" :key="uid">
+                    <input type="hidden" name="unit_diperiksa_ids[]" :value="uid">
+                </template>
+                <input type="hidden" name="unit_diperiksa_id" id="hidden-unit-id" :value="unitIds[0] || unitId">
 
         {{-- ═════════════════════════════════════════════════════════════ --}}
         {{-- ── STEP 1: INFORMASI UTAMA & LAMPIRAN LHP ── --}}
@@ -1031,13 +1340,62 @@ function lhpCreateWizard() {
                 <div class="p-6 space-y-6">
                     <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
                         
-                        {{-- 1. Program Kerja PKPT --}}
+                        {{-- Filter Kategori Pengawasan --}}
+                        <div class="md:col-span-2">
+                            <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                Filter Kategori Pengawasan
+                            </label>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button"
+                                        @click="filterKategori('')"
+                                        :class="selectedKategori === '' ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/20 font-bold' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 font-medium'"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer">
+                                    <span>Semua</span>
+                                    <span class="rounded-full px-1.5 py-0.2 text-[10px]"
+                                          :class="selectedKategori === '' ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'"
+                                          x-text="ALL_PROGRAMS.length"></span>
+                                </button>
+                                <template x-for="kat in KATEGORI_LIST" :key="kat">
+                                    <button type="button"
+                                            @click="filterKategori(kat)"
+                                            :class="selectedKategori === kat ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/20 font-bold' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 font-medium'"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer">
+                                        <span x-text="kat"></span>
+                                        <span class="rounded-full px-1.5 py-0.2 text-[10px]"
+                                              :class="selectedKategori === kat ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'"
+                                              x-text="getProgramCountByKategori(kat)"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                        {{-- Alert jika kategori belum punya program / belum ada penugasan --}}
+                        <div x-show="kategoriWarningMessage" x-cloak class="md:col-span-2 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 dark:bg-amber-900/25 dark:border-amber-800 dark:text-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                            <div class="flex items-start gap-2.5">
+                                <svg class="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                <div>
+                                    <p class="font-semibold" x-text="kategoriWarningMessage"></p>
+                                    <p class="text-amber-700 dark:text-amber-300 text-[11px] mt-0.5">Penugasan audit diperlukan untuk menentukan ruang lingkup tim dan unit kerja yang diperiksa sebelum penerbitan LHP.</p>
+                                </div>
+                            </div>
+                            <template x-if="kategoriWarningUrl">
+                                <a :href="kategoriWarningUrl" target="_blank" class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs shadow transition">
+                                    <span x-text="kategoriWarningBtn"></span>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                </a>
+                            </template>
+                        </div>
+
+                        {{-- 1. Program Kerja --}}
                         <div class="md:col-span-2">
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                Program Kerja (PKPT) <span class="text-red-500">*</span>
+                                Program Kerja / Pengawasan <span class="text-red-500">*</span>
+                                <span class="ml-1 text-[11px] font-normal text-gray-500 dark:text-gray-400 normal-case">(PKPT, BPK, BPKP, ITPROV, ITDA, Lainnya)</span>
                             </label>
                             <select id="select-program" data-no-ts class="w-full">
-                                <option value="">-- Pilih Program Kerja --</option>
+                                <option value="">-- Pilih Program Kerja / Pengawasan --</option>
                             </select>
                         </div>
 
@@ -1051,33 +1409,106 @@ function lhpCreateWizard() {
                             </select>
                         </div>
 
-                        {{-- 3. Unit Kerja / Objek Audit --}}
+                        {{-- 3. Unit Kerja / Objek Audit (Single Unit) --}}
                         <div class="md:col-span-2">
-                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
                                 Unit Kerja / Objek Audit <span class="text-red-500">*</span>
+                                <span class="ml-1 text-[11px] font-normal text-gray-500 dark:text-gray-400 normal-case">(1 LHP = 1 Unit Kerja)</span>
                             </label>
+
                             <select id="select-unit" data-no-ts disabled class="w-full">
                                 <option value="">-- Pilih Penugasan Terlebih Dahulu --</option>
                             </select>
+                            <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                Setiap LHP mencatat temuan khusus untuk 1 unit kerja. Untuk unit kerja lain pada penugasan/Nomor LHP yang sama, gunakan opsi <em>"Pilih LHP Terdaftar"</em> di bawah.
+                            </p>
+                        </div>
+
+                        {{-- Skema Penomoran LHP (Baru vs Referensi LHP Kolektif) --}}
+                        <div class="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-gray-700/80 dark:bg-gray-900/60 shadow-sm">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">
+                                        Skema Penomoran LHP
+                                    </label>
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                        Pilih nomor baru untuk audit reguler, atau gunakan nomor LHP terdaftar untuk audit kolektif (BPK / BPKP / ITPROV).
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-1.5 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700 self-start sm:self-auto shadow-sm">
+                                    <button type="button"
+                                            @click="setLhpInputMode('new')"
+                                            :class="lhpInputMode === 'new' ? 'bg-blue-600 text-white shadow font-bold' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-medium'"
+                                            class="px-3 py-1.5 text-xs rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                        <span>Nomor LHP Baru</span>
+                                    </button>
+                                    <button type="button"
+                                            @click="setLhpInputMode('existing')"
+                                            :class="lhpInputMode === 'existing' ? 'bg-blue-600 text-white shadow font-bold' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-medium'"
+                                            class="px-3 py-1.5 text-xs rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                                        <span x-text="activeFilterKategori ? `Pilih LHP Terdaftar (${activeFilterKategori})` : 'Pilih LHP Terdaftar'"></span>
+                                        <span class="rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 px-1.5 py-0.2 text-[10px]" x-text="filteredExistingLhps.length"></span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{-- Dropdown jika memilih Gunakan LHP Terdaftar --}}
+                            <div x-show="lhpInputMode === 'existing'" x-cloak class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <label class="block text-xs font-bold text-blue-900 dark:text-blue-200">
+                                        Pilih Nomor LHP yang Ingin Ditambahkan Lembar Unit Diperiksa:
+                                    </label>
+                                    <span x-show="activeFilterKategori" class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded">
+                                        Filter Kategori: <strong x-text="activeFilterKategori"></strong>
+                                    </span>
+                                </div>
+                                <select id="select-existing-lhp" data-no-ts class="w-full">
+                                    <option value="">-- Cari / Pilih Nomor LHP Terdaftar --</option>
+                                </select>
+                                <div x-show="filteredExistingLhps.length === 0" x-cloak class="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-start gap-1.5">
+                                    <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                    <span>Belum ada nomor LHP terdaftar untuk kategori <strong x-text="activeFilterKategori || 'ini'"></strong>. Silakan gunakan mode "Nomor LHP Baru" untuk membuat LHP pertama.</span>
+                                </div>
+                                <div x-show="selectedExistingLhpNo" x-cloak class="mt-2 text-xs text-blue-700 dark:text-blue-300 flex items-start gap-1.5">
+                                    <svg class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    <span>Nomor LHP, tanggal, program &amp; penugasan terkunci otomatis sesuai dokumen induk. Silakan pilih <strong>Unit Kerja</strong> di atas yang belum diinputkan temuannya.</span>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Nomor LHP --}}
                         <div>
-                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                Nomor LHP <span class="text-red-500">*</span>
-                            </label>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                    Nomor LHP <span class="text-red-500">*</span>
+                                </label>
+                                <span x-show="lhpInputMode === 'existing' && selectedExistingLhpNo" x-cloak class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md">
+                                    Terkunci dari Dokumen Terdaftar
+                                </span>
+                            </div>
                             <input type="text" name="nomor_lhp" x-model="nomorLhp"
+                                   :readonly="lhpInputMode === 'existing' && Boolean(selectedExistingLhpNo)"
+                                   :class="(lhpInputMode === 'existing' && selectedExistingLhpNo) ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 cursor-not-allowed border-gray-200 dark:border-gray-700' : 'bg-white text-gray-900 dark:bg-gray-900 dark:text-white border-gray-300 dark:border-gray-700'"
                                    placeholder="Contoh: LHP/001/IRBAN/2024"
-                                   class="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                   class="w-full rounded-xl border px-3.5 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
                         </div>
 
                         {{-- Tanggal LHP --}}
                         <div>
-                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                Tanggal LHP <span class="text-red-500">*</span>
-                            </label>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                    Tanggal LHP <span class="text-red-500">*</span>
+                                </label>
+                                <span x-show="lhpInputMode === 'existing' && selectedExistingLhpNo" x-cloak class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md">
+                                    Sesuai Dokumen Induk
+                                </span>
+                            </div>
                             <input type="date" name="tanggal_lhp" x-model="tanggalLhp" onclick="this.showPicker()"
-                                   class="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                   :readonly="lhpInputMode === 'existing' && Boolean(selectedExistingLhpNo)"
+                                   :class="(lhpInputMode === 'existing' && selectedExistingLhpNo) ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 cursor-not-allowed border-gray-200 dark:border-gray-700' : 'bg-white text-gray-900 dark:bg-gray-900 dark:text-white border-gray-300 dark:border-gray-700'"
+                                   class="w-full rounded-xl border px-3.5 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
                         </div>
 
                         {{-- Status Temuan LHP (Ada Temuan / Nihil) --}}

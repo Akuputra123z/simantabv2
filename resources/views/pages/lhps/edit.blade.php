@@ -26,9 +26,24 @@
 </style>
 
 @php
+    $programData = ($allPrograms ?? collect())->map(function ($p) {
+        $kat = trim($p->kategori ?? '');
+        return [
+            'id'                => $p->id,
+            'kategori'          => !empty($kat) ? $kat : 'PKPT',
+            'nama'              => $p->nama_program,
+            'tahun'             => $p->tahun,
+            'details_count'     => (int)($p->details_count ?? 0),
+            'assignments_count' => (int)($p->assignments_count ?? 0),
+        ];
+    });
+
+    $kategoriList = $kategoris ?? \App\Models\AuditProgram::KATEGORI;
+
     $assignmentData = $assignments->map(function ($a) {
         return [
             'id'                      => $a->id,
+            'kategori'                => $a->auditProgramDetail?->auditProgram?->kategori ?? 'PKPT',
             'audit_program_detail_id' => $a->audit_program_detail_id,
             'program_id'              => $a->auditProgramDetail?->audit_program_id,
             'program_nama'            => $a->auditProgramDetail?->auditProgram?->nama_program ?? '-',
@@ -89,24 +104,52 @@
                 ];
             })->values()->toArray(),
         ];
-    })->values()->toArray();
+    });
+
+    $initialUnitIds = $lhp->unitDiperiksas->pluck('id')->map('strval')->toArray();
+    if (empty($initialUnitIds) && $lhp->unit_diperiksa_id) {
+        $initialUnitIds = [(string)$lhp->unit_diperiksa_id];
+    }
 @endphp
 
 <script>
 const CSRF_TOKEN      = '{{ csrf_token() }}';
 const ALL_ASSIGNMENTS = @json($assignmentData);
+const ALL_PROGRAMS    = @json($programData);
+const KATEGORI_LIST   = @json($kategoriList);
 const USED_UNIT_MAP   = @json($usedUnitMap);
 const KODE_TEMUANS_EDIT = @json($kodeTemuanData);
 const KODE_REKOMS_EDIT  = @json($kodeRekomData);
 const INITIAL_TEMUANS   = @json($temuansInitial);
+const INITIAL_UNIT_IDS  = @json($initialUnitIds);
 
 function lhpEditWizard() {
     return {
         step: 1,
 
+        selectedKategori: '{{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori ?? "" }}',
+        kategoriWarningMessage: '',
+        kategoriWarningUrl: '',
+        kategoriWarningBtn: '',
         programId: '{{ old("program_id", $lhp->auditAssignment?->auditProgramDetail?->audit_program_id) }}',
         assignmentId: '{{ old("audit_assignment_id", $lhp->audit_assignment_id) }}',
         unitId: '{{ old("unit_diperiksa_id", $lhp->unit_diperiksa_id) }}',
+        unitIds: {!! json_encode(array_values(array_map('strval', (array)old('unit_diperiksa_ids', $initialUnitIds)))) !!},
+        availableUnits: [],
+        currentKategori: '{{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori ?? "PKPT" }}',
+        isExternalAudit: {{ in_array($lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori, ['BPK', 'BPKP', 'ITPROV', 'ITDA']) ? 'true' : 'false' }},
+
+        getProgramCountByKategori(kat) {
+            if (!kat) return ALL_PROGRAMS.length;
+            return ALL_PROGRAMS.filter(p => (p.kategori || '').toUpperCase() === kat.toUpperCase()).length;
+        },
+
+        filterKategori(kat) {
+            this.selectedKategori = kat;
+            if (window.populateProgramsCascadeEdit) {
+                window.populateProgramsCascadeEdit(kat);
+            }
+        },
 
         nomorLhp: '{{ old("nomor_lhp", $lhp->nomor_lhp) }}',
         tanggalLhp: '{{ old("tanggal_lhp", $lhp->tanggal_lhp?->format("Y-m-d")) }}',
@@ -244,32 +287,100 @@ function lhpEditWizard() {
             const getRemainingUnitsCount = (ass) => {
                 const usedIds = (USED_UNIT_MAP[ass.id] || []).map(String);
                 if (!ass.units || ass.units.length === 0) return 0;
-                return ass.units.filter(u => String(u.id) === String(this.unitId) || !usedIds.includes(String(u.id))).length;
+                const currentLhpUnitIds = (this.unitIds || []).map(String);
+                return ass.units.filter(u => currentLhpUnitIds.includes(String(u.id)) || String(u.id) === String(this.unitId) || !usedIds.includes(String(u.id))).length;
             };
 
-            const seen = new Set();
-            ALL_ASSIGNMENTS.forEach(a => {
-                const hasAvailableUnit = getRemainingUnitsCount(a) > 0 || (this.assignmentId && String(a.id) === String(this.assignmentId));
-                if (a.program_id && hasAvailableUnit && !seen.has(a.program_id)) {
-                    seen.add(a.program_id);
-                    selProgram.add(new Option(a.program_nama, a.program_id));
-                }
-            });
-
             const tsProgram = new TomSelect('#select-program', {
-                create: false, placeholder: '-- Pilih Program Kerja (PKPT) --', controlInput: '<input>', maxOptions: null
+                create: false,
+                placeholder: '-- Pilih Program Kerja / Pengawasan --',
+                controlInput: '<input>',
+                maxOptions: null
             });
             const tsAssignment = new TomSelect('#select-assignment', {
-                create: false, placeholder: '-- Pilih Penugasan Audit --', controlInput: '<input>', maxOptions: null
+                create: false,
+                placeholder: '-- Pilih Penugasan Audit / Surat Tugas --',
+                controlInput: '<input>',
+                maxOptions: null
             });
             tsAssignment.disable();
 
             const tsUnit = new TomSelect('#select-unit', {
-                create: false, placeholder: '-- Pilih Unit Kerja / Objek Audit --', controlInput: '<input>', maxOptions: null
+                create: false,
+                placeholder: '-- Pilih Unit Kerja / Objek Audit --',
+                controlInput: '<input>',
+                maxOptions: null
             });
+            window.tsUnitInstance = tsUnit;
             tsUnit.disable();
 
             let isInit = true;
+
+            const populateProgramsCascadeEdit = (filterKat = '') => {
+                tsProgram.clear();
+                tsProgram.clearOptions();
+                tsAssignment.clear();
+                tsAssignment.clearOptions();
+                tsAssignment.disable();
+                tsUnit.clear();
+                tsUnit.clearOptions();
+                tsUnit.disable();
+
+                let filteredPrograms = ALL_PROGRAMS;
+                if (filterKat) {
+                    filteredPrograms = ALL_PROGRAMS.filter(p => (p.kategori || '').toUpperCase() === filterKat.toUpperCase());
+                }
+
+                // Check warning status
+                if (filterKat) {
+                    if (filteredPrograms.length === 0) {
+                        this.kategoriWarningMessage = `Belum ada data Program Kerja dengan kategori "${filterKat}".`;
+                        this.kategoriWarningUrl = '{{ route("audit-program.create") }}';
+                        this.kategoriWarningBtn = `+ Buat Program Kerja ${filterKat}`;
+                    } else {
+                        const hasAssignments = filteredPrograms.some(p => p.assignments_count > 0);
+                        if (!hasAssignments) {
+                            this.kategoriWarningMessage = `Program Kerja kategori "${filterKat}" ditemukan (${filteredPrograms.map(p => p.nama).join(', ')}), namun belum memiliki Surat Tugas / Penugasan Audit.`;
+                            this.kategoriWarningUrl = '{{ route("audit-assignment.create") }}';
+                            this.kategoriWarningBtn = `+ Buat Surat Tugas / Penugasan`;
+                        } else {
+                            this.kategoriWarningMessage = '';
+                            this.kategoriWarningUrl = '';
+                            this.kategoriWarningBtn = '';
+                        }
+                    }
+                } else {
+                    this.kategoriWarningMessage = '';
+                    this.kategoriWarningUrl = '';
+                    this.kategoriWarningBtn = '';
+                }
+
+                filteredPrograms.forEach(p => {
+                    const progAss = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(p.id));
+                    let totalRemainingUnits = 0;
+                    progAss.forEach(a => {
+                        totalRemainingUnits += getRemainingUnitsCount(a);
+                    });
+
+                    let label = `[${p.kategori}] ${p.nama} (${p.tahun})`;
+                    if (p.assignments_count === 0) {
+                        label += ` — (Belum ada Surat Tugas)`;
+                    } else if (totalRemainingUnits === 0 && (!this.assignmentId || !progAss.some(a => String(a.id) === String(this.assignmentId)))) {
+                        label += ` — (Semua unit selesai LHP)`;
+                    } else {
+                        label += ` — (${totalRemainingUnits} unit siap LHP)`;
+                    }
+
+                    tsProgram.addOption({
+                        value: String(p.id),
+                        text: label
+                    });
+                });
+
+                tsProgram.refreshOptions(false);
+            };
+
+            window.populateProgramsCascadeEdit = populateProgramsCascadeEdit;
 
             const populateAssignments = (progId, selectedAssId = null) => {
                 tsAssignment.clear(); tsAssignment.clearOptions(); tsAssignment.disable();
@@ -277,43 +388,64 @@ function lhpEditWizard() {
 
                 if (!progId) return;
 
-                // Hanya tampilkan penugasan yang masih memiliki sisa unit kerja yang belum dibuatkan LHP (atau penugasan LHP saat ini)
-                const filtered = ALL_ASSIGNMENTS.filter(a => {
-                    if (String(a.program_id) !== String(progId)) return false;
-                    const isSelected = selectedAssId && String(a.id) === String(selectedAssId);
-                    return isSelected || getRemainingUnitsCount(a) > 0;
-                });
+                const filtered = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(progId));
+
+                if (filtered.length === 0) {
+                    tsAssignment.addOption({ value: '', text: '-- Belum ada Surat Tugas pada program ini --' });
+                    tsAssignment.disable();
+                    return;
+                }
 
                 filtered.forEach(a => {
                     const remaining = getRemainingUnitsCount(a);
-                    const label = a.detail_nama + (a.nomor_surat ? ' — ' + a.nomor_surat : '') + (remaining > 0 ? ` (${remaining} unit belum LHP)` : '');
+                    const isSelected = selectedAssId && String(a.id) === String(selectedAssId);
+                    let label = `[${a.kategori}] ${a.detail_nama}` + (a.nomor_surat ? ' — ' + a.nomor_surat : '');
+                    if (remaining > 0) {
+                        label += ` (${remaining} unit belum LHP)`;
+                    } else if (isSelected) {
+                        label += ` (LHP Saat Ini)`;
+                    } else {
+                        label += ` (Semua unit selesai LHP)`;
+                    }
                     tsAssignment.addOption({ value: a.id, text: label });
                 });
 
-                if (filtered.length > 0) {
-                    tsAssignment.enable();
-                    if (selectedAssId) {
-                        tsAssignment.setValue(String(selectedAssId), true);
-                        this.assignmentId = String(selectedAssId);
-                        const hiddenAss = document.getElementById('hidden-assignment-id');
-                        if (hiddenAss) hiddenAss.value = String(selectedAssId);
-                    }
-                } else {
-                    tsAssignment.addOption({ value: '', text: '-- Semua penugasan pada program ini sudah selesai LHP --' });
+                tsAssignment.enable();
+                if (selectedAssId) {
+                    tsAssignment.setValue(String(selectedAssId), true);
+                    this.assignmentId = String(selectedAssId);
+                    const hiddenAss = document.getElementById('hidden-assignment-id');
+                    if (hiddenAss) hiddenAss.value = String(selectedAssId);
+                } else if (filtered.length === 1 && (getRemainingUnitsCount(filtered[0]) > 0)) {
+                    tsAssignment.setValue(String(filtered[0].id), false);
                 }
             };
 
-            const populateUnits = (assId, selectedUnitId = null) => {
+            const populateUnits = (assId, selectedUnitIds = null) => {
                 tsUnit.clear(); tsUnit.clearOptions(); tsUnit.disable();
+                this.availableUnits = [];
                 if (!assId) return;
 
                 const assignment = ALL_ASSIGNMENTS.find(a => String(a.id) === String(assId));
                 const usedIds    = (USED_UNIT_MAP[assId] || []).map(String);
 
+                this.currentKategori = assignment?.kategori || 'PKPT';
+                this.isExternalAudit = ['BPK', 'BPKP', 'ITPROV', 'ITDA'].includes(this.currentKategori);
+
                 if (assignment && assignment.units && assignment.units.length > 0) {
+                    let selArray = [];
+                    if (selectedUnitIds) {
+                        selArray = Array.isArray(selectedUnitIds) ? selectedUnitIds.map(String) : [String(selectedUnitIds)];
+                    } else if (this.unitId) {
+                        selArray = [String(this.unitId)];
+                    } else if (this.unitIds && this.unitIds.length > 0) {
+                        selArray = this.unitIds.map(String);
+                    }
+
                     const available = assignment.units.filter(u =>
-                        String(u.id) === String(selectedUnitId) || !usedIds.includes(String(u.id))
+                        selArray.includes(String(u.id)) || !usedIds.includes(String(u.id))
                     );
+                    this.availableUnits = available;
 
                     if (available.length === 0) {
                         tsUnit.addOption({ value: '', text: '-- Semua unit sudah dibuatkan LHP --' });
@@ -321,14 +453,20 @@ function lhpEditWizard() {
                         return;
                     }
 
-                    available.forEach(u => tsUnit.addOption({ value: u.id, text: u.nama }));
+                    available.forEach(u => tsUnit.addOption({ value: String(u.id), text: u.nama }));
                     tsUnit.enable();
 
-                    if (selectedUnitId) {
-                        tsUnit.setValue(String(selectedUnitId), true);
-                        this.unitId = String(selectedUnitId);
-                        const hiddenUnit = document.getElementById('hidden-unit-id');
-                        if (hiddenUnit) hiddenUnit.value = String(selectedUnitId);
+                    if (selArray.length > 0 && available.some(u => String(u.id) === String(selArray[0]))) {
+                        tsUnit.setValue(String(selArray[0]), true);
+                        this.unitId = String(selArray[0]);
+                        this.unitIds = [this.unitId];
+                    } else if (available.length === 1) {
+                        tsUnit.setValue(String(available[0].id), true);
+                        this.unitId = String(available[0].id);
+                        this.unitIds = [this.unitId];
+                    } else {
+                        this.unitIds = [];
+                        this.unitId = '';
                     }
                 } else {
                     tsUnit.addOption({ value: '', text: '-- Tidak ada unit pada penugasan ini --' });
@@ -340,10 +478,23 @@ function lhpEditWizard() {
                 this.programId = progId;
                 this.assignmentId = '';
                 this.unitId = '';
+                this.unitIds = [];
                 const hiddenAss = document.getElementById('hidden-assignment-id');
                 if (hiddenAss) hiddenAss.value = '';
                 const hiddenUnit = document.getElementById('hidden-unit-id');
                 if (hiddenUnit) hiddenUnit.value = '';
+
+                // If selected program has no assignments, show alert
+                const prog = ALL_PROGRAMS.find(p => String(p.id) === String(progId));
+                if (prog && prog.assignments_count === 0) {
+                    this.kategoriWarningMessage = `Program "${prog.nama}" belum memiliki Surat Tugas / Penugasan Audit. LHP dibuat berdasarkan Surat Tugas.`;
+                    this.kategoriWarningUrl = '{{ route("audit-assignment.create") }}';
+                    this.kategoriWarningBtn = `+ Buat Surat Tugas / Penugasan`;
+                } else if (!this.selectedKategori) {
+                    this.kategoriWarningMessage = '';
+                    this.kategoriWarningUrl = '';
+                    this.kategoriWarningBtn = '';
+                }
 
                 populateAssignments(progId);
             });
@@ -355,23 +506,32 @@ function lhpEditWizard() {
                 if (hiddenAss) hiddenAss.value = assId;
 
                 this.unitId = '';
+                this.unitIds = [];
                 const hiddenUnit = document.getElementById('hidden-unit-id');
                 if (hiddenUnit) hiddenUnit.value = '';
 
                 populateUnits(assId);
             });
 
-            tsUnit.on('change', (uId) => {
+            tsUnit.on('change', (val) => {
                 if (isInit) return;
-                this.unitId = uId;
+                this.unitId = val ? String(val) : '';
+                this.unitIds = this.unitId ? [this.unitId] : [];
                 const hiddenUnit = document.getElementById('hidden-unit-id');
-                if (hiddenUnit) hiddenUnit.value = uId;
+                if (hiddenUnit) hiddenUnit.value = this.unitId;
             });
+
+            // Initial population
+            populateProgramsCascadeEdit(this.selectedKategori);
 
             if (!this.programId && this.assignmentId) {
                 const found = ALL_ASSIGNMENTS.find(a => String(a.id) === String(this.assignmentId));
                 if (found) {
                     this.programId = found.program_id;
+                    const prog = ALL_PROGRAMS.find(p => String(p.id) === String(found.program_id));
+                    if (prog && prog.kategori) {
+                        this.selectedKategori = prog.kategori;
+                    }
                 }
             }
 
@@ -379,7 +539,7 @@ function lhpEditWizard() {
                 tsProgram.setValue(String(this.programId), true);
                 populateAssignments(this.programId, this.assignmentId);
                 if (this.assignmentId) {
-                    populateUnits(this.assignmentId, this.unitId);
+                    populateUnits(this.assignmentId, (this.unitIds && this.unitIds.length > 0) ? this.unitIds : this.unitId);
                 }
             }
 
@@ -392,9 +552,9 @@ function lhpEditWizard() {
             const hiddenAss = document.getElementById('hidden-assignment-id');
             const hiddenUnit = document.getElementById('hidden-unit-id');
             const assVal = (hiddenAss && hiddenAss.value) || this.assignmentId;
-            const unitVal = (hiddenUnit && hiddenUnit.value) || this.unitId;
+            const hasUnit = (this.unitIds && this.unitIds.length > 0) || Boolean((hiddenUnit && hiddenUnit.value) || this.unitId);
 
-            const isStep1Valid = Boolean(assVal && unitVal && this.nomorLhp && this.nomorLhp.trim() && this.tanggalLhp);
+            const isStep1Valid = Boolean(assVal && hasUnit && this.nomorLhp && this.nomorLhp.trim() && this.tanggalLhp);
             if (targetStep === 2) return isStep1Valid && !this.isNihil;
             if (targetStep === 3) return isStep1Valid && !this.isNihil;
             if (targetStep === 4) {
@@ -446,10 +606,10 @@ function lhpEditWizard() {
                 const hiddenAss = document.getElementById('hidden-assignment-id');
                 const hiddenUnit = document.getElementById('hidden-unit-id');
                 const assVal = (hiddenAss && hiddenAss.value) || this.assignmentId;
-                const unitVal = (hiddenUnit && hiddenUnit.value) || this.unitId;
+                const hasUnit = (this.unitIds && this.unitIds.length > 0) || Boolean((hiddenUnit && hiddenUnit.value) || this.unitId);
 
                 if (!assVal) this.stepErrors.push('Penugasan Audit wajib dipilih.');
-                if (!unitVal) this.stepErrors.push('Unit Kerja / Objek Audit wajib dipilih.');
+                if (!hasUnit) this.stepErrors.push('Pilih minimal 1 Unit Kerja / Objek Audit terlebih dahulu.');
                 if (!this.nomorLhp || !this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
                 if (!this.tanggalLhp) this.stepErrors.push('Tanggal LHP wajib diisi.');
             }
@@ -634,10 +794,10 @@ function lhpEditWizard() {
             const hiddenAss = document.getElementById('hidden-assignment-id');
             const hiddenUnit = document.getElementById('hidden-unit-id');
             const assVal = (hiddenAss && hiddenAss.value) || this.assignmentId;
-            const unitVal = (hiddenUnit && hiddenUnit.value) || this.unitId;
+            const hasUnit = (this.unitIds && this.unitIds.length > 0) || Boolean((hiddenUnit && hiddenUnit.value) || this.unitId);
 
             if (!assVal) this.stepErrors.push('Penugasan Audit wajib dipilih.');
-            if (!unitVal) this.stepErrors.push('Unit Kerja / Objek Audit wajib dipilih.');
+            if (!hasUnit) this.stepErrors.push('Pilih minimal 1 Unit Kerja / Objek Audit terlebih dahulu.');
             if (!this.nomorLhp || !this.nomorLhp.trim()) this.stepErrors.push('Nomor LHP wajib diisi.');
             if (!this.tanggalLhp) this.stepErrors.push('Tanggal LHP wajib diisi.');
 
@@ -1012,7 +1172,10 @@ function lhpEditWizard() {
 
                 {{-- Hidden Cascade Values --}}
                 <input type="hidden" name="audit_assignment_id" id="hidden-assignment-id" :value="assignmentId">
-                <input type="hidden" name="unit_diperiksa_id" id="hidden-unit-id" :value="unitId">
+                <template x-for="uid in unitIds" :key="uid">
+                    <input type="hidden" name="unit_diperiksa_ids[]" :value="uid">
+                </template>
+                <input type="hidden" name="unit_diperiksa_id" id="hidden-unit-id" :value="unitIds[0] || unitId">
 
         {{-- ── STEP 1: INFORMASI UTAMA & LAMPIRAN ── --}}
         <div x-show="step === 1" x-cloak>
@@ -1024,13 +1187,62 @@ function lhpEditWizard() {
 
                 <div class="p-6 space-y-6">
                     <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-                        {{-- 1. Program Kerja PKPT --}}
+                        {{-- Filter Kategori Pengawasan --}}
+                        <div class="md:col-span-2">
+                            <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                Filter Kategori Pengawasan
+                            </label>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button"
+                                        @click="filterKategori('')"
+                                        :class="selectedKategori === '' ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/20 font-bold' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 font-medium'"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer">
+                                    <span>Semua</span>
+                                    <span class="rounded-full px-1.5 py-0.2 text-[10px]"
+                                          :class="selectedKategori === '' ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'"
+                                          x-text="ALL_PROGRAMS.length"></span>
+                                </button>
+                                <template x-for="kat in KATEGORI_LIST" :key="kat">
+                                    <button type="button"
+                                            @click="filterKategori(kat)"
+                                            :class="selectedKategori === kat ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/20 font-bold' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 font-medium'"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer">
+                                        <span x-text="kat"></span>
+                                        <span class="rounded-full px-1.5 py-0.2 text-[10px]"
+                                              :class="selectedKategori === kat ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'"
+                                              x-text="getProgramCountByKategori(kat)"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                        {{-- Alert jika kategori belum punya program / belum ada penugasan --}}
+                        <div x-show="kategoriWarningMessage" x-cloak class="md:col-span-2 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 dark:bg-amber-900/25 dark:border-amber-800 dark:text-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                            <div class="flex items-start gap-2.5">
+                                <svg class="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                <div>
+                                    <p class="font-semibold" x-text="kategoriWarningMessage"></p>
+                                    <p class="text-amber-700 dark:text-amber-300 text-[11px] mt-0.5">Penugasan audit diperlukan untuk menentukan ruang lingkup tim dan unit kerja yang diperiksa sebelum penerbitan LHP.</p>
+                                </div>
+                            </div>
+                            <template x-if="kategoriWarningUrl">
+                                <a :href="kategoriWarningUrl" target="_blank" class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs shadow transition">
+                                    <span x-text="kategoriWarningBtn"></span>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                </a>
+                            </template>
+                        </div>
+
+                        {{-- 1. Program Kerja --}}
                         <div class="md:col-span-2">
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                Program Kerja (PKPT) <span class="text-red-500">*</span>
+                                Program Kerja / Pengawasan <span class="text-red-500">*</span>
+                                <span class="ml-1 text-[11px] font-normal text-gray-500 dark:text-gray-400 normal-case">(PKPT, BPK, BPKP, ITPROV, ITDA, Lainnya)</span>
                             </label>
                             <select id="select-program" data-no-ts class="w-full">
-                                <option value="">-- Pilih Program Kerja --</option>
+                                <option value="">-- Pilih Program Kerja / Pengawasan --</option>
                             </select>
                         </div>
 
@@ -1044,14 +1256,19 @@ function lhpEditWizard() {
                             </select>
                         </div>
 
-                        {{-- 3. Unit Kerja / Objek Audit --}}
+                        {{-- 3. Unit Kerja / Objek Audit (Single Unit) --}}
                         <div class="md:col-span-2">
-                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
                                 Unit Kerja / Objek Audit <span class="text-red-500">*</span>
+                                <span class="ml-1 text-[11px] font-normal text-gray-500 dark:text-gray-400 normal-case">(1 LHP = 1 Unit Kerja)</span>
                             </label>
+
                             <select id="select-unit" data-no-ts disabled class="w-full">
                                 <option value="">-- Pilih Penugasan Terlebih Dahulu --</option>
                             </select>
+                            <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                Setiap LHP mencatat temuan khusus untuk 1 unit kerja / objek audit yang diperiksa.
+                            </p>
                         </div>
                         {{-- Nomor LHP --}}
                         <div>

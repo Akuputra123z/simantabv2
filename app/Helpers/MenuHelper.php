@@ -94,6 +94,10 @@ class MenuHelper
                         'name' => 'Laporan Rekapitulasi',
                         'path' => route('laporan.index', absolute: false),
                     ],
+                    [
+                        'name' => 'Laporan Kepatuhan OPD',
+                        'path' => route('laporan.kepatuhan', absolute: false),
+                    ],
                 ],
             ];
         }

@@ -22,496 +22,731 @@ use Illuminate\Validation\Rule;
         public function __construct(private LhpStatistikService $statistikService) {}
 
         public function index(Request $request)
-{
-    $query = Lhp::with([
-        'auditAssignment.auditProgramDetail.auditProgram', // ✅ FIX: rantai lengkap
-        'statistik',
-        'creator',
-        'unitDiperiksa',
-    ])
-    ->forUser(auth()->user());
-
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->where(function ($q) use ($search) {
-            $q->where('nomor_lhp', 'like', "%{$search}%")
-              ->orWhereHas(
-                  'auditAssignment.auditProgramDetail.auditProgram',
-                  fn($sq) => $sq->where('nama_program', 'like', "%{$search}%")
-              )
-              ->orWhereHas(
-                  'unitDiperiksa',
-                  fn($sq) => $sq->where('nama_unit', 'like', "%{$search}%")
-              );
-        });
-    }
-
-    if ($request->filled('unit_diperiksa_id')) {
-        $query->where('unit_diperiksa_id', $request->unit_diperiksa_id);
-    }
-
-    if ($request->filled('tahun')) {
-        $query->whereYear('tanggal_lhp', $request->tahun);
-    }
-
-    if ($request->filled('kategori')) {
-        $query->whereHas('auditAssignment.auditProgramDetail.auditProgram', fn($q) =>
-            $q->where('kategori', $request->kategori)
-        );
-    }
-
-    $sort = $request->input('sort');
-    $direction = strtolower($request->input('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
-
-    if ($sort) {
-        switch ($sort) {
-            case 'nomor_lhp':
-            case 'nama_program':
-                $query->orderBy(
-                    AuditProgram::select('nama_program')
-                        ->join('audit_program_details', 'audit_program_details.audit_program_id', '=', 'audit_programs.id')
-                        ->join('audit_assignments', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
-                        ->whereColumn('audit_assignments.id', 'lhps.audit_assignment_id')
-                        ->limit(1),
-                    $direction
-                )->orderBy('lhps.nomor_lhp', $direction);
-                break;
-
-            case 'unit_diperiksa':
-                $query->orderBy(
-                    UnitDiperiksa::select('nama_unit')
-                        ->whereColumn('unit_diperiksas.id', 'lhps.unit_diperiksa_id')
-                        ->limit(1),
-                    $direction
-                );
-                break;
-
-            case 'tanggal_lhp':
-                $query->orderBy('lhps.tanggal_lhp', $direction);
-                break;
-
-            case 'progress':
-                $query->orderBy(
-                    LhpStatistik::select('persen_selesai_gabungan')
-                        ->whereColumn('lhp_statistik.lhp_id', 'lhps.id')
-                        ->limit(1),
-                    $direction
-                );
-                break;
-
-            case 'kategori':
-                $query->orderBy(
-                    AuditProgram::select('kategori')
-                        ->join('audit_program_details', 'audit_program_details.audit_program_id', '=', 'audit_programs.id')
-                        ->join('audit_assignments', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
-                        ->whereColumn('audit_assignments.id', 'lhps.audit_assignment_id')
-                        ->limit(1),
-                    $direction
-                );
-                break;
-
-            default:
-                $query->latest('lhps.created_at')->latest('lhps.id');
-                break;
-        }
-    } else {
-        $query->latest('lhps.created_at')->latest('lhps.id');
-    }
-
-    $perPage = (int) $request->input('per_page', 10);
-    if (!in_array($perPage, [10, 20, 30, 50, 100])) {
-        $perPage = 10;
-    }
-
-    $lhps = $query->paginate($perPage)->withQueryString();
-
-    $kategoris = AuditProgram::KATEGORI;
-
-    $tahuns = Lhp::selectRaw('YEAR(tanggal_lhp) as tahun')
-        ->whereNotNull('tanggal_lhp')
-        ->distinct()
-        ->pluck('tahun')
-        ->filter()
-        ->map(fn($y) => (int) $y)
-        ->merge(range((int) date('Y') + 1, (int) date('Y') - 4))
-        ->unique()
-        ->sortDesc()
-        ->values();
-
-    return view('pages.lhps.index', compact('lhps', 'kategoris', 'tahuns', 'sort', 'direction', 'perPage'));
-}
-
-        public function create()
-{
-    $user = auth()->user();
-
-    $assignments = AuditAssignment::query()
-        ->with([
-            'auditProgramDetail.auditProgram',  // <-- PENTING: auditProgram (bukan parentProgram)
+    {
+        $query = Lhp::with([
+            'auditAssignment.auditProgramDetail.auditProgram',
+            'statistik',
+            'creator',
+            'unitDiperiksa',
             'unitDiperiksas',
         ])
-        ->when(! $user->hasRole('super_admin'), function ($q) use ($user) {
-            $q->where('ketua_tim_id', $user->id)
-              ->orWhereHas('members', fn($q2) => $q2->where('user_id', $user->id));
-        })
-        ->latest()
-        ->limit(100)
-        ->get();
+        ->forUser(auth()->user());
 
-    // Map (assignment_id → [unit_diperiksa_id]) yang sudah punya LHP non-dibatalkan
-    $usedUnitMap = Lhp::whereIn('audit_assignment_id', $assignments->pluck('id'))
-        ->where('status', '!=', 'dibatalkan')
-        ->select('audit_assignment_id', 'unit_diperiksa_id')
-        ->get()
-        ->groupBy('audit_assignment_id')
-        ->map(fn($items) => $items->pluck('unit_diperiksa_id')->toArray());
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nomor_lhp', 'like', "%{$search}%")
+                  ->orWhereHas(
+                      'auditAssignment.auditProgramDetail.auditProgram',
+                      fn($sq) => $sq->where('nama_program', 'like', "%{$search}%")
+                  )
+                  ->orWhereHas(
+                      'unitDiperiksas',
+                      fn($sq) => $sq->where('nama_unit', 'like', "%{$search}%")
+                  )
+                  ->orWhereHas(
+                      'unitDiperiksa',
+                      fn($sq) => $sq->where('nama_unit', 'like', "%{$search}%")
+                  );
+            });
+        }
 
-    $kodeTemuans = KodeTemuan::orderBy('kode')->get();
-    $kodeRekoms  = KodeRekomendasi::where('is_active', true)->orderBy('kode')->get();
+        if ($request->filled('unit_diperiksa_id')) {
+            $uId = $request->unit_diperiksa_id;
+            $query->where(function ($q) use ($uId) {
+                $q->where('unit_diperiksa_id', $uId)
+                  ->orWhereHas('unitDiperiksas', fn($sq) => $sq->where('unit_diperiksas.id', $uId));
+            });
+        }
 
-    return view('pages.lhps.create', compact('assignments', 'kodeTemuans', 'kodeRekoms', 'usedUnitMap'));
-}
-        // Contoh di Controller yang menghandle API /lhp/{id}/temuans
-public function getTemuans($lhpId) {
-    return Temuan::with('kodeTemuan') // Pastikan relasi ini dipanggil
-        ->where('lhp_id', $lhpId)
-        ->get()
-        ->map(function($t) {
-            return [
-                'id' => $t->id,
-                'kondisi' => $t->kondisi,
-                'nilai_temuan' => $t->nilai_temuan,
-                // Ambil array dari relasi kodeTemuan
-                'alternatif_rekom' => $t->kodeTemuan ? $t->kodeTemuan->alternatif_rekom : []
-            ];
-        });
-}
+        if ($request->filled('tahun')) {
+            $query->whereYear('tanggal_lhp', $request->tahun);
+        }
+
+        if ($request->filled('kategori')) {
+            $query->whereHas('auditAssignment.auditProgramDetail.auditProgram', fn($q) =>
+                $q->where('kategori', $request->kategori)
+            );
+        }
+
+        $sort = $request->input('sort');
+        $direction = strtolower($request->input('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        if ($sort) {
+            switch ($sort) {
+                case 'nomor_lhp':
+                case 'nama_program':
+                    $query->orderBy(
+                        AuditProgram::select('nama_program')
+                            ->join('audit_program_details', 'audit_program_details.audit_program_id', '=', 'audit_programs.id')
+                            ->join('audit_assignments', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
+                            ->whereColumn('audit_assignments.id', 'lhps.audit_assignment_id')
+                            ->limit(1),
+                        $direction
+                    )->orderBy('lhps.nomor_lhp', $direction);
+                    break;
+
+                case 'unit_diperiksa':
+                    $query->orderBy(
+                        UnitDiperiksa::select('nama_unit')
+                            ->whereColumn('unit_diperiksas.id', 'lhps.unit_diperiksa_id')
+                            ->limit(1),
+                        $direction
+                    );
+                    break;
+
+                case 'tanggal_lhp':
+                    $query->orderBy('lhps.tanggal_lhp', $direction);
+                    break;
+
+                case 'progress':
+                    $query->orderBy(
+                        LhpStatistik::select('persen_selesai_gabungan')
+                            ->whereColumn('lhp_statistik.lhp_id', 'lhps.id')
+                            ->limit(1),
+                        $direction
+                    );
+                    break;
+
+                case 'kategori':
+                    $query->orderBy(
+                        AuditProgram::select('kategori')
+                            ->join('audit_program_details', 'audit_program_details.audit_program_id', '=', 'audit_programs.id')
+                            ->join('audit_assignments', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
+                            ->whereColumn('audit_assignments.id', 'lhps.audit_assignment_id')
+                            ->limit(1),
+                        $direction
+                    );
+                    break;
+
+                default:
+                    $query->latest('lhps.created_at')->latest('lhps.id');
+                    break;
+            }
+        } else {
+            $query->latest('lhps.created_at')->latest('lhps.id');
+        }
+
+        $perPage = (int) $request->input('per_page', 10);
+        if (!in_array($perPage, [10, 20, 30, 50, 100])) {
+            $perPage = 10;
+        }
+
+        $lhps = $query->paginate($perPage)->withQueryString();
+
+        $kategoris = AuditProgram::KATEGORI;
+
+        $tahuns = Lhp::selectRaw('YEAR(tanggal_lhp) as tahun')
+            ->whereNotNull('tanggal_lhp')
+            ->distinct()
+            ->pluck('tahun')
+            ->filter()
+            ->map(fn($y) => (int) $y)
+            ->merge(range((int) date('Y') + 1, (int) date('Y') - 4))
+            ->unique()
+            ->sortDesc()
+            ->values();
+
+        // Peta nomor LHP yang digunakan untuk lebih dari 1 unit (kolektif BPK/BPKP)
+        $sharedNomorMap = Lhp::whereIn('nomor_lhp', $lhps->pluck('nomor_lhp'))
+            ->where('status', '!=', 'dibatalkan')
+            ->whereNull('deleted_at')
+            ->select('nomor_lhp', DB::raw('count(*) as total'))
+            ->groupBy('nomor_lhp')
+            ->having('total', '>', 1)
+            ->pluck('total', 'nomor_lhp')
+            ->toArray();
+
+        return view('pages.lhps.index', compact('lhps', 'kategoris', 'tahuns', 'sort', 'direction', 'perPage', 'sharedNomorMap'));
+    }
+
+    public function create()
+    {
+        $user = auth()->user();
+
+        $assignments = AuditAssignment::query()
+            ->with([
+                'auditProgramDetail.auditProgram',
+                'unitDiperiksas',
+            ])
+            ->when(! $user->hasRole('super_admin'), function ($q) use ($user) {
+                $q->where('ketua_tim_id', $user->id)
+                  ->orWhereHas('members', fn($q2) => $q2->where('user_id', $user->id));
+            })
+            ->latest()
+            ->limit(100)
+            ->get();
+
+        // Map (assignment_id → [unit_diperiksa_id]) yang sudah memiliki LHP non-dibatalkan
+        $usedUnits = DB::table('lhp_unit_diperiksa')
+            ->join('lhps', 'lhps.id', '=', 'lhp_unit_diperiksa.lhp_id')
+            ->whereIn('lhps.audit_assignment_id', $assignments->pluck('id'))
+            ->where('lhps.status', '!=', 'dibatalkan')
+            ->whereNull('lhps.deleted_at')
+            ->select('lhps.audit_assignment_id', 'lhp_unit_diperiksa.unit_diperiksa_id')
+            ->get();
+
+        $usedUnitsLegacy = Lhp::whereIn('audit_assignment_id', $assignments->pluck('id'))
+            ->where('status', '!=', 'dibatalkan')
+            ->whereNotNull('unit_diperiksa_id')
+            ->select('audit_assignment_id', 'unit_diperiksa_id')
+            ->get();
+
+        $usedUnitMap = $usedUnits->concat($usedUnitsLegacy)
+            ->groupBy('audit_assignment_id')
+            ->map(fn($items) => $items->pluck('unit_diperiksa_id')->unique()->values()->toArray())
+            ->toArray();
+
+        $kodeTemuans = KodeTemuan::orderBy('kode')->get();
+        $kodeRekoms  = KodeRekomendasi::where('is_active', true)->orderBy('kode')->get();
+
+        $allPrograms = AuditProgram::withCount(['details', 'assignments'])
+            ->orderBy('tahun', 'desc')
+            ->orderBy('nama_program', 'asc')
+            ->get();
+        $kategoris = AuditProgram::KATEGORI;
+
+        // Data Nomor LHP aktif yang sudah ada untuk opsi reuse/kolektif BPK/BPKP/ITPROV
+        $existingLhpsData = Lhp::with(['auditAssignment.auditProgramDetail.auditProgram', 'unitDiperiksa'])
+            ->where('status', '!=', 'dibatalkan')
+            ->whereNull('deleted_at')
+            ->latest('tanggal_lhp')
+            ->get()
+            ->groupBy('nomor_lhp')
+            ->map(function ($group) {
+                $first = $group->first();
+                $assignment = $first->auditAssignment;
+                $program = $assignment?->auditProgramDetail?->auditProgram;
+                $usedUnitIds = $group->pluck('unit_diperiksa_id')->filter()->unique()->values()->toArray();
+                $totalUnitsInAss = $assignment ? $assignment->unitDiperiksas()->count() : 0;
+                return [
+                    'nomor_lhp'           => $first->nomor_lhp,
+                    'tanggal_lhp'         => $first->tanggal_lhp ? $first->tanggal_lhp->format('Y-m-d') : '',
+                    'catatan_umum'        => $first->catatan_umum ?? '',
+                    'audit_assignment_id' => $first->audit_assignment_id,
+                    'program_id'          => $program?->id,
+                    'kategori'            => $program?->kategori ?: 'PKPT',
+                    'program_nama'        => $program?->nama_program ?? '',
+                    'nomor_surat'         => $assignment?->nomor_surat ?? '',
+                    'total_units_created' => $group->count(),
+                    'total_units_in_ass'  => $totalUnitsInAss,
+                    'used_unit_ids'       => $usedUnitIds,
+                ];
+            })
+            ->values();
+
+        return view('pages.lhps.create', compact('assignments', 'kodeTemuans', 'kodeRekoms', 'usedUnitMap', 'allPrograms', 'kategoris', 'existingLhpsData'));
+    }
+
+    // Contoh di Controller yang menghandle API /lhp/{id}/temuans
+    public function getTemuans($lhpId) {
+        return Temuan::with('kodeTemuan')
+            ->where('lhp_id', $lhpId)
+            ->get()
+            ->map(function($t) {
+                return [
+                    'id' => $t->id,
+                    'kondisi' => $t->kondisi,
+                    'nilai_temuan' => $t->nilai_temuan,
+                    'alternatif_rekom' => $t->kodeTemuan ? $t->kodeTemuan->alternatif_rekom : []
+                ];
+            });
+    }
 
     public function store(Request $request)
-{
-    $cleanRupiah = function($value) {
-        if (empty($value) && $value !== '0' && $value !== 0) return 0;
-        if (is_numeric($value)) return (float) $value;
-        $clean = str_replace('.', '', (string)$value);
-        $clean = str_replace(',', '.', $clean);
-        return (float) preg_replace('/[^0-9.]/', '', $clean);
-    };
+    {
+        $cleanRupiah = function($value) {
+            if (empty($value) && $value !== '0' && $value !== 0) return 0;
+            if (is_numeric($value)) return (float) $value;
+            $clean = str_replace('.', '', (string)$value);
+            $clean = str_replace(',', '.', $clean);
+            return (float) preg_replace('/[^0-9.]/', '', $clean);
+        };
 
-    // Bersihkan data sampah lama (nomor LHP atau kombinasi penugasan-unit) agar tidak bentrok dengan index UNIQUE di MySQL
-    if ($request->filled('nomor_lhp')) {
-        Lhp::onlyTrashed()->where('nomor_lhp', trim($request->nomor_lhp))->forceDelete();
-    }
-    if ($request->filled(['audit_assignment_id', 'unit_diperiksa_id'])) {
-        Lhp::onlyTrashed()
-            ->where('audit_assignment_id', $request->audit_assignment_id)
-            ->where('unit_diperiksa_id', $request->unit_diperiksa_id)
-            ->forceDelete();
-    }
+        // Normalisasi unit_diperiksa_ids (mendukung multi-unit ataupun single unit)
+        $unitDiperiksaIds = $request->input('unit_diperiksa_ids', []);
+        if (empty($unitDiperiksaIds) && $request->filled('unit_diperiksa_id')) {
+            $unitDiperiksaIds = [$request->unit_diperiksa_id];
+        }
+        if (is_string($unitDiperiksaIds)) {
+            $unitDiperiksaIds = explode(',', $unitDiperiksaIds);
+        }
+        $unitDiperiksaIds = array_values(array_unique(array_filter(array_map('intval', (array)$unitDiperiksaIds))));
+        $primaryUnitId = !empty($unitDiperiksaIds) ? $unitDiperiksaIds[0] : $request->unit_diperiksa_id;
 
-    $validated = $request->validate([
-        'audit_assignment_id'             => 'required|exists:audit_assignments,id',
-        'unit_diperiksa_id'               => [
-            'required',
-            'exists:unit_diperiksas,id',
-            Rule::unique('lhps', 'unit_diperiksa_id')
-                ->where('audit_assignment_id', $request->audit_assignment_id)
-                ->whereNull('deleted_at'),
-        ],
-        'nomor_lhp'                       => [
-            'required',
-            'string',
-            Rule::unique('lhps', 'nomor_lhp')->whereNull('deleted_at'),
-        ],
-        'tanggal_lhp'                     => 'required|date',
-        'is_nihil'                        => 'nullable|boolean',
-        'catatan_umum'                    => 'nullable|string',
-        'temuans'                         => 'nullable|array',
-        'temuans.*.kode_temuan_id'        => 'nullable|exists:kode_temuans,id',
-        'temuans.*.kondisi'               => 'nullable|string',
-        'temuans.*.sebab'                 => 'nullable|string',
-        'temuans.*.akibat'                => 'nullable|string',
-        'temuans.*.nilai_kerugian_negara' => 'nullable', 
-        'temuans.*.nilai_kerugian_daerah' => 'nullable',
-        'temuans.*.nilai_kerugian_desa'   => 'nullable',
-        'temuans.*.nilai_kerugian_bos_blud' => 'nullable',
-        'temuans.*.recommendations'                        => 'nullable|array',
-        'temuans.*.recommendations.*.kode_rekomendasi_id' => 'nullable|exists:kode_rekomendasis,id',
-        'temuans.*.recommendations.*.uraian_rekom'        => 'nullable|string',
-        'temuans.*.recommendations.*.jenis_rekomendasi'   => 'nullable|in:uang,barang,administrasi',
-        'temuans.*.recommendations.*.nilai_rekom'         => 'nullable',
-        'temuans.*.recommendations.*.batas_waktu'         => 'nullable|date',
-        'attachments'                     => 'nullable|array',
-        'attachments.*.file_path'         => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
-        'attachments.*.file_name'         => 'nullable|string',
-        'attachments.*.keterangan'        => 'nullable|string',
-    ], [
-        'unit_diperiksa_id.unique' => 'Unit yang diperiksa ini sudah memiliki LHP pada surat penugasan yang sama.',
-        'nomor_lhp.unique'         => 'Nomor LHP sudah digunakan oleh LHP lain.',
-    ]);
-
-    try {
-        DB::beginTransaction();
-
-        $isNihil = $request->boolean('is_nihil');
-
-        $lhp = Lhp::create([
-            'audit_assignment_id' => $validated['audit_assignment_id'],
-            'unit_diperiksa_id'   => $validated['unit_diperiksa_id'],
-            'nomor_lhp'           => $validated['nomor_lhp'],
-            'tanggal_lhp'         => $validated['tanggal_lhp'],
-            'is_nihil'            => $isNihil,
-            'catatan_umum'        => $validated['catatan_umum'] ?? null,
-            'status'              => 'draft',
-            'created_by'          => auth()->id(),
+        $request->merge([
+            'unit_diperiksa_ids' => $unitDiperiksaIds,
+            'unit_diperiksa_id'  => $primaryUnitId,
         ]);
 
-        if (! $isNihil && ! empty($request->temuans)) {
-            foreach ($request->temuans as $temuan) {
-                // Skip jika baris temuan kosong
-                if (empty($temuan['kode_temuan_id']) && empty($temuan['kondisi'])) continue;
+        // Bersihkan data sampah lama (nomor LHP + unit_diperiksa_id) agar tidak bentrok dengan index UNIQUE di MySQL
+        if ($request->filled('nomor_lhp') && $primaryUnitId) {
+            Lhp::onlyTrashed()
+                ->where('nomor_lhp', trim($request->nomor_lhp))
+                ->where('unit_diperiksa_id', $primaryUnitId)
+                ->forceDelete();
+        }
+        if ($request->filled('audit_assignment_id') && !empty($unitDiperiksaIds)) {
+            Lhp::onlyTrashed()
+                ->where('audit_assignment_id', $request->audit_assignment_id)
+                ->whereIn('unit_diperiksa_id', $unitDiperiksaIds)
+                ->forceDelete();
+        }
 
-                // Bersihkan format Rupiah sebelum disimpan
-                $negara  = $cleanRupiah($temuan['nilai_kerugian_negara'] ?? 0);
-                $daerah  = $cleanRupiah($temuan['nilai_kerugian_daerah'] ?? 0);
-                $desa    = $cleanRupiah($temuan['nilai_kerugian_desa'] ?? 0); 
-                $bosBLud = $cleanRupiah($temuan['nilai_kerugian_bos_blud'] ?? 0); 
-                $total   = $negara + $daerah + $desa + $bosBLud;
+        // Cek apakah ada unit yang dipilih sudah digunakan oleh LHP aktif lain pada penugasan yang sama
+        if ($request->filled('audit_assignment_id') && !empty($unitDiperiksaIds)) {
+            $alreadyUsedUnits = DB::table('lhp_unit_diperiksa')
+                ->join('lhps', 'lhps.id', '=', 'lhp_unit_diperiksa.lhp_id')
+                ->where('lhps.audit_assignment_id', $request->audit_assignment_id)
+                ->where('lhps.status', '!=', 'dibatalkan')
+                ->whereNull('lhps.deleted_at')
+                ->whereIn('lhp_unit_diperiksa.unit_diperiksa_id', $unitDiperiksaIds)
+                ->join('unit_diperiksas', 'unit_diperiksas.id', '=', 'lhp_unit_diperiksa.unit_diperiksa_id')
+                ->pluck('unit_diperiksas.nama_unit')
+                ->unique()
+                ->toArray();
 
-                $createdTemuan = $lhp->temuans()->create([
-                    'kode_temuan_id'        => $temuan['kode_temuan_id'] ?? null,
-                    'kondisi'               => !empty(trim($temuan['kondisi'] ?? '')) ? trim($temuan['kondisi']) : '-',
-                    'sebab'                 => $temuan['sebab'] ?? null,
-                    'akibat'                => $temuan['akibat'] ?? null,
-                    'nilai_kerugian_negara' => $negara,
-                    'nilai_kerugian_daerah' => $daerah,
-                    'nilai_kerugian_desa'   => $desa,
-                    'nilai_kerugian_bos_blud' => $bosBLud,
-                    'nilai_temuan'          => $total,
-                    'status_tl'             => 'belum_ditindaklanjuti',
+            if (!empty($alreadyUsedUnits)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'unit_diperiksa_id' => 'Unit berikut sudah memiliki LHP pada penugasan ini: ' . implode(', ', $alreadyUsedUnits),
                 ]);
+            }
+        }
 
-                // Simpan rekomendasi jika diisi
-                if (! empty($temuan['recommendations']) && is_array($temuan['recommendations'])) {
-                    foreach ($temuan['recommendations'] as $rekom) {
-                        if (empty($rekom['kode_rekomendasi_id']) && empty($rekom['uraian_rekom'])) continue;
+        $validated = $request->validate([
+            'audit_assignment_id'             => 'required|exists:audit_assignments,id',
+            'unit_diperiksa_ids'              => 'required|array|min:1',
+            'unit_diperiksa_ids.*'            => 'exists:unit_diperiksas,id',
+            'unit_diperiksa_id'               => 'required|exists:unit_diperiksas,id',
+            'nomor_lhp'                       => [
+                'required',
+                'string',
+                Rule::unique('lhps', 'nomor_lhp')
+                    ->where('unit_diperiksa_id', $primaryUnitId)
+                    ->whereNull('deleted_at'),
+            ],
+            'tanggal_lhp'                     => 'required|date',
+            'is_nihil'                        => 'nullable|boolean',
+            'catatan_umum'                    => 'nullable|string',
+            'temuans'                         => 'nullable|array',
+            'temuans.*.kode_temuan_id'        => 'nullable|exists:kode_temuans,id',
+            'temuans.*.kondisi'               => 'nullable|string',
+            'temuans.*.sebab'                 => 'nullable|string',
+            'temuans.*.akibat'                => 'nullable|string',
+            'temuans.*.nilai_kerugian_negara' => 'nullable', 
+            'temuans.*.nilai_kerugian_daerah' => 'nullable',
+            'temuans.*.nilai_kerugian_desa'   => 'nullable',
+            'temuans.*.nilai_kerugian_bos_blud' => 'nullable',
+            'temuans.*.recommendations'                        => 'nullable|array',
+            'temuans.*.recommendations.*.kode_rekomendasi_id' => 'nullable|exists:kode_rekomendasis,id',
+            'temuans.*.recommendations.*.uraian_rekom'        => 'nullable|string',
+            'temuans.*.recommendations.*.jenis_rekomendasi'   => 'nullable|in:uang,barang,administrasi',
+            'temuans.*.recommendations.*.nilai_rekom'         => 'nullable',
+            'temuans.*.recommendations.*.batas_waktu'         => 'nullable|date',
+            'attachments'                     => 'nullable|array',
+            'attachments.*.file_path'         => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
+            'attachments.*.file_name'         => 'nullable|string',
+            'attachments.*.keterangan'        => 'nullable|string',
+        ], [
+            'unit_diperiksa_ids.required' => 'Pilih minimal 1 unit kerja / objek audit yang diperiksa.',
+            'unit_diperiksa_id.required'  => 'Pilih minimal 1 unit kerja / objek audit yang diperiksa.',
+            'nomor_lhp.unique'            => 'Nomor LHP sudah digunakan oleh LHP lain.',
+        ]);
 
-                        $jenisRekom = $rekom['jenis_rekomendasi'] ?? 'administrasi';
-                        $nilaiRekom = ($jenisRekom === 'uang') ? $cleanRupiah($rekom['nilai_rekom'] ?? 0) : 0;
+        $assignment = AuditAssignment::with('unitDiperiksas')->findOrFail($validated['audit_assignment_id']);
 
-                        $createdTemuan->recommendations()->create([
-                            'kode_rekomendasi_id' => $rekom['kode_rekomendasi_id'] ?? null,
-                            'uraian_rekom'        => !empty(trim($rekom['uraian_rekom'] ?? '')) ? trim($rekom['uraian_rekom']) : '-',
-                            'jenis_rekomendasi'   => $jenisRekom,
-                            'nilai_rekom'         => $nilaiRekom,
-                            'nilai_sisa'          => $nilaiRekom,
-                            'batas_waktu'         => !empty($rekom['batas_waktu']) ? $rekom['batas_waktu'] : now()->addDays(60)->toDateString(),
-                            'status'              => 'belum_ditindaklanjuti',
-                            'created_by'          => auth()->id(),
+        // 1. Authorization: Non-super admin must be ketua_tim or team member
+        $user = auth()->user();
+        if (! $user->hasRole('super_admin')) {
+            $isMemberOrLead = $assignment->ketua_tim_id === $user->id 
+                || $assignment->members()->where('user_id', $user->id)->exists();
+            if (! $isMemberOrLead) {
+                abort(403, 'Anda tidak memiliki wewenang untuk membuat LHP pada penugasan ini.');
+            }
+        }
+
+        // 2. Relational Integrity: Unit kerja must belong to this assignment
+        $validUnitIds = $assignment->unitDiperiksas->pluck('id')->toArray();
+        if (!empty($validUnitIds)) {
+            $invalidUnits = array_diff($unitDiperiksaIds, $validUnitIds);
+            if (!empty($invalidUnits)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'unit_diperiksa_id' => 'Unit kerja yang dipilih tidak terdaftar dalam Surat Tugas / Penugasan ini.',
+                ]);
+            }
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $isNihil = $request->boolean('is_nihil');
+
+            $lhp = Lhp::create([
+                'audit_assignment_id' => $validated['audit_assignment_id'],
+                'unit_diperiksa_id'   => $primaryUnitId,
+                'nomor_lhp'           => $validated['nomor_lhp'],
+                'tanggal_lhp'         => $validated['tanggal_lhp'],
+                'is_nihil'            => $isNihil,
+                'catatan_umum'        => $validated['catatan_umum'] ?? null,
+                'status'              => 'draft',
+                'created_by'          => auth()->id(),
+            ]);
+
+            // Sinkronkan seluruh unit kerja yang dipilih ke pivot lhp_unit_diperiksa
+            $lhp->unitDiperiksas()->sync($unitDiperiksaIds);
+
+            if (! $isNihil && ! empty($request->temuans)) {
+                foreach ($request->temuans as $temuan) {
+                    if (empty($temuan['kode_temuan_id']) && empty($temuan['kondisi'])) continue;
+
+                    $negara  = $cleanRupiah($temuan['nilai_kerugian_negara'] ?? 0);
+                    $daerah  = $cleanRupiah($temuan['nilai_kerugian_daerah'] ?? 0);
+                    $desa    = $cleanRupiah($temuan['nilai_kerugian_desa'] ?? 0); 
+                    $bosBLud = $cleanRupiah($temuan['nilai_kerugian_bos_blud'] ?? 0); 
+                    $total   = $negara + $daerah + $desa + $bosBLud;
+
+                    $createdTemuan = $lhp->temuans()->create([
+                        'kode_temuan_id'        => $temuan['kode_temuan_id'] ?? null,
+                        'kondisi'               => !empty(trim($temuan['kondisi'] ?? '')) ? trim($temuan['kondisi']) : '-',
+                        'sebab'                 => $temuan['sebab'] ?? null,
+                        'akibat'                => $temuan['akibat'] ?? null,
+                        'nilai_kerugian_negara' => $negara,
+                        'nilai_kerugian_daerah' => $daerah,
+                        'nilai_kerugian_desa'   => $desa,
+                        'nilai_kerugian_bos_blud' => $bosBLud,
+                        'nilai_temuan'          => $total,
+                        'status_tl'             => 'belum_ditindaklanjuti',
+                    ]);
+
+                    if (! empty($temuan['recommendations']) && is_array($temuan['recommendations'])) {
+                        foreach ($temuan['recommendations'] as $rekom) {
+                            if (empty($rekom['kode_rekomendasi_id']) && empty($rekom['uraian_rekom'])) continue;
+
+                            $jenisRekom = $rekom['jenis_rekomendasi'] ?? 'administrasi';
+                            $nilaiRekom = ($jenisRekom === 'uang') ? $cleanRupiah($rekom['nilai_rekom'] ?? 0) : 0;
+
+                            $createdTemuan->recommendations()->create([
+                                'kode_rekomendasi_id' => $rekom['kode_rekomendasi_id'] ?? null,
+                                'uraian_rekom'        => !empty(trim($rekom['uraian_rekom'] ?? '')) ? trim($rekom['uraian_rekom']) : '-',
+                                'jenis_rekomendasi'   => $jenisRekom,
+                                'nilai_rekom'         => $nilaiRekom,
+                                'nilai_sisa'          => $nilaiRekom,
+                                'batas_waktu'         => !empty($rekom['batas_waktu']) ? $rekom['batas_waktu'] : now()->addDays(60)->toDateString(),
+                                'status'              => 'belum_ditindaklanjuti',
+                                'created_by'          => auth()->id(),
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            if (! empty($request->attachments)) {
+                foreach ($request->attachments as $item) {
+                    if (isset($item['file_path']) && $item['file_path'] instanceof \Illuminate\Http\UploadedFile) {
+                        $path = $item['file_path']->store('lhp/attachments', 'local');
+                        $lhp->attachments()->create([
+                            'file_path'   => $path,
+                            'file_name'   => $item['file_name'] ?? $item['file_path']->getClientOriginalName(),
+                            'keterangan'  => $item['keterangan'] ?? null,
+                            'jenis_bukti' => 'lhp',
+                            'uploaded_by' => auth()->id(),
                         ]);
                     }
                 }
             }
+
+            DB::commit();
+
+            $this->statistikService->updateStatistik($lhp->id);
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success'  => true,
+                    'message'  => "LHP nomor {$lhp->nomor_lhp} beserta temuan dan rekomendasi berhasil dibuat.",
+                    'redirect' => route('lhps.index'),
+                ]);
+            }
+
+            return redirect()->route('lhps.index')
+                ->with('success', "LHP nomor {$lhp->nomor_lhp} beserta temuan dan rekomendasi berhasil dibuat.");
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            throw $e;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::error('Gagal menyimpan LHP: ' . $e->getMessage());
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menyimpan LHP: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->withInput()->with('error', 'Gagal menyimpan LHP: ' . $e->getMessage());
+        }
+    }
+
+    public function show(Lhp $lhp)
+    {
+        $lhp->load([
+            'temuans.kodeTemuan',
+            'temuans.recommendations.kodeRekomendasi',
+            'temuans.recommendations.tindakLanjuts',
+            'auditAssignment.auditProgramDetail.auditProgram',
+            'auditAssignment.unitDiperiksas',
+            'unitDiperiksa',
+            'unitDiperiksas',
+            'attachments',
+            'statistik',
+            'creator',
+        ]);
+
+        return view('pages.lhps.show', compact('lhp'));
+    }
+
+    public function edit(Lhp $lhp)
+    {
+        $user = auth()->user();
+
+        $assignments = AuditAssignment::with(['auditProgramDetail.auditProgram', 'unitDiperiksas'])
+            ->when(! $user->hasRole('super_admin'), function ($q) use ($user, $lhp) {
+                $q->where('id', $lhp->audit_assignment_id)
+                    ->orWhere('ketua_tim_id', $user->id)
+                    ->orWhereHas('members', fn ($q2) => $q2->where('user_id', $user->id));
+            })->get();
+
+        $usedUnits = DB::table('lhp_unit_diperiksa')
+            ->join('lhps', 'lhps.id', '=', 'lhp_unit_diperiksa.lhp_id')
+            ->where('lhps.id', '!=', $lhp->id)
+            ->whereIn('lhps.audit_assignment_id', $assignments->pluck('id'))
+            ->where('lhps.status', '!=', 'dibatalkan')
+            ->whereNull('lhps.deleted_at')
+            ->select('lhps.audit_assignment_id', 'lhp_unit_diperiksa.unit_diperiksa_id')
+            ->get();
+
+        $usedUnitsLegacy = Lhp::where('id', '!=', $lhp->id)
+            ->whereIn('audit_assignment_id', $assignments->pluck('id'))
+            ->where('status', '!=', 'dibatalkan')
+            ->whereNotNull('unit_diperiksa_id')
+            ->select('audit_assignment_id', 'unit_diperiksa_id')
+            ->get();
+
+        $usedUnitMap = $usedUnits->concat($usedUnitsLegacy)
+            ->groupBy('audit_assignment_id')
+            ->map(fn($items) => $items->pluck('unit_diperiksa_id')->unique()->values()->toArray())
+            ->toArray();
+
+        $kodeTemuans = KodeTemuan::orderBy('kode')->get();
+        $kodeRekoms  = KodeRekomendasi::where('is_active', true)->orderBy('kode')->get();
+
+        $allPrograms = AuditProgram::withCount(['details', 'assignments'])
+            ->orderBy('tahun', 'desc')
+            ->orderBy('nama_program', 'asc')
+            ->get();
+        $kategoris = AuditProgram::KATEGORI;
+
+        $lhp->load([
+            'temuans.kodeTemuan',
+            'temuans.recommendations.kodeRekomendasi',
+            'auditAssignment.auditProgramDetail.auditProgram',
+            'unitDiperiksas',
+            'attachments',
+        ]);
+
+        return view('pages.lhps.edit', compact('lhp', 'assignments', 'kodeTemuans', 'kodeRekoms', 'usedUnitMap', 'allPrograms', 'kategoris'));
+    }
+
+    public function update(Request $request, Lhp $lhp)
+    {
+        $cleanRupiah = function($value) {
+            if (empty($value) && $value !== '0' && $value !== 0) return 0;
+            if (is_numeric($value)) return (float) $value;
+            $clean = str_replace('.', '', (string)$value);
+            $clean = str_replace(',', '.', $clean);
+            return (float) preg_replace('/[^0-9.]/', '', $clean);
+        };
+
+        // Normalisasi unit_diperiksa_ids
+        $unitDiperiksaIds = $request->input('unit_diperiksa_ids', []);
+        if (empty($unitDiperiksaIds) && $request->filled('unit_diperiksa_id')) {
+            $unitDiperiksaIds = [$request->unit_diperiksa_id];
+        }
+        if (is_string($unitDiperiksaIds)) {
+            $unitDiperiksaIds = explode(',', $unitDiperiksaIds);
+        }
+        $unitDiperiksaIds = array_values(array_unique(array_filter(array_map('intval', (array)$unitDiperiksaIds))));
+        $primaryUnitId = !empty($unitDiperiksaIds) ? $unitDiperiksaIds[0] : ($request->unit_diperiksa_id ?: $lhp->unit_diperiksa_id);
+
+        $request->merge([
+            'unit_diperiksa_ids' => $unitDiperiksaIds,
+            'unit_diperiksa_id'  => $primaryUnitId,
+        ]);
+
+        if ($request->filled('nomor_lhp') && $primaryUnitId) {
+            Lhp::onlyTrashed()
+                ->where('nomor_lhp', trim($request->nomor_lhp))
+                ->where('unit_diperiksa_id', $primaryUnitId)
+                ->where('id', '!=', $lhp->id)
+                ->forceDelete();
+        }
+        if ($request->filled('audit_assignment_id') && !empty($unitDiperiksaIds)) {
+            Lhp::onlyTrashed()
+                ->where('audit_assignment_id', $request->audit_assignment_id)
+                ->whereIn('unit_diperiksa_id', $unitDiperiksaIds)
+                ->where('id', '!=', $lhp->id)
+                ->forceDelete();
         }
 
-        if (! empty($request->attachments)) {
-            foreach ($request->attachments as $item) {
-                if (isset($item['file_path']) && $item['file_path'] instanceof \Illuminate\Http\UploadedFile) {
-                    $path = $item['file_path']->store('lhp/attachments', 'local');
-                    $lhp->attachments()->create([
-                        'file_path'   => $path,
-                        'file_name'   => $item['file_name'] ?? $item['file_path']->getClientOriginalName(),
-                        'keterangan'  => $item['keterangan'] ?? null,
-                        'jenis_bukti' => 'lhp',
-                        'uploaded_by' => auth()->id(),
-                    ]);
-                }
+        // Cek apakah ada unit yang dipilih sudah digunakan oleh LHP aktif lain pada penugasan yang sama
+        if ($request->filled('audit_assignment_id') && !empty($unitDiperiksaIds)) {
+            $alreadyUsedUnits = DB::table('lhp_unit_diperiksa')
+                ->join('lhps', 'lhps.id', '=', 'lhp_unit_diperiksa.lhp_id')
+                ->where('lhps.audit_assignment_id', $request->audit_assignment_id)
+                ->where('lhps.id', '!=', $lhp->id)
+                ->where('lhps.status', '!=', 'dibatalkan')
+                ->whereNull('lhps.deleted_at')
+                ->whereIn('lhp_unit_diperiksa.unit_diperiksa_id', $unitDiperiksaIds)
+                ->join('unit_diperiksas', 'unit_diperiksas.id', '=', 'lhp_unit_diperiksa.unit_diperiksa_id')
+                ->pluck('unit_diperiksas.nama_unit')
+                ->unique()
+                ->toArray();
+
+            if (!empty($alreadyUsedUnits)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'unit_diperiksa_id' => 'Unit berikut sudah memiliki LHP pada penugasan ini: ' . implode(', ', $alreadyUsedUnits),
+                ]);
             }
         }
 
-        DB::commit();
+        $validated = $request->validate([
+            'audit_assignment_id'             => 'required|exists:audit_assignments,id',
+            'unit_diperiksa_ids'              => 'required|array|min:1',
+            'unit_diperiksa_ids.*'            => 'exists:unit_diperiksas,id',
+            'unit_diperiksa_id'               => 'required|exists:unit_diperiksas,id',
+            'nomor_lhp'                       => [
+                'required',
+                'string',
+                Rule::unique('lhps', 'nomor_lhp')
+                    ->ignore($lhp->id)
+                    ->where('unit_diperiksa_id', $primaryUnitId)
+                    ->whereNull('deleted_at'),
+            ],
+            'tanggal_lhp'                     => 'required|date',
+            'is_nihil'                        => 'nullable|boolean',
+            'catatan_umum'                    => 'nullable|string',
+            'temuans'                         => 'nullable|array',
+            'temuans.*.id'                    => 'nullable',
+            'temuans.*.kode_temuan_id'        => 'nullable|exists:kode_temuans,id',
+            'temuans.*.kondisi'               => 'nullable|string',
+            'temuans.*.sebab'                 => 'nullable|string',
+            'temuans.*.akibat'                => 'nullable|string',
+            'temuans.*.nilai_kerugian_negara'   => 'nullable',
+            'temuans.*.nilai_kerugian_daerah'   => 'nullable',
+            'temuans.*.nilai_kerugian_desa'     => 'nullable',
+            'temuans.*.nilai_kerugian_bos_blud' => 'nullable',
+            'temuans.*.recommendations'                         => 'nullable|array',
+            'temuans.*.recommendations.*.id'                  => 'nullable',
+            'temuans.*.recommendations.*.kode_rekomendasi_id' => 'nullable|exists:kode_rekomendasis,id',
+            'temuans.*.recommendations.*.uraian_rekom'        => 'nullable|string',
+            'temuans.*.recommendations.*.jenis_rekomendasi'   => 'nullable|in:uang,barang,administrasi',
+            'temuans.*.recommendations.*.nilai_rekom'         => 'nullable',
+            'temuans.*.recommendations.*.batas_waktu'         => 'nullable|date',
+            'attachments'                       => 'nullable|array',
+            'attachments.*.file_path'           => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
+            'attachments.*.file_name'           => 'nullable|string',
+            'attachments.*.keterangan'          => 'nullable|string',
+        ], [
+            'unit_diperiksa_ids.required' => 'Pilih minimal 1 unit kerja / objek audit yang diperiksa.',
+            'unit_diperiksa_id.required'  => 'Pilih minimal 1 unit kerja / objek audit yang diperiksa.',
+            'nomor_lhp.unique'            => 'Nomor LHP sudah digunakan oleh LHP lain.',
+        ]);
 
-        // Update statistik LHP
-        $this->statistikService->updateStatistik($lhp->id);
+        $assignment = AuditAssignment::with('unitDiperiksas')->findOrFail($validated['audit_assignment_id']);
 
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'success'  => true,
-                'message'  => "LHP nomor {$lhp->nomor_lhp} beserta temuan dan rekomendasi berhasil dibuat.",
-                'redirect' => route('lhps.index'),
-            ]);
+        // 1. Authorization: Non-super admin must be creator, ketua_tim, or team member
+        $user = auth()->user();
+        if (! $user->hasRole('super_admin')) {
+            $isAuthorized = $lhp->created_by === $user->id
+                || $assignment->ketua_tim_id === $user->id 
+                || $assignment->members()->where('user_id', $user->id)->exists();
+            if (! $isAuthorized) {
+                abort(403, 'Anda tidak memiliki wewenang untuk mengubah LHP ini.');
+            }
         }
 
-        return redirect()->route('lhps.index')
-            ->with('success', "LHP nomor {$lhp->nomor_lhp} beserta temuan dan rekomendasi berhasil dibuat.");
-
-    } catch (\Throwable $e) {
-        DB::rollBack();
-        \Log::error('Gagal menyimpan LHP: ' . $e->getMessage());
-
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menyimpan LHP: ' . $e->getMessage(),
-            ], 500);
+        // 2. Relational Integrity: Unit kerja must belong to this assignment
+        $validUnitIds = $assignment->unitDiperiksas->pluck('id')->toArray();
+        if (!empty($validUnitIds)) {
+            $invalidUnits = array_diff($unitDiperiksaIds, $validUnitIds);
+            if (!empty($invalidUnits)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'unit_diperiksa_id' => 'Unit kerja yang dipilih tidak terdaftar dalam Surat Tugas / Penugasan ini.',
+                ]);
+            }
         }
 
-        return back()->withInput()->with('error', 'Gagal menyimpan LHP: ' . $e->getMessage());
-    }
-}
-       public function show(Lhp $lhp)
-{
-     $lhp->load([
-        'temuans.kodeTemuan',
-        'temuans.recommendations.kodeRekomendasi',  // ✅ load kodeRekomendasi untuk display di drawer
-        'temuans.recommendations.tindakLanjuts',
-        // ✅ Rantai relasi yang benar dan konsisten
-        'auditAssignment.auditProgramDetail.auditProgram',
-        'auditAssignment.unitDiperiksas', // tetap load untuk konteks jika perlu
-        'unitDiperiksa',                  // ✅ unit spesifik yang dipilih saat buat LHP
-        'attachments',
-        'statistik',
-        'creator',
-    ]);
+        try {
+            DB::beginTransaction();
 
-    return view('pages.lhps.show', compact('lhp'));
-}
+            $isNihil = $request->boolean('is_nihil');
+            $updateData = collect($validated)->except(['temuans', 'attachments', 'unit_diperiksa_ids'])->toArray();
+            $updateData['unit_diperiksa_id'] = $primaryUnitId;
+            $updateData['is_nihil'] = $isNihil;
 
-        public function edit(Lhp $lhp)
-        {
-            $user = auth()->user();
+            $lhp->update($updateData);
 
-            $assignments = AuditAssignment::with(['auditProgramDetail.auditProgram', 'unitDiperiksas'])
-                ->when(! $user->hasRole('super_admin'), function ($q) use ($user, $lhp) {
-                    $q->where('id', $lhp->audit_assignment_id)
-                        ->orWhere('ketua_tim_id', $user->id)
-                        ->orWhereHas('members', fn ($q2) => $q2->where('user_id', $user->id));
-                })->get();
+            // Sinkronkan seluruh unit kerja yang dipilih ke pivot lhp_unit_diperiksa
+            $lhp->unitDiperiksas()->sync($unitDiperiksaIds);
 
-            $usedUnitMap = Lhp::where('id', '!=', $lhp->id)
-                ->select('audit_assignment_id', 'unit_diperiksa_id')
-                ->get()
-                ->groupBy('audit_assignment_id')
-                ->map(fn($items) => $items->pluck('unit_diperiksa_id')->toArray());
-
-            $kodeTemuans = KodeTemuan::orderBy('kode')->get();
-            $kodeRekoms  = KodeRekomendasi::where('is_active', true)->orderBy('kode')->get();
-
-            $lhp->load([
-                'temuans.kodeTemuan',
-                'temuans.recommendations.kodeRekomendasi',
-                'auditAssignment.auditProgramDetail.auditProgram',
-                'attachments',
-            ]);
-
-            return view('pages.lhps.edit', compact('lhp', 'assignments', 'kodeTemuans', 'kodeRekoms', 'usedUnitMap'));
-        }
-
-        public function update(Request $request, Lhp $lhp)
-        {
-    $cleanRupiah = function($value) {
-        if (empty($value) && $value !== '0' && $value !== 0) return 0;
-        if (is_numeric($value)) return (float) $value;
-        $clean = str_replace('.', '', (string)$value);
-        $clean = str_replace(',', '.', $clean);
-        return (float) preg_replace('/[^0-9.]/', '', $clean);
-    };
-
-    // Jika nomor LHP atau kombinasi penugasan-unit diubah ke data yang pernah di-soft delete, bersihkan data sampahnya
-    if ($request->filled('nomor_lhp')) {
-        Lhp::onlyTrashed()->where('nomor_lhp', trim($request->nomor_lhp))->where('id', '!=', $lhp->id)->forceDelete();
-    }
-    if ($request->filled(['audit_assignment_id', 'unit_diperiksa_id'])) {
-        Lhp::onlyTrashed()
-            ->where('audit_assignment_id', $request->audit_assignment_id)
-            ->where('unit_diperiksa_id', $request->unit_diperiksa_id)
-            ->where('id', '!=', $lhp->id)
-            ->forceDelete();
-    }
-
-    $validated = $request->validate([
-        'audit_assignment_id'             => 'required|exists:audit_assignments,id',
-        'unit_diperiksa_id'               => [
-            'required',
-            'exists:unit_diperiksas,id',
-            Rule::unique('lhps', 'unit_diperiksa_id')
-                ->where('audit_assignment_id', $request->audit_assignment_id)
-                ->ignore($lhp->id)
-                ->whereNull('deleted_at'),
-        ],
-        'nomor_lhp'                       => [
-            'required',
-            'string',
-            Rule::unique('lhps', 'nomor_lhp')->ignore($lhp->id)->whereNull('deleted_at'),
-        ],
-        'tanggal_lhp'                     => 'required|date',
-        'is_nihil'                        => 'nullable|boolean',
-        'catatan_umum'                    => 'nullable|string',
-        'temuans'                         => 'nullable|array',
-        'temuans.*.id'                    => 'nullable',
-        'temuans.*.kode_temuan_id'        => 'nullable|exists:kode_temuans,id',
-        'temuans.*.kondisi'               => 'nullable|string',
-        'temuans.*.sebab'                 => 'nullable|string',
-        'temuans.*.akibat'                => 'nullable|string',
-        'temuans.*.nilai_kerugian_negara'   => 'nullable',
-        'temuans.*.nilai_kerugian_daerah'   => 'nullable',
-        'temuans.*.nilai_kerugian_desa'     => 'nullable',
-        'temuans.*.nilai_kerugian_bos_blud' => 'nullable',
-        'temuans.*.recommendations'                         => 'nullable|array',
-        'temuans.*.recommendations.*.id'                  => 'nullable',
-        'temuans.*.recommendations.*.kode_rekomendasi_id' => 'nullable|exists:kode_rekomendasis,id',
-        'temuans.*.recommendations.*.uraian_rekom'        => 'nullable|string',
-        'temuans.*.recommendations.*.jenis_rekomendasi'   => 'nullable|in:uang,barang,administrasi',
-        'temuans.*.recommendations.*.nilai_rekom'         => 'nullable',
-        'temuans.*.recommendations.*.batas_waktu'         => 'nullable|date',
-        'attachments'                       => 'nullable|array',
-        'attachments.*.file_path'           => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
-        'attachments.*.file_name'           => 'nullable|string',
-        'attachments.*.keterangan'          => 'nullable|string',
-    ], [
-        'unit_diperiksa_id.unique' => 'Unit yang diperiksa ini sudah memiliki LHP pada surat penugasan yang sama.',
-        'nomor_lhp.unique'         => 'Nomor LHP sudah digunakan oleh LHP lain.',
-    ]);
-
-    try {
-        DB::beginTransaction();
-
-        $isNihil = $request->boolean('is_nihil');
-        $updateData = collect($validated)->except(['temuans', 'attachments'])->toArray();
-        $updateData['is_nihil'] = $isNihil;
-
-        $lhp->update($updateData);
-
-        if ($isNihil) {
-            // Jika diubah menjadi NIHIL, hapus seluruh temuan & rekomendasi eksisting
-            $lhp->temuans()->each(function ($oldTemuan) {
-                $oldTemuan->recommendations()->each(function ($rekom) {
-                    $rekom->tindakLanjuts()->delete();
+            if ($isNihil) {
+                // Jika diubah menjadi NIHIL, hapus seluruh temuan & rekomendasi eksisting
+                $lhp->temuans()->each(function ($oldTemuan) {
+                    $oldTemuan->recommendations()->each(function ($rekom) {
+                        $rekom->tindakLanjuts()->delete();
+                    });
+                    $oldTemuan->delete();
                 });
-                $oldTemuan->delete();
-            });
-        } elseif ($request->has('temuans')) {
-            $existingIds = collect($request->temuans)->pluck('id')->filter()->toArray();
+            } elseif ($request->has('temuans')) {
+                $existingIds = collect($request->temuans)->pluck('id')->filter()->toArray();
 
-            $lhp->temuans()->whereNotIn('id', $existingIds)->each(function ($oldTemuan) {
-                $oldTemuan->recommendations()->each(function ($rekom) {
-                    $rekom->tindakLanjuts()->delete();
+                $lhp->temuans()->whereNotIn('id', $existingIds)->each(function ($oldTemuan) {
+                    $oldTemuan->recommendations()->each(function ($rekom) {
+                        $rekom->tindakLanjuts()->delete();
+                    });
+                    $oldTemuan->delete();
                 });
-                $oldTemuan->delete();
-            });
 
-            foreach ($request->temuans as $temuan) {
-                $negara   = $cleanRupiah($temuan['nilai_kerugian_negara']   ?? 0);
-                $daerah   = $cleanRupiah($temuan['nilai_kerugian_daerah']   ?? 0);
-                $desa     = $cleanRupiah($temuan['nilai_kerugian_desa']     ?? 0);
-                $bosBLud  = $cleanRupiah($temuan['nilai_kerugian_bos_blud'] ?? 0);
-                $totalNilaiBaru = $negara + $daerah + $desa + $bosBLud;
+                foreach ($request->temuans as $temuan) {
+                    $negara   = $cleanRupiah($temuan['nilai_kerugian_negara']   ?? 0);
+                    $daerah   = $cleanRupiah($temuan['nilai_kerugian_daerah']   ?? 0);
+                    $desa     = $cleanRupiah($temuan['nilai_kerugian_desa']     ?? 0);
+                    $bosBLud  = $cleanRupiah($temuan['nilai_kerugian_bos_blud'] ?? 0);
+                    $totalNilaiBaru = $negara + $daerah + $desa + $bosBLud;
 
-                $targetTemuan = null;
+                    $targetTemuan = null;
 
-                if (!empty($temuan['id'])) {
-                    $existing = $lhp->temuans()->find($temuan['id']);
-                    if ($existing) {
-                        $existing->update([
+                    if (!empty($temuan['id'])) {
+                        $existing = $lhp->temuans()->find($temuan['id']);
+                        if ($existing) {
+                            $existing->update([
+                                'kode_temuan_id'          => $temuan['kode_temuan_id'] ?? null,
+                                'kondisi'                 => !empty(trim($temuan['kondisi'] ?? '')) ? trim($temuan['kondisi']) : '-',
+                                'sebab'                   => $temuan['sebab'] ?? null,
+                                'akibat'                  => $temuan['akibat'] ?? null,
+                                'nilai_kerugian_negara'   => $negara,
+                                'nilai_kerugian_daerah'   => $daerah,
+                                'nilai_kerugian_desa'     => $desa,
+                                'nilai_kerugian_bos_blud' => $bosBLud,
+                                'nilai_temuan'            => $totalNilaiBaru,
+                            ]);
+                            $targetTemuan = $existing;
+                        }
+                    } else {
+                        if (empty($temuan['kode_temuan_id']) && empty($temuan['kondisi'])) continue;
+
+                        $targetTemuan = $lhp->temuans()->create([
                             'kode_temuan_id'          => $temuan['kode_temuan_id'] ?? null,
                             'kondisi'                 => !empty(trim($temuan['kondisi'] ?? '')) ? trim($temuan['kondisi']) : '-',
                             'sebab'                   => $temuan['sebab'] ?? null,
@@ -521,106 +756,91 @@ public function getTemuans($lhpId) {
                             'nilai_kerugian_desa'     => $desa,
                             'nilai_kerugian_bos_blud' => $bosBLud,
                             'nilai_temuan'            => $totalNilaiBaru,
+                            'status_tl'               => 'belum_ditindaklanjuti',
                         ]);
-                        $targetTemuan = $existing;
                     }
-                } else {
-                    if (empty($temuan['kode_temuan_id']) && empty($temuan['kondisi'])) continue;
 
-                    $targetTemuan = $lhp->temuans()->create([
-                        'kode_temuan_id'          => $temuan['kode_temuan_id'] ?? null,
-                        'kondisi'                 => !empty(trim($temuan['kondisi'] ?? '')) ? trim($temuan['kondisi']) : '-',
-                        'sebab'                   => $temuan['sebab'] ?? null,
-                        'akibat'                  => $temuan['akibat'] ?? null,
-                        'nilai_kerugian_negara'   => $negara,
-                        'nilai_kerugian_daerah'   => $daerah,
-                        'nilai_kerugian_desa'     => $desa,
-                        'nilai_kerugian_bos_blud' => $bosBLud,
-                        'nilai_temuan'            => $totalNilaiBaru,
-                        'status_tl'               => 'belum_ditindaklanjuti',
-                    ]);
-                }
+                    if ($targetTemuan) {
+                        $incomingRekomIds = collect($temuan['recommendations'] ?? [])->pluck('id')->filter()->toArray();
+                        $targetTemuan->recommendations()->whereNotIn('id', $incomingRekomIds)->each(function ($oldRekom) {
+                            $oldRekom->tindakLanjuts()->delete();
+                            $oldRekom->delete();
+                        });
 
-                // Handle nested recommendations update/create/delete
-                if ($targetTemuan) {
-                    $incomingRekomIds = collect($temuan['recommendations'] ?? [])->pluck('id')->filter()->toArray();
-                    $targetTemuan->recommendations()->whereNotIn('id', $incomingRekomIds)->each(function ($oldRekom) {
-                        $oldRekom->tindakLanjuts()->delete();
-                        $oldRekom->delete();
-                    });
+                        if (! empty($temuan['recommendations']) && is_array($temuan['recommendations'])) {
+                            foreach ($temuan['recommendations'] as $rekom) {
+                                if (empty($rekom['kode_rekomendasi_id']) && empty($rekom['uraian_rekom'])) continue;
 
-                    if (! empty($temuan['recommendations']) && is_array($temuan['recommendations'])) {
-                        foreach ($temuan['recommendations'] as $rekom) {
-                            if (empty($rekom['kode_rekomendasi_id']) && empty($rekom['uraian_rekom'])) continue;
+                                $jenisRekom = $rekom['jenis_rekomendasi'] ?? 'administrasi';
+                                $nilaiRekom = ($jenisRekom === 'uang') ? $cleanRupiah($rekom['nilai_rekom'] ?? 0) : 0;
 
-                            $jenisRekom = $rekom['jenis_rekomendasi'] ?? 'administrasi';
-                            $nilaiRekom = ($jenisRekom === 'uang') ? $cleanRupiah($rekom['nilai_rekom'] ?? 0) : 0;
-
-                            if (!empty($rekom['id'])) {
-                                $existingRekom = $targetTemuan->recommendations()->find($rekom['id']);
-                                if ($existingRekom) {
-                                    $existingRekom->update([
+                                if (!empty($rekom['id'])) {
+                                    $existingRekom = $targetTemuan->recommendations()->find($rekom['id']);
+                                    if ($existingRekom) {
+                                        $existingRekom->update([
+                                            'kode_rekomendasi_id' => $rekom['kode_rekomendasi_id'] ?? null,
+                                            'uraian_rekom'        => !empty(trim($rekom['uraian_rekom'] ?? '')) ? trim($rekom['uraian_rekom']) : '-',
+                                            'jenis_rekomendasi'   => $jenisRekom,
+                                            'nilai_rekom'         => $nilaiRekom,
+                                            'nilai_sisa'          => max(0, $nilaiRekom - (float)($existingRekom->nilai_tl_selesai ?? 0)),
+                                            'batas_waktu'         => !empty($rekom['batas_waktu']) ? $rekom['batas_waktu'] : $existingRekom->batas_waktu,
+                                        ]);
+                                    }
+                                } else {
+                                    $targetTemuan->recommendations()->create([
                                         'kode_rekomendasi_id' => $rekom['kode_rekomendasi_id'] ?? null,
                                         'uraian_rekom'        => !empty(trim($rekom['uraian_rekom'] ?? '')) ? trim($rekom['uraian_rekom']) : '-',
                                         'jenis_rekomendasi'   => $jenisRekom,
                                         'nilai_rekom'         => $nilaiRekom,
-                                        'nilai_sisa'          => max(0, $nilaiRekom - (float)($existingRekom->nilai_tl_selesai ?? 0)),
-                                        'batas_waktu'         => !empty($rekom['batas_waktu']) ? $rekom['batas_waktu'] : $existingRekom->batas_waktu,
+                                        'nilai_sisa'          => $nilaiRekom,
+                                        'batas_waktu'         => !empty($rekom['batas_waktu']) ? $rekom['batas_waktu'] : now()->addDays(60)->toDateString(),
+                                        'status'              => 'belum_ditindaklanjuti',
+                                        'created_by'          => auth()->id(),
                                     ]);
                                 }
-                            } else {
-                                $targetTemuan->recommendations()->create([
-                                    'kode_rekomendasi_id' => $rekom['kode_rekomendasi_id'] ?? null,
-                                    'uraian_rekom'        => !empty(trim($rekom['uraian_rekom'] ?? '')) ? trim($rekom['uraian_rekom']) : '-',
-                                    'jenis_rekomendasi'   => $jenisRekom,
-                                    'nilai_rekom'         => $nilaiRekom,
-                                    'nilai_sisa'          => $nilaiRekom,
-                                    'batas_waktu'         => !empty($rekom['batas_waktu']) ? $rekom['batas_waktu'] : now()->addDays(60)->toDateString(),
-                                    'status'              => 'belum_ditindaklanjuti',
-                                    'created_by'          => auth()->id(),
-                                ]);
                             }
                         }
                     }
                 }
             }
-        }
 
-        // SIMPAN ATTACHMENT BARU
-        if ($request->has('attachments')) {
-            foreach ($request->attachments as $item) {
-                if (
-                    isset($item['file_path']) &&
-                    $item['file_path'] instanceof \Illuminate\Http\UploadedFile
-                ) {
-                    $path = $item['file_path']->store('lhp/attachments', 'local');
-                    $lhp->attachments()->create([
-                        'file_path'   => $path,
-                        'file_name'   => $item['file_name'] ?? $item['file_path']->getClientOriginalName(),
-                        'keterangan'  => $item['keterangan'] ?? null,
-                        'jenis_bukti' => 'lhp',
-                        'uploaded_by' => auth()->id(),
-                    ]);
+            // SIMPAN ATTACHMENT BARU
+            if ($request->has('attachments')) {
+                foreach ($request->attachments as $item) {
+                    if (
+                        isset($item['file_path']) &&
+                        $item['file_path'] instanceof \Illuminate\Http\UploadedFile
+                    ) {
+                        $path = $item['file_path']->store('lhp/attachments', 'local');
+                        $lhp->attachments()->create([
+                            'file_path'   => $path,
+                            'file_name'   => $item['file_name'] ?? $item['file_path']->getClientOriginalName(),
+                            'keterangan'  => $item['keterangan'] ?? null,
+                            'jenis_bukti' => 'lhp',
+                            'uploaded_by' => auth()->id(),
+                        ]);
+                    }
                 }
             }
-        }
 
-        DB::commit();
+            DB::commit();
 
-        $this->statistikService->updateStatistik($lhp->id);
+            $this->statistikService->updateStatistik($lhp->id);
 
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'success'  => true,
-                'message'  => 'LHP berhasil diperbarui dan statistik disinkronkan.',
-                'redirect' => route('lhps.index'),
-            ]);
-        }
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success'  => true,
+                    'message'  => 'LHP berhasil diperbarui dan statistik disinkronkan.',
+                    'redirect' => route('lhps.index'),
+                ]);
+            }
 
-        return redirect()->route('lhps.index')
-            ->with('success', 'LHP berhasil diperbarui dan statistik disinkronkan.');
+            return redirect()->route('lhps.index')
+                ->with('success', 'LHP berhasil diperbarui dan statistik disinkronkan.');
 
-    } catch (\Throwable $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            throw $e;
         DB::rollBack();
         \Log::error('Gagal update LHP: ' . $e->getMessage());
 
@@ -636,6 +856,11 @@ public function getTemuans($lhpId) {
 }
         public function destroy(Lhp $lhp)
         {
+            $user = auth()->user();
+            if (! $user->hasRole('super_admin')) {
+                abort(403, 'Hanya Administrator yang memiliki wewenang untuk menghapus data LHP.');
+            }
+
             // Hapus berkas lampiran LHP fisik
             foreach ($lhp->attachments as $file) {
                 if ($file->file_path && Storage::disk('public')->exists($file->file_path)) {
@@ -674,6 +899,11 @@ public function getTemuans($lhpId) {
 
         public function bulkDelete(Request $request)
         {
+            $user = auth()->user();
+            if (! $user->hasRole('super_admin')) {
+                abort(403, 'Hanya Administrator yang memiliki wewenang untuk menghapus data LHP.');
+            }
+
             if (! $request->ids) {
                 return back()->with('error', 'Pilih data dulu.');
             }

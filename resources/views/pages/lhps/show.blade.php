@@ -182,10 +182,19 @@ $totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
                             {{ $lhp->nomor_lhp }}
                         </h2>
 
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            {{ $lhp->unitDiperiksa?->nama_unit ?? '-' }}
-                        </p>
-
+                        <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            @php
+                                $units = $lhp->unitDiperiksas->isNotEmpty() ? $lhp->unitDiperiksas : ($lhp->unitDiperiksa ? collect([$lhp->unitDiperiksa]) : collect());
+                            @endphp
+                            @foreach($units as $u)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
+                                    {{ $u->nama_unit }}
+                                </span>
+                            @endforeach
+                            @if($units->isEmpty())
+                                <span class="text-sm text-gray-500 dark:text-gray-400">-</span>
+                            @endif
+                        </div>
                     </div>
 
                 </div>
@@ -248,7 +257,7 @@ $totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
                 </p>
 
                 <p class="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-200">
-                    {{ $lhp->unitDiperiksa?->nama_unit ?? '-' }}
+                    {{ $lhp->nama_unit ?: '-' }}
                 </p>
 
             </div>

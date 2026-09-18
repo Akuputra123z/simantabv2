@@ -41,7 +41,12 @@ class UnitDiperiksa extends Model
         return $query->where('nama_kecamatan', $kecamatan);
     }
 
-    public function lhps(): HasMany
+    public function lhps(): BelongsToMany
+    {
+        return $this->belongsToMany(Lhp::class, 'lhp_unit_diperiksa', 'unit_diperiksa_id', 'lhp_id');
+    }
+
+    public function legacyLhps(): HasMany
     {
         return $this->hasMany(Lhp::class, 'unit_diperiksa_id');
     }

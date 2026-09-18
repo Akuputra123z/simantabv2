@@ -236,10 +236,15 @@
 
                     {{-- Nama Program & Nomor LHP --}}
                     <td class="px-4 py-4 border-r border-gray-100 dark:border-gray-800/60">
-                        <div class="mb-1.5">
+                        <div class="mb-1.5 flex flex-wrap items-center gap-1.5">
                             <span class="font-mono text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded border border-blue-200/80 dark:border-blue-800/40">
                                 {{ $lhp->nomor_lhp }}
                             </span>
+                            @if(isset($sharedNomorMap[$lhp->nomor_lhp]))
+                            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800" title="Nomor LHP ini mencakup {{ $sharedNomorMap[$lhp->nomor_lhp] }} unit kerja terpisah">
+                                Kolektif ({{ $sharedNomorMap[$lhp->nomor_lhp] }} unit)
+                            </span>
+                            @endif
                         </div>
                         <div class="text-sm font-semibold text-gray-900 dark:text-white leading-snug">
                             <a href="{{ route('lhps.show', $lhp->id) }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
@@ -275,9 +280,23 @@
 
                     {{-- Unit Diperiksa --}}
                     <td class="px-4 py-4 border-r border-gray-100 dark:border-gray-800/60">
-                        <div class="text-xs font-medium text-gray-800 dark:text-gray-300 leading-relaxed">
-                            {{  $lhp->unitDiperiksa?->nama_unit ?? '-' }}
-                        </div>
+                        @php
+                            $units = $lhp->unitDiperiksas->isNotEmpty() ? $lhp->unitDiperiksas : ($lhp->unitDiperiksa ? collect([$lhp->unitDiperiksa]) : collect());
+                        @endphp
+                        @if($units->count() > 1)
+                            <div class="flex flex-col gap-1">
+                                <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                                    {{ $units->first()->nama_unit }}
+                                </span>
+                                <span class="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800" title="{{ $units->pluck('nama_unit')->join(', ') }}">
+                                    +{{ $units->count() - 1 }} unit lainnya
+                                </span>
+                            </div>
+                        @else
+                            <div class="text-xs font-medium text-gray-800 dark:text-gray-300 leading-relaxed">
+                                {{ $units->first()?->nama_unit ?? ($lhp->unitDiperiksa?->nama_unit ?? '-') }}
+                            </div>
+                        @endif
                     </td>
 
                     {{-- Tanggal LHP --}}

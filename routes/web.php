@@ -173,6 +173,12 @@ Route::middleware(['auth', 'active', 'role:super_admin'])->group(function () {
 // --- GRUP 3: Laporan ---
 Route::middleware(['auth', 'active'])->prefix('laporan')->name('laporan.')->group(function () {
     Route::get('/', [LaporanController::class, 'index'])->name('index');
+
+    // Laporan Kepatuhan OPD (Hanya LHP dengan progres TL 100% / Nihil)
+    Route::get('/kepatuhan', [LaporanController::class, 'kepatuhanIndex'])->name('kepatuhan');
+    Route::get('/kepatuhan/{lhp}', [LaporanController::class, 'kepatuhanShow'])->name('kepatuhan.show');
+    Route::get('/kepatuhan/{lhp}/pdf', [LaporanController::class, 'kepatuhanPdf'])->name('kepatuhan.pdf');
+
     Route::get('/{lhp}/rekap', [LaporanController::class, 'rekapPerLhp'])->name('rekap-per-lhp');
     Route::get('/download/pdf/semua', [LaporanController::class, 'downloadPdfSemua'])->name('download-pdf-semua');
     Route::get('/download/pdf/{lhp}', [LaporanController::class, 'downloadPdfPerLhp'])->name('download-pdf-per-lhp');

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Services\LaporanKepatuhanService;
 
 class LaporanController extends Controller
 {
@@ -51,6 +52,162 @@ class LaporanController extends Controller
         return view('pages.laporan.index', compact(
             'lhps', 'ringkasan', 'irbanList', 'kategoris'
         ));
+    }
+
+    // ── Laporan Kepatuhan OPD (Strict 100% Progress / Nihil) ─────────────
+
+    public function kepatuhanIndex(Request $request)
+    {
+        $user = auth()->user();
+
+        $query = Lhp::with([
+            'statistik',
+            'unitDiperiksa',
+            'auditAssignment.auditProgram',
+            'auditAssignment.auditProgramDetail',
+        ])->forUser($user);
+
+        // Filter search
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('nomor_lhp', 'like', "%{$search}%")
+                  ->orWhereHas('unitDiperiksa', fn($sq) => $sq->where('nama_unit', 'like', "%{$search}%")->orWhere('nama_kecamatan', 'like', "%{$search}%"))
+                  ->orWhereHas('auditAssignment.auditProgram', fn($sq) => $sq->where('nama_program', 'like', "%{$search}%"));
+            });
+        }
+
+        // Filter tahun LHP atau program
+        if ($request->filled('tahun')) {
+            $tahun = $request->tahun;
+            $query->where(function ($q) use ($tahun) {
+                $q->whereYear('tanggal_lhp', $tahun)
+                  ->orWhereHas('auditAssignment.auditProgram', fn($sq) => $sq->where('tahun', $tahun));
+            });
+        }
+
+        // Filter status kepatuhan: 'patuh' (100%), 'proses' (<100%), atau 'semua'
+        $statusKepatuhan = $request->get('status', 'semua');
+        if ($statusKepatuhan === 'patuh') {
+            $query->patuhLengkap();
+        } elseif ($statusKepatuhan === 'proses') {
+            $query->where('is_nihil', false)
+                  ->whereHas('statistik', function ($q) {
+                      $q->where('persen_selesai_gabungan', '<', 100)
+                        ->where('persen_selesai', '<', 100);
+                  });
+        }
+
+        // Ringkasan metrik kepatuhan
+        $baseQuery = Lhp::forUser($user);
+        if ($request->filled('tahun')) {
+            $tahun = $request->tahun;
+            $baseQuery->where(function ($q) use ($tahun) {
+                $q->whereYear('tanggal_lhp', $tahun)
+                  ->orWhereHas('auditAssignment.auditProgram', fn($sq) => $sq->where('tahun', $tahun));
+            });
+        }
+        $totalLhp = (clone $baseQuery)->count();
+        $totalPatuh = (clone $baseQuery)->patuhLengkap()->count();
+        $totalProses = max(0, $totalLhp - $totalPatuh);
+
+        $perPage = in_array((int) $request->get('per_page', 15), [10, 15, 20, 25, 50, 100]) ? (int) $request->get('per_page', 15) : 15;
+        $lhps = $query->orderBy('tanggal_lhp', 'desc')->paginate($perPage)->withQueryString();
+
+        $tahunList = AuditProgram::distinct()->whereNotNull('tahun')->orderByDesc('tahun')->pluck('tahun');
+
+        $summary = [
+            'total_lhp'    => $totalLhp,
+            'total_patuh'  => $totalPatuh,
+            'total_proses' => $totalProses,
+            'rate_patuh'   => $totalLhp > 0 ? round(($totalPatuh / $totalLhp) * 100, 1) : 0,
+        ];
+
+        return view('pages.laporan.kepatuhan.index', compact('lhps', 'summary', 'tahunList', 'statusKepatuhan'));
+    }
+
+    public function kepatuhanShow(Lhp $lhp)
+    {
+        // Strict Guard: Hanya jika 100% tuntas atau nihil
+        if (! $lhp->isKepatuhanLengkap()) {
+            return redirect()->route('laporan.kepatuhan')
+                ->with('warning', "Laporan Kepatuhan OPD untuk Nomor LHP {$lhp->nomor_lhp} belum dapat ditampilkan karena progres tindak lanjut belum mencapai 100%.");
+        }
+
+        $lhp->load([
+            'statistik',
+            'unitDiperiksa',
+            'auditAssignment.auditProgram',
+            'auditAssignment.auditProgramDetail',
+            'auditAssignment.ketuaTim',
+            'temuans' => function ($q) {
+                $q->with([
+                    'kodeTemuan',
+                    'recommendations' => function ($rq) {
+                        $rq->with([
+                            'kodeRekomendasi',
+                            'tindakLanjuts' => function ($tq) {
+                                $tq->with(['verifikator', 'cicilans'])->orderBy('created_at', 'asc');
+                            },
+                        ]);
+                    },
+                ]);
+            },
+            'creator',
+        ]);
+
+        $service = app(LaporanKepatuhanService::class);
+        $analisisBerulang = $service->analisisTemuanBerulang($lhp);
+        $masukanManajerial = $service->getMasukanManajerial($lhp, $analisisBerulang);
+        $eskalasiSanksi = $service->getProtokolEskalasiSanksi();
+
+        return view('pages.laporan.kepatuhan.show', compact('lhp', 'analisisBerulang', 'masukanManajerial', 'eskalasiSanksi'));
+    }
+
+    public function kepatuhanPdf(Lhp $lhp)
+    {
+        // Strict Guard: Hanya jika 100% tuntas atau nihil
+        if (! $lhp->isKepatuhanLengkap()) {
+            abort(403, "Laporan Kepatuhan OPD hanya dapat dicetak jika tindak lanjut telah tuntas 100%.");
+        }
+
+        $lhp->load([
+            'statistik',
+            'unitDiperiksa',
+            'auditAssignment.auditProgram',
+            'auditAssignment.auditProgramDetail',
+            'auditAssignment.ketuaTim',
+            'temuans' => function ($q) {
+                $q->with([
+                    'kodeTemuan',
+                    'recommendations' => function ($rq) {
+                        $rq->with([
+                            'kodeRekomendasi',
+                            'tindakLanjuts' => function ($tq) {
+                                $tq->with(['verifikator', 'cicilans'])->orderBy('created_at', 'asc');
+                            },
+                        ]);
+                    },
+                ]);
+            },
+            'creator',
+        ]);
+
+        $service = app(LaporanKepatuhanService::class);
+        $analisisBerulang = $service->analisisTemuanBerulang($lhp);
+        $masukanManajerial = $service->getMasukanManajerial($lhp, $analisisBerulang);
+        $eskalasiSanksi = $service->getProtokolEskalasiSanksi();
+
+        $pdf = Pdf::loadView('pages.laporan.pdf.kepatuhan-opd', compact('lhp', 'analisisBerulang', 'masukanManajerial', 'eskalasiSanksi'))
+            ->setPaper('a4', 'portrait')
+            ->setOptions([
+                'defaultFont'          => 'sans-serif',
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled'      => false,
+            ]);
+
+        $filename = 'Laporan-Kepatuhan-OPD-' . str_replace(['/', '\\'], '-', $lhp->nomor_lhp) . '.pdf';
+        return $pdf->download($filename);
     }
 
     // ── Rekap per LHP (detail satu LHP) ───────────────────────────────────

@@ -7,6 +7,7 @@ use App\Traits\HasCreatedUpdatedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -75,12 +76,77 @@ class Lhp extends Model
         return $this->belongsTo(UnitDiperiksa::class, 'unit_diperiksa_id');
     }
 
+    /**
+     * Relasi multi-unit (Many-to-Many) untuk penugasan BPK, BPKP, ITPROV dll
+     * yang memuat beberapa unit kerja dalam satu LHP.
+     */
+    public function unitDiperiksas(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            UnitDiperiksa::class,
+            'lhp_unit_diperiksa',
+            'lhp_id',
+            'unit_diperiksa_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * Label nama unit/auditee (mendukung multi-unit jika ada).
+     */
+    public function getNamaUnitAttribute(): string
+    {
+        if ($this->relationLoaded('unitDiperiksas') && $this->unitDiperiksas->isNotEmpty()) {
+            return $this->unitDiperiksas->pluck('nama_unit')->join(', ');
+        }
+        return $this->unitDiperiksa?->nama_unit ?? '-';
+    }
+
     public function getIrbanAttribute(): ?string
     {
         return $this->auditAssignment?->auditProgramDetail?->tim;
     }
 
+    /**
+     * Memeriksa apakah tindak lanjut LHP telah tuntas 100% atau bebas temuan (nihil).
+     */
+    public function isKepatuhanLengkap(): bool
+    {
+        if ($this->is_nihil) {
+            return true;
+        }
+
+        $stat = $this->statistik;
+        if (! $stat) {
+            return false;
+        }
+
+        return (float) $stat->persen_selesai_gabungan >= 100 || (float) $stat->persen_selesai >= 100;
+    }
+
+    /**
+     * Mengambil nilai persentase penyelesaian tindak lanjut LHP.
+     */
+    public function getProgresKepatuhanAttribute(): float
+    {
+        if ($this->is_nihil) {
+            return 100.0;
+        }
+
+        return (float) ($this->statistik?->persen_selesai_gabungan ?? $this->statistik?->persen_selesai ?? 0.0);
+    }
+
     // ── Scopes ────────────────────────────────────────────────────────────────
+
+    public function scopePatuhLengkap(Builder $q): Builder
+    {
+        return $q->where(function ($sq) {
+            $sq->where('is_nihil', true)
+               ->orWhereHas('statistik', function ($statQ) {
+                   $statQ->where('persen_selesai_gabungan', '>=', 100)
+                         ->orWhere('persen_selesai', '>=', 100);
+               });
+        });
+    }
 
     public function scopeStatus(Builder $q, string $s): Builder  { return $q->where('status', $s); }
     public function scopeSemester(Builder $q, int $s): Builder   { return $q->where('semester', $s); }

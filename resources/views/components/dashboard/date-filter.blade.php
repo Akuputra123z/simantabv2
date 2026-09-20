@@ -18,97 +18,124 @@
             document.getElementById('dashboardFilterForm').submit();
         });
     }
-}" class="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md">
-    <form id="dashboardFilterForm" method="GET" action="{{ $actionUrl }}" class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+}" class="mb-6 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/70 backdrop-blur-md">
+    <form id="dashboardFilterForm" method="GET" action="{{ $actionUrl }}" class="flex flex-col gap-4">
 
-        {{-- Left: Filter Title & Program Category Select --}}
-        <div class="flex flex-wrap items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-            </div>
-            <div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Filter Periode & Program</span>
-                <div class="flex items-center gap-2">
-                    <h3 class="text-sm font-bold text-slate-800 dark:text-white">
-                        📅 {{ $startDateFormatted }} &mdash; {{ $endDateFormatted }}
-                    </h3>
+        {{-- Baris 1: Informasi Judul, Periode Aktif, & Dropdown Program --}}
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-3.5 border-b border-gray-100 dark:border-gray-800/80">
+            {{-- Kiri: Icon + Judul + Periode Aktif --}}
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-sm font-bold text-gray-900 dark:text-white">Filter Periode & Program</h2>
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                            <span class="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                            {{ $startDateFormatted }} &mdash; {{ $endDateFormatted }}
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        Menampilkan ringkasan statistik hasil pengawasan dan progres tindak lanjut
+                    </p>
                 </div>
             </div>
 
-            {{-- Dropdown Kategori Program Audit --}}
-            <div class="ml-0 lg:ml-4 flex items-center gap-2 border-l border-slate-200 pl-0 lg:pl-4 dark:border-gray-800">
-                <label for="kategori_program" class="text-xs font-semibold text-slate-500 dark:text-slate-400">Program:</label>
-                <select name="kategori_program" id="kategori_program" onchange="this.form.submit()" data-no-ts
-                        class="rounded-xl border border-gray-300 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-colors cursor-pointer">
-                    <option value="semua" {{ $kategoriProgram === 'semua' ? 'selected' : '' }}>Semua Kategori</option>
-                    @foreach($listKategori as $kat)
-                        <option value="{{ $kat }}" {{ $kategoriProgram === $kat ? 'selected' : '' }}>
-                            {{ $kat }}
-                        </option>
-                    @endforeach
-                </select>
+            {{-- Kanan: Dropdown Kategori Program --}}
+            <div class="flex items-center gap-2.5 self-start sm:self-auto">
+                <label for="kategori_program" class="text-xs font-semibold text-gray-600 dark:text-gray-400 shrink-0">
+                    Kategori:
+                </label>
+                <div class="relative min-w-[160px]">
+                    <select name="kategori_program" id="kategori_program" onchange="this.form.submit()" data-no-ts
+                            class="h-9.5 w-full appearance-none rounded-lg border border-gray-300 bg-gray-50/50 pl-3.5 pr-8 text-xs font-semibold text-gray-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer transition-colors">
+                        <option value="semua" {{ $kategoriProgram === 'semua' ? 'selected' : '' }}>Semua Kategori</option>
+                        @foreach($listKategori as $kat)
+                            <option value="{{ $kat }}" {{ $kategoriProgram === $kat ? 'selected' : '' }}>
+                                {{ $kat }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400 dark:text-gray-500">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </span>
+                </div>
             </div>
         </div>
 
-        {{-- Right: Calendar Presets & TailAdmin Flatpickr Date Picker --}}
-        <div class="flex flex-wrap items-center gap-3">
+        {{-- Baris 2: Preset Periode Cepat & Kalender Custom Range --}}
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <input type="hidden" name="preset" id="preset_input" :value="selectedPreset">
             <input type="hidden" name="start_date" id="start_date_input" value="{{ $startDate }}">
             <input type="hidden" name="end_date" id="end_date_input" value="{{ $endDate }}">
 
-            {{-- Quick Presets --}}
-            <div class="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-gray-800/80">
-                <button type="button" @click="submitPreset('all')"
-                        class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
-                        :class="selectedPreset === 'all' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
-                    Semua
-                </button>
-                <button type="button" @click="submitPreset('this_year')"
-                        class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
-                        :class="selectedPreset === 'this_year' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
-                    Tahun Ini
-                </button>
-                <button type="button" @click="submitPreset('this_month')"
-                        class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
-                        :class="selectedPreset === 'this_month' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
-                    Bulan Ini
-                </button>
-                <button type="button" @click="submitPreset('30days')"
-                        class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
-                        :class="selectedPreset === '30days' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
-                    30 Hari
-                </button>
-                <button type="button" @click="submitPreset('7days')"
-                        class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
-                        :class="selectedPreset === '7days' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
-                    7 Hari
-                </button>
-                <button type="button" @click="submitPreset('today')"
-                        class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
-                        :class="selectedPreset === 'today' ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'">
-                    Hari Ini
-                </button>
-            </div>
-
-            {{-- TailAdmin Flatpickr Component Container --}}
-            <div class="relative min-w-[240px]">
-                <div class="flatpickr-wrapper w-full">
-                    <input type="text" id="flatpickr_range" placeholder="Pilih Rentang Tanggal"
-                           class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-10 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-3 py-2 pr-10 text-xs font-bold text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 flatpickr-input active"
-                           readonly="readonly">
+            {{-- Preset Tabs --}}
+            <div class="flex items-center overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+                <div class="inline-flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800/90 shrink-0">
+                    <button type="button" @click="submitPreset('all')"
+                            class="rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap"
+                            :class="selectedPreset === 'all' ? 'bg-white text-blue-600 font-bold shadow-xs dark:bg-gray-700 dark:text-blue-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+                        Semua
+                    </button>
+                    <button type="button" @click="submitPreset('this_year')"
+                            class="rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap"
+                            :class="selectedPreset === 'this_year' ? 'bg-white text-blue-600 font-bold shadow-xs dark:bg-gray-700 dark:text-blue-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+                        Tahun Ini
+                    </button>
+                    <button type="button" @click="submitPreset('this_month')"
+                            class="rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap"
+                            :class="selectedPreset === 'this_month' ? 'bg-white text-blue-600 font-bold shadow-xs dark:bg-gray-700 dark:text-blue-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+                        Bulan Ini
+                    </button>
+                    <button type="button" @click="submitPreset('30days')"
+                            class="rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap"
+                            :class="selectedPreset === '30days' ? 'bg-white text-blue-600 font-bold shadow-xs dark:bg-gray-700 dark:text-blue-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+                        30 Hari
+                    </button>
+                    <button type="button" @click="submitPreset('7days')"
+                            class="rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap"
+                            :class="selectedPreset === '7days' ? 'bg-white text-blue-600 font-bold shadow-xs dark:bg-gray-700 dark:text-blue-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+                        7 Hari
+                    </button>
+                    <button type="button" @click="submitPreset('today')"
+                            class="rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap"
+                            :class="selectedPreset === 'today' ? 'bg-white text-blue-600 font-bold shadow-xs dark:bg-gray-700 dark:text-blue-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+                        Hari Ini
+                    </button>
                 </div>
-                <span class="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
-                    <svg class="fill-current" width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M6.66659 1.5415C7.0808 1.5415 7.41658 1.87729 7.41658 2.2915V2.99984H12.5833V2.2915C12.5833 1.87729 12.919 1.5415 13.3333 1.5415C13.7475 1.5415 14.0833 1.87729 14.0833 2.2915V2.99984L15.4166 2.99984C16.5212 2.99984 17.4166 3.89527 17.4166 4.99984V7.49984V15.8332C17.4166 16.9377 16.5212 17.8332 15.4166 17.8332H4.58325C3.47868 17.8332 2.58325 16.9377 2.58325 15.8332V7.49984V4.99984C2.58325 3.89527 3.47868 2.99984 4.58325 2.99984L5.91659 2.99984V2.2915C5.91659 1.87729 6.25237 1.5415 6.66659 1.5415ZM6.66659 4.49984H4.58325C4.30711 4.49984 4.08325 4.7237 4.08325 4.99984V6.74984H15.9166V4.99984C15.9166 4.7237 15.6927 4.49984 15.4166 4.49984H13.3333H6.66659ZM15.9166 8.24984H4.08325V15.8332C4.08325 16.1093 4.30711 16.3332 4.58325 16.3332H15.4166C15.6927 16.3332 15.9166 16.1093 15.9166 15.8332V8.24984Z" fill=""></path>
-                    </svg>
-                </span>
             </div>
 
-            <button type="submit" class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-colors shadow-xs cursor-pointer">
-                Terapkan
-            </button>
+            {{-- Custom Date Range Picker Flatpickr & Tombol Terapkan --}}
+            <div class="flex items-center gap-2 w-full lg:w-auto">
+                <div class="relative flex-1 sm:w-64">
+                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 dark:text-gray-500">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <input type="text" id="flatpickr_range" placeholder="Pilih Rentang Tanggal..."
+                           class="h-9.5 w-full appearance-none rounded-lg border border-gray-300 bg-gray-50/50 pl-9 pr-8 text-xs font-semibold text-gray-800 placeholder:text-gray-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500 cursor-pointer flatpickr-input transition-colors"
+                           readonly="readonly">
+                    <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400 dark:text-gray-500">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </span>
+                </div>
+
+                <button type="submit"
+                        class="h-9.5 inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 active:scale-95 transition-all cursor-pointer whitespace-nowrap">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                    Terapkan
+                </button>
+            </div>
         </div>
     </form>
 </div>

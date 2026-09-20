@@ -519,6 +519,15 @@ class OpdDashboardController extends Controller
 
         $listKategori = AuditProgram::KATEGORI;
 
+        // ── 11. Status Laporan Kepatuhan OPD (Tuntas 100% / Nihil) ───────────
+        $kepatuhanQuery = Lhp::whereIn('id', $lhpIdsArray)
+            ->with(['statistik', 'unitDiperiksa', 'auditAssignment.auditProgram', 'auditAssignment.auditProgramDetail']);
+
+        $totalLhpKepatuhan   = (clone $kepatuhanQuery)->count();
+        $totalPatuhKepatuhan = (clone $kepatuhanQuery)->patuhLengkap()->count();
+        $totalProsesKepatuhan = max(0, $totalLhpKepatuhan - $totalPatuhKepatuhan);
+        $kepatuhanLhps       = (clone $kepatuhanQuery)->orderBy('tanggal_lhp', 'desc')->take(6)->get();
+
         return view('pages.opd.dashboard', [
             'totalLhp'           => $totalLhp,
             'lhpTrendPct'        => $lhpTrendPct,
@@ -556,6 +565,10 @@ class OpdDashboardController extends Controller
             'endDate'            => $endDate->format('Y-m-d'),
             'startDateFormatted' => $startDate->translatedFormat('d M Y'),
             'endDateFormatted'   => $endDate->translatedFormat('d M Y'),
+            'totalLhpKepatuhan'   => $totalLhpKepatuhan,
+            'totalPatuhKepatuhan' => $totalPatuhKepatuhan,
+            'totalProsesKepatuhan'=> $totalProsesKepatuhan,
+            'kepatuhanLhps'       => $kepatuhanLhps,
         ]);
     }
 }

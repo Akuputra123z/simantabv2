@@ -558,9 +558,9 @@
                     <p class="text-gray-500 dark:text-gray-400">Mengetahui / Mengesahkan,</p>
                     <p class="font-bold text-gray-900 dark:text-white uppercase mt-0.5">Inspektur Daerah Kab. Rembang</p>
                     <div class="h-20"></div>
-                    <p class="font-bold uppercase underline text-gray-900 dark:text-white">IMRON, S.Sos., M.Si.</p>
+                    <p class="font-bold uppercase underline text-gray-900 dark:text-white">IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE</p>
                     <p class="text-[11px] text-gray-500 dark:text-gray-400">Pembina Utama Muda</p>
-                    <p class="text-[11px] text-gray-500 dark:text-gray-400">NIP. 19680512 199003 1 005</p>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">19920401202521104733</p>
                 </div>
 
                 <div class="text-center">

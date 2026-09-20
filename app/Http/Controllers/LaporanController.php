@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\LaporanKepatuhanService;
+use App\Models\UnitDiperiksa;
 
 class LaporanController extends Controller
 {
@@ -128,6 +129,20 @@ class LaporanController extends Controller
 
     public function kepatuhanShow(Lhp $lhp)
     {
+        $user = auth()->user();
+        if ($user && $user->hasRole('opd')) {
+            $unitIds = $user->opdUnits()->pluck('unit_diperiksas.id');
+            if ($unitIds->isNotEmpty()) {
+                $userUnitNames = $user->opdUnits()->pluck('nama_unit')->filter()->unique();
+                $unitIds = UnitDiperiksa::whereIn('nama_unit', $userUnitNames)->pluck('id');
+            }
+            $hasAccess = $unitIds->contains($lhp->unit_diperiksa_id) ||
+                         $lhp->unitDiperiksas()->whereIn('unit_diperiksas.id', $unitIds)->exists();
+            if (! $hasAccess) {
+                abort(403, 'Anda tidak memiliki akses ke Laporan Kepatuhan LHP ini.');
+            }
+        }
+
         // Strict Guard: Hanya jika 100% tuntas atau nihil
         if (! $lhp->isKepatuhanLengkap()) {
             return redirect()->route('laporan.kepatuhan')
@@ -166,6 +181,20 @@ class LaporanController extends Controller
 
     public function kepatuhanPdf(Lhp $lhp)
     {
+        $user = auth()->user();
+        if ($user && $user->hasRole('opd')) {
+            $unitIds = $user->opdUnits()->pluck('unit_diperiksas.id');
+            if ($unitIds->isNotEmpty()) {
+                $userUnitNames = $user->opdUnits()->pluck('nama_unit')->filter()->unique();
+                $unitIds = UnitDiperiksa::whereIn('nama_unit', $userUnitNames)->pluck('id');
+            }
+            $hasAccess = $unitIds->contains($lhp->unit_diperiksa_id) ||
+                         $lhp->unitDiperiksas()->whereIn('unit_diperiksas.id', $unitIds)->exists();
+            if (! $hasAccess) {
+                abort(403, 'Anda tidak memiliki akses ke Laporan Kepatuhan LHP ini.');
+            }
+        }
+
         // Strict Guard: Hanya jika 100% tuntas atau nihil
         if (! $lhp->isKepatuhanLengkap()) {
             abort(403, "Laporan Kepatuhan OPD hanya dapat dicetak jika tindak lanjut telah tuntas 100%.");

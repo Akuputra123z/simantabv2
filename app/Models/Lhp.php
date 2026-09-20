@@ -165,6 +165,21 @@ class Lhp extends Model
             return $query;
         }
 
+        if ($user->hasRole('opd')) {
+            $unitIds = $user->opdUnits()->pluck('unit_diperiksas.id');
+            if ($unitIds->isNotEmpty()) {
+                $userUnitNames = $user->opdUnits()->pluck('nama_unit')->filter()->unique();
+                $unitIds = UnitDiperiksa::whereIn('nama_unit', $userUnitNames)->pluck('id');
+            }
+            if ($unitIds->isEmpty()) {
+                return $query->whereRaw('1 = 0');
+            }
+            return $query->where(function ($q) use ($unitIds) {
+                $q->whereIn('unit_diperiksa_id', $unitIds)
+                  ->orWhereHas('unitDiperiksas', fn($uq) => $uq->whereIn('unit_diperiksas.id', $unitIds));
+            });
+        }
+
         return $query->whereHas('auditAssignment', function ($q) use ($user) {
             $q->where('ketua_tim_id', $user->id)
               ->orWhereHas('members', function ($q2) use ($user) {

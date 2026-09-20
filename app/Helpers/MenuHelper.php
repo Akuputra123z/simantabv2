@@ -196,6 +196,16 @@ class MenuHelper
                 ],
             ],
             [
+                'icon' => 'pages',
+                'name' => 'Laporan Kepatuhan',
+                'subItems' => [
+                    [
+                        'name' => 'Laporan Kepatuhan OPD',
+                        'path' => route('laporan.kepatuhan', absolute: false),
+                    ],
+                ],
+            ],
+            [
                 'icon' => 'user-profile',
                 'name' => 'Pengaturan Akun',
                 'subItems' => [

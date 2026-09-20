@@ -106,7 +106,158 @@
         </div>
     </div>
 
-    {{-- 3. PERBANDINGAN KERUGIAN & PENYELAMATAN ASET + PANEL PENJELASAN FINANSIAL --}}
+    {{-- 3. STATUS LAPORAN KEPATUHAN OPD (TUNTAS 100% / NIHIL) --}}
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900/80">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Laporan Kepatuhan OPD</h3>
+                        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60">
+                            {{ $totalPatuhKepatuhan }} LHP Siap Terbit
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        Penerbitan dokumen kesimpulan & surat keterangan tindak lanjut bagi LHP yang tuntas 100% atau nihil
+                    </p>
+                </div>
+            </div>
+            <a href="{{ route('laporan.kepatuhan') }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 shrink-0">
+                <span>Lihat Semua Laporan Kepatuhan</span>
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+
+        {{-- Ringkasan Metrik Kepatuhan --}}
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-4">
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 dark:bg-gray-800/40 dark:border-gray-700/60">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total LHP Diaudit</span>
+                <div class="mt-1 flex items-baseline gap-2">
+                    <span class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ $totalLhpKepatuhan }}</span>
+                    <span class="text-xs text-gray-500">LHP Terdaftar</span>
+                </div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200/80 dark:bg-emerald-950/30 dark:border-emerald-900/50">
+                <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Patuh Tuntas (100%)</span>
+                <div class="mt-1 flex items-baseline gap-2">
+                    <span class="text-2xl font-extrabold text-emerald-700 dark:text-emerald-400">{{ $totalPatuhKepatuhan }}</span>
+                    <span class="text-xs text-emerald-600 dark:text-emerald-300">Siap Cetak PDF</span>
+                </div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/80 dark:bg-amber-950/30 dark:border-amber-900/50">
+                <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Dalam Proses Tindak Lanjut</span>
+                <div class="mt-1 flex items-baseline gap-2">
+                    <span class="text-2xl font-extrabold text-amber-700 dark:text-amber-400">{{ $totalProsesKepatuhan }}</span>
+                    <span class="text-xs text-amber-600 dark:text-amber-300">Belum 100%</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- Tabel Daftar LHP & Aksi Dokumen Kepatuhan --}}
+        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+            <table class="w-full text-left text-xs text-gray-700 dark:text-gray-300">
+                <thead class="border-b border-gray-200 bg-gray-50/80 font-semibold uppercase tracking-wider text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300">
+                    <tr>
+                        <th scope="col" class="py-3 px-4 w-10 text-center">No</th>
+                        <th scope="col" class="py-3 px-4">Nomor LHP & Program</th>
+                        <th scope="col" class="py-3 px-4 text-center">Rekomendasi</th>
+                        <th scope="col" class="py-3 px-4 w-48">Progres Kepatuhan</th>
+                        <th scope="col" class="py-3 px-4 w-52 text-center">Dokumen Kepatuhan</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                    @forelse($kepatuhanLhps as $index => $lhp)
+                        @php
+                            $isLengkap = $lhp->isKepatuhanLengkap();
+                            $progresVal = $lhp->progres_kepatuhan;
+                            $stat = $lhp->statistik;
+                            $programName = $lhp->auditAssignment?->auditProgram?->nama_program ?? '-';
+                        @endphp
+                        <tr class="hover:bg-gray-50/70 transition dark:hover:bg-gray-800/40 {{ $isLengkap ? 'bg-emerald-50/15 dark:bg-emerald-950/10' : '' }}">
+                            <td class="py-3.5 px-4 text-center font-medium text-gray-500 dark:text-gray-400">
+                                {{ $index + 1 }}
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-bold text-gray-900 dark:text-white font-mono">
+                                    {{ $lhp->nomor_lhp }}
+                                </div>
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-sm" title="{{ $programName }}">
+                                    {{ $programName }}
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-4 text-center">
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">
+                                    {{ $stat?->rekom_selesai ?? 0 }} / {{ $stat?->total_rekom ?? 0 }}
+                                </span>
+                                <span class="text-[10px] text-gray-400 block">Selesai</span>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <div class="flex items-center justify-between text-[11px] font-bold mb-1">
+                                    <span class="{{ $isLengkap ? 'text-emerald-700 dark:text-emerald-400' : 'text-blue-700 dark:text-blue-400' }}">
+                                        {{ $lhp->is_nihil ? 'Nihil Temuan' : round($progresVal, 1) . '%' }}
+                                    </span>
+                                    <span class="text-[10px] text-gray-400">
+                                        {{ $isLengkap ? 'Tuntas' : 'Proses' }}
+                                    </span>
+                                </div>
+                                <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                                    <div class="h-full rounded-full {{ $isLengkap ? 'bg-emerald-500' : 'bg-blue-600' }}" style="width: {{ min(100, max(0, $progresVal)) }}%"></div>
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-4 text-center">
+                                @if($isLengkap)
+                                    <div class="inline-flex items-center gap-1.5">
+                                        <a href="{{ route('laporan.kepatuhan.show', $lhp->id) }}"
+                                           title="Lihat Laporan Kepatuhan Resmi"
+                                           class="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 shadow-xs dark:border-emerald-800 dark:bg-gray-800 dark:text-emerald-300 dark:hover:bg-gray-700 transition">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                            Lihat
+                                        </a>
+                                        <a href="{{ route('laporan.kepatuhan.pdf', $lhp->id) }}"
+                                           title="Unduh Dokumen PDF Resmi"
+                                           target="_blank"
+                                           class="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-rose-700 transition">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                            PDF
+                                        </a>
+                                    </div>
+                                @else
+                                    <a href="{{ route('opd.tindak-lanjut.lhp', $lhp->id) }}"
+                                       title="Progres belum 100%. Lanjutkan unggah tindak lanjut untuk membuka laporan."
+                                       class="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition">
+                                        <span>Tindak Lanjuti</span>
+                                        <svg class="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                        </svg>
+                                    </a>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="py-8 text-center text-gray-400">
+                                Belum ada data LHP terdaftar untuk unit Anda.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{-- 4. PERBANDINGAN KERUGIAN & PENYELAMATAN ASET + PANEL PENJELASAN FINANSIAL --}}
     <div class="grid grid-cols-12 gap-6">
 
         {{-- Left Side: Bar Chart (~65% / 8 cols) --}}

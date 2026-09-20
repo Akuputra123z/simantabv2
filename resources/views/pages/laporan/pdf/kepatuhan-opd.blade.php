@@ -741,9 +741,9 @@
                 Mengetahui / Mengesahkan,<br>
                 <strong>Inspektur Daerah Kabupaten Rembang</strong>
                 <div class="sig-space"></div>
-                <div class="sig-name">IMRON, S.Sos., M.Si.</div>
+                <div class="sig-name">IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE</div>
                 <div class="sig-nip">Pembina Utama Muda</div>
-                <div class="sig-nip">NIP. 19680512 199003 1 005</div>
+                <div class="sig-nip">NIP. 19920401202521104733</div>
             </td>
             <td>
                 Rembang, {{ now()->translatedFormat('d F Y') }}<br>

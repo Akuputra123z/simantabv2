@@ -112,72 +112,125 @@
 
     {{-- FILTER BAR --}}
     <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-800/80">
-        <form method="GET" action="{{ route('laporan.kepatuhan') }}" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
-            {{-- Search input --}}
-            <div class="lg:col-span-4">
-                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Pencarian</label>
+        <form method="GET" action="{{ route('laporan.kepatuhan') }}" class="flex flex-col gap-3 lg:flex-row lg:items-center">
+            {{-- Input Pencarian --}}
+            <div class="flex-1 min-w-0">
                 <div class="relative">
-                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400 dark:text-gray-500">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                     </div>
                     <input type="text"
                            name="search"
                            value="{{ request('search') }}"
-                           placeholder="Cari No. LHP, OPD, atau Program..."
-                           class="block w-full rounded-lg border border-gray-300 bg-gray-50/50 pl-9 pr-3 py-2 text-xs text-gray-900 focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:focus:border-blue-500">
+                           placeholder="Cari No. LHP, OPD, atau Program Pengawasan..."
+                           class="h-10 w-full rounded-lg border border-gray-300 bg-gray-50/50 pl-10 pr-4 text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-500 transition-colors">
                 </div>
             </div>
 
-            {{-- Filter Tahun --}}
-            <div class="lg:col-span-2">
-                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tahun</label>
-                <select name="tahun" class="block w-full rounded-lg border border-gray-300 bg-gray-50/50 py-2 px-3 text-xs text-gray-900 focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                    <option value="">Semua Tahun</option>
-                    @foreach($tahunList as $thn)
-                        <option value="{{ $thn }}" {{ request('tahun') == $thn ? 'selected' : '' }}>{{ $thn }}</option>
-                    @endforeach
-                </select>
-            </div>
+            {{-- Select Filters & Action Buttons Group --}}
+            <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+                {{-- Dropdown Status Kepatuhan --}}
+                <div class="relative flex-1 min-w-[150px] sm:flex-initial sm:w-56">
+                    <select name="status" data-no-ts onchange="this.form.submit()"
+                            class="h-10 w-full appearance-none cursor-pointer rounded-lg border border-gray-300 bg-gray-50/50 py-2 pl-3.5 pr-8 text-xs font-semibold text-gray-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 transition-colors">
+                        <option value="semua" {{ request('status', 'semua') === 'semua' ? 'selected' : '' }}>Semua Status Kepatuhan</option>
+                        <option value="patuh" {{ request('status') === 'patuh' ? 'selected' : '' }}>Patuh 100% (Siap Terbit Laporan)</option>
+                        <option value="proses" {{ request('status') === 'proses' ? 'selected' : '' }}>Dalam Proses TL (&lt;100%)</option>
+                    </select>
+                    <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400 dark:text-gray-500">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </span>
+                </div>
 
-            {{-- Filter Status Kepatuhan --}}
-            <div class="lg:col-span-3">
-                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Status Kepatuhan</label>
-                <select name="status" class="block w-full rounded-lg border border-gray-300 bg-gray-50/50 py-2 px-3 text-xs text-gray-900 focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                    <option value="semua" {{ request('status', 'semua') === 'semua' ? 'selected' : '' }}>Semua Status</option>
-                    <option value="patuh" {{ request('status') === 'patuh' ? 'selected' : '' }}>Patuh 100% (Siap Terbit Laporan)</option>
-                    <option value="proses" {{ request('status') === 'proses' ? 'selected' : '' }}>Dalam Proses TL (&lt;100%)</option>
-                </select>
-            </div>
+                {{-- Dropdown Tahun --}}
+                <div class="relative flex-1 min-w-[120px] sm:flex-initial sm:w-36">
+                    <select name="tahun" data-no-ts onchange="this.form.submit()"
+                            class="h-10 w-full appearance-none cursor-pointer rounded-lg border border-gray-300 bg-gray-50/50 py-2 pl-3.5 pr-8 text-xs font-semibold text-gray-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 transition-colors">
+                        <option value="">Semua Tahun</option>
+                        @foreach($tahunList as $thn)
+                            <option value="{{ $thn }}" {{ request('tahun') == $thn ? 'selected' : '' }}>Tahun {{ $thn }}</option>
+                        @endforeach
+                    </select>
+                    <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400 dark:text-gray-500">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </span>
+                </div>
 
-            {{-- Filter Baris Per Halaman --}}
-            <div class="lg:col-span-1">
-                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Baris</label>
-                <select name="per_page" class="block w-full rounded-lg border border-gray-300 bg-gray-50/50 py-2 px-2 text-xs text-gray-900 focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                    @foreach([10, 15, 20, 25, 50, 100] as $n)
-                        <option value="{{ $n }}" {{ request('per_page', 15) == $n ? 'selected' : '' }}>{{ $n }}</option>
-                    @endforeach
-                </select>
-            </div>
+                {{-- Dropdown Baris Per Halaman --}}
+                <div class="relative flex-1 min-w-[100px] sm:flex-initial sm:w-28">
+                    <select name="per_page" data-no-ts onchange="this.form.submit()"
+                            class="h-10 w-full appearance-none cursor-pointer rounded-lg border border-gray-300 bg-gray-50/50 py-2 pl-3.5 pr-8 text-xs font-semibold text-gray-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 transition-colors">
+                        @foreach([10, 15, 20, 25, 50, 100] as $n)
+                            <option value="{{ $n }}" {{ request('per_page', 15) == $n ? 'selected' : '' }}>{{ $n }} Baris</option>
+                        @endforeach
+                    </select>
+                    <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400 dark:text-gray-500">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </span>
+                </div>
 
-            {{-- Actions --}}
-            <div class="flex items-end gap-2 lg:col-span-2">
-                <button type="submit"
-                        class="inline-flex w-full items-center justify-center gap-1 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition">
-                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                    </svg>
-                    Terapkan
-                </button>
-                @if(request()->anyFilled(['search', 'tahun', 'status', 'per_page']))
-                    <a href="{{ route('laporan.kepatuhan') }}"
-                       class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                        Reset
-                    </a>
-                @endif
+                {{-- Tombol Filter & Reset --}}
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button type="submit"
+                            class="h-10 flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 active:scale-95 transition-all whitespace-nowrap">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                        </svg>
+                        Filter
+                    </button>
+                    @if(request()->filled('search') || request()->filled('tahun') || (request()->filled('status') && request('status') !== 'semua') || (request()->filled('per_page') && request('per_page') != 15))
+                        <a href="{{ route('laporan.kepatuhan') }}"
+                           title="Reset Semua Filter"
+                           class="h-10 inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors whitespace-nowrap">
+                            <svg class="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Reset
+                        </a>
+                    @endif
+                </div>
             </div>
         </form>
+
+        {{-- Active Filter Pills & Ringkasan Hasil --}}
+        @if(request()->filled('search') || request()->filled('tahun') || (request()->filled('status') && request('status') !== 'semua'))
+            <div class="mt-3 flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100 text-xs text-gray-600 dark:border-gray-700/60 dark:text-gray-400">
+                <span class="font-medium text-gray-500 dark:text-gray-400">Filter aktif:</span>
+
+                @if(request()->filled('search'))
+                    <span class="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                        Kata Kunci: "{{ request('search') }}"
+                        <a href="{{ request()->fullUrlWithQuery(['search' => null]) }}" class="hover:text-blue-900 dark:hover:text-blue-100 font-bold">&times;</a>
+                    </span>
+                @endif
+
+                @if(request()->filled('status') && request('status') !== 'semua')
+                    <span class="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                        Status: {{ request('status') === 'patuh' ? 'Patuh 100%' : 'Dalam Proses TL' }}
+                        <a href="{{ request()->fullUrlWithQuery(['status' => 'semua']) }}" class="hover:text-blue-900 dark:hover:text-blue-100 font-bold">&times;</a>
+                    </span>
+                @endif
+
+                @if(request()->filled('tahun'))
+                    <span class="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                        Tahun: {{ request('tahun') }}
+                        <a href="{{ request()->fullUrlWithQuery(['tahun' => null]) }}" class="hover:text-blue-900 dark:hover:text-blue-100 font-bold">&times;</a>
+                    </span>
+                @endif
+
+                <span class="ml-auto text-xs text-gray-500 dark:text-gray-400">
+                    Ditemukan <strong class="font-semibold text-gray-800 dark:text-gray-200">{{ $lhps->total() }}</strong> LHP
+                </span>
+            </div>
+        @endif
     </div>
 
     {{-- TABEL LAPORAN KEPATUHAN --}}

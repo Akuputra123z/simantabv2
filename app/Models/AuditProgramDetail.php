@@ -55,7 +55,9 @@ class AuditProgramDetail extends Model
             ? (int) $this->attributes['assignments_count']
             : $this->assignments()->count();
 
-        if ($total === 0) return 0;
+        if ($total === 0) {
+            return 0;
+        }
 
         $selesai = array_key_exists('assignments_selesai_count', $this->attributes)
             ? (int) $this->attributes['assignments_selesai_count']
@@ -63,12 +65,14 @@ class AuditProgramDetail extends Model
 
         return round(($selesai / $total) * 100, 2);
     }
+
     public function auditProgram()
-{
-    return $this->belongsTo(AuditProgram::class, 'audit_program_id');
-}
-public function assignment()
-{
-    return $this->hasOne(AuditAssignment::class, 'audit_program_detail_id');
-}
+    {
+        return $this->belongsTo(AuditProgram::class, 'audit_program_id');
+    }
+
+    public function assignment()
+    {
+        return $this->hasOne(AuditAssignment::class, 'audit_program_detail_id');
+    }
 }

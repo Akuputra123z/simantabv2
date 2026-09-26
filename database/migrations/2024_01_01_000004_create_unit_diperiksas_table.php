@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('unit_diperiksas', function (Blueprint $table) {
             $table->id();
             $table->string('kategori', 50)->nullable()
-                  ->comment('SKPD | Sekolah | Puskesmas | Desa | BLUD');
+                ->comment('SKPD | Sekolah | Puskesmas | Desa | BLUD');
             $table->string('nama_kecamatan', 100)->nullable();
             $table->string('nama_unit', 200);
             $table->string('alamat', 500)->nullable()
@@ -24,7 +24,7 @@ return new class extends Migration
                 ->comment('Catatan tambahan tentang unit');
             $table->timestamps();
             $table->softDeletes();
- 
+
             // For Filament search (SelectColumn, SearchFilter)
             $table->index('nama_unit');
             $table->index(['kategori', 'nama_kecamatan'], 'unit_kategori_kec_idx');

@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -21,17 +22,17 @@ return new class extends Migration
         });
 
         // Backfill data dari lhps.unit_diperiksa_id ke pivot table
-        $lhps = \Illuminate\Support\Facades\DB::table('lhps')
+        $lhps = DB::table('lhps')
             ->whereNotNull('unit_diperiksa_id')
             ->select('id', 'unit_diperiksa_id')
             ->get();
 
         foreach ($lhps as $lhp) {
-            \Illuminate\Support\Facades\DB::table('lhp_unit_diperiksa')->insertOrIgnore([
-                'lhp_id'            => $lhp->id,
+            DB::table('lhp_unit_diperiksa')->insertOrIgnore([
+                'lhp_id' => $lhp->id,
                 'unit_diperiksa_id' => $lhp->unit_diperiksa_id,
-                'created_at'        => now(),
-                'updated_at'        => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         }
     }

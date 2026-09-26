@@ -16,22 +16,20 @@ class PegawaiOpdController extends Controller
             ->when($request->filled('search'), function ($q) use ($request) {
                 $q->where(function ($query) use ($request) {
                     $query->where('name', 'like', "%{$request->search}%")
-                          ->orWhere('email', 'like', "%{$request->search}%")
-                          ->orWhere('nip', 'like', "%{$request->search}%");
+                        ->orWhere('email', 'like', "%{$request->search}%")
+                        ->orWhere('nip', 'like', "%{$request->search}%");
                 });
             })
-            ->when($request->filled('unit_opd'), fn ($q) =>
-                $q->whereHas('opdUnits', fn ($q2) =>
-                    $q2->where('unit_diperiksas.id', $request->unit_opd)
-                )
+            ->when($request->filled('unit_opd'), fn ($q) => $q->whereHas('opdUnits', fn ($q2) => $q2->where('unit_diperiksas.id', $request->unit_opd)
+            )
             )
             ->latest()
             ->paginate(min((int) $request->per_page ?: 15, 100))
             ->withQueryString();
 
         $stats = [
-            'total'    => User::opd()->count(),
-            'aktif'    => User::opd()->where('is_active', true)->count(),
+            'total' => User::opd()->count(),
+            'aktif' => User::opd()->where('is_active', true)->count(),
             'nonaktif' => User::opd()->where('is_active', false)->count(),
         ];
 
@@ -43,6 +41,7 @@ class PegawaiOpdController extends Controller
     public function show(User $user): View
     {
         $user->load('roles', 'opdUnits');
+
         return view('pegawai.opd.show', compact('user'));
     }
 }

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class KodeTemuan extends Model
 {
@@ -28,17 +27,17 @@ class KodeTemuan extends Model
     protected function casts(): array
     {
         return [
-            'kel'              => 'integer',
-            'sub_kel'          => 'integer',
-            'jenis'            => 'integer',
+            'kel' => 'integer',
+            'sub_kel' => 'integer',
+            'jenis' => 'integer',
             // UBAH 'array' menjadi 'collection' agar bisa pakai ->isNotEmpty() di View
-            'alternatif_rekom' => 'collection', 
-            'deleted_at'       => 'datetime',
+            'alternatif_rekom' => 'collection',
+            'deleted_at' => 'datetime',
         ];
     }
 
     // ── Clean Code: UI Logic (Accessor) ───────────────────────────────────────
-    
+
     /** Label Warna untuk UI (Sesuai Swiss Style / Minimalist) */
     public function getKlasifikasiColorAttribute(): string
     {
@@ -56,9 +55,20 @@ class KodeTemuan extends Model
         return $query->where('kel', $kel);
     }
 
-    public function scopeKetidakpatuhan($query) { return $query->kelompok(1); }
-    public function scopeSpi($query)            { return $query->kelompok(2); }
-    public function scopeTigaE($query)          { return $query->kelompok(3); }
+    public function scopeKetidakpatuhan($query)
+    {
+        return $query->kelompok(1);
+    }
+
+    public function scopeSpi($query)
+    {
+        return $query->kelompok(2);
+    }
+
+    public function scopeTigaE($query)
+    {
+        return $query->kelompok(3);
+    }
 
     // ── Relationships ─────────────────────────────────────────────────────────
     public function temuans(): HasMany

@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditProgram;
-use App\Models\TindakLanjut;
 use App\Models\Lhp;
-use App\Models\Temuan;
-use App\Models\Recommendation;
 use App\Models\LhpStatistik;
+use App\Models\Recommendation;
+use App\Models\Temuan;
+use App\Models\TindakLanjut;
 use App\Models\UnitDiperiksa;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -21,9 +21,9 @@ class OpdDashboardController extends Controller
         $user = auth()->user();
 
         // ── 1. Date & Category Filter Parsing ──────────────────────────────────────────
-        $preset          = $request->input('preset', 'all');
-        $startDateInput  = $request->input('start_date');
-        $endDateInput    = $request->input('end_date');
+        $preset = $request->input('preset', 'all');
+        $startDateInput = $request->input('start_date');
+        $endDateInput = $request->input('end_date');
         $kategoriProgram = $request->input('kategori_program', 'semua');
 
         $now = Carbon::now();
@@ -31,40 +31,40 @@ class OpdDashboardController extends Controller
         switch ($preset) {
             case 'today':
                 $startDate = $now->copy()->startOfDay();
-                $endDate   = $now->copy()->endOfDay();
+                $endDate = $now->copy()->endOfDay();
                 break;
             case '7days':
                 $startDate = $now->copy()->subDays(6)->startOfDay();
-                $endDate   = $now->copy()->endOfDay();
+                $endDate = $now->copy()->endOfDay();
                 break;
             case '30days':
                 $startDate = $now->copy()->subDays(29)->startOfDay();
-                $endDate   = $now->copy()->endOfDay();
+                $endDate = $now->copy()->endOfDay();
                 break;
             case 'this_month':
                 $startDate = $now->copy()->startOfMonth();
-                $endDate   = $now->copy()->endOfMonth();
+                $endDate = $now->copy()->endOfMonth();
                 break;
             case 'custom':
                 $startDate = $startDateInput ? Carbon::parse($startDateInput)->startOfDay() : $now->copy()->startOfYear();
-                $endDate   = $endDateInput ? Carbon::parse($endDateInput)->endOfDay() : $now->copy()->endOfYear();
+                $endDate = $endDateInput ? Carbon::parse($endDateInput)->endOfDay() : $now->copy()->endOfYear();
                 break;
             case 'this_year':
                 $startDate = $now->copy()->startOfYear();
-                $endDate   = $now->copy()->endOfYear();
+                $endDate = $now->copy()->endOfYear();
                 break;
             case 'all':
             default:
-                $preset    = 'all';
+                $preset = 'all';
                 $startDate = Carbon::create(2000, 1, 1)->startOfDay();
-                $endDate   = $now->copy()->endOfYear();
+                $endDate = $now->copy()->endOfYear();
                 break;
         }
 
         // Periode pembanding (Previous Period)
-        $diffDays      = $startDate->diffInDays($endDate) + 1;
+        $diffDays = $startDate->diffInDays($endDate) + 1;
         $prevStartDate = $startDate->copy()->subDays($diffDays);
-        $prevEndDate   = $startDate->copy()->subDay()->endOfDay();
+        $prevEndDate = $startDate->copy()->subDay()->endOfDay();
 
         // ── 2. Determine target unit IDs ──────────────────────────────────────────────
         $isSuperOrAdmin = $user->hasAnyRole(['super_admin', 'admin', 'admin_inspektorat', 'inspektur', 'kepala_inspektorat']);
@@ -95,10 +95,10 @@ class OpdDashboardController extends Controller
                 TindakLanjut::firstOrCreate(
                     ['recommendation_id' => $rekomId],
                     [
-                        'status_verifikasi'   => 'menunggu_verifikasi',
+                        'status_verifikasi' => 'menunggu_verifikasi',
                         'nilai_tindak_lanjut' => 0,
-                        'total_terbayar'      => 0,
-                        'sisa_belum_bayar'    => 0,
+                        'total_terbayar' => 0,
+                        'sisa_belum_bayar' => 0,
                     ]
                 );
             }
@@ -106,7 +106,7 @@ class OpdDashboardController extends Controller
 
         // ── 3. Base LHP Query ─────────────────────────────────────────────────────────
         $baseLhpQuery = Lhp::whereIn('unit_diperiksa_id', $unitIds);
-        if (!empty($kategoriProgram) && $kategoriProgram !== 'semua') {
+        if (! empty($kategoriProgram) && $kategoriProgram !== 'semua') {
             $baseLhpQuery->whereHas('auditAssignment.auditProgramDetail.auditProgram', function ($q) use ($kategoriProgram) {
                 $q->where('kategori', $kategoriProgram);
             });
@@ -142,7 +142,7 @@ class OpdDashboardController extends Controller
         $temuanTrendPct = $prevTotalTemuan > 0 ? round((($totalTemuan - $prevTotalTemuan) / $prevTotalTemuan) * 100, 1) : ($totalTemuan > 0 ? 100 : 0);
 
         // ── 5. Rekomendasi Stats ──────────────────────────────────────────────────────
-        $rekomStats = Recommendation::whereHas('temuan', fn($q) => $q->whereIn('lhp_id', $lhpIdsArray))
+        $rekomStats = Recommendation::whereHas('temuan', fn ($q) => $q->whereIn('lhp_id', $lhpIdsArray))
             ->selectRaw("
                 COUNT(*) as total,
                 SUM(CASE WHEN status = 'belum_ditindaklanjuti' OR status IS NULL THEN 1 ELSE 0 END) as belum,
@@ -150,11 +150,11 @@ class OpdDashboardController extends Controller
                 SUM(CASE WHEN status = 'selesai' THEN 1 ELSE 0 END) as selesai
             ")->first();
 
-        $totalRekom   = $rekomStats->total ?? 0;
-        $rekomBelum   = $rekomStats->belum ?? 0;
-        $rekomProses  = $rekomStats->proses ?? 0;
+        $totalRekom = $rekomStats->total ?? 0;
+        $rekomBelum = $rekomStats->belum ?? 0;
+        $rekomProses = $rekomStats->proses ?? 0;
         $rekomSelesai = $rekomStats->selesai ?? 0;
-        $rekomPct     = $totalRekom > 0 ? round(($rekomSelesai / $totalRekom) * 100, 1) : 0;
+        $rekomPct = $totalRekom > 0 ? round(($rekomSelesai / $totalRekom) * 100, 1) : 0;
 
         // ── 6. Tindak Lanjut Stats ────────────────────────────────────────────────────
         $tlQuery = TindakLanjut::query()
@@ -167,9 +167,9 @@ class OpdDashboardController extends Controller
             SUM(CASE WHEN status_verifikasi = 'menunggu_verifikasi' OR status_verifikasi IS NULL THEN 1 ELSE 0 END) as menunggu
         ")->first();
 
-        $totalTl   = $tlStats->total ?? 0;
+        $totalTl = $tlStats->total ?? 0;
         $tlSelesai = $tlStats->lunas ?? 0;
-        $tlPct     = $totalRekom > 0 ? round(($rekomSelesai / $totalRekom) * 100, 1) : 0;
+        $tlPct = $totalRekom > 0 ? round(($rekomSelesai / $totalRekom) * 100, 1) : 0;
 
         // ── 7. OPD Upload & Verifikasi Stats ──────────────────────────────────────────
         $opdStats = (clone $tlQuery)->selectRaw("
@@ -187,11 +187,11 @@ class OpdDashboardController extends Controller
 
         // ── 8. Total Kerugian & Penyelamatan Aset (Synchronized Realtime Logic) ───────
         $totalKerugian = (float) Temuan::whereIn('lhp_id', $lhpIdsArray)
-            ->selectRaw("SUM(CASE WHEN nilai_temuan > 0 THEN nilai_temuan ELSE (COALESCE(nilai_kerugian_negara, 0) + COALESCE(nilai_kerugian_daerah, 0) + COALESCE(nilai_kerugian_desa, 0) + COALESCE(nilai_kerugian_bos_blud, 0)) END) as total")
+            ->selectRaw('SUM(CASE WHEN nilai_temuan > 0 THEN nilai_temuan ELSE (COALESCE(nilai_kerugian_negara, 0) + COALESCE(nilai_kerugian_daerah, 0) + COALESCE(nilai_kerugian_desa, 0) + COALESCE(nilai_kerugian_bos_blud, 0)) END) as total')
             ->value('total') ?? 0;
 
         if ($totalKerugian == 0 && count($lhpIdsArray) > 0) {
-            $totalKerugian = (float) Recommendation::whereHas('temuan', fn($q) => $q->whereIn('lhp_id', $lhpIdsArray))->sum('nilai_rekom');
+            $totalKerugian = (float) Recommendation::whereHas('temuan', fn ($q) => $q->whereIn('lhp_id', $lhpIdsArray))->sum('nilai_rekom');
         }
 
         $totalPenyelamatanCicilan = (float) DB::table('tindak_lanjut_cicilans')
@@ -207,9 +207,9 @@ class OpdDashboardController extends Controller
             ->join('temuans', 'recommendations.temuan_id', '=', 'temuans.id')
             ->whereIn('temuans.lhp_id', $lhpIdsArray)
             ->where('tindak_lanjuts.status_verifikasi', 'lunas')
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->where('tindak_lanjuts.jenis_penyelesaian', '!=', 'cicilan')
-                  ->orWhereNull('tindak_lanjuts.jenis_penyelesaian');
+                    ->orWhereNull('tindak_lanjuts.jenis_penyelesaian');
             })
             ->sum('tindak_lanjuts.nilai_tindak_lanjut') ?? 0;
 
@@ -221,20 +221,20 @@ class OpdDashboardController extends Controller
         $recoveryRate = $totalKerugian > 0 ? round(($totalPenyelamatan / $totalKerugian) * 100, 1) : 0;
 
         $rekapitulasi = (object) [
-            'total_rekom'      => $totalRekom,
-            'rekom_selesai'    => $rekomSelesai,
-            'rekom_proses'     => $rekomProses,
-            'rekom_belum'      => $rekomBelum,
-            'total_kerugian'   => $totalKerugian,
+            'total_rekom' => $totalRekom,
+            'rekom_selesai' => $rekomSelesai,
+            'rekom_proses' => $rekomProses,
+            'rekom_belum' => $rekomBelum,
+            'total_kerugian' => $totalKerugian,
             'total_tl_selesai' => $totalPenyelamatan,
-            'sisa_kerugian'    => $sisaKerugian,
-            'recovery_rate'    => $recoveryRate,
+            'sisa_kerugian' => $sisaKerugian,
+            'recovery_rate' => $recoveryRate,
         ];
 
         // ── 9. Monthly Charts Data (Audit, Temuan, Financial) ─────────────────────────
         $currentYear = $startDate->year;
-        $monthExpr   = DB::getDriverName() === 'sqlite' ? "CAST(strftime('%m', lhps.tanggal_lhp) AS INTEGER)" : "MONTH(lhps.tanggal_lhp)";
-        $bulanData   = DB::table('lhps')
+        $monthExpr = DB::getDriverName() === 'sqlite' ? "CAST(strftime('%m', lhps.tanggal_lhp) AS INTEGER)" : 'MONTH(lhps.tanggal_lhp)';
+        $bulanData = DB::table('lhps')
             ->whereIn('lhps.id', $lhpIdsArray)
             ->leftJoin('temuans', 'temuans.lhp_id', '=', 'lhps.id')
             ->leftJoin('recommendations', 'recommendations.temuan_id', '=', 'temuans.id')
@@ -281,9 +281,9 @@ class OpdDashboardController extends Controller
             ->join('lhps', 'temuans.lhp_id', '=', 'lhps.id')
             ->whereIn('lhps.id', $lhpIdsArray)
             ->where('tindak_lanjuts.status_verifikasi', 'lunas')
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->where('tindak_lanjuts.jenis_penyelesaian', '!=', 'cicilan')
-                  ->orWhereNull('tindak_lanjuts.jenis_penyelesaian');
+                    ->orWhereNull('tindak_lanjuts.jenis_penyelesaian');
             })
             ->selectRaw("
                 {$monthExpr} as bulan,
@@ -293,25 +293,25 @@ class OpdDashboardController extends Controller
             ->get()
             ->keyBy('bulan');
 
-        $chartMonths       = [];
-        $chartAudit        = [];
-        $chartTemuan       = [];
-        $chartRekom        = [];
-        $chartKerugian     = [];
+        $chartMonths = [];
+        $chartAudit = [];
+        $chartTemuan = [];
+        $chartRekom = [];
+        $chartKerugian = [];
         $chartPenyelamatan = [];
 
         for ($m = 1; $m <= 12; $m++) {
-            $chartMonths[]       = Carbon::create($currentYear, $m, 1)->translatedFormat('M');
-            $item                = $bulanData->get($m);
-            $kerugianItem        = $kerugianBulan->get($m);
-            $cicilanItem         = $penyelamatanCicilanBulan->get($m);
-            $lunasItem           = $penyelamatanLunasBulan->get($m);
+            $chartMonths[] = Carbon::create($currentYear, $m, 1)->translatedFormat('M');
+            $item = $bulanData->get($m);
+            $kerugianItem = $kerugianBulan->get($m);
+            $cicilanItem = $penyelamatanCicilanBulan->get($m);
+            $lunasItem = $penyelamatanLunasBulan->get($m);
 
-            $chartAudit[]        = $item ? (int)$item->total_audit : 0;
-            $chartTemuan[]       = $item ? (int)$item->total_temuan : 0;
-            $chartRekom[]        = $item ? (int)$item->total_rekom : 0;
-            $chartKerugian[]     = $kerugianItem ? (float)$kerugianItem->total_kerugian : 0;
-            $penyelamatanM       = ($cicilanItem ? (float)$cicilanItem->total_penyelamatan : 0) + ($lunasItem ? (float)$lunasItem->total_penyelamatan : 0);
+            $chartAudit[] = $item ? (int) $item->total_audit : 0;
+            $chartTemuan[] = $item ? (int) $item->total_temuan : 0;
+            $chartRekom[] = $item ? (int) $item->total_rekom : 0;
+            $chartKerugian[] = $kerugianItem ? (float) $kerugianItem->total_kerugian : 0;
+            $penyelamatanM = ($cicilanItem ? (float) $cicilanItem->total_penyelamatan : 0) + ($lunasItem ? (float) $lunasItem->total_penyelamatan : 0);
             $chartPenyelamatan[] = $penyelamatanM;
         }
 
@@ -335,7 +335,7 @@ class OpdDashboardController extends Controller
             ->get();
 
         $totalKejadianDb = (int) $rawMatriks->sum('jumlah');
-        $totalNilaiDb    = (float) $rawMatriks->sum('nilai');
+        $totalNilaiDb = (float) $rawMatriks->sum('nilai');
 
         if ($totalKejadianDb > 0) {
             $masterStructure = [
@@ -348,7 +348,7 @@ class OpdDashboardController extends Controller
                         3 => ['kode' => '1.03.00', 'nama' => 'Kekurangan penerimaan negara/daerah atau perusahaan milik negara/daerah'],
                         4 => ['kode' => '1.04.00', 'nama' => 'Administrasi'],
                         5 => ['kode' => '1.05.00', 'nama' => 'Indikasi tindak pidana'],
-                    ]
+                    ],
                 ],
                 2 => [
                     'kode' => '2.00.00',
@@ -357,7 +357,7 @@ class OpdDashboardController extends Controller
                         1 => ['kode' => '2.01.00', 'nama' => 'Kelemahan sistem pengendalian akuntansi dan pelaporan'],
                         2 => ['kode' => '2.02.00', 'nama' => 'Kelemahan sistem pengendalian pelaksanaan anggaran pendapatan dan belanja'],
                         3 => ['kode' => '2.03.00', 'nama' => 'Kelemahan struktur pengendalian intern'],
-                    ]
+                    ],
                 ],
                 3 => [
                     'kode' => '3.00.00',
@@ -366,7 +366,7 @@ class OpdDashboardController extends Controller
                         1 => ['kode' => '3.01.00', 'nama' => 'Ketidakhematan / pemborosan / ketidakekonomisan'],
                         2 => ['kode' => '3.02.00', 'nama' => 'Ketidakefisienan'],
                         3 => ['kode' => '3.03.00', 'nama' => 'Ketidakefektifan'],
-                    ]
+                    ],
                 ],
             ];
 
@@ -377,13 +377,13 @@ class OpdDashboardController extends Controller
                 $kelNilai = 0;
 
                 foreach ($kelDef['sub_def'] as $subId => $subDef) {
-                    $subRows = $rawMatriks->filter(fn($r) => (int)$r->kel === (int)$kelId && (int)$r->sub_kel === (int)$subId);
+                    $subRows = $rawMatriks->filter(fn ($r) => (int) $r->kel === (int) $kelId && (int) $r->sub_kel === (int) $subId);
                     $subKejadian = (int) $subRows->sum('jumlah');
                     $subNilai = (float) $subRows->sum('nilai');
                     $unitAgg = [];
                     foreach ($subRows as $r) {
                         $unitKey = strtoupper(trim($r->nama_unit));
-                        if (!isset($unitAgg[$unitKey])) {
+                        if (! isset($unitAgg[$unitKey])) {
                             $unitAgg[$unitKey] = [
                                 'nama' => $r->nama_unit,
                                 'jumlah' => 0,
@@ -397,7 +397,7 @@ class OpdDashboardController extends Controller
 
                     $kelKejadian += $subKejadian;
                     $kelNilai += $subNilai;
-                    $subPct = $totalKejadianDb > 0 ? round(($subKejadian / $totalKejadianDb) * 100) . '%' : '0%';
+                    $subPct = $totalKejadianDb > 0 ? round(($subKejadian / $totalKejadianDb) * 100).'%' : '0%';
 
                     $subList[] = [
                         'kode' => $subDef['kode'],
@@ -409,7 +409,7 @@ class OpdDashboardController extends Controller
                     ];
                 }
 
-                $extraRows = $rawMatriks->filter(fn($r) => (int)$r->kel === (int)$kelId && !isset($kelDef['sub_def'][(int)$r->sub_kel]));
+                $extraRows = $rawMatriks->filter(fn ($r) => (int) $r->kel === (int) $kelId && ! isset($kelDef['sub_def'][(int) $r->sub_kel]));
                 if ($extraRows->count() > 0) {
                     foreach ($extraRows->groupBy('sub_kelompok') as $subNama => $grpRows) {
                         $extraKej = (int) $grpRows->sum('jumlah');
@@ -419,7 +419,7 @@ class OpdDashboardController extends Controller
                         $unitAggExtra = [];
                         foreach ($grpRows as $r) {
                             $unitKey = strtoupper(trim($r->nama_unit));
-                            if (!isset($unitAggExtra[$unitKey])) {
+                            if (! isset($unitAggExtra[$unitKey])) {
                                 $unitAggExtra[$unitKey] = [
                                     'nama' => $r->nama_unit,
                                     'jumlah' => 0,
@@ -434,14 +434,14 @@ class OpdDashboardController extends Controller
                             'kode' => $grpRows->first()->kode ?? ($kelDef['kode']),
                             'nama' => $subNama ?: 'Lainnya',
                             'jumlah_kejadian' => $extraKej,
-                            'persen' => $totalKejadianDb > 0 ? round(($extraKej / $totalKejadianDb) * 100) . '%' : '0%',
+                            'persen' => $totalKejadianDb > 0 ? round(($extraKej / $totalKejadianDb) * 100).'%' : '0%',
                             'nilai' => $extraNil,
                             'units' => $units,
                         ];
                     }
                 }
 
-                $kelPct = $totalKejadianDb > 0 ? round(($kelKejadian / $totalKejadianDb) * 100) . '%' : '0%';
+                $kelPct = $totalKejadianDb > 0 ? round(($kelKejadian / $totalKejadianDb) * 100).'%' : '0%';
 
                 $kelompokList[] = [
                     'kode' => $kelDef['kode'],
@@ -456,7 +456,7 @@ class OpdDashboardController extends Controller
             $matriksKodeTemuan = [
                 'summary' => [
                     'total_kejadian' => $totalKejadianDb,
-                    'total_nilai'    => $totalNilaiDb,
+                    'total_nilai' => $totalNilaiDb,
                 ],
                 'kelompok' => $kelompokList,
             ];
@@ -464,7 +464,7 @@ class OpdDashboardController extends Controller
             $matriksKodeTemuan = [
                 'summary' => [
                     'total_kejadian' => 0,
-                    'total_nilai'    => 0,
+                    'total_nilai' => 0,
                 ],
                 'kelompok' => [],
             ];
@@ -500,20 +500,20 @@ class OpdDashboardController extends Controller
 
             $lhps = $lhpQuery->with(['statistik', 'temuans.recommendations.tindakLanjuts'])->get();
 
-            $lhpCount      = $lhps->count();
-            $allRekom      = $lhps->flatMap->temuans->flatMap->recommendations;
-            $rekomCount    = $allRekom->count();
+            $lhpCount = $lhps->count();
+            $allRekom = $lhps->flatMap->temuans->flatMap->recommendations;
+            $rekomCount = $allRekom->count();
             $totalKerugian = $lhps->sum('total_kerugian');
-            $totalSetor    = $allRekom->flatMap->tindakLanjuts->sum('total_terbayar');
-            $progres       = $lhpCount > 0 ? round($lhps->avg('persen_selesai') ?? 0) : 0;
+            $totalSetor = $allRekom->flatMap->tindakLanjuts->sum('total_terbayar');
+            $progres = $lhpCount > 0 ? round($lhps->avg('persen_selesai') ?? 0) : 0;
 
             return (object) [
-                'kategori'       => $kat,
-                'total_lhp'      => $lhpCount,
-                'total_rekom'    => $rekomCount,
+                'kategori' => $kat,
+                'total_lhp' => $lhpCount,
+                'total_rekom' => $rekomCount,
                 'total_kerugian' => $totalKerugian,
-                'total_setor'    => $totalSetor,
-                'progres'        => $progres,
+                'total_setor' => $totalSetor,
+                'progres' => $progres,
             ];
         });
 
@@ -523,52 +523,52 @@ class OpdDashboardController extends Controller
         $kepatuhanQuery = Lhp::whereIn('id', $lhpIdsArray)
             ->with(['statistik', 'unitDiperiksa', 'auditAssignment.auditProgram', 'auditAssignment.auditProgramDetail']);
 
-        $totalLhpKepatuhan   = (clone $kepatuhanQuery)->count();
+        $totalLhpKepatuhan = (clone $kepatuhanQuery)->count();
         $totalPatuhKepatuhan = (clone $kepatuhanQuery)->patuhLengkap()->count();
         $totalProsesKepatuhan = max(0, $totalLhpKepatuhan - $totalPatuhKepatuhan);
-        $kepatuhanLhps       = (clone $kepatuhanQuery)->orderBy('tanggal_lhp', 'desc')->take(6)->get();
+        $kepatuhanLhps = (clone $kepatuhanQuery)->orderBy('tanggal_lhp', 'desc')->take(6)->get();
 
         return view('pages.opd.dashboard', [
-            'totalLhp'           => $totalLhp,
-            'lhpTrendPct'        => $lhpTrendPct,
-            'totalTemuan'        => $totalTemuan,
-            'temuanTrendPct'     => $temuanTrendPct,
-            'totalRekom'         => $totalRekom,
-            'rekomBelum'         => $rekomBelum,
-            'rekomProses'        => $rekomProses,
-            'rekomSelesai'       => $rekomSelesai,
-            'rekomPct'           => $rekomPct,
-            'totalTl'            => $totalTl,
-            'tlSelesai'          => $tlSelesai,
-            'tlPct'              => $tlPct,
-            'totalKerugian'      => $totalKerugian,
-            'totalPenyelamatan'  => $totalPenyelamatan,
-            'sisaKerugian'       => $sisaKerugian,
-            'recoveryRate'       => $recoveryRate,
-            'opdStats'           => $opdStats,
-            'verifikasiStats'    => $verifikasiStats,
-            'chartMonths'        => $chartMonths,
-            'chartAudit'         => $chartAudit,
-            'chartTemuan'        => $chartTemuan,
-            'chartRekom'         => $chartRekom,
-            'chartKerugian'      => $chartKerugian,
-            'chartPenyelamatan'  => $chartPenyelamatan,
-            'matriksKodeTemuan'  => $matriksKodeTemuan,
-            'overdue'            => $overdue,
-            'recent'             => $recent,
-            'rekapitulasi'       => $rekapitulasi,
-            'kategoriBreakdown'  => $kategoriBreakdown,
-            'preset'             => $preset,
-            'kategoriProgram'    => $kategoriProgram,
-            'listKategori'       => $listKategori,
-            'startDate'          => $startDate->format('Y-m-d'),
-            'endDate'            => $endDate->format('Y-m-d'),
+            'totalLhp' => $totalLhp,
+            'lhpTrendPct' => $lhpTrendPct,
+            'totalTemuan' => $totalTemuan,
+            'temuanTrendPct' => $temuanTrendPct,
+            'totalRekom' => $totalRekom,
+            'rekomBelum' => $rekomBelum,
+            'rekomProses' => $rekomProses,
+            'rekomSelesai' => $rekomSelesai,
+            'rekomPct' => $rekomPct,
+            'totalTl' => $totalTl,
+            'tlSelesai' => $tlSelesai,
+            'tlPct' => $tlPct,
+            'totalKerugian' => $totalKerugian,
+            'totalPenyelamatan' => $totalPenyelamatan,
+            'sisaKerugian' => $sisaKerugian,
+            'recoveryRate' => $recoveryRate,
+            'opdStats' => $opdStats,
+            'verifikasiStats' => $verifikasiStats,
+            'chartMonths' => $chartMonths,
+            'chartAudit' => $chartAudit,
+            'chartTemuan' => $chartTemuan,
+            'chartRekom' => $chartRekom,
+            'chartKerugian' => $chartKerugian,
+            'chartPenyelamatan' => $chartPenyelamatan,
+            'matriksKodeTemuan' => $matriksKodeTemuan,
+            'overdue' => $overdue,
+            'recent' => $recent,
+            'rekapitulasi' => $rekapitulasi,
+            'kategoriBreakdown' => $kategoriBreakdown,
+            'preset' => $preset,
+            'kategoriProgram' => $kategoriProgram,
+            'listKategori' => $listKategori,
+            'startDate' => $startDate->format('Y-m-d'),
+            'endDate' => $endDate->format('Y-m-d'),
             'startDateFormatted' => $startDate->translatedFormat('d M Y'),
-            'endDateFormatted'   => $endDate->translatedFormat('d M Y'),
-            'totalLhpKepatuhan'   => $totalLhpKepatuhan,
+            'endDateFormatted' => $endDate->translatedFormat('d M Y'),
+            'totalLhpKepatuhan' => $totalLhpKepatuhan,
             'totalPatuhKepatuhan' => $totalPatuhKepatuhan,
-            'totalProsesKepatuhan'=> $totalProsesKepatuhan,
-            'kepatuhanLhps'       => $kepatuhanLhps,
+            'totalProsesKepatuhan' => $totalProsesKepatuhan,
+            'kepatuhanLhps' => $kepatuhanLhps,
         ]);
     }
 }

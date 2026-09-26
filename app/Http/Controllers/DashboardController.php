@@ -4,12 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditProgram;
 use App\Models\Lhp;
-use App\Models\Temuan;
-use App\Models\Recommendation;
-use App\Models\TindakLanjut;
 use App\Models\LhpStatistik;
-use App\Models\UnitDiperiksa;
-use App\Models\User;
+use App\Models\Recommendation;
+use App\Models\Temuan;
+use App\Models\TindakLanjut;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -26,59 +24,59 @@ class DashboardController extends Controller
         }
 
         // ── 1. Filter Tanggal & Kategori Program Audit ──────────────────────────────
-        $preset           = $request->input('preset', 'this_year');
-        $startDateInput   = $request->input('start_date');
-        $endDateInput     = $request->input('end_date');
-        $kategoriProgram  = $request->input('kategori_program', 'semua');
+        $preset = $request->input('preset', 'this_year');
+        $startDateInput = $request->input('start_date');
+        $endDateInput = $request->input('end_date');
+        $kategoriProgram = $request->input('kategori_program', 'semua');
 
         $now = Carbon::now();
 
         switch ($preset) {
             case 'today':
                 $startDate = $now->copy()->startOfDay();
-                $endDate   = $now->copy()->endOfDay();
+                $endDate = $now->copy()->endOfDay();
                 break;
             case '7days':
                 $startDate = $now->copy()->subDays(6)->startOfDay();
-                $endDate   = $now->copy()->endOfDay();
+                $endDate = $now->copy()->endOfDay();
                 break;
             case '30days':
                 $startDate = $now->copy()->subDays(29)->startOfDay();
-                $endDate   = $now->copy()->endOfDay();
+                $endDate = $now->copy()->endOfDay();
                 break;
             case 'this_month':
                 $startDate = $now->copy()->startOfMonth();
-                $endDate   = $now->copy()->endOfMonth();
+                $endDate = $now->copy()->endOfMonth();
                 break;
             case 'all':
-                $preset    = 'all';
+                $preset = 'all';
                 $startDate = Carbon::create(2000, 1, 1)->startOfDay();
-                $endDate   = Carbon::create(2099, 12, 31)->endOfDay();
+                $endDate = Carbon::create(2099, 12, 31)->endOfDay();
                 break;
             case 'custom':
                 $startDate = $startDateInput ? Carbon::parse($startDateInput)->startOfDay() : $now->copy()->startOfYear();
-                $endDate   = $endDateInput ? Carbon::parse($endDateInput)->endOfDay() : $now->copy()->endOfYear();
+                $endDate = $endDateInput ? Carbon::parse($endDateInput)->endOfDay() : $now->copy()->endOfYear();
                 break;
             case 'this_year':
             default:
-                $preset    = 'this_year';
+                $preset = 'this_year';
                 $startDate = $now->copy()->startOfYear();
-                $endDate   = $now->copy()->endOfYear();
+                $endDate = $now->copy()->endOfYear();
                 break;
         }
 
         // Periode pembanding (Previous Period)
         $diffDays = $startDate->diffInDays($endDate) + 1;
         $prevStartDate = $startDate->copy()->subDays($diffDays);
-        $prevEndDate   = $startDate->copy()->subDay()->endOfDay();
+        $prevEndDate = $startDate->copy()->subDay()->endOfDay();
 
-        $cacheKey = 'dashboard_v3:user:' . $user->id . ':' . $preset . ':' . $kategoriProgram . ':' . $startDate->format('Y-m-d') . ':' . $endDate->format('Y-m-d') . ':' . $user->updated_at->timestamp;
+        $cacheKey = 'dashboard_v3:user:'.$user->id.':'.$preset.':'.$kategoriProgram.':'.$startDate->format('Y-m-d').':'.$endDate->format('Y-m-d').':'.$user->updated_at->timestamp;
 
         $data = Cache::remember($cacheKey, 300, function () use ($user, $startDate, $endDate, $prevStartDate, $prevEndDate, $kategoriProgram) {
             // ── Base query LHP ──────────────────────────────────────────────────
             $baseLhpQuery = Lhp::forUser($user);
 
-            if (!empty($kategoriProgram) && $kategoriProgram !== 'semua') {
+            if (! empty($kategoriProgram) && $kategoriProgram !== 'semua') {
                 $baseLhpQuery->whereHas('auditAssignment.auditProgramDetail.auditProgram', function ($q) use ($kategoriProgram) {
                     $q->where('kategori', $kategoriProgram);
                 });
@@ -114,7 +112,7 @@ class DashboardController extends Controller
             $temuanTrendPct = $prevTotalTemuan > 0 ? round((($totalTemuan - $prevTotalTemuan) / $prevTotalTemuan) * 100, 1) : ($totalTemuan > 0 ? 100 : 0);
 
             // ── Rekomendasi Stats ───────────────────────────────────────────────
-            $rekomStats = Recommendation::whereHas('temuan', fn($q) => $q->whereIn('lhp_id', $lhpIds))
+            $rekomStats = Recommendation::whereHas('temuan', fn ($q) => $q->whereIn('lhp_id', $lhpIds))
                 ->selectRaw("
                     COUNT(*) as total,
                     SUM(CASE WHEN status = 'belum_ditindaklanjuti' OR status IS NULL THEN 1 ELSE 0 END) as belum,
@@ -122,14 +120,14 @@ class DashboardController extends Controller
                     SUM(CASE WHEN status = 'selesai' THEN 1 ELSE 0 END) as selesai
                 ")->first();
 
-            $totalRekom   = $rekomStats->total ?? 0;
-            $rekomBelum   = $rekomStats->belum ?? 0;
-            $rekomProses  = $rekomStats->proses ?? 0;
+            $totalRekom = $rekomStats->total ?? 0;
+            $rekomBelum = $rekomStats->belum ?? 0;
+            $rekomProses = $rekomStats->proses ?? 0;
             $rekomSelesai = $rekomStats->selesai ?? 0;
-            $rekomPct     = $totalRekom > 0 ? round(($rekomSelesai / $totalRekom) * 100, 1) : 0;
+            $rekomPct = $totalRekom > 0 ? round(($rekomSelesai / $totalRekom) * 100, 1) : 0;
 
             // ── Tindak Lanjut Stats ─────────────────────────────────────────────
-            $tlStats = TindakLanjut::whereHas('recommendation.temuan', fn($q) => $q->whereIn('lhp_id', $lhpIds))
+            $tlStats = TindakLanjut::whereHas('recommendation.temuan', fn ($q) => $q->whereIn('lhp_id', $lhpIds))
                 ->selectRaw("
                     COUNT(*) as total,
                     SUM(CASE WHEN status_verifikasi = 'lunas' THEN 1 ELSE 0 END) as lunas,
@@ -137,13 +135,13 @@ class DashboardController extends Controller
                     SUM(CASE WHEN status_verifikasi = 'menunggu_verifikasi' THEN 1 ELSE 0 END) as menunggu
                 ")->first();
 
-            $totalTl   = $tlStats->total ?? 0;
+            $totalTl = $tlStats->total ?? 0;
             $tlSelesai = $tlStats->lunas ?? 0;
-            $tlPct     = $totalRekom > 0 ? round(($rekomSelesai / $totalRekom) * 100, 1) : 0;
+            $tlPct = $totalRekom > 0 ? round(($rekomSelesai / $totalRekom) * 100, 1) : 0;
 
             // ── Trend Monthly Chart (Audit, Temuan, Rekomendasi) ────────────────
             $currentYear = $startDate->year;
-            $monthExpr   = DB::getDriverName() === 'sqlite' ? "CAST(strftime('%m', lhps.tanggal_lhp) AS INTEGER)" : "MONTH(lhps.tanggal_lhp)";
+            $monthExpr = DB::getDriverName() === 'sqlite' ? "CAST(strftime('%m', lhps.tanggal_lhp) AS INTEGER)" : 'MONTH(lhps.tanggal_lhp)';
             $bulanData = DB::table('lhps')
                 ->whereIn('lhps.id', $lhpIds)
                 ->leftJoin('temuans', 'temuans.lhp_id', '=', 'lhps.id')
@@ -160,23 +158,23 @@ class DashboardController extends Controller
                 ->keyBy('bulan');
 
             $chartMonths = [];
-            $chartAudit  = [];
+            $chartAudit = [];
             $chartTemuan = [];
-            $chartRekom  = [];
+            $chartRekom = [];
 
             for ($m = 1; $m <= 12; $m++) {
                 $chartMonths[] = Carbon::create($currentYear, $m, 1)->translatedFormat('M');
                 $item = $bulanData->get($m);
-                $chartAudit[]  = $item ? (int)$item->total_audit : 0;
-                $chartTemuan[] = $item ? (int)$item->total_temuan : 0;
-                $chartRekom[]  = $item ? (int)$item->total_rekom : 0;
+                $chartAudit[] = $item ? (int) $item->total_audit : 0;
+                $chartTemuan[] = $item ? (int) $item->total_temuan : 0;
+                $chartRekom[] = $item ? (int) $item->total_rekom : 0;
             }
 
             // ── 10 Unit Periksa Temuan Terbanyak (Single Grouped Query - Optimized) ──
             $unitKinerja = DB::table('unit_diperiksas')
                 ->leftJoin('lhps', function ($join) use ($lhpIds) {
                     $join->on('lhps.unit_diperiksa_id', '=', 'unit_diperiksas.id')
-                         ->whereIn('lhps.id', $lhpIds);
+                        ->whereIn('lhps.id', $lhpIds);
                 })
                 ->leftJoin('temuans', 'temuans.lhp_id', '=', 'lhps.id')
                 ->leftJoin('recommendations', 'recommendations.temuan_id', '=', 'temuans.id')
@@ -199,14 +197,14 @@ class DashboardController extends Controller
                     $progress = $rekomCount > 0 ? round(($rekomSelesaiCount / $rekomCount) * 100) : 0;
 
                     return [
-                        'id'            => $unit->id,
-                        'nama'          => $unit->nama,
-                        'lhp_id'        => $unit->lhp_id,
-                        'total_lhp'     => (int) $unit->total_lhp,
-                        'total_temuan'  => (int) $unit->total_temuan,
-                        'total_rekom'   => $rekomCount,
+                        'id' => $unit->id,
+                        'nama' => $unit->nama,
+                        'lhp_id' => $unit->lhp_id,
+                        'total_lhp' => (int) $unit->total_lhp,
+                        'total_temuan' => (int) $unit->total_temuan,
+                        'total_rekom' => $rekomCount,
                         'selesai_rekom' => $rekomSelesaiCount,
-                        'progress'      => $progress
+                        'progress' => $progress,
                     ];
                 })
                 ->values();
@@ -214,10 +212,10 @@ class DashboardController extends Controller
             // ── Prioritas Perhatian ──────────────────────────────────────────────
             // 🔴 1. Rekomendasi melewati batas waktu
             $overdueQuery = TindakLanjut::with([
-                    'recommendation.temuan.lhp.unitDiperiksa',
-                    'recommendation.kodeRekomendasi'
-                ])
-                ->whereHas('recommendation.temuan', fn($q) => $q->whereIn('lhp_id', $lhpIds))
+                'recommendation.temuan.lhp.unitDiperiksa',
+                'recommendation.kodeRekomendasi',
+            ])
+                ->whereHas('recommendation.temuan', fn ($q) => $q->whereIn('lhp_id', $lhpIds))
                 ->whereNotIn('status_verifikasi', ['lunas'])
                 ->whereNotNull('tanggal_jatuh_tempo')
                 ->whereDate('tanggal_jatuh_tempo', '<', now());
@@ -227,29 +225,29 @@ class DashboardController extends Controller
 
             // 🟠 2. Temuan belum ditindaklanjuti sama sekali
             $temuanBelumTlQuery = Temuan::with([
-                    'lhp.unitDiperiksa',
-                    'kodeTemuan'
-                ])
+                'lhp.unitDiperiksa',
+                'kodeTemuan',
+            ])
                 ->whereIn('lhp_id', $lhpIds)
                 ->where(function ($q) {
                     $q->where('status_tl', 'belum_ditindaklanjuti')
-                      ->orWhereNull('status_tl');
+                        ->orWhereNull('status_tl');
                 });
 
             $temuanBelumTlCount = (clone $temuanBelumTlQuery)->count();
             $temuanBelumTlItems = $temuanBelumTlQuery->latest()->limit(5)->get();
 
             // 🟡 3. Unit dengan progres < 50%
-            $unitLowProgressQuery = $unitKinerja->filter(fn($u) => $u['total_rekom'] > 0 && $u['progress'] < 50);
+            $unitLowProgressQuery = $unitKinerja->filter(fn ($u) => $u['total_rekom'] > 0 && $u['progress'] < 50);
             $unitLowProgressCount = $unitLowProgressQuery->count();
             $unitLowProgressItems = $unitLowProgressQuery->take(5)->values();
 
             // ── Rekomendasi Terbaru ─────────────────────────────────────────────
             $rekomendasiTerbaru = Recommendation::with([
-                    'temuan.lhp.unitDiperiksa',
-                    'kodeRekomendasi'
-                ])
-                ->whereHas('temuan', fn($q) => $q->whereIn('lhp_id', $lhpIds))
+                'temuan.lhp.unitDiperiksa',
+                'kodeRekomendasi',
+            ])
+                ->whereHas('temuan', fn ($q) => $q->whereIn('lhp_id', $lhpIds))
                 ->latest()
                 ->limit(5)
                 ->get();
@@ -263,7 +261,7 @@ class DashboardController extends Controller
 
             // ── Total Kerugian Financial Stats ──────────────────────────────────
             $totalKerugian = (float) Temuan::whereIn('lhp_id', $lhpIds)
-                ->selectRaw("SUM(CASE WHEN nilai_temuan > 0 THEN nilai_temuan ELSE (COALESCE(nilai_kerugian_negara, 0) + COALESCE(nilai_kerugian_daerah, 0) + COALESCE(nilai_kerugian_desa, 0) + COALESCE(nilai_kerugian_bos_blud, 0)) END) as total")
+                ->selectRaw('SUM(CASE WHEN nilai_temuan > 0 THEN nilai_temuan ELSE (COALESCE(nilai_kerugian_negara, 0) + COALESCE(nilai_kerugian_daerah, 0) + COALESCE(nilai_kerugian_desa, 0) + COALESCE(nilai_kerugian_bos_blud, 0)) END) as total')
                 ->value('total') ?? 0;
 
             // ── Total Penyelamatan Aset (Setoran / Dibayar / Ditindaklanjuti) ───
@@ -360,7 +358,7 @@ class DashboardController extends Controller
                             3 => ['kode' => '1.03.00', 'nama' => 'Kekurangan penerimaan negara/daerah atau perusahaan milik negara/daerah'],
                             4 => ['kode' => '1.04.00', 'nama' => 'Administrasi'],
                             5 => ['kode' => '1.05.00', 'nama' => 'Indikasi tindak pidana'],
-                        ]
+                        ],
                     ],
                     2 => [
                         'kode' => '2.00.00',
@@ -369,7 +367,7 @@ class DashboardController extends Controller
                             1 => ['kode' => '2.01.00', 'nama' => 'Kelemahan sistem pengendalian akuntansi dan pelaporan'],
                             2 => ['kode' => '2.02.00', 'nama' => 'Kelemahan sistem pengendalian pelaksanaan anggaran pendapatan dan belanja'],
                             3 => ['kode' => '2.03.00', 'nama' => 'Kelemahan struktur pengendalian intern'],
-                        ]
+                        ],
                     ],
                     3 => [
                         'kode' => '3.00.00',
@@ -378,7 +376,7 @@ class DashboardController extends Controller
                             1 => ['kode' => '3.01.00', 'nama' => 'Ketidakhematan / pemborosan / ketidakekonomisan'],
                             2 => ['kode' => '3.02.00', 'nama' => 'Ketidakefisienan'],
                             3 => ['kode' => '3.03.00', 'nama' => 'Ketidakefektifan'],
-                        ]
+                        ],
                     ],
                 ];
 
@@ -389,13 +387,13 @@ class DashboardController extends Controller
                     $kelNilai = 0;
 
                     foreach ($kelDef['sub_def'] as $subId => $subDef) {
-                        $subRows = $rawMatriks->filter(fn($r) => (int)$r->kel === (int)$kelId && (int)$r->sub_kel === (int)$subId);
+                        $subRows = $rawMatriks->filter(fn ($r) => (int) $r->kel === (int) $kelId && (int) $r->sub_kel === (int) $subId);
                         $subKejadian = (int) $subRows->sum('jumlah');
                         $subNilai = (float) $subRows->sum('nilai');
                         $unitAgg = [];
                         foreach ($subRows as $r) {
                             $unitKey = strtoupper(trim($r->nama_unit));
-                            if (!isset($unitAgg[$unitKey])) {
+                            if (! isset($unitAgg[$unitKey])) {
                                 $unitAgg[$unitKey] = [
                                     'nama' => $r->nama_unit,
                                     'jumlah' => 0,
@@ -409,7 +407,7 @@ class DashboardController extends Controller
 
                         $kelKejadian += $subKejadian;
                         $kelNilai += $subNilai;
-                        $subPct = $totalKejadianDb > 0 ? round(($subKejadian / $totalKejadianDb) * 100) . '%' : '0%';
+                        $subPct = $totalKejadianDb > 0 ? round(($subKejadian / $totalKejadianDb) * 100).'%' : '0%';
 
                         $subList[] = [
                             'kode' => $subDef['kode'],
@@ -421,7 +419,7 @@ class DashboardController extends Controller
                         ];
                     }
 
-                    $extraRows = $rawMatriks->filter(fn($r) => (int)$r->kel === (int)$kelId && !isset($kelDef['sub_def'][(int)$r->sub_kel]));
+                    $extraRows = $rawMatriks->filter(fn ($r) => (int) $r->kel === (int) $kelId && ! isset($kelDef['sub_def'][(int) $r->sub_kel]));
                     if ($extraRows->count() > 0) {
                         foreach ($extraRows->groupBy('sub_kelompok') as $subNama => $grpRows) {
                             $extraKej = (int) $grpRows->sum('jumlah');
@@ -431,7 +429,7 @@ class DashboardController extends Controller
                             $unitAggExtra = [];
                             foreach ($grpRows as $r) {
                                 $unitKey = strtoupper(trim($r->nama_unit));
-                                if (!isset($unitAggExtra[$unitKey])) {
+                                if (! isset($unitAggExtra[$unitKey])) {
                                     $unitAggExtra[$unitKey] = [
                                         'nama' => $r->nama_unit,
                                         'jumlah' => 0,
@@ -446,14 +444,14 @@ class DashboardController extends Controller
                                 'kode' => $grpRows->first()->kode ?? ($kelDef['kode']),
                                 'nama' => $subNama ?: 'Lainnya',
                                 'jumlah_kejadian' => $extraKej,
-                                'persen' => $totalKejadianDb > 0 ? round(($extraKej / $totalKejadianDb) * 100) . '%' : '0%',
+                                'persen' => $totalKejadianDb > 0 ? round(($extraKej / $totalKejadianDb) * 100).'%' : '0%',
                                 'nilai' => $extraNil,
                                 'units' => $units,
                             ];
                         }
                     }
 
-                    $kelPct = $totalKejadianDb > 0 ? round(($kelKejadian / $totalKejadianDb) * 100) . '%' : '0%';
+                    $kelPct = $totalKejadianDb > 0 ? round(($kelKejadian / $totalKejadianDb) * 100).'%' : '0%';
 
                     $kelompokList[] = [
                         'kode' => $kelDef['kode'],
@@ -468,7 +466,7 @@ class DashboardController extends Controller
                 $matriksKodeTemuan = [
                     'summary' => [
                         'total_kejadian' => $totalKejadianDb,
-                        'total_nilai'    => $totalNilaiDb,
+                        'total_nilai' => $totalNilaiDb,
                     ],
                     'kelompok' => $kelompokList,
                 ];
@@ -477,7 +475,7 @@ class DashboardController extends Controller
                 $matriksKodeTemuan = [
                     'summary' => [
                         'total_kejadian' => 77,
-                        'total_nilai'    => 1222989713,
+                        'total_nilai' => 1222989713,
                     ],
                     'kelompok' => [
                         [
@@ -515,7 +513,7 @@ class DashboardController extends Controller
                                         ['nama' => 'DESA NGULAAN (BULU)', 'jumlah' => 1, 'nilai' => 5890000],
                                         ['nama' => 'DESA KETANGGI (REMBANG)', 'jumlah' => 1, 'nilai' => 12195600],
                                         ['nama' => 'DESA JOHOGUNUNG (PANCUR)', 'jumlah' => 1, 'nilai' => 9884946],
-                                    ]
+                                    ],
                                 ],
                                 [
                                     'kode' => '1.02.00',
@@ -526,7 +524,7 @@ class DashboardController extends Controller
                                     'units' => [
                                         ['nama' => 'DESA PACING (SEDAN)', 'jumlah' => 1, 'nilai' => 16950000],
                                         ['nama' => 'DESA KEMADU (SULANG)', 'jumlah' => 1, 'nilai' => 37044500],
-                                    ]
+                                    ],
                                 ],
                                 [
                                     'kode' => '1.03.00',
@@ -541,7 +539,7 @@ class DashboardController extends Controller
                                         ['nama' => 'DESA JURANGJERO (SLUKE)', 'jumlah' => 1, 'nilai' => 4102774],
                                         ['nama' => 'DESA JADI (SUMBER)', 'jumlah' => 1, 'nilai' => 3753201],
                                         ['nama' => 'DESA NGULAAN (BULU)', 'jumlah' => 1, 'nilai' => 1434000],
-                                    ]
+                                    ],
                                 ],
                                 [
                                     'kode' => '1.04.00',
@@ -567,7 +565,7 @@ class DashboardController extends Controller
                                         ['nama' => 'DESA JADI (SUMBER)', 'jumlah' => 2, 'nilai' => 167284],
                                         ['nama' => 'DESA KETANGGI (REMBANG)', 'jumlah' => 1, 'nilai' => 8500000],
                                         ['nama' => 'DESA JOHOGUNUNG (PANCUR)', 'jumlah' => 1, 'nilai' => 1485400],
-                                    ]
+                                    ],
                                 ],
                                 [
                                     'kode' => '1.05.00',
@@ -575,9 +573,9 @@ class DashboardController extends Controller
                                     'jumlah_kejadian' => 0,
                                     'persen' => '0%',
                                     'nilai' => 0,
-                                    'units' => []
-                                ]
-                            ]
+                                    'units' => [],
+                                ],
+                            ],
                         ],
                         [
                             'kode' => '2.00.00',
@@ -595,7 +593,7 @@ class DashboardController extends Controller
                                     'units' => [
                                         ['nama' => 'DESA KEMADU (SULANG)', 'jumlah' => 1, 'nilai' => 0],
                                         ['nama' => 'DESA JADI (SUMBER)', 'jumlah' => 1, 'nilai' => 0],
-                                    ]
+                                    ],
                                 ],
                                 [
                                     'kode' => '2.02.00',
@@ -614,7 +612,7 @@ class DashboardController extends Controller
                                         ['nama' => 'DESA NGULAAN (BULU)', 'jumlah' => 1, 'nilai' => 0],
                                         ['nama' => 'DESA KETANGGI (REMBANG)', 'jumlah' => 1, 'nilai' => 0],
                                         ['nama' => 'DESA JOHOGUNUNG (PANCUR)', 'jumlah' => 1, 'nilai' => 0],
-                                    ]
+                                    ],
                                 ],
                                 [
                                     'kode' => '2.03.00',
@@ -624,9 +622,9 @@ class DashboardController extends Controller
                                     'nilai' => 0,
                                     'units' => [
                                         ['nama' => 'DESA JADI (SUMBER)', 'jumlah' => 1, 'nilai' => 0],
-                                    ]
-                                ]
-                            ]
+                                    ],
+                                ],
+                            ],
                         ],
                         [
                             'kode' => '3.00.00',
@@ -638,9 +636,9 @@ class DashboardController extends Controller
                                 ['kode' => '3.01.00', 'nama' => 'Ketidakhematan / pemborosan / ketidakekonomisan', 'jumlah_kejadian' => 0, 'persen' => '0%', 'nilai' => 0, 'units' => []],
                                 ['kode' => '3.02.00', 'nama' => 'Ketidakefisienan', 'jumlah_kejadian' => 0, 'persen' => '0%', 'nilai' => 0, 'units' => []],
                                 ['kode' => '3.03.00', 'nama' => 'Ketidakefektifan', 'jumlah_kejadian' => 0, 'persen' => '0%', 'nilai' => 0, 'units' => []],
-                            ]
-                        ]
-                    ]
+                            ],
+                        ],
+                    ],
                 ];
             }
 

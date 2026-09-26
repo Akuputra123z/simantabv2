@@ -17,16 +17,16 @@ class UnitDiperiksaController extends Controller
         $query = UnitDiperiksa::query();
 
         $perPage = (int) $request->input('per_page', 10);
-        if (!in_array($perPage, [5, 8, 10, 20, 25, 50])) {
+        if (! in_array($perPage, [5, 8, 10, 20, 25, 50])) {
             $perPage = 10;
         }
 
         $data = $query
             ->when($request->search, function ($q) use ($request) {
                 $q->where(function ($sub) use ($request) {
-                    $sub->where('nama_unit', 'like', '%' . $request->search . '%')
-                        ->orWhere('nama_kecamatan', 'like', '%' . $request->search . '%')
-                        ->orWhere('alamat', 'like', '%' . $request->search . '%');
+                    $sub->where('nama_unit', 'like', '%'.$request->search.'%')
+                        ->orWhere('nama_kecamatan', 'like', '%'.$request->search.'%')
+                        ->orWhere('alamat', 'like', '%'.$request->search.'%');
                 });
             })
             ->when($request->kategori, function ($q) use ($request) {
@@ -51,12 +51,12 @@ class UnitDiperiksaController extends Controller
             'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:10240',
         ], [
             'file.required' => 'Pilih file Excel atau CSV untuk diimpor.',
-            'file.mimes'    => 'Format file harus berupa .xlsx, .xls, atau .csv.',
-            'file.max'      => 'Ukuran file tidak boleh melebihi 10MB.',
+            'file.mimes' => 'Format file harus berupa .xlsx, .xls, atau .csv.',
+            'file.max' => 'Ukuran file tidak boleh melebihi 10MB.',
         ]);
 
         try {
-            $import = new UnitDiperiksaImport();
+            $import = new UnitDiperiksaImport;
             Excel::import($import, $request->file('file'));
 
             $msg = "Proses impor selesai! {$import->importedCount} unit baru ditambahkan";
@@ -66,16 +66,17 @@ class UnitDiperiksaController extends Controller
             if ($import->skippedCount > 0) {
                 $msg .= ", {$import->skippedCount} baris dilewati";
             }
-            $msg .= ".";
+            $msg .= '.';
 
             return redirect()
                 ->route('unit-diperiksa.index')
                 ->with('success', $msg);
         } catch (\Exception $e) {
-            Log::error('Import UnitDiperiksa Error: ' . $e->getMessage());
+            Log::error('Import UnitDiperiksa Error: '.$e->getMessage());
+
             return redirect()
                 ->back()
-                ->with('error', 'Gagal mengimpor file: ' . $e->getMessage());
+                ->with('error', 'Gagal mengimpor file: '.$e->getMessage());
         }
     }
 
@@ -91,9 +92,9 @@ class UnitDiperiksaController extends Controller
         $units = $query
             ->when($request->search, function ($q) use ($request) {
                 $q->where(function ($sub) use ($request) {
-                    $sub->where('nama_unit', 'like', '%' . $request->search . '%')
-                        ->orWhere('nama_kecamatan', 'like', '%' . $request->search . '%')
-                        ->orWhere('alamat', 'like', '%' . $request->search . '%');
+                    $sub->where('nama_unit', 'like', '%'.$request->search.'%')
+                        ->orWhere('nama_kecamatan', 'like', '%'.$request->search.'%')
+                        ->orWhere('alamat', 'like', '%'.$request->search.'%');
                 });
             })
             ->when($request->kategori, function ($q) use ($request) {
@@ -107,7 +108,7 @@ class UnitDiperiksaController extends Controller
             ->orderBy('nama_unit')
             ->get();
 
-        $filename = 'data_unit_diperiksa_' . now()->format('Ymd_His') . '.xlsx';
+        $filename = 'data_unit_diperiksa_'.now()->format('Ymd_His').'.xlsx';
 
         return Excel::download(new UnitDiperiksaExport($units), $filename);
     }
@@ -116,18 +117,19 @@ class UnitDiperiksaController extends Controller
     {
         $kategoriOptions = ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'];
         $kecamatanList = UnitDiperiksa::getKecamatanList();
+
         return view('pages.unit-diperiksa.create', compact('kategoriOptions', 'kecamatanList'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama_unit'      => 'required|string|max:200',
-            'kategori'       => 'required|string|max:50',
+            'nama_unit' => 'required|string|max:200',
+            'kategori' => 'required|string|max:50',
             'nama_kecamatan' => 'nullable|string|max:100',
-            'alamat'         => 'nullable|string|max:500',
-            'telepon'        => 'nullable|string|max:20',
-            'keterangan'     => 'nullable|string',
+            'alamat' => 'nullable|string|max:500',
+            'telepon' => 'nullable|string|max:20',
+            'keterangan' => 'nullable|string',
         ]);
 
         UnitDiperiksa::create($validated);
@@ -146,6 +148,7 @@ class UnitDiperiksaController extends Controller
     {
         $kategoriOptions = ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'];
         $kecamatanList = UnitDiperiksa::getKecamatanList();
+
         return view('pages.unit-diperiksa.edit', [
             'data' => $unitDiperiksa,
             'kategoriOptions' => $kategoriOptions,
@@ -156,12 +159,12 @@ class UnitDiperiksaController extends Controller
     public function update(Request $request, UnitDiperiksa $unitDiperiksa)
     {
         $validated = $request->validate([
-            'nama_unit'      => 'required|string|max:200',
-            'kategori'       => 'required|string|max:50',
+            'nama_unit' => 'required|string|max:200',
+            'kategori' => 'required|string|max:50',
             'nama_kecamatan' => 'nullable|string|max:100',
-            'alamat'         => 'nullable|string|max:500',
-            'telepon'        => 'nullable|string|max:20',
-            'keterangan'     => 'nullable|string',
+            'alamat' => 'nullable|string|max:500',
+            'telepon' => 'nullable|string|max:20',
+            'keterangan' => 'nullable|string',
         ]);
 
         $unitDiperiksa->update($validated);
@@ -179,12 +182,13 @@ class UnitDiperiksaController extends Controller
         }
 
         $unitDiperiksa->forceDelete();
+
         return redirect()->back()->with('success', 'Unit berhasil dihapus permanen dari database.');
     }
 
     public function bulkDelete(Request $request)
     {
-        if (!$request->ids || !is_array($request->ids)) {
+        if (! $request->ids || ! is_array($request->ids)) {
             return back()->with('error', 'Pilih minimal satu data unit yang akan dihapus.');
         }
 
@@ -195,6 +199,7 @@ class UnitDiperiksaController extends Controller
         foreach ($units as $unit) {
             if ($unit->lhps()->exists()) {
                 $skippedCount++;
+
                 continue;
             }
             $unit->forceDelete();

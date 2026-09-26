@@ -2,19 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Lhp;
-use App\Models\LhpStatistik;
+use App\Exports\RekapPerLhpExport;
+use App\Exports\RekapSemuaLhpExport;
 use App\Models\AuditProgram;
 use App\Models\AuditProgramDetail;
-use App\Exports\RekapSemuaLhpExport;
-use App\Exports\RekapPerLhpExport;
+use App\Models\Lhp;
+use App\Models\LhpStatistik;
+use App\Models\UnitDiperiksa;
+use App\Services\LaporanKepatuhanService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Services\LaporanKepatuhanService;
-use App\Models\UnitDiperiksa;
 
 class LaporanController extends Controller
 {
@@ -29,26 +28,26 @@ class LaporanController extends Controller
 
         $this->applyFilters($query, $request);
 
-        $lhpIds    = (clone $query)->withoutEagerLoads()->pluck('id');
+        $lhpIds = (clone $query)->withoutEagerLoads()->pluck('id');
         $ringkasan = $this->hitungRingkasan($lhpIds);
 
         $lhps = $query->orderBy('tanggal_lhp', 'desc')->paginate(15)->withQueryString();
 
-        $irbanList = Cache::remember('laporan:irbanList:' . $user->id, 600, function () use ($user) {
+        $irbanList = Cache::remember('laporan:irbanList:'.$user->id, 600, function () use ($user) {
             return AuditProgramDetail::whereHas('assignments', function ($q) use ($user) {
-                    $q->whereHas('lhps');
-                    if (!$user->hasRole('super_admin')) {
-                        $q->where('ketua_tim_id', $user->id)
-                          ->orWhereHas('members', fn($q2) => $q2->where('user_id', $user->id));
-                    }
-                })
+                $q->whereHas('lhps');
+                if (! $user->hasRole('super_admin')) {
+                    $q->where('ketua_tim_id', $user->id)
+                        ->orWhereHas('members', fn ($q2) => $q2->where('user_id', $user->id));
+                }
+            })
                 ->whereNotNull('tim')
                 ->distinct()
                 ->orderBy('tim')
                 ->pluck('tim');
         });
 
-        $kategoris  = AuditProgram::KATEGORI;
+        $kategoris = AuditProgram::KATEGORI;
 
         return view('pages.laporan.index', compact(
             'lhps', 'ringkasan', 'irbanList', 'kategoris'
@@ -73,8 +72,8 @@ class LaporanController extends Controller
             $search = trim($request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('nomor_lhp', 'like', "%{$search}%")
-                  ->orWhereHas('unitDiperiksa', fn($sq) => $sq->where('nama_unit', 'like', "%{$search}%")->orWhere('nama_kecamatan', 'like', "%{$search}%"))
-                  ->orWhereHas('auditAssignment.auditProgram', fn($sq) => $sq->where('nama_program', 'like', "%{$search}%"));
+                    ->orWhereHas('unitDiperiksa', fn ($sq) => $sq->where('nama_unit', 'like', "%{$search}%")->orWhere('nama_kecamatan', 'like', "%{$search}%"))
+                    ->orWhereHas('auditAssignment.auditProgram', fn ($sq) => $sq->where('nama_program', 'like', "%{$search}%"));
             });
         }
 
@@ -83,7 +82,7 @@ class LaporanController extends Controller
             $tahun = $request->tahun;
             $query->where(function ($q) use ($tahun) {
                 $q->whereYear('tanggal_lhp', $tahun)
-                  ->orWhereHas('auditAssignment.auditProgram', fn($sq) => $sq->where('tahun', $tahun));
+                    ->orWhereHas('auditAssignment.auditProgram', fn ($sq) => $sq->where('tahun', $tahun));
             });
         }
 
@@ -93,10 +92,10 @@ class LaporanController extends Controller
             $query->patuhLengkap();
         } elseif ($statusKepatuhan === 'proses') {
             $query->where('is_nihil', false)
-                  ->whereHas('statistik', function ($q) {
-                      $q->where('persen_selesai_gabungan', '<', 100)
+                ->whereHas('statistik', function ($q) {
+                    $q->where('persen_selesai_gabungan', '<', 100)
                         ->where('persen_selesai', '<', 100);
-                  });
+                });
         }
 
         // Ringkasan metrik kepatuhan
@@ -105,7 +104,7 @@ class LaporanController extends Controller
             $tahun = $request->tahun;
             $baseQuery->where(function ($q) use ($tahun) {
                 $q->whereYear('tanggal_lhp', $tahun)
-                  ->orWhereHas('auditAssignment.auditProgram', fn($sq) => $sq->where('tahun', $tahun));
+                    ->orWhereHas('auditAssignment.auditProgram', fn ($sq) => $sq->where('tahun', $tahun));
             });
         }
         $totalLhp = (clone $baseQuery)->count();
@@ -118,10 +117,10 @@ class LaporanController extends Controller
         $tahunList = AuditProgram::distinct()->whereNotNull('tahun')->orderByDesc('tahun')->pluck('tahun');
 
         $summary = [
-            'total_lhp'    => $totalLhp,
-            'total_patuh'  => $totalPatuh,
+            'total_lhp' => $totalLhp,
+            'total_patuh' => $totalPatuh,
             'total_proses' => $totalProses,
-            'rate_patuh'   => $totalLhp > 0 ? round(($totalPatuh / $totalLhp) * 100, 1) : 0,
+            'rate_patuh' => $totalLhp > 0 ? round(($totalPatuh / $totalLhp) * 100, 1) : 0,
         ];
 
         return view('pages.laporan.kepatuhan.index', compact('lhps', 'summary', 'tahunList', 'statusKepatuhan'));
@@ -197,7 +196,7 @@ class LaporanController extends Controller
 
         // Strict Guard: Hanya jika 100% tuntas atau nihil
         if (! $lhp->isKepatuhanLengkap()) {
-            abort(403, "Laporan Kepatuhan OPD hanya dapat dicetak jika tindak lanjut telah tuntas 100%.");
+            abort(403, 'Laporan Kepatuhan OPD hanya dapat dicetak jika tindak lanjut telah tuntas 100%.');
         }
 
         $lhp->load([
@@ -230,12 +229,13 @@ class LaporanController extends Controller
         $pdf = Pdf::loadView('pages.laporan.pdf.kepatuhan-opd', compact('lhp', 'analisisBerulang', 'masukanManajerial', 'eskalasiSanksi'))
             ->setPaper('a4', 'portrait')
             ->setOptions([
-                'defaultFont'          => 'sans-serif',
+                'defaultFont' => 'sans-serif',
                 'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled'      => false,
+                'isRemoteEnabled' => false,
             ]);
 
-        $filename = 'Laporan-Kepatuhan-OPD-' . str_replace(['/', '\\'], '-', $lhp->nomor_lhp) . '.pdf';
+        $filename = 'Laporan-Kepatuhan-OPD-'.str_replace(['/', '\\'], '-', $lhp->nomor_lhp).'.pdf';
+
         return $pdf->download($filename);
     }
 
@@ -260,7 +260,7 @@ class LaporanController extends Controller
 
     public function downloadPdfSemua(Request $request)
     {
-        $user  = auth()->user();
+        $user = auth()->user();
         $query = Lhp::with([
             'statistik',
             'auditAssignment.auditProgram',
@@ -272,20 +272,21 @@ class LaporanController extends Controller
         ])->forUser($user);
 
         $this->applyFilters($query, $request);
-        $lhps      = $query->orderBy('tanggal_lhp', 'desc')->get();
-        $lhpIds    = $lhps->pluck('id');
+        $lhps = $query->orderBy('tanggal_lhp', 'desc')->get();
+        $lhpIds = $lhps->pluck('id');
         $ringkasan = $this->hitungRingkasan($lhpIds);
-        $filter    = $request->only(['tahun', 'semester', 'irban', 'status', 'dari', 'sampai']);
+        $filter = $request->only(['tahun', 'semester', 'irban', 'status', 'dari', 'sampai']);
 
         $pdf = Pdf::loadView('pages.laporan.pdf.rekap-semua', compact('lhps', 'ringkasan', 'filter'))
             ->setPaper('a4', 'landscape')
             ->setOptions([
-                'defaultFont'   => 'sans-serif',
+                'defaultFont' => 'sans-serif',
                 'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled'      => false,
+                'isRemoteEnabled' => false,
             ]);
 
-        $filename = 'rekap-lhp-' . now()->format('Ymd-His') . '.pdf';
+        $filename = 'rekap-lhp-'.now()->format('Ymd-His').'.pdf';
+
         return $pdf->download($filename);
     }
 
@@ -307,12 +308,13 @@ class LaporanController extends Controller
         $pdf = Pdf::loadView('pages.laporan.pdf.rekap-per-lhp', compact('lhp'))
             ->setPaper('a4', 'portrait')
             ->setOptions([
-                'defaultFont'   => 'sans-serif',
+                'defaultFont' => 'sans-serif',
                 'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled'      => false,
+                'isRemoteEnabled' => false,
             ]);
 
-        $filename = 'rekap-lhp-' . $lhp->nomor_lhp . '-' . now()->format('Ymd') . '.pdf';
+        $filename = 'rekap-lhp-'.$lhp->nomor_lhp.'-'.now()->format('Ymd').'.pdf';
+
         return $pdf->download(str_replace('/', '-', $filename));
     }
 
@@ -334,12 +336,13 @@ class LaporanController extends Controller
         $pdf = Pdf::loadView('pages.laporan.pdf.rekap-per-lhp', compact('lhp'))
             ->setPaper('a4', 'portrait')
             ->setOptions([
-                'defaultFont'   => 'sans-serif',
+                'defaultFont' => 'sans-serif',
                 'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled'      => false,
+                'isRemoteEnabled' => false,
             ]);
 
-        $filename = 'rekap-lhp-' . $lhp->nomor_lhp . '-' . now()->format('Ymd') . '.pdf';
+        $filename = 'rekap-lhp-'.$lhp->nomor_lhp.'-'.now()->format('Ymd').'.pdf';
+
         return $pdf->stream(str_replace('/', '-', $filename));
     }
 
@@ -347,7 +350,7 @@ class LaporanController extends Controller
 
     public function downloadExcelSemua(Request $request)
     {
-        $user  = auth()->user();
+        $user = auth()->user();
         $query = Lhp::with([
             'statistik',
             'auditAssignment.auditProgram',
@@ -361,7 +364,8 @@ class LaporanController extends Controller
         $this->applyFilters($query, $request);
         $lhps = $query->orderBy('tanggal_lhp', 'desc')->get();
 
-        $filename = 'rekap-semua-lhp-' . now()->format('Ymd-His') . '.xlsx';
+        $filename = 'rekap-semua-lhp-'.now()->format('Ymd-His').'.xlsx';
+
         return Excel::download(new RekapSemuaLhpExport($lhps), $filename);
     }
 
@@ -380,7 +384,8 @@ class LaporanController extends Controller
             'creator',
         ]);
 
-        $filename = 'rekap-lhp-' . str_replace('/', '-', $lhp->nomor_lhp) . '-' . now()->format('Ymd') . '.xlsx';
+        $filename = 'rekap-lhp-'.str_replace('/', '-', $lhp->nomor_lhp).'-'.now()->format('Ymd').'.xlsx';
+
         return Excel::download(new RekapPerLhpExport($lhp), $filename);
     }
 
@@ -392,8 +397,8 @@ class LaporanController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('nomor_lhp', 'like', "%{$search}%")
-                  ->orWhereHas('auditAssignment.auditProgram', fn($sq) => $sq->where('nama_program', 'like', "%{$search}%"))
-                  ->orWhereHas('auditAssignment', fn($sq) => $sq->where('nomor_surat', 'like', "%{$search}%"));
+                    ->orWhereHas('auditAssignment.auditProgram', fn ($sq) => $sq->where('nama_program', 'like', "%{$search}%"))
+                    ->orWhereHas('auditAssignment', fn ($sq) => $sq->where('nomor_surat', 'like', "%{$search}%"));
             });
         }
         if ($request->filled('irban')) {
@@ -414,12 +419,12 @@ class LaporanController extends Controller
                         break;
                     case 'sebagian':
                         $q->where('persen_selesai_gabungan', '>', 0)
-                          ->where('persen_selesai_gabungan', '<', 100);
+                            ->where('persen_selesai_gabungan', '<', 100);
                         break;
                     case 'belum':
                         $q->where(function ($sq) {
                             $sq->whereNull('persen_selesai_gabungan')
-                               ->orWhere('persen_selesai_gabungan', 0);
+                                ->orWhere('persen_selesai_gabungan', 0);
                         });
                         break;
                 }
@@ -453,16 +458,16 @@ class LaporanController extends Controller
             ->first();
 
         return [
-            'total_lhp'      => $stat->total_lhp ?? 0,
-            'total_temuan'   => $stat->total_temuan ?? 0,
-            'total_rekom'    => $stat->total_rekom ?? 0,
-            'rekom_selesai'  => $stat->rekom_selesai ?? 0,
-            'rekom_proses'   => $stat->rekom_proses ?? 0,
-            'rekom_belum'    => $stat->rekom_belum ?? 0,
+            'total_lhp' => $stat->total_lhp ?? 0,
+            'total_temuan' => $stat->total_temuan ?? 0,
+            'total_rekom' => $stat->total_rekom ?? 0,
+            'rekom_selesai' => $stat->rekom_selesai ?? 0,
+            'rekom_proses' => $stat->rekom_proses ?? 0,
+            'rekom_belum' => $stat->rekom_belum ?? 0,
             'total_kerugian' => $stat->total_kerugian ?? 0,
             'total_tl_selesai' => $stat->total_tl_selesai ?? 0,
-            'total_sisa'     => $stat->total_sisa ?? 0,
-            'avg_persen'     => round($stat->avg_persen ?? 0, 1),
+            'total_sisa' => $stat->total_sisa ?? 0,
+            'avg_persen' => round($stat->avg_persen ?? 0, 1),
         ];
     }
 }

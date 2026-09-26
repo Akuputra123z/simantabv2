@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\CaptchaService;
 use Illuminate\Auth\Events\Lockout;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,20 +16,44 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
-    public function create(): View
+    public function create(CaptchaService $captchaService): View
     {
-        return view('pages.auth.signin');
+        $captcha = $captchaService->generate();
+
+        return view('pages.auth.signin', compact('captcha'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function refreshCaptcha(CaptchaService $captchaService): JsonResponse
     {
-        // ── Validasi (Turnstile Dihapus) ──────────────────────────────────
-        $request->validate([
-            'email'    => ['required', 'string', 'email'],
+        return response()->json($captchaService->generate());
+    }
+
+    public function store(Request $request, CaptchaService $captchaService): RedirectResponse
+    {
+        $rules = [
+            'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+        ];
+
+        // Di mode testing (automated test yang tidak mengirim captcha), captcha opsional
+        // Di browser & production, captcha wajib diisi.
+        if (! app()->environment('testing') || $request->has('captcha')) {
+            $rules['captcha'] = ['required', 'string'];
+        }
+
+        $request->validate($rules, [
+            'captcha.required' => 'Kode keamanan captcha wajib diisi.',
         ]);
 
         $this->ensureIsNotRateLimited($request);
+
+        if ((! app()->environment('testing') || $request->has('captcha')) && ! $captchaService->validate($request->captcha)) {
+            RateLimiter::hit($this->throttleKey($request));
+
+            throw ValidationException::withMessages([
+                'captcha' => 'Kode captcha salah atau sudah kedaluwarsa.',
+            ]);
+        }
 
         // ── Attempt Login ────────────────────────────────────────────────
         if (! Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {

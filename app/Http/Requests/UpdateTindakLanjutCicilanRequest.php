@@ -20,17 +20,17 @@ class UpdateTindakLanjutCicilanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nilai_bayar'                 => ['required', 'numeric', 'min:0.01'],
-            'nilai_bayar_negara'          => ['nullable', 'numeric', 'min:0'],
-            'nilai_bayar_daerah'          => ['nullable', 'numeric', 'min:0'],
-            'nilai_bayar_desa'            => ['nullable', 'numeric', 'min:0'],
-            'nilai_bayar_bos_blud'        => ['nullable', 'numeric', 'min:0'],
-            'tanggal_bayar'               => ['required', 'date'],
+            'nilai_bayar' => ['required', 'numeric', 'min:0.01'],
+            'nilai_bayar_negara' => ['nullable', 'numeric', 'min:0'],
+            'nilai_bayar_daerah' => ['nullable', 'numeric', 'min:0'],
+            'nilai_bayar_desa' => ['nullable', 'numeric', 'min:0'],
+            'nilai_bayar_bos_blud' => ['nullable', 'numeric', 'min:0'],
+            'tanggal_bayar' => ['required', 'date'],
             'tanggal_jatuh_tempo_cicilan' => ['nullable', 'date'],
-            'nomor_bukti'                 => ['nullable', 'string', 'max:100'],
-            'jenis_bayar'                 => ['nullable', 'string', 'max:100'],
-            'keterangan'                  => ['nullable', 'string', 'max:1000'],
-            'status'                      => ['required', 'in:menunggu_verifikasi,diterima,ditolak'],
+            'nomor_bukti' => ['nullable', 'string', 'max:100'],
+            'jenis_bayar' => ['nullable', 'string', 'max:100'],
+            'keterangan' => ['nullable', 'string', 'max:1000'],
+            'status' => ['required', 'in:menunggu_verifikasi,diterima,ditolak'],
         ];
     }
 
@@ -40,10 +40,10 @@ class UpdateTindakLanjutCicilanRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'nilai_bayar.required'   => 'Nilai bayar wajib diisi.',
-            'nilai_bayar.min'        => 'Nilai bayar harus lebih dari 0.',
+            'nilai_bayar.required' => 'Nilai bayar wajib diisi.',
+            'nilai_bayar.min' => 'Nilai bayar harus lebih dari 0.',
             'tanggal_bayar.required' => 'Tanggal bayar wajib diisi.',
-            'status.in'              => 'Status yang dipilih tidak valid.',
+            'status.in' => 'Status yang dipilih tidak valid.',
         ];
     }
 
@@ -54,9 +54,9 @@ class UpdateTindakLanjutCicilanRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             // Menghitung total breakdown
-            $breakdown = (float) ($this->nilai_bayar_negara   ?? 0)
-                       + (float) ($this->nilai_bayar_daerah   ?? 0)
-                       + (float) ($this->nilai_bayar_desa     ?? 0)
+            $breakdown = (float) ($this->nilai_bayar_negara ?? 0)
+                       + (float) ($this->nilai_bayar_daerah ?? 0)
+                       + (float) ($this->nilai_bayar_desa ?? 0)
                        + (float) ($this->nilai_bayar_bos_blud ?? 0);
 
             $total = (float) ($this->nilai_bayar ?? 0);

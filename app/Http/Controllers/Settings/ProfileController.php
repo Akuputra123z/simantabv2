@@ -67,6 +67,11 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
+        if ($user->hasRole(User::ROLE_SUPER_ADMIN) &&
+            User::role(User::ROLE_SUPER_ADMIN)->count() <= 1) {
+            return back()->with('error', 'Tidak dapat menghapus satu-satunya akun Super Admin.');
+        }
+
         // Opsional: Hapus avatar dari storage saat akun dihapus
         if ($user->avatar) {
             Storage::disk('public')->delete($user->avatar);

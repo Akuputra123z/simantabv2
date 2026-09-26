@@ -14,13 +14,13 @@ return new class extends Migration
         Schema::create('audit_assignment_members', function (Blueprint $table) {
             $table->id();
             $table->foreignId('audit_assignment_id')
-                  ->constrained()->cascadeOnDelete();
+                ->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')
-                  ->constrained('users')->cascadeOnDelete();
+                ->constrained('users')->cascadeOnDelete();
             $table->string('jabatan_tim', 50)->nullable()
-                  ->comment('Ketua | Anggota | Pengendali Teknis');
+                ->comment('Ketua | Anggota | Pengendali Teknis');
             $table->timestamps();
- 
+
             // Prevent duplicate member entry per assignment
             $table->unique(
                 ['audit_assignment_id', 'user_id'],

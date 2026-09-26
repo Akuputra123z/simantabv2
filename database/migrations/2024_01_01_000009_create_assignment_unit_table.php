@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('assignment_unit', function (Blueprint $table) {
-              $table->id();
+            $table->id();
             $table->foreignId('audit_assignment_id')
-                  ->constrained('audit_assignments')
-                  ->cascadeOnDelete();
+                ->constrained('audit_assignments')
+                ->cascadeOnDelete();
             $table->foreignId('unit_diperiksa_id')
-                  ->constrained('unit_diperiksas')
-                  ->cascadeOnDelete();
+                ->constrained('unit_diperiksas')
+                ->cascadeOnDelete();
             $table->timestamps(); // ← hanya sekali
 
             $table->unique(['audit_assignment_id', 'unit_diperiksa_id']);

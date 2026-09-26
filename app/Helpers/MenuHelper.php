@@ -27,7 +27,7 @@ class MenuHelper
 
         $isSuperAdmin = $user?->hasRole('super_admin');
         $isKepala = $user?->hasRole('kepala_inspektorat');
-        $isAuditor = $user?->hasRole('ketua_tim') || $user?->hasRole('anggota') || $user?->hasRole('staff_inspektorat');
+        $isAuditor = $user?->hasRole('ketua_tim') || $user?->hasRole('anggota') || $user?->hasRole('staff_inspektorat') || $user?->hasRole('pengendali_teknis');
 
         $canMasterData = $isSuperAdmin || $isKepala;
         $canAudit = $isSuperAdmin || $isKepala || $isAuditor;
@@ -47,25 +47,39 @@ class MenuHelper
                         'name' => 'Penugasan Audit',
                         'path' => route('audit-assignment.index', absolute: false),
                     ],
-                   
+
                 ],
             ];
         }
 
-        // ================= HASIL AUDIT =================
+        // ================= HASIL AUDIT (LHP) =================
         if ($canAudit) {
             $items[] = [
                 'icon' => 'pages',
-                'name' => 'LHP',
+                'name' => 'Pemeriksaan (LHP)',
                 'subItems' => [
                     [
-                        'name' => 'LHP',
+                        'name' => 'Daftar LHP',
                         'path' => route('lhps.index', absolute: false),
                     ],
-                    // [
-                    //     'name' => 'Rekomendasi Audit',
-                    //     'path' => route('recommendations.index', absolute: false),
-                    // ],
+                ],
+            ];
+        }
+
+        // ================= REVIU DOKUMEN (LHR) =================
+        if ($canAudit) {
+            $items[] = [
+                'icon' => 'pages',
+                'name' => 'Reviu Dokumen (LHR)',
+                'subItems' => [
+                    [
+                        'name' => 'Daftar LHR',
+                        'path' => route('lhr.index', absolute: false),
+                    ],
+                    [
+                        'name' => 'Buat LHR Baru',
+                        'path' => route('lhr.create', absolute: false),
+                    ],
                 ],
             ];
         }
@@ -116,6 +130,18 @@ class MenuHelper
                 [
                     'name' => 'Objek Pemeriksaan',
                     'path' => route('unit-diperiksa.index', absolute: false),
+                ],
+                [
+                    'name' => 'Jenis Dokumen Reviu',
+                    'path' => route('jenis-dokumen-reviu.index', absolute: false),
+                ],
+                [
+                    'name' => 'Kategori Catatan Reviu',
+                    'path' => route('lhr-kategori-catatans.index', absolute: false),
+                ],
+                [
+                    'name' => 'Format Penomoran Surat',
+                    'path' => route('nomor-formats.index', absolute: false),
                 ],
             ];
 
@@ -227,21 +253,21 @@ class MenuHelper
     {
         $map = [
             'dashboard' => 'heroicon-o-squares-2x2',
-            'database'  => 'heroicon-o-circle-stack',
-            'task'      => 'heroicon-o-clipboard-document-list',
-            'pages'     => 'heroicon-o-document-text',
-            'charts'    => 'heroicon-o-chart-bar',
+            'database' => 'heroicon-o-circle-stack',
+            'task' => 'heroicon-o-clipboard-document-list',
+            'pages' => 'heroicon-o-document-text',
+            'charts' => 'heroicon-o-chart-bar',
             'user-profile' => 'heroicon-o-user',
-            'forms'     => 'heroicon-o-view-columns',
-            'tables'    => 'heroicon-o-table-cells',
+            'forms' => 'heroicon-o-view-columns',
+            'tables' => 'heroicon-o-table-cells',
             'ai-assistant' => 'heroicon-o-sparkles',
             'ecommerce' => 'heroicon-o-shopping-cart',
-            'calendar'  => 'heroicon-o-calendar',
+            'calendar' => 'heroicon-o-calendar',
             'ui-elements' => 'heroicon-o-cube',
             'authentication' => 'heroicon-o-shield-check',
-            'chat'      => 'heroicon-o-chat-bubble-left-right',
+            'chat' => 'heroicon-o-chat-bubble-left-right',
             'support-ticket' => 'heroicon-o-lifebuoy',
-            'email'     => 'heroicon-o-envelope',
+            'email' => 'heroicon-o-envelope',
         ];
 
         $heroicon = $map[$name] ?? 'heroicon-o-question-mark-circle';

@@ -3,8 +3,8 @@
 namespace App\Traits;
 
 use App\Models\Attachment;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Trait untuk model yang memiliki lampiran file (morphMany Attachment).

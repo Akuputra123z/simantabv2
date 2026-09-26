@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\TindakLanjutCicilan;
 
+use App\Models\TindakLanjut;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -20,21 +21,20 @@ class StoreTindakLanjutCicilanRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
-
     public function rules(): array
     {
         return [
-            'nilai_bayar'                 => ['required', 'numeric', 'min:0.01'],
-            'nilai_bayar_negara'          => ['nullable', 'numeric', 'min:0'],
-            'nilai_bayar_daerah'          => ['nullable', 'numeric', 'min:0'],
-            'nilai_bayar_desa'            => ['nullable', 'numeric', 'min:0'],
-            'nilai_bayar_bos_blud'        => ['nullable', 'numeric', 'min:0'],
-            'tanggal_bayar'               => ['required', 'date'],
+            'nilai_bayar' => ['required', 'numeric', 'min:0.01'],
+            'nilai_bayar_negara' => ['nullable', 'numeric', 'min:0'],
+            'nilai_bayar_daerah' => ['nullable', 'numeric', 'min:0'],
+            'nilai_bayar_desa' => ['nullable', 'numeric', 'min:0'],
+            'nilai_bayar_bos_blud' => ['nullable', 'numeric', 'min:0'],
+            'tanggal_bayar' => ['required', 'date'],
             'tanggal_jatuh_tempo_cicilan' => ['nullable', 'date'],
-            'nomor_bukti'                 => ['nullable', 'string', 'max:100'],
-            'jenis_bayar'                 => ['nullable', 'string', 'max:100'],
-            'keterangan'                  => ['nullable', 'string', 'max:1000'],
-            'status'                      => ['required', 'in:menunggu_verifikasi,diterima,ditolak'],
+            'nomor_bukti' => ['nullable', 'string', 'max:100'],
+            'jenis_bayar' => ['nullable', 'string', 'max:100'],
+            'keterangan' => ['nullable', 'string', 'max:1000'],
+            'status' => ['required', 'in:menunggu_verifikasi,diterima,ditolak'],
         ];
     }
 
@@ -42,9 +42,9 @@ class StoreTindakLanjutCicilanRequest extends FormRequest
     {
         return [
             'nilai_bayar.required' => 'Nilai bayar wajib diisi.',
-            'nilai_bayar.min'      => 'Nilai bayar harus lebih dari 0.',
+            'nilai_bayar.min' => 'Nilai bayar harus lebih dari 0.',
             'tanggal_bayar.required' => 'Tanggal bayar wajib diisi.',
-            'status.in'            => 'Status tidak valid.',
+            'status.in' => 'Status tidak valid.',
         ];
     }
 
@@ -56,24 +56,24 @@ class StoreTindakLanjutCicilanRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $breakdown = (float) ($this->nilai_bayar_negara   ?? 0)
-                       + (float) ($this->nilai_bayar_daerah   ?? 0)
-                       + (float) ($this->nilai_bayar_desa     ?? 0)
+            $breakdown = (float) ($this->nilai_bayar_negara ?? 0)
+                       + (float) ($this->nilai_bayar_daerah ?? 0)
+                       + (float) ($this->nilai_bayar_desa ?? 0)
                        + (float) ($this->nilai_bayar_bos_blud ?? 0);
 
             $total = (float) ($this->nilai_bayar ?? 0);
 
             // Nilai bayar tidak boleh melebihi sisa tindak lanjut
             $tl = $this->route('tindakLanjut');
-            if ($tl instanceof \App\Models\TindakLanjut && $tl->recommendation?->isUang()) {
+            if ($tl instanceof TindakLanjut && $tl->recommendation?->isUang()) {
                 $sisa = (float) ($tl->sisa_belum_bayar ?? 0);
 
                 if ($total > $sisa + 0.01) {
                     $validator->errors()->add(
                         'nilai_bayar',
                         'Nilai bayar melebihi sisa tindak lanjut (Rp '
-                            . number_format($sisa, 0, ',', '.')
-                            . ').'
+                            .number_format($sisa, 0, ',', '.')
+                            .').'
                     );
                 }
             }
@@ -87,7 +87,7 @@ class StoreTindakLanjutCicilanRequest extends FormRequest
             }
         });
     }
-   
+
     public function attributes(): array
     {
         return [

@@ -21,9 +21,9 @@ class KodeRekomendasiController extends Controller
             // Search
             ->when($request->search, function ($q) use ($request) {
                 $q->where(function ($sub) use ($request) {
-                    $sub->where('kode', 'like', '%' . $request->search . '%')
-                        ->orWhere('deskripsi', 'like', '%' . $request->search . '%')
-                        ->orWhere('kategori', 'like', '%' . $request->search . '%');
+                    $sub->where('kode', 'like', '%'.$request->search.'%')
+                        ->orWhere('deskripsi', 'like', '%'.$request->search.'%')
+                        ->orWhere('kategori', 'like', '%'.$request->search.'%');
                 });
             })
             ->orderBy('kode_numerik')
@@ -40,7 +40,7 @@ class KodeRekomendasiController extends Controller
     {
         $nextNumerik = (KodeRekomendasi::max('kode_numerik') ?? 0) + 1;
         $data = new KodeRekomendasi([
-            'kode_numerik' => $nextNumerik
+            'kode_numerik' => $nextNumerik,
         ]);
 
         return view('pages.kode-rekomendasi.create', compact('data'));
@@ -52,17 +52,17 @@ class KodeRekomendasiController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'kode'          => 'required|string|max:10|unique:kode_rekomendasis,kode',
-            'kode_numerik'  => 'required|integer|min:1|unique:kode_rekomendasis,kode_numerik',
-            'kategori'      => 'nullable|string|max:100',
-            'deskripsi'     => 'nullable|string',
-            'is_active'     => 'nullable|boolean',
+            'kode' => 'required|string|max:10|unique:kode_rekomendasis,kode',
+            'kode_numerik' => 'required|integer|min:1|unique:kode_rekomendasis,kode_numerik',
+            'kategori' => 'nullable|string|max:100',
+            'deskripsi' => 'nullable|string',
+            'is_active' => 'nullable|boolean',
         ], [
-            'kode.required'         => 'Kode wajib diisi.',
-            'kode.unique'           => 'Kode ini sudah terdaftar. Silakan gunakan kode lain.',
+            'kode.required' => 'Kode wajib diisi.',
+            'kode.unique' => 'Kode ini sudah terdaftar. Silakan gunakan kode lain.',
             'kode_numerik.required' => 'Kode numerik wajib diisi.',
-            'kode_numerik.min'      => 'Kode numerik minimal bernilai 1.',
-            'kode_numerik.unique'   => 'Kode numerik ini sudah terdaftar. Silakan gunakan angka numerik lain.',
+            'kode_numerik.min' => 'Kode numerik minimal bernilai 1.',
+            'kode_numerik.unique' => 'Kode numerik ini sudah terdaftar. Silakan gunakan angka numerik lain.',
         ]);
 
         // Fix checkbox: jika tidak dicentang, set false
@@ -70,7 +70,7 @@ class KodeRekomendasiController extends Controller
 
         // Sanitasi HTML untuk deskripsi
         $allowedTags = '<p><br><b><strong><i><em><u><ol><ul><li>';
-        if (!empty($validated['deskripsi'])) {
+        if (! empty($validated['deskripsi'])) {
             $validated['deskripsi'] = strip_tags($validated['deskripsi'], $allowedTags);
         }
 
@@ -78,9 +78,9 @@ class KodeRekomendasiController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'success'  => true,
-                'message'  => 'Data Kode Rekomendasi berhasil disimpan.',
-                'redirect' => route('kode-rekomendasi.index')
+                'success' => true,
+                'message' => 'Data Kode Rekomendasi berhasil disimpan.',
+                'redirect' => route('kode-rekomendasi.index'),
             ]);
         }
 
@@ -96,7 +96,7 @@ class KodeRekomendasiController extends Controller
     public function show(KodeRekomendasi $kodeRekomendasi)
     {
         return view('pages.kode-rekomendasi.show', [
-            'data' => $kodeRekomendasi
+            'data' => $kodeRekomendasi,
         ]);
     }
 
@@ -106,7 +106,7 @@ class KodeRekomendasiController extends Controller
     public function edit(KodeRekomendasi $kodeRekomendasi)
     {
         return view('pages.kode-rekomendasi.edit', [
-            'data' => $kodeRekomendasi
+            'data' => $kodeRekomendasi,
         ]);
     }
 
@@ -128,22 +128,22 @@ class KodeRekomendasiController extends Controller
                 'min:1',
                 Rule::unique('kode_rekomendasis')->ignore($kodeRekomendasi->id),
             ],
-            'kategori'  => 'nullable|string|max:100',
+            'kategori' => 'nullable|string|max:100',
             'deskripsi' => 'nullable|string',
             'is_active' => 'nullable|boolean',
         ], [
-            'kode.required'         => 'Kode wajib diisi.',
-            'kode.unique'           => 'Kode ini sudah terdaftar. Silakan gunakan kode lain.',
+            'kode.required' => 'Kode wajib diisi.',
+            'kode.unique' => 'Kode ini sudah terdaftar. Silakan gunakan kode lain.',
             'kode_numerik.required' => 'Kode numerik wajib diisi.',
-            'kode_numerik.min'      => 'Kode numerik minimal bernilai 1.',
-            'kode_numerik.unique'   => 'Kode numerik ini sudah terdaftar. Silakan gunakan angka numerik lain.',
+            'kode_numerik.min' => 'Kode numerik minimal bernilai 1.',
+            'kode_numerik.unique' => 'Kode numerik ini sudah terdaftar. Silakan gunakan angka numerik lain.',
         ]);
 
         $validated['is_active'] = $request->has('is_active');
 
         // Sanitasi HTML untuk deskripsi
         $allowedTags = '<p><br><b><strong><i><em><u><ol><ul><li>';
-        if (!empty($validated['deskripsi'])) {
+        if (! empty($validated['deskripsi'])) {
             $validated['deskripsi'] = strip_tags($validated['deskripsi'], $allowedTags);
         }
 
@@ -151,9 +151,9 @@ class KodeRekomendasiController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'success'  => true,
-                'message'  => 'Data Kode Rekomendasi berhasil diperbarui.',
-                'redirect' => route('kode-rekomendasi.index')
+                'success' => true,
+                'message' => 'Data Kode Rekomendasi berhasil diperbarui.',
+                'redirect' => route('kode-rekomendasi.index'),
             ]);
         }
 
@@ -180,7 +180,7 @@ class KodeRekomendasiController extends Controller
     public function toggleStatus(KodeRekomendasi $kodeRekomendasi)
     {
         $kodeRekomendasi->update([
-            'is_active' => !$kodeRekomendasi->is_active
+            'is_active' => ! $kodeRekomendasi->is_active,
         ]);
 
         return redirect()->back()->with('success', 'Status berhasil diubah');

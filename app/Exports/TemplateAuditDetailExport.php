@@ -3,15 +3,15 @@
 namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithColumnWidths;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class TemplateAuditDetailExport implements FromArray, WithHeadings, WithStyles, WithColumnWidths
+class TemplateAuditDetailExport implements FromArray, WithColumnWidths, WithHeadings, WithStyles
 {
     /**
      * Sesuaikan urutan data dengan $fillable di Model (Tanpa audit_program_id)
@@ -31,7 +31,7 @@ class TemplateAuditDetailExport implements FromArray, WithHeadings, WithStyles, 
                 1,                                         // laporan_akhir
                 '01/01/2026',                          // jadwal
                 'Irban III',                               // tim
-                'aktif'                                    // status
+                'aktif',                                    // status
             ],
             [
                 'Reviu Laporan Keuangan Daerah',
@@ -45,7 +45,7 @@ class TemplateAuditDetailExport implements FromArray, WithHeadings, WithStyles, 
                 1,
                 '01/02/2026',
                 'Irban I',
-                'rencana'
+                'rencana',
             ],
         ];
     }
@@ -67,15 +67,15 @@ class TemplateAuditDetailExport implements FromArray, WithHeadings, WithStyles, 
             'Target Laporan',
             'Jadwal Pelaksanaan',
             'Tim Pelaksana',
-            'Status (aktif/rencana)'
+            'Status (aktif/rencana)',
         ];
     }
 
     public function columnWidths(): array
     {
         return [
-            'A' => 40, 'B' => 20, 'C' => 25, 'D' => 30, 
-            'E' => 15, 'F' => 45, 'G' => 20, 'H' => 15, 
+            'A' => 40, 'B' => 20, 'C' => 25, 'D' => 30,
+            'E' => 15, 'F' => 45, 'G' => 20, 'H' => 15,
             'I' => 15, 'J' => 20, 'K' => 15, 'L' => 15,
         ];
     }
@@ -91,13 +91,13 @@ class TemplateAuditDetailExport implements FromArray, WithHeadings, WithStyles, 
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '1e293b'] // Slate 800
+                'startColor' => ['rgb' => '1e293b'], // Slate 800
             ],
         ]);
 
         // Border dan Alignment untuk data
         $highestRow = $sheet->getHighestRow();
-        $sheet->getStyle('A1:L' . $highestRow)->applyFromArray([
+        $sheet->getStyle('A1:L'.$highestRow)->applyFromArray([
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,

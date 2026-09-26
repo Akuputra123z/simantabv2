@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Lhr\Lhr;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AuditAssignment extends Model
 {
@@ -23,6 +24,7 @@ class AuditAssignment extends Model
 
     protected $fillable = [
         'audit_program_detail_id',
+        'lhr_asal_id',
         'nama_tim',
         'jenis_pengawasan',
         'ketua_tim_id',
@@ -41,10 +43,10 @@ class AuditAssignment extends Model
     ];
 
     protected $casts = [
-        'tanggal_mulai'       => 'date',
-        'tanggal_selesai'     => 'date',
-        'anggaran_disetujui'  => 'integer',
-        'approved_at'         => 'datetime',
+        'tanggal_mulai' => 'date',
+        'tanggal_selesai' => 'date',
+        'anggaran_disetujui' => 'integer',
+        'approved_at' => 'datetime',
     ];
 
     // ─── Static Helpers ───────────────────────────────────────────────
@@ -99,8 +101,8 @@ class AuditAssignment extends Model
             'audit_assignment_id',
             'user_id'
         )
-        ->withPivot('jabatan_tim')
-        ->withTimestamps();
+            ->withPivot('jabatan_tim')
+            ->withTimestamps();
     }
 
     public function attachments(): MorphMany
@@ -111,6 +113,16 @@ class AuditAssignment extends Model
     public function lhps(): HasMany
     {
         return $this->hasMany(Lhp::class);
+    }
+
+    public function lhrs(): HasMany
+    {
+        return $this->hasMany(Lhr::class, 'audit_assignment_id');
+    }
+
+    public function lhrAsal(): BelongsTo
+    {
+        return $this->belongsTo(Lhr::class, 'lhr_asal_id');
     }
 
     public function pengendaliTeknis(): BelongsTo

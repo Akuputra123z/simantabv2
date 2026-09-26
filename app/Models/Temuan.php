@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\LhpStatistikService;
+use App\Traits\HasActivityLog;
 use App\Traits\HasAttachments;
 use App\Traits\HasCreatedUpdatedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,11 +12,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Traits\HasActivityLog;
 
 class Temuan extends Model
 {
-    use SoftDeletes, HasCreatedUpdatedBy, HasAttachments, HasActivityLog;
+    use HasActivityLog, HasAttachments, HasCreatedUpdatedBy, SoftDeletes;
 
     protected static $logExcept = ['created_by', 'updated_by', 'created_at', 'updated_at', 'deleted_at'];
 
@@ -33,19 +34,21 @@ class Temuan extends Model
     protected function casts(): array
     {
         return [
-            'nilai_temuan'            => 'decimal:2',
-            'nilai_kerugian_negara'   => 'decimal:2',
-            'nilai_kerugian_daerah'   => 'decimal:2',
-            'nilai_kerugian_desa'     => 'decimal:2',
+            'nilai_temuan' => 'decimal:2',
+            'nilai_kerugian_negara' => 'decimal:2',
+            'nilai_kerugian_daerah' => 'decimal:2',
+            'nilai_kerugian_desa' => 'decimal:2',
             'nilai_kerugian_bos_blud' => 'decimal:2',
-            'deleted_at'              => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 
     // ── Constants ─────────────────────────────────────────────────────────────
 
-    public const STATUS_BELUM   = 'belum_ditindaklanjuti';
-    public const STATUS_PROSES  = 'dalam_proses';
+    public const STATUS_BELUM = 'belum_ditindaklanjuti';
+
+    public const STATUS_PROSES = 'dalam_proses';
+
     public const STATUS_SELESAI = 'selesai';
 
     // ── Klasifikasi ───────────────────────────────────────────────────────────
@@ -57,21 +60,22 @@ class Temuan extends Model
 
     public function isPotensiPengembalianBarang(): bool
     {
-        $kel    = $this->kodeTemuan?->kel;
+        $kel = $this->kodeTemuan?->kel;
         $subKel = $this->kodeTemuan?->sub_kel;
+
         return $kel === 1 && in_array($subKel, [1, 2]);
     }
 
     public function jenisRekomendasiDefault(): string
     {
-        $kel    = $this->kodeTemuan?->kel;
+        $kel = $this->kodeTemuan?->kel;
         $subKel = $this->kodeTemuan?->sub_kel;
 
         return match (true) {
-            $kel === 2, $kel === 3      => 'admin',
+            $kel === 2, $kel === 3 => 'admin',
             $kel === 1 && $subKel === 4 => 'admin',
             $kel === 1 && $subKel === 5 => 'admin',
-            default                     => 'uang',
+            default => 'uang',
         };
     }
 
@@ -82,10 +86,25 @@ class Temuan extends Model
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
-    public function scopeStatusTl(Builder $q, string $s): Builder          { return $q->where('status_tl', $s); }
-    public function scopeBelumDitindaklanjuti(Builder $q): Builder          { return $q->where('status_tl', self::STATUS_BELUM); }
-    public function scopeDalamProses(Builder $q): Builder                   { return $q->where('status_tl', self::STATUS_PROSES); }
-    public function scopeSelesai(Builder $q): Builder                       { return $q->where('status_tl', self::STATUS_SELESAI); }
+    public function scopeStatusTl(Builder $q, string $s): Builder
+    {
+        return $q->where('status_tl', $s);
+    }
+
+    public function scopeBelumDitindaklanjuti(Builder $q): Builder
+    {
+        return $q->where('status_tl', self::STATUS_BELUM);
+    }
+
+    public function scopeDalamProses(Builder $q): Builder
+    {
+        return $q->where('status_tl', self::STATUS_PROSES);
+    }
+
+    public function scopeSelesai(Builder $q): Builder
+    {
+        return $q->where('status_tl', self::STATUS_SELESAI);
+    }
 
     // ── Relationships ─────────────────────────────────────────────────────────
 
@@ -94,8 +113,15 @@ class Temuan extends Model
         return $this->belongsTo(Lhp::class, 'lhp_id', 'id');
     }
 
-    public function kodeTemuan(): BelongsTo    { return $this->belongsTo(KodeTemuan::class); }
-    public function recommendations(): HasMany  { return $this->hasMany(Recommendation::class); }
+    public function kodeTemuan(): BelongsTo
+    {
+        return $this->belongsTo(KodeTemuan::class);
+    }
+
+    public function recommendations(): HasMany
+    {
+        return $this->hasMany(Recommendation::class);
+    }
 
     public function attachments(): MorphMany
     {
@@ -106,9 +132,9 @@ class Temuan extends Model
 
     public function getTotalNilaiTemuanAttribute(): float
     {
-        return (float) ($this->nilai_kerugian_negara   ?? 0)
-             + (float) ($this->nilai_kerugian_daerah   ?? 0)
-             + (float) ($this->nilai_kerugian_desa     ?? 0)
+        return (float) ($this->nilai_kerugian_negara ?? 0)
+             + (float) ($this->nilai_kerugian_daerah ?? 0)
+             + (float) ($this->nilai_kerugian_desa ?? 0)
              + (float) ($this->nilai_kerugian_bos_blud ?? 0);
     }
 
@@ -120,7 +146,10 @@ class Temuan extends Model
     public function progress(): float
     {
         $total = $this->recommendations->count();
-        if ($total === 0) return 0;
+        if ($total === 0) {
+            return 0;
+        }
+
         return round($this->recommendations->where('status', 'selesai')->count() / $total * 100, 2);
     }
 
@@ -136,24 +165,24 @@ class Temuan extends Model
     public function syncStatus(): void
     {
         // Pastikan nilai numerik tidak NULL
-        $this->nilai_temuan            = $this->nilai_temuan ?? 0;
-        $this->nilai_kerugian_negara   = $this->nilai_kerugian_negara ?? 0;
-        $this->nilai_kerugian_daerah   = $this->nilai_kerugian_daerah ?? 0;
-        $this->nilai_kerugian_desa     = $this->nilai_kerugian_desa ?? 0;
+        $this->nilai_temuan = $this->nilai_temuan ?? 0;
+        $this->nilai_kerugian_negara = $this->nilai_kerugian_negara ?? 0;
+        $this->nilai_kerugian_daerah = $this->nilai_kerugian_daerah ?? 0;
+        $this->nilai_kerugian_desa = $this->nilai_kerugian_desa ?? 0;
         $this->nilai_kerugian_bos_blud = $this->nilai_kerugian_bos_blud ?? 0;
 
         $allRekom = $this->relationLoaded('recommendations')
             ? $this->recommendations
             : $this->recommendations()->get();
-        $total    = $allRekom->count();
-        $selesai  = $allRekom->where('status', 'selesai')->count();
-        $proses   = $allRekom->whereIn('status', ['proses'])->count();
+        $total = $allRekom->count();
+        $selesai = $allRekom->where('status', 'selesai')->count();
+        $proses = $allRekom->whereIn('status', ['proses'])->count();
 
         if ($total > 0) {
             $this->status_tl = match (true) {
-                $selesai === $total          => self::STATUS_SELESAI,
-                $selesai > 0 || $proses > 0  => self::STATUS_PROSES,
-                default                      => self::STATUS_BELUM,
+                $selesai === $total => self::STATUS_SELESAI,
+                $selesai > 0 || $proses > 0 => self::STATUS_PROSES,
+                default => self::STATUS_BELUM,
             };
         } else {
             $this->status_tl = self::STATUS_BELUM;
@@ -163,7 +192,7 @@ class Temuan extends Model
 
         // Ujung chain: update statistik LHP
         if ($this->lhp_id) {
-            app(\App\Services\LhpStatistikService::class)->updateStatistik($this->lhp_id);
+            app(LhpStatistikService::class)->updateStatistik($this->lhp_id);
         }
     }
 
@@ -171,9 +200,10 @@ class Temuan extends Model
 
     protected static function booted(): void
     {
-        // Sengaja kosong.
-        // Statistik diupdate dari controller (setelah commit)
-        // atau dari chain: TindakLanjut::saved → Recommendation::syncStatus()
-        //                  → Temuan::syncStatus() → updateStatistik()
+        static::deleted(function (self $model) {
+            if ($model->lhp_id) {
+                app(LhpStatistikService::class)->updateStatistik($model->lhp_id);
+            }
+        });
     }
 }

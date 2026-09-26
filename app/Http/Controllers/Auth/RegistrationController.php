@@ -36,4 +36,3 @@ class RegistrationController extends Controller
         return redirect(route('dashboard', absolute: false));
     }
 }
-

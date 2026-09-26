@@ -8,7 +8,9 @@ class DateHelper
 {
     public static function formatJadwal(?string $value): string
     {
-        if (!$value) return 'Tentatif';
+        if (! $value) {
+            return 'Tentatif';
+        }
 
         try {
             $date = Carbon::createFromFormat('d/m/Y', $value);
@@ -30,12 +32,14 @@ class DateHelper
         $englishMonth = $date->format('F');
         $indonesianMonth = $months[$englishMonth] ?? $englishMonth;
 
-        return $indonesianMonth . ' ' . $date->format('Y');
+        return $indonesianMonth.' '.$date->format('Y');
     }
 
     public static function toInputDate(?string $value): string
     {
-        if (!$value) return '';
+        if (! $value) {
+            return '';
+        }
 
         try {
             return Carbon::createFromFormat('d/m/Y', $value)->format('Y-m-d');

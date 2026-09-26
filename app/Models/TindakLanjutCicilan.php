@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TindakLanjutCicilan extends Model
 {
-    use SoftDeletes, HasCreatedUpdatedBy, HasAttachments, HasActivityLog;
+    use HasActivityLog, HasAttachments, HasCreatedUpdatedBy, SoftDeletes;
 
     protected static $logExcept = ['created_by', 'updated_by', 'created_at', 'updated_at', 'deleted_at'];
 
@@ -41,21 +41,23 @@ class TindakLanjutCicilan extends Model
     protected function casts(): array
     {
         return [
-            'ke'                          => 'integer',
-            'nilai_bayar'                 => 'decimal:2',
-            'nilai_bayar_negara'          => 'decimal:2',
-            'nilai_bayar_daerah'          => 'decimal:2',
-            'nilai_bayar_desa'            => 'decimal:2',
-            'nilai_bayar_bos_blud'        => 'decimal:2',
-            'tanggal_bayar'               => 'date',
+            'ke' => 'integer',
+            'nilai_bayar' => 'decimal:2',
+            'nilai_bayar_negara' => 'decimal:2',
+            'nilai_bayar_daerah' => 'decimal:2',
+            'nilai_bayar_desa' => 'decimal:2',
+            'nilai_bayar_bos_blud' => 'decimal:2',
+            'tanggal_bayar' => 'date',
             'tanggal_jatuh_tempo_cicilan' => 'date',
-            'diverifikasi_pada'           => 'datetime',
+            'diverifikasi_pada' => 'datetime',
         ];
     }
 
     const STATUS_MENUNGGU = 'menunggu_verifikasi';
+
     const STATUS_DITERIMA = 'diterima';
-    const STATUS_DITOLAK  = 'ditolak';
+
+    const STATUS_DITOLAK = 'ditolak';
 
     // ── Relationships ─────────────────────────────────────────────────────────
 
@@ -144,9 +146,9 @@ class TindakLanjutCicilan extends Model
 
     public function isBreakdownValid(): bool
     {
-        $sum = (float) ($this->nilai_bayar_negara   ?? 0)
-             + (float) ($this->nilai_bayar_daerah   ?? 0)
-             + (float) ($this->nilai_bayar_desa     ?? 0)
+        $sum = (float) ($this->nilai_bayar_negara ?? 0)
+             + (float) ($this->nilai_bayar_daerah ?? 0)
+             + (float) ($this->nilai_bayar_desa ?? 0)
              + (float) ($this->nilai_bayar_bos_blud ?? 0);
 
         return $sum === 0.0 || abs($sum - (float) $this->nilai_bayar) < 0.01;
@@ -157,8 +159,8 @@ class TindakLanjutCicilan extends Model
         return match ($this->status) {
             self::STATUS_MENUNGGU => 'Menunggu Verifikasi',
             self::STATUS_DITERIMA => 'Diterima',
-            self::STATUS_DITOLAK  => 'Ditolak',
-            default               => $this->status ?? '-',
+            self::STATUS_DITOLAK => 'Ditolak',
+            default => $this->status ?? '-',
         };
     }
 }

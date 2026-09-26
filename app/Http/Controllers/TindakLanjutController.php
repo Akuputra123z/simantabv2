@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attachment;
 use App\Models\AuditProgram;
 use App\Models\Lhp;
 use App\Models\Recommendation;
 use App\Models\Temuan;
 use App\Models\TindakLanjut;
+use App\Models\TindakLanjutCicilan;
 use App\Models\UnitDiperiksa;
 use App\Models\User;
-use App\Models\Attachment;
 use App\Services\LhpStatistikService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,24 +36,24 @@ class TindakLanjutController extends Controller
 
         if ($missingRekomIds->isNotEmpty()) {
             $now = now();
-            $stubs = $missingRekomIds->map(fn($rekomId) => [
-                'recommendation_id'   => $rekomId,
-                'status_verifikasi'   => 'menunggu_verifikasi',
+            $stubs = $missingRekomIds->map(fn ($rekomId) => [
+                'recommendation_id' => $rekomId,
+                'status_verifikasi' => 'menunggu_verifikasi',
                 'nilai_tindak_lanjut' => 0,
-                'total_terbayar'      => 0,
-                'sisa_belum_bayar'    => 0,
-                'created_at'          => $now,
-                'updated_at'          => $now,
+                'total_terbayar' => 0,
+                'sisa_belum_bayar' => 0,
+                'created_at' => $now,
+                'updated_at' => $now,
             ])->toArray();
             TindakLanjut::insert($stubs);
         }
 
-        $search    = $request->input('search');
-        $tahun     = $request->input('tahun');
-        $kategori  = $request->input('kategori');
-        $status    = $request->input('status');
+        $search = $request->input('search');
+        $tahun = $request->input('tahun');
+        $kategori = $request->input('kategori');
+        $status = $request->input('status');
         $statusOpd = $request->input('status_opd');
-        $unitId    = $request->input('unit_id');
+        $unitId = $request->input('unit_id');
 
         $query = Lhp::query()
             ->whereHas('temuans.recommendations')
@@ -69,23 +70,23 @@ class TindakLanjutController extends Controller
         if (! $user->hasRole(['super_admin', 'kepala_inspektorat', 'admin', 'admin_inspektorat'])) {
             $query->whereHas('auditAssignment', function ($q) use ($user) {
                 $q->where('ketua_tim_id', $user->id)
-                  ->orWhereHas('members', fn($m) => $m->where('user_id', $user->id));
+                    ->orWhereHas('members', fn ($m) => $m->where('user_id', $user->id));
             });
         }
 
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('nomor_lhp', 'like', "%{$search}%")
-                  ->orWhere('catatan_umum', 'like', "%{$search}%")
-                  ->orWhereHas('unitDiperiksa', fn($u) => $u->where('nama_unit', 'like', "%{$search}%"))
-                  ->orWhereHas('auditAssignment.auditProgramDetail.auditProgram', fn($ap) => $ap->where('nama_program', 'like', "%{$search}%"));
+                    ->orWhere('catatan_umum', 'like', "%{$search}%")
+                    ->orWhereHas('unitDiperiksa', fn ($u) => $u->where('nama_unit', 'like', "%{$search}%"))
+                    ->orWhereHas('auditAssignment.auditProgramDetail.auditProgram', fn ($ap) => $ap->where('nama_program', 'like', "%{$search}%"));
             });
         }
 
         if ($tahun) {
             $query->where(function ($q) use ($tahun) {
                 $q->whereYear('tanggal_lhp', $tahun)
-                  ->orWhereHas('auditAssignment.auditProgramDetail.auditProgram', fn($ap) => $ap->where('tahun', $tahun));
+                    ->orWhereHas('auditAssignment.auditProgramDetail.auditProgram', fn ($ap) => $ap->where('tahun', $tahun));
             });
         }
 
@@ -182,36 +183,40 @@ class TindakLanjutController extends Controller
                 COUNT(CASE WHEN status_verifikasi = 'lunas' THEN 1 END) as total_lunas,
                 COUNT(CASE WHEN status_verifikasi = 'berjalan' THEN 1 END) as total_berjalan,
                 COUNT(CASE WHEN status_verifikasi = 'menunggu_verifikasi' THEN 1 END) as total_menunggu,
-                COALESCE(SUM(CASE WHEN recommendation_id IN (" . ($rekomUangIds->isNotEmpty() ? $rekomUangIds->implode(',') : '0') . ") THEN total_terbayar ELSE 0 END), 0) as total_terbayar
-            ")
+                COALESCE(SUM(CASE WHEN recommendation_id IN (".($rekomUangIds->isNotEmpty() ? $rekomUangIds->implode(',') : '0').') THEN total_terbayar ELSE 0 END), 0) as total_terbayar
+            ')
             ->first();
 
         $totalTerbayarUang = (float) ($tlAggregates->total_terbayar ?? 0);
-        $persenSetor = $totalNilaiRekomUang > 0 
-            ? min(100, round(($totalTerbayarUang / $totalNilaiRekomUang) * 100, 1)) 
+        $persenSetor = $totalNilaiRekomUang > 0
+            ? min(100, round(($totalTerbayarUang / $totalNilaiRekomUang) * 100, 1))
             : 0;
 
         $stats = (object) [
-            'total_lhp'         => Lhp::whereHas('temuans.recommendations')->count(),
+            'total_lhp' => Lhp::whereHas('temuans.recommendations')->count(),
             'total_rekomendasi' => Recommendation::whereHas('temuan.lhp')->count(),
-            'total_lunas'       => (int) ($tlAggregates->total_lunas ?? 0),
-            'total_berjalan'    => (int) ($tlAggregates->total_berjalan ?? 0),
-            'total_menunggu'    => (int) ($tlAggregates->total_menunggu ?? 0),
+            'total_lunas' => (int) ($tlAggregates->total_lunas ?? 0),
+            'total_berjalan' => (int) ($tlAggregates->total_berjalan ?? 0),
+            'total_menunggu' => (int) ($tlAggregates->total_menunggu ?? 0),
             'total_nilai_rekom' => $totalNilaiRekomUang,
-            'total_terbayar'    => $totalTerbayarUang,
-            'persen_setor'      => $persenSetor,
-            'sisa_setor'        => max(0, $totalNilaiRekomUang - $totalTerbayarUang),
+            'total_terbayar' => $totalTerbayarUang,
+            'persen_setor' => $persenSetor,
+            'sisa_setor' => max(0, $totalNilaiRekomUang - $totalTerbayarUang),
         ];
 
         $kategoris = AuditProgram::KATEGORI;
         $units = UnitDiperiksa::orderBy('nama_unit')->get();
 
-        $tahuns = Lhp::selectRaw('YEAR(tanggal_lhp) as tahun')
+        $yearExpr = DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y', tanggal_lhp) as tahun"
+            : 'YEAR(tanggal_lhp) as tahun';
+
+        $tahuns = Lhp::selectRaw($yearExpr)
             ->whereNotNull('tanggal_lhp')
             ->distinct()
             ->pluck('tahun')
             ->filter()
-            ->map(fn($y) => (int) $y)
+            ->map(fn ($y) => (int) $y)
             ->merge(range((int) date('Y') + 1, (int) date('Y') - 4))
             ->unique()
             ->sortDesc()
@@ -251,7 +256,7 @@ class TindakLanjutController extends Controller
         }
 
         // Pastikan stub TindakLanjut terbuat untuk semua rekomendasi di LHP ini
-        $missingRekomIds = Recommendation::whereHas('temuan', fn($q) => $q->where('lhp_id', $lhp->id))
+        $missingRekomIds = Recommendation::whereHas('temuan', fn ($q) => $q->where('lhp_id', $lhp->id))
             ->doesntHave('tindakLanjuts')
             ->pluck('id');
 
@@ -259,10 +264,10 @@ class TindakLanjutController extends Controller
             TindakLanjut::firstOrCreate(
                 ['recommendation_id' => $rekomId],
                 [
-                    'status_verifikasi'   => 'menunggu_verifikasi',
+                    'status_verifikasi' => 'menunggu_verifikasi',
                     'nilai_tindak_lanjut' => 0,
-                    'total_terbayar'      => 0,
-                    'sisa_belum_bayar'    => 0,
+                    'total_terbayar' => 0,
+                    'sisa_belum_bayar' => 0,
                 ]
             );
         }
@@ -307,7 +312,7 @@ class TindakLanjutController extends Controller
         $initialRekomendasis = $selectedLhpId ? $this->getRekomendasisData($selectedLhpId) : collect();
 
         $users = User::orderBy('name')->get();
-        $verifikatorUsers = $users->map(fn($u) => ['id' => $u->id, 'name' => $u->name])->values();
+        $verifikatorUsers = $users->map(fn ($u) => ['id' => $u->id, 'name' => $u->name])->values();
 
         return view('pages.tindak-lanjuts.create', compact(
             'lhps',
@@ -321,7 +326,7 @@ class TindakLanjutController extends Controller
     public function getRekomendasisData($lhpId)
     {
         return Recommendation::with(['temuan.kodeTemuan', 'kodeRekomendasi', 'tindakLanjuts'])
-            ->whereHas('temuan', fn($q) => $q->where('lhp_id', $lhpId))
+            ->whereHas('temuan', fn ($q) => $q->where('lhp_id', $lhpId))
             ->orderBy('id')
             ->get()
             ->map(function ($r) {
@@ -331,20 +336,20 @@ class TindakLanjutController extends Controller
                 $sisa = max(0, $target - $terbayar);
 
                 return [
-                    'id'                => $r->id,
-                    'kode'              => $r->kodeRekomendasi?->kode_rekomendasi ?? ('Rekom #' . $r->id),
-                    'temuan_kode'       => $r->temuan?->kodeTemuan?->kode ?? '-',
-                    'temuan_kondisi'    => \Str::limit(strip_tags($r->temuan?->kondisi ?? ''), 120),
-                    'uraian'            => strip_tags($r->uraian_rekom),
-                    'jenis'             => $r->jenis_rekomendasi,
-                    'nilai_rekom'       => $target,
-                    'nilai_sisa'        => $sisa,
-                    'total_terbayar'    => $terbayar,
-                    'status'            => $r->status,
+                    'id' => $r->id,
+                    'kode' => $r->kodeRekomendasi?->kode_rekomendasi ?? ('Rekom #'.$r->id),
+                    'temuan_kode' => $r->temuan?->kodeTemuan?->kode ?? '-',
+                    'temuan_kondisi' => \Str::limit(strip_tags($r->temuan?->kondisi ?? ''), 120),
+                    'uraian' => strip_tags($r->uraian_rekom),
+                    'jenis' => $r->jenis_rekomendasi,
+                    'nilai_rekom' => $target,
+                    'nilai_sisa' => $sisa,
+                    'total_terbayar' => $terbayar,
+                    'status' => $r->status,
                     'status_verifikasi' => $tl?->status_verifikasi ?? 'belum',
-                    'label'             => '[' . ($r->kodeRekomendasi?->kode_rekomendasi ?? 'REKOM') . '] '
-                        . \Str::limit(strip_tags($r->uraian_rekom), 120)
-                        . ($r->jenis_rekomendasi === 'uang' ? ' — (Sisa: Rp' . number_format($sisa, 0, ',', '.') . ')' : ''),
+                    'label' => '['.($r->kodeRekomendasi?->kode_rekomendasi ?? 'REKOM').'] '
+                        .\Str::limit(strip_tags($r->uraian_rekom), 120)
+                        .($r->jenis_rekomendasi === 'uang' ? ' — (Sisa: Rp'.number_format($sisa, 0, ',', '.').')' : ''),
                 ];
             });
     }
@@ -358,18 +363,18 @@ class TindakLanjutController extends Controller
     {
         $recommendations = Recommendation::with(['temuan.lhp:id,nomor_lhp'])
             ->select('id', 'temuan_id', 'uraian_rekom', 'nilai_rekom', 'nilai_sisa', 'jenis_rekomendasi')
-            ->whereHas('temuan.lhp.auditAssignment.auditProgramDetail', fn($q) => $q->where('audit_program_id', $programId))
+            ->whereHas('temuan.lhp.auditAssignment.auditProgramDetail', fn ($q) => $q->where('audit_program_id', $programId))
             ->latest()
             ->limit(100)
             ->get()
-            ->map(fn($r) => [
-                'id'    => $r->id,
-                'sisa'  => (int) $r->nilai_sisa,
+            ->map(fn ($r) => [
+                'id' => $r->id,
+                'sisa' => (int) $r->nilai_sisa,
                 'rekom' => (int) $r->nilai_rekom,
                 'jenis' => $r->jenis_rekomendasi,
-                'label' => '[' . ($r->temuan?->lhp?->nomor_lhp ?? 'LHP') . '] '
-                    . \Str::limit(strip_tags($r->uraian_rekom), 200)
-                    . ' — (Sisa: Rp' . number_format($r->nilai_sisa, 0, ',', '.') . ')',
+                'label' => '['.($r->temuan?->lhp?->nomor_lhp ?? 'LHP').'] '
+                    .\Str::limit(strip_tags($r->uraian_rekom), 200)
+                    .' — (Sisa: Rp'.number_format($r->nilai_sisa, 0, ',', '.').')',
             ]);
 
         return response()->json($recommendations);
@@ -378,24 +383,24 @@ class TindakLanjutController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'recommendation_id'       => 'required|exists:recommendations,id',
-            'jenis_penyelesaian'      => 'required|in:setor_kas,cicilan,pengembalian_barang,perbaikan_administrasi,langsung',
-            'nilai_tindak_lanjut'     => 'nullable|numeric|min:0',
-            'nomor_bukti'             => 'nullable|string|max:255',
-            'jumlah_cicilan_rencana'  => 'nullable|integer|min:1',
-            'tanggal_mulai_cicilan'   => 'nullable|date',
-            'tanggal_jatuh_tempo'     => 'required|date',
-            'status_verifikasi'       => 'required|in:menunggu_verifikasi,berjalan,lunas',
-            'diverifikasi_oleh'       => 'nullable|integer|exists:users,id',
-            'catatan_tl'              => 'nullable|string|max:2000',
-            'hambatan'                => 'nullable|string|max:2000',
-            'attachments'             => 'nullable|array',
-            'attachments.*'           => 'file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
+            'recommendation_id' => 'required|exists:recommendations,id',
+            'jenis_penyelesaian' => 'required|in:setor_kas,cicilan,pengembalian_barang,perbaikan_administrasi,langsung',
+            'nilai_tindak_lanjut' => 'nullable|numeric|min:0',
+            'nomor_bukti' => 'nullable|string|max:255',
+            'jumlah_cicilan_rencana' => 'nullable|integer|min:1',
+            'tanggal_mulai_cicilan' => 'nullable|date',
+            'tanggal_jatuh_tempo' => 'required|date',
+            'status_verifikasi' => 'required|in:menunggu_verifikasi,berjalan,lunas',
+            'diverifikasi_oleh' => 'nullable|integer|exists:users,id',
+            'catatan_tl' => 'nullable|string|max:2000',
+            'hambatan' => 'nullable|string|max:2000',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
         ], [
             'recommendation_id.required' => 'Rekomendasi yang Ditindaklanjuti wajib dipilih.',
-            'recommendation_id.exists'   => 'Rekomendasi yang dipilih tidak valid atau tidak ditemukan.',
-            'jenis_penyelesaian.required'=> 'Metode penyelesaian wajib dipilih.',
-            'tanggal_jatuh_tempo.required'=> 'Tanggal jatuh tempo wajib diisi.',
+            'recommendation_id.exists' => 'Rekomendasi yang dipilih tidak valid atau tidak ditemukan.',
+            'jenis_penyelesaian.required' => 'Metode penyelesaian wajib dipilih.',
+            'tanggal_jatuh_tempo.required' => 'Tanggal jatuh tempo wajib diisi.',
             'status_verifikasi.required' => 'Status verifikasi awal wajib dipilih.',
         ]);
 
@@ -417,13 +422,13 @@ class TindakLanjutController extends Controller
         $catatan = trim($validated['catatan_tl'] ?? '');
         $nomorBukti = trim($validated['nomor_bukti'] ?? '');
         if ($nomorBukti) {
-            $prefix = match($jenis) {
+            $prefix = match ($jenis) {
                 'pengembalian_barang' => 'No. BAST / Aset: ',
                 'perbaikan_administrasi' => 'No. Dokumen / SK: ',
                 default => 'No. Bukti / STS: ',
             };
             if (! str_contains($catatan, $prefix)) {
-                $catatan = trim($prefix . $nomorBukti . ($catatan ? "\n" . $catatan : ''));
+                $catatan = trim($prefix.$nomorBukti.($catatan ? "\n".$catatan : ''));
             }
         }
 
@@ -432,18 +437,18 @@ class TindakLanjutController extends Controller
             $existingTl = TindakLanjut::where('recommendation_id', $rekom->id)->first();
 
             $tlData = [
-                'jenis_penyelesaian'      => $jenis,
-                'is_cicilan'              => ($jenis === 'cicilan'),
-                'jumlah_cicilan_rencana'  => $validated['jumlah_cicilan_rencana'] ?? null,
-                'tanggal_mulai_cicilan'   => $validated['tanggal_mulai_cicilan'] ?? null,
-                'tanggal_jatuh_tempo'     => $validated['tanggal_jatuh_tempo'],
-                'status_verifikasi'       => $validated['status_verifikasi'],
-                'diverifikasi_oleh'       => $validated['diverifikasi_oleh'] ?? auth()->id(),
-                'diverifikasi_pada'       => now(),
-                'catatan_tl'              => $catatan,
-                'hambatan'                => $validated['hambatan'] ?? null,
-                'created_by'              => auth()->id(),
-                'updated_by'              => auth()->id(),
+                'jenis_penyelesaian' => $jenis,
+                'is_cicilan' => ($jenis === 'cicilan'),
+                'jumlah_cicilan_rencana' => $validated['jumlah_cicilan_rencana'] ?? null,
+                'tanggal_mulai_cicilan' => $validated['tanggal_mulai_cicilan'] ?? null,
+                'tanggal_jatuh_tempo' => $validated['tanggal_jatuh_tempo'],
+                'status_verifikasi' => $validated['status_verifikasi'],
+                'diverifikasi_oleh' => $validated['diverifikasi_oleh'] ?? auth()->id(),
+                'diverifikasi_pada' => now(),
+                'catatan_tl' => $catatan,
+                'hambatan' => $validated['hambatan'] ?? null,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
             ];
 
             // Hanya tetapkan nilai_tindak_lanjut jika diverifikasi lunas/berjalan atau nilai dimasukkan
@@ -487,13 +492,13 @@ class TindakLanjutController extends Controller
             // Jika jenis cicilan dan ada nominal awal dicatat
             if ($jenis === 'cicilan' && $nilaiTl > 0 && $tindakLanjut->cicilans()->count() === 0) {
                 $tindakLanjut->cicilans()->create([
-                    'nilai_bayar'   => $nilaiTl,
+                    'nilai_bayar' => $nilaiTl,
                     'tanggal_bayar' => now(),
-                    'nomor_bukti'   => $nomorBukti,
-                    'keterangan'    => 'Setoran cicilan awal',
-                    'jenis_bayar'   => 'setor_kas',
-                    'status'        => ($validated['status_verifikasi'] === 'lunas' ? \App\Models\TindakLanjutCicilan::STATUS_DITERIMA : \App\Models\TindakLanjutCicilan::STATUS_MENUNGGU),
-                    'created_by'    => auth()->id(),
+                    'nomor_bukti' => $nomorBukti,
+                    'keterangan' => 'Setoran cicilan awal',
+                    'jenis_bayar' => 'setor_kas',
+                    'status' => ($validated['status_verifikasi'] === 'lunas' ? TindakLanjutCicilan::STATUS_DITERIMA : TindakLanjutCicilan::STATUS_MENUNGGU),
+                    'created_by' => auth()->id(),
                 ]);
             }
 
@@ -505,12 +510,12 @@ class TindakLanjutController extends Controller
                     if ($file && $file->isValid()) {
                         $path = $file->store('attachments/tindak-lanjut', 'public');
                         $tindakLanjut->attachments()->create([
-                            'file_path'   => $path,
-                            'file_name'   => $file->getClientOriginalName(),
-                            'file_type'   => $file->getMimeType(),
-                            'file_size'   => $file->getSize(),
+                            'file_path' => $path,
+                            'file_name' => $file->getClientOriginalName(),
+                            'file_type' => $file->getMimeType(),
+                            'file_size' => $file->getSize(),
                             'jenis_bukti' => 'tindak_lanjut',
-                            'urutan'      => $i,
+                            'urutan' => $i,
                             'visibilitas' => 'internal',
                             'uploaded_by' => auth()->id(),
                         ]);
@@ -524,13 +529,15 @@ class TindakLanjutController extends Controller
             DB::commit();
 
             $redirectRoute = $lhpId ? route('tindak-lanjuts.lhp', $lhpId) : route('tindak-lanjuts.index');
+
             return redirect($redirectRoute)
                 ->with('success', 'Tindak lanjut berhasil disimpan dan disinkronkan.');
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('TindakLanjut store error: ' . $e->getMessage());
-            return back()->withInput()->with('error', 'Gagal menyimpan tindak lanjut: ' . $e->getMessage());
+            Log::error('TindakLanjut store error: '.$e->getMessage());
+
+            return back()->withInput()->with('error', 'Gagal menyimpan tindak lanjut: '.$e->getMessage());
         }
     }
 
@@ -559,13 +566,13 @@ class TindakLanjutController extends Controller
         $recommendations = Recommendation::with(['temuan.lhp'])
             ->where(function ($q) use ($tindakLanjut) {
                 $q->where('status', '!=', Recommendation::STATUS_SELESAI)
-                  ->orWhere('id', $tindakLanjut->recommendation_id);
+                    ->orWhere('id', $tindakLanjut->recommendation_id);
             })
             ->latest()
             ->get();
 
         $users = User::orderBy('name')->get();
-        $verifikatorUsers = $users->map(fn($u) => ['id' => $u->id, 'name' => $u->name])->values();
+        $verifikatorUsers = $users->map(fn ($u) => ['id' => $u->id, 'name' => $u->name])->values();
 
         return view('pages.tindak-lanjuts.edit', compact('tindakLanjut', 'recommendations', 'users', 'verifikatorUsers'));
     }
@@ -573,23 +580,40 @@ class TindakLanjutController extends Controller
     public function update(Request $request, TindakLanjut $tindakLanjut)
     {
         $validated = $request->validate([
-            'recommendation_id'       => 'required|exists:recommendations,id',
-            'jenis_penyelesaian'      => 'required|in:langsung,cicilan',
-            'nilai_tindak_lanjut'     => 'nullable|numeric|min:0',
-            'jumlah_cicilan_rencana'  => 'nullable|integer|min:1',
-            'tanggal_mulai_cicilan'   => 'nullable|date',
-            'tanggal_jatuh_tempo'     => 'required|date',
-            'status_verifikasi'       => 'required|in:menunggu_verifikasi,berjalan,lunas',
-            'diverifikasi_oleh'       => 'nullable|integer|exists:users,id',
-            'catatan_tl'              => 'nullable|string|max:1000',
-            'hambatan'                => 'nullable|string|max:1000',
-            'new_attachments'         => 'nullable|array',
-            'new_attachments.*'       => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'recommendation_id' => 'required|exists:recommendations,id',
+            'jenis_penyelesaian' => 'required|in:setor_kas,cicilan,pengembalian_barang,perbaikan_administrasi,langsung',
+            'nilai_tindak_lanjut' => 'nullable|numeric|min:0',
+            'jumlah_cicilan_rencana' => 'nullable|integer|min:1',
+            'tanggal_mulai_cicilan' => 'nullable|date',
+            'tanggal_jatuh_tempo' => 'required|date',
+            'status_verifikasi' => 'required|in:menunggu_verifikasi,berjalan,lunas',
+            'diverifikasi_oleh' => 'nullable|integer|exists:users,id',
+            'catatan_tl' => 'nullable|string|max:1000',
+            'hambatan' => 'nullable|string|max:1000',
+            'new_attachments' => 'nullable|array',
+            'new_attachments.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
-        $rekom          = Recommendation::findOrFail($validated['recommendation_id']);
-        $nilaiTlBaru    = (float) ($validated['nilai_tindak_lanjut'] ?? 0);
-        $nilaiTlLama    = (float) ($tindakLanjut->nilai_tindak_lanjut ?? 0);
+        $rekom = Recommendation::findOrFail($validated['recommendation_id']);
+        $nilaiTlBaru = (float) ($validated['nilai_tindak_lanjut'] ?? 0);
+        $nilaiTlLama = (float) ($tindakLanjut->nilai_tindak_lanjut ?? 0);
+
+        $jenis = $validated['jenis_penyelesaian'];
+        if ($jenis === 'langsung') {
+            $jenis = match ($rekom->jenis_rekomendasi) {
+                'barang' => 'pengembalian_barang',
+                'administrasi' => 'perbaikan_administrasi',
+                default => 'setor_kas',
+            };
+        }
+        $validated['jenis_penyelesaian'] = $jenis;
+        $validated['is_cicilan'] = ($jenis === 'cicilan');
+        $validated['updated_by'] = auth()->id();
+
+        if (in_array($jenis, ['pengembalian_barang', 'perbaikan_administrasi'])) {
+            $validated['nilai_tindak_lanjut'] = 0;
+            $nilaiTlBaru = 0;
+        }
 
         if ($rekom->isUang()) {
             $sisaAvailable = (float) ($rekom->nilai_sisa ?? 0) + $nilaiTlLama;
@@ -598,8 +622,7 @@ class TindakLanjutController extends Controller
                 return back()
                     ->withInput()
                     ->withErrors([
-                        'nilai_tindak_lanjut' =>
-                            'Nilai tindak lanjut melebihi nilai tersedia (Rp ' . number_format($sisaAvailable, 0, ',', '.') . ').',
+                        'nilai_tindak_lanjut' => 'Nilai tindak lanjut melebihi nilai tersedia (Rp '.number_format($sisaAvailable, 0, ',', '.').').',
                     ]);
             }
         }
@@ -628,10 +651,10 @@ class TindakLanjutController extends Controller
                     if ($file && $file->isValid()) {
                         $path = $file->store('attachments/tindak-lanjut', 'public');
                         $tindakLanjut->attachments()->create([
-                            'file_path'   => $path,
-                            'file_name'   => $file->getClientOriginalName(),
+                            'file_path' => $path,
+                            'file_name' => $file->getClientOriginalName(),
                             'jenis_bukti' => 'tindak_lanjut',
-                            'urutan'      => $existingCount + $i,
+                            'urutan' => $existingCount + $i,
                         ]);
                     }
                 }
@@ -641,10 +664,10 @@ class TindakLanjutController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('TindakLanjut update error: ' . $e->getMessage());
+            Log::error('TindakLanjut update error: '.$e->getMessage());
 
             $errMsg = app()->isLocal()
-                ? 'Gagal memperbarui data. Error: ' . $e->getMessage()
+                ? 'Gagal memperbarui data. Error: '.$e->getMessage()
                 : 'Gagal memperbarui data.';
 
             return back()->withInput()->with('error', $errMsg);
@@ -656,7 +679,7 @@ class TindakLanjutController extends Controller
             $this->syncRekomendasi($tindakLanjut);
             $this->updateStatistik($tindakLanjut);
         } catch (\Throwable $e) {
-            Log::error('TindakLanjut sync error after update: ' . $e->getMessage());
+            Log::error('TindakLanjut sync error after update: '.$e->getMessage());
         }
 
         return redirect()
@@ -671,7 +694,7 @@ class TindakLanjutController extends Controller
         }
 
         $lhpId = $tindakLanjut->recommendation?->temuan?->lhp_id;
-        
+
         // Hapus file lampiran dari storage & DB
         foreach ($tindakLanjut->attachments as $att) {
             if ($att->file_path && Storage::disk('public')->exists($att->file_path)) {
@@ -682,10 +705,10 @@ class TindakLanjutController extends Controller
 
         // Hapus cicilan jika ada
         $tindakLanjut->cicilans()->delete();
-        
+
         // Simpan recommendation sebelum TL dihapus untuk sync setelahnya
         $recommendation = $tindakLanjut->recommendation;
-        
+
         $tindakLanjut->delete();
 
         // Sync recommendation setelah TL dihapus
@@ -712,13 +735,13 @@ class TindakLanjutController extends Controller
         }
 
         $validated = $request->validate([
-            'ids'       => 'nullable|array',
-            'ids.*'     => 'exists:tindak_lanjuts,id',
-            'lhp_ids'   => 'nullable|array',
+            'ids' => 'nullable|array',
+            'ids.*' => 'exists:tindak_lanjuts,id',
+            'lhp_ids' => 'nullable|array',
             'lhp_ids.*' => 'exists:lhps,id',
         ]);
 
-        $ids    = array_filter($validated['ids'] ?? []);
+        $ids = array_filter($validated['ids'] ?? []);
         $lhpIds = array_filter($validated['lhp_ids'] ?? []);
 
         if (empty($ids) && empty($lhpIds)) {
@@ -743,9 +766,9 @@ class TindakLanjutController extends Controller
 
         $tindakLanjuts = $tindakLanjuts->unique('id');
 
-        $recomIds        = [];
-        $affectedLhpIds  = $lhpIds;
-        $deletedCount    = $tindakLanjuts->count();
+        $recomIds = [];
+        $affectedLhpIds = $lhpIds;
+        $deletedCount = $tindakLanjuts->count();
 
         foreach ($tindakLanjuts as $tl) {
             $lhpId = $tl->recommendation?->temuan?->lhp_id;
@@ -774,7 +797,7 @@ class TindakLanjutController extends Controller
 
         // Sync all affected recommendations
         if (! empty($recomIds)) {
-            $recoms = \App\Models\Recommendation::whereIn('id', array_unique($recomIds))->get();
+            $recoms = Recommendation::whereIn('id', array_unique($recomIds))->get();
             foreach ($recoms as $rec) {
                 $rec->refresh();
                 $rec->load('tindakLanjuts.cicilans');
@@ -797,7 +820,7 @@ class TindakLanjutController extends Controller
         $this->authorize('bukaKunciOpd', $tindakLanjut);
 
         $tindakLanjut->update([
-            'status_opd'   => null,
+            'status_opd' => null,
             'dikirim_pada' => null,
         ]);
 
@@ -821,8 +844,8 @@ class TindakLanjutController extends Controller
         ]);
 
         $tindakLanjut->update([
-            'status_opd'      => 'draft',
-            'dikirim_pada'    => null,
+            'status_opd' => 'draft',
+            'dikirim_pada' => null,
             'alasan_tolak_opd' => $validated['alasan_tolak'],
         ]);
 
@@ -831,7 +854,7 @@ class TindakLanjutController extends Controller
             ->performedOn($tindakLanjut)
             ->withProperties([
                 'status_opd' => 'ditolak',
-                'alasan'     => $validated['alasan_tolak'],
+                'alasan' => $validated['alasan_tolak'],
             ])
             ->log('Admin menolak bukti tindak lanjut OPD');
 
@@ -845,7 +868,7 @@ class TindakLanjutController extends Controller
         $this->authorize('verifikasi', $tindakLanjut);
 
         $validated = $request->validate([
-            'status_verifikasi'  => 'required|in:lunas,berjalan',
+            'status_verifikasi' => 'required|in:lunas,berjalan',
             'catatan_verifikasi' => 'nullable|string|max:1000',
         ]);
 
@@ -855,10 +878,10 @@ class TindakLanjutController extends Controller
             $isNonUang = $rekom?->isNonUang() ?? false;
             $newStatus = $validated['status_verifikasi'];
 
-            $tindakLanjut->status_verifikasi  = $newStatus;
+            $tindakLanjut->status_verifikasi = $newStatus;
             $tindakLanjut->catatan_verifikasi = $validated['catatan_verifikasi'] ?? null;
-            $tindakLanjut->diverifikasi_oleh  = auth()->id();
-            $tindakLanjut->diverifikasi_pada  = now();
+            $tindakLanjut->diverifikasi_oleh = auth()->id();
+            $tindakLanjut->diverifikasi_pada = now();
 
             // SINKRONISASI LENGKAP DENGAN OPD:
             $tindakLanjut->status_opd = 'dikirim';
@@ -869,22 +892,26 @@ class TindakLanjutController extends Controller
 
             if ($newStatus === 'lunas') {
                 if ($isNonUang) {
-                    $tindakLanjut->total_terbayar   = 1;
+                    $tindakLanjut->total_terbayar = 1;
                     $tindakLanjut->sisa_belum_bayar = 0;
                 } else {
                     $target = (float) ($tindakLanjut->nilai_tindak_lanjut > 0
                         ? $tindakLanjut->nilai_tindak_lanjut
                         : ($rekom?->nilai_rekom ?? 0));
-                    $tindakLanjut->total_terbayar   = $target;
+                    $tindakLanjut->total_terbayar = $target;
                     $tindakLanjut->sisa_belum_bayar = 0;
 
                     // Setujui juga cicilan yang berstatus menunggu jika ada
-                    $tindakLanjut->cicilans()->where('status', \App\Models\TindakLanjutCicilan::STATUS_MENUNGGU)->update([
-                        'status'             => \App\Models\TindakLanjutCicilan::STATUS_DITERIMA,
-                        'diverifikasi_oleh'  => auth()->id(),
-                        'diverifikasi_pada'  => now(),
-                        'updated_by'         => auth()->id(),
+                    $tindakLanjut->cicilans()->where('status', TindakLanjutCicilan::STATUS_MENUNGGU)->update([
+                        'status' => TindakLanjutCicilan::STATUS_DITERIMA,
+                        'diverifikasi_oleh' => auth()->id(),
+                        'diverifikasi_pada' => now(),
+                        'updated_by' => auth()->id(),
                     ]);
+
+                    $tindakLanjut->jumlah_cicilan_realisasi = $tindakLanjut->cicilans()
+                        ->where('status', TindakLanjutCicilan::STATUS_DITERIMA)
+                        ->count();
                 }
             } elseif ($newStatus === 'berjalan') {
                 $tindakLanjut->syncCalculations(fromCascade: true);
@@ -905,15 +932,16 @@ class TindakLanjutController extends Controller
             DB::commit();
 
             $label = $newStatus === 'lunas' ? 'Lunas / Selesai' : 'Berjalan (Proses)';
+
             return redirect()
                 ->route('tindak-lanjuts.show', $tindakLanjut)
                 ->with('success', "Tindak lanjut berhasil diverifikasi sebagai {$label}.");
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Verifikasi OPD error: ' . $e->getMessage());
+            Log::error('Verifikasi OPD error: '.$e->getMessage());
 
-            return back()->with('error', 'Gagal memverifikasi tindak lanjut: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memverifikasi tindak lanjut: '.$e->getMessage());
         }
     }
 
@@ -925,7 +953,9 @@ class TindakLanjutController extends Controller
             $recommendation = $tl->recommendation;
         }
 
-        if (! $recommendation) return;
+        if (! $recommendation) {
+            return;
+        }
 
         $recommendation->refresh();
         $recommendation->load('tindakLanjuts.cicilans');

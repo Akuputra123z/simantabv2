@@ -15,18 +15,16 @@ class ReportService
         return Pdf::loadView('pdf.laporan-lhp', ['record' => $lhp])
             ->setPaper('a4', 'portrait')
             ->setWarnings(false)
-            ->stream('LHP-' . str($lhp->nomor_lhp)->slug() . '.pdf');
+            ->stream('LHP-'.str($lhp->nomor_lhp)->slug().'.pdf');
     }
 
- 
-
-public function renderRekapTabel($ids = null)
+    public function renderRekapTabel($ids = null)
     {
         // Ambil data LHP beserta seluruh hirarki ke bawah
         $query = Lhp::with([
             'temuans.kodeTemuan',
             'temuans.recommendations.kodeRekomendasi', // Tambahkan ini
-            'temuans.recommendations.tindakLanjuts.cicilans'
+            'temuans.recommendations.tindakLanjuts.cicilans',
         ]);
 
         if ($ids) {
@@ -38,22 +36,23 @@ public function renderRekapTabel($ids = null)
         $pdf = Pdf::loadView('pdf.laporan-rekap-tabel', [
             'lhps' => $lhps,
         ])
-        ->setPaper('a4', 'landscape')
-        ->setWarnings(false);
+            ->setPaper('a4', 'landscape')
+            ->setWarnings(false);
 
         return $pdf->stream('Rekap-Tindak-Lanjut.pdf');
     }
-public function renderAll(\Illuminate\Database\Eloquent\Collection $lhps)
-{
-    // Eager Load agar cepat
-    $lhps->load(['statistik']);
 
-    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.laporan-rekap-tabel', [
-        'lhps' => $lhps,
-    ])
-    ->setPaper('a4', 'landscape') // Paksa ke Landscape
-    ->setWarnings(false);
+    public function renderAll(Collection $lhps)
+    {
+        // Eager Load agar cepat
+        $lhps->load(['statistik']);
 
-    return $pdf->stream('Rekapitulasi-LHP.pdf');
-}
+        $pdf = Pdf::loadView('pdf.laporan-rekap-tabel', [
+            'lhps' => $lhps,
+        ])
+            ->setPaper('a4', 'landscape') // Paksa ke Landscape
+            ->setWarnings(false);
+
+        return $pdf->stream('Rekapitulasi-LHP.pdf');
+    }
 }

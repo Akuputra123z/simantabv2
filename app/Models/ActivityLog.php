@@ -89,38 +89,36 @@ class ActivityLog extends Model
         array $properties = []
     ): self {
         return static::create([
-            'log_name'     => $logName,
-            'event'        => $event,
-            'description'  => $description,
+            'log_name' => $logName,
+            'event' => $event,
+            'description' => $description,
             'subject_type' => $subject->getMorphClass(),
-            'subject_id'   => $subject->getKey(),
-            'causer_type'  => $causer?->getMorphClass(),
-            'causer_id'    => $causer?->getKey(),
-            'properties'   => $properties,
+            'subject_id' => $subject->getKey(),
+            'causer_type' => $causer?->getMorphClass(),
+            'causer_id' => $causer?->getKey(),
+            'properties' => $properties,
         ]);
     }
 
     public function getEventLabelAttribute(): string
-{
-    return match ($this->event) {
-        'created' => 'Dibuat',
-        'updated' => 'Diubah',
-        'deleted' => 'Dihapus',
-        'restored' => 'Dipulihkan',
-        default => ucfirst($this->event ?? '-'),
-    };
-}
+    {
+        return match ($this->event) {
+            'created' => 'Dibuat',
+            'updated' => 'Diubah',
+            'deleted' => 'Dihapus',
+            'restored' => 'Dipulihkan',
+            default => ucfirst($this->event ?? '-'),
+        };
+    }
 
-public function getEventColorAttribute(): string
-{
-    return match ($this->event) {
-        'created' => 'success',
-        'updated' => 'info',
-        'deleted' => 'danger',
-        'restored' => 'warning',
-        default => 'gray',
-    };
-}
-
-    
+    public function getEventColorAttribute(): string
+    {
+        return match ($this->event) {
+            'created' => 'success',
+            'updated' => 'info',
+            'deleted' => 'danger',
+            'restored' => 'warning',
+            default => 'gray',
+        };
+    }
 }

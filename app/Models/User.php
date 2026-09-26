@@ -11,7 +11,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     protected $fillable = [
         'name',
@@ -38,19 +38,26 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
-            'is_active'         => 'boolean',
+            'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
     // ── Constants — daftar role yang valid di sistem ───────────────────────────
 
-    public const ROLE_SUPER_ADMIN         = 'super_admin';
-    public const ROLE_KEPALA_INSPEKTORAT  = 'kepala_inspektorat';
-    public const ROLE_KETUA_TIM          = 'ketua_tim';
-    public const ROLE_ANGGOTA            = 'anggota';
-    public const ROLE_STAFF_INSPEKTORAT  = 'staff_inspektorat';
-    public const ROLE_OPD               = 'opd';
+    public const ROLE_SUPER_ADMIN = 'super_admin';
+
+    public const ROLE_KEPALA_INSPEKTORAT = 'kepala_inspektorat';
+
+    public const ROLE_PENGENDALI_TEKNIS = 'pengendali_teknis';
+
+    public const ROLE_KETUA_TIM = 'ketua_tim';
+
+    public const ROLE_ANGGOTA = 'anggota';
+
+    public const ROLE_STAFF_INSPEKTORAT = 'staff_inspektorat';
+
+    public const ROLE_OPD = 'opd';
 
     public const JABATAN_OPTIONS = [
         'Inspektur',
@@ -76,12 +83,13 @@ class User extends Authenticatable
     ];
 
     public const ROLES = [
-        self::ROLE_SUPER_ADMIN        => 'Super Admin',
+        self::ROLE_SUPER_ADMIN => 'Super Admin',
         self::ROLE_KEPALA_INSPEKTORAT => 'Kepala Inspektorat',
-        self::ROLE_KETUA_TIM         => 'Ketua Tim',
-        self::ROLE_ANGGOTA           => 'Anggota',
+        self::ROLE_PENGENDALI_TEKNIS => 'Pengendali Teknis',
+        self::ROLE_KETUA_TIM => 'Ketua Tim',
+        self::ROLE_ANGGOTA => 'Anggota',
         self::ROLE_STAFF_INSPEKTORAT => 'Staff Inspektorat',
-        self::ROLE_OPD               => 'OPD',
+        self::ROLE_OPD => 'OPD',
     ];
 
     // ── Scopes ────────────────────────────────────────────────────────────────
@@ -101,6 +109,7 @@ class User extends Authenticatable
         return $query->role([
             self::ROLE_SUPER_ADMIN,
             self::ROLE_KEPALA_INSPEKTORAT,
+            self::ROLE_PENGENDALI_TEKNIS,
             self::ROLE_KETUA_TIM,
             self::ROLE_ANGGOTA,
             self::ROLE_STAFF_INSPEKTORAT,
@@ -118,22 +127,23 @@ class User extends Authenticatable
      * Inisial nama untuk avatar.
      */
     public function getInitialsAttribute(): string
-{
-    return Str::of($this->name)
-        ->explode(' ')
-        ->map(fn ($n) => Str::substr($n, 0, 1))
-        ->take(2)
-        ->implode('');
-}
+    {
+        return Str::of($this->name)
+            ->explode(' ')
+            ->map(fn ($n) => Str::substr($n, 0, 1))
+            ->take(2)
+            ->implode('');
+    }
 
     /**
      * Label role pertama yang dimiliki user.
      */
     public function getRoleNameAttribute(): string
-{
-    $role = $this->getRoleNames()->first();
-    return self::ROLES[$role] ?? ucfirst(str_replace('_', ' ', $role ?? '-'));
-}
+    {
+        $role = $this->getRoleNames()->first();
+
+        return self::ROLES[$role] ?? ucfirst(str_replace('_', ' ', $role ?? '-'));
+    }
 
     /**
      * Cek apakah user bisa mengakses fitur audit lapangan
@@ -152,8 +162,14 @@ class User extends Authenticatable
         return $this->hasAnyRole([
             self::ROLE_SUPER_ADMIN,
             self::ROLE_KEPALA_INSPEKTORAT,
+            self::ROLE_PENGENDALI_TEKNIS,
             self::ROLE_KETUA_TIM,
         ]);
+    }
+
+    public function isPengendaliTeknis(): bool
+    {
+        return $this->hasRole(self::ROLE_PENGENDALI_TEKNIS);
     }
 
     public function isOpd(): bool

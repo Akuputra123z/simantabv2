@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('nip', 30)->nullable()->unique();
-             $table->string('pangkat_gol', 50)->nullable();
+            $table->string('pangkat_gol', 50)->nullable();
             $table->string('jabatan', 100)->nullable();
             $table->string('pendidikan_terakhir', 150)->nullable(); // PENDIDIKAN TERAKHIR - STUDY
             $table->enum('jenis_kelamin', ['L', 'P']); // L/P

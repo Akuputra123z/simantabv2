@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text('deskripsi')->nullable();
             $table->boolean('is_active')->default(true)->index();
             $table->timestamps();
-        
+
             $table->index(['kode_numerik', 'is_active'], 'rekom_numerik_active_idx');
             // Tidak pakai softDeletes — tabel referensi, cukup is_active
         });

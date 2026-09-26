@@ -2,14 +2,14 @@
 
 namespace Database\Seeders;
 
-use App\Models\Lhp;
-use App\Models\Temuan;
-use App\Models\Recommendation;
-use App\Models\UnitDiperiksa;
-use App\Models\KodeTemuan;
+use App\Models\AuditAssignment;
 use App\Models\KodeRekomendasi;
+use App\Models\KodeTemuan;
+use App\Models\Lhp;
+use App\Models\Recommendation;
+use App\Models\Temuan;
+use App\Models\UnitDiperiksa;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class AgentsDataSeeder extends Seeder
 {
@@ -43,7 +43,7 @@ class AgentsDataSeeder extends Seeder
                     ['nama' => 'DESA NGULAAN', 'jumlah' => 1, 'nilai' => 5890000],
                     ['nama' => 'DESA KETANGGI', 'jumlah' => 1, 'nilai' => 12195600],
                     ['nama' => 'DESA JOHOGUNUNG', 'jumlah' => 1, 'nilai' => 9884946],
-                ]
+                ],
             ],
             // 1.02.00 Potensi Kerugian
             [
@@ -52,7 +52,7 @@ class AgentsDataSeeder extends Seeder
                 'items' => [
                     ['nama' => 'DESA PACING', 'jumlah' => 1, 'nilai' => 16950000],
                     ['nama' => 'DESA KEMADU', 'jumlah' => 1, 'nilai' => 37044500],
-                ]
+                ],
             ],
             // 1.03.00 Kekurangan Penerimaan
             [
@@ -65,7 +65,7 @@ class AgentsDataSeeder extends Seeder
                     ['nama' => 'DESA JURANGJERO', 'jumlah' => 1, 'nilai' => 4102774],
                     ['nama' => 'DESA JADI', 'jumlah' => 1, 'nilai' => 3753201],
                     ['nama' => 'DESA NGULAAN', 'jumlah' => 1, 'nilai' => 1434000],
-                ]
+                ],
             ],
             // 1.04.00 Administrasi
             [
@@ -89,7 +89,7 @@ class AgentsDataSeeder extends Seeder
                     ['nama' => 'DESA JADI', 'jumlah' => 2, 'nilai' => 167284],
                     ['nama' => 'DESA KETANGGI', 'jumlah' => 1, 'nilai' => 8500000],
                     ['nama' => 'DESA JOHOGUNUNG', 'jumlah' => 1, 'nilai' => 1485400],
-                ]
+                ],
             ],
             // 2.01.00 Kelemahan Akuntansi & Pelaporan
             [
@@ -98,7 +98,7 @@ class AgentsDataSeeder extends Seeder
                 'items' => [
                     ['nama' => 'DESA KEMADU', 'jumlah' => 1, 'nilai' => 0],
                     ['nama' => 'DESA JADI', 'jumlah' => 1, 'nilai' => 0],
-                ]
+                ],
             ],
             // 2.02.00 Kelemahan Pelaksanaan Anggaran
             [
@@ -115,7 +115,7 @@ class AgentsDataSeeder extends Seeder
                     ['nama' => 'DESA NGULAAN', 'jumlah' => 1, 'nilai' => 0],
                     ['nama' => 'DESA KETANGGI', 'jumlah' => 1, 'nilai' => 0],
                     ['nama' => 'DESA JOHOGUNUNG', 'jumlah' => 1, 'nilai' => 0],
-                ]
+                ],
             ],
             // 2.03.00 Kelemahan Struktur SPI
             [
@@ -123,23 +123,23 @@ class AgentsDataSeeder extends Seeder
                 'kode_default' => '2.03.01',
                 'items' => [
                     ['nama' => 'DESA JADI', 'jumlah' => 1, 'nilai' => 0],
-                ]
+                ],
             ],
         ];
 
         $defaultKodeRekomendasi = KodeRekomendasi::first()?->id;
 
         foreach ($dataset as $group) {
-            $kodeTemuan = KodeTemuan::where('kode', $group['kode_default'])->first() 
-                        ?? KodeTemuan::where('kode', 'LIKE', substr($group['sub_kel'], 0, 4) . '%')->first();
+            $kodeTemuan = KodeTemuan::where('kode', $group['kode_default'])->first()
+                        ?? KodeTemuan::where('kode', 'LIKE', substr($group['sub_kel'], 0, 4).'%')->first();
 
-            if (!$kodeTemuan) {
+            if (! $kodeTemuan) {
                 continue;
             }
 
             foreach ($group['items'] as $item) {
-                $unit = UnitDiperiksa::where('nama_unit', 'LIKE', '%' . $item['nama'] . '%')->first();
-                if (!$unit) {
+                $unit = UnitDiperiksa::where('nama_unit', 'LIKE', '%'.$item['nama'].'%')->first();
+                if (! $unit) {
                     $unit = UnitDiperiksa::create(['nama_unit' => $item['nama'], 'jenis' => 'desa']);
                 }
 
@@ -148,20 +148,20 @@ class AgentsDataSeeder extends Seeder
                     ->whereYear('tanggal_lhp', 2026)
                     ->first();
 
-                if (!$lhp) {
+                if (! $lhp) {
                     $cleanUnit = str_replace(' ', '', strtoupper($item['nama']));
                     $lhp = Lhp::create([
-                        'audit_assignment_id' => \App\Models\AuditAssignment::first()?->id ?? 1,
-                        'nomor_lhp' => '700/LHP/' . $cleanUnit . '/2026',
-                        'judul' => 'Laporan Hasil Pemeriksaan Pengawasan Keuangan ' . ucwords(strtolower($item['nama'])),
+                        'audit_assignment_id' => AuditAssignment::first()?->id ?? 1,
+                        'nomor_lhp' => '700/LHP/'.$cleanUnit.'/2026',
+                        'judul' => 'Laporan Hasil Pemeriksaan Pengawasan Keuangan '.ucwords(strtolower($item['nama'])),
                         'tanggal_lhp' => '2026-03-15',
                         'unit_diperiksa_id' => $unit->id,
                         'status' => 'selesai',
                     ]);
                 }
 
-                $qty = max(1, (int)$item['jumlah']);
-                $totalNilai = (float)$item['nilai'];
+                $qty = max(1, (int) $item['jumlah']);
+                $totalNilai = (float) $item['nilai'];
                 $unitNilai = round($totalNilai / $qty, 2);
 
                 for ($i = 0; $i < $qty; $i++) {
@@ -173,11 +173,11 @@ class AgentsDataSeeder extends Seeder
                         ->where('nilai_temuan', $nilaiThis)
                         ->exists();
 
-                    if (!$exists) {
+                    if (! $exists) {
                         $temuan = Temuan::create([
                             'lhp_id' => $lhp->id,
                             'kode_temuan_id' => $kodeTemuan->id,
-                            'kondisi' => 'Hasil temuan pengawasan pada ' . $item['nama'] . ' (' . $group['sub_kel'] . ')',
+                            'kondisi' => 'Hasil temuan pengawasan pada '.$item['nama'].' ('.$group['sub_kel'].')',
                             'sebab' => 'Kurang kecermatan dalam pengelolaan keuangan dan administrasi desa',
                             'akibat' => 'Berpotensi menimbulkan ketidakpatuhan atau risiko finansial',
                             'nilai_temuan' => $nilaiThis,
@@ -188,7 +188,7 @@ class AgentsDataSeeder extends Seeder
                         Recommendation::create([
                             'temuan_id' => $temuan->id,
                             'kode_rekomendasi_id' => $defaultKodeRekomendasi,
-                            'uraian_rekom' => 'Agar Kepala ' . ucwords(strtolower($item['nama'])) . ' melakukan penyetoran/penatausahaan administrasi sesuai petunjuk audit.',
+                            'uraian_rekom' => 'Agar Kepala '.ucwords(strtolower($item['nama'])).' melakukan penyetoran/penatausahaan administrasi sesuai petunjuk audit.',
                             'status' => 'proses',
                         ]);
                     }

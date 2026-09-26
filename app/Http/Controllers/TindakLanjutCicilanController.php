@@ -9,9 +9,8 @@ use App\Models\TindakLanjut;
 use App\Models\TindakLanjutCicilan;
 use App\Services\LhpStatistikService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class TindakLanjutCicilanController extends Controller
 {
@@ -29,18 +28,18 @@ class TindakLanjutCicilanController extends Controller
 
         $cicilans = $tindakLanjut->cicilans()
             ->with('diverifikator:id,name')
-            ->withTrashed() 
+            ->withTrashed()
             ->orderBy('ke')
             ->get();
 
         // FIX: Menambahkan key 'total_rencana' dan 'total_realisasi' agar View tidak error
         $summary = [
-            'total_rencana'   => $tindakLanjut->jumlah_cicilan_rencana ?? 0,
+            'total_rencana' => $tindakLanjut->jumlah_cicilan_rencana ?? 0,
             'total_realisasi' => $cicilans->whereNull('deleted_at')->count(),
-            'total_terbayar'  => $tindakLanjut->total_terbayar ?? 0,
-            'sisa'            => $tindakLanjut->sisa_belum_bayar ?? 0,
-            'nilai_rekom'     => $tindakLanjut->recommendation->nilai_rekom ?? 0,
-            'is_uang'         => $tindakLanjut->recommendation?->isUang() ?? true,
+            'total_terbayar' => $tindakLanjut->total_terbayar ?? 0,
+            'sisa' => $tindakLanjut->sisa_belum_bayar ?? 0,
+            'nilai_rekom' => $tindakLanjut->recommendation->nilai_rekom ?? 0,
+            'is_uang' => $tindakLanjut->recommendation?->isUang() ?? true,
         ];
 
         return view('pages.tindak-lanjuts.cicilans.index', compact('tindakLanjut', 'cicilans', 'summary'));
@@ -65,13 +64,13 @@ class TindakLanjutCicilanController extends Controller
         DB::beginTransaction();
         try {
             $data = $request->validated();
-            
+
             // Satukan data dengan default breakdown 0 jika kosong
             $insertData = array_merge($data, [
-                'created_by'           => auth()->id(),
-                'nilai_bayar_negara'   => $request->nilai_bayar_negara ?? 0,
-                'nilai_bayar_daerah'   => $request->nilai_bayar_daerah ?? 0,
-                'nilai_bayar_desa'     => $request->nilai_bayar_desa ?? 0,
+                'created_by' => auth()->id(),
+                'nilai_bayar_negara' => $request->nilai_bayar_negara ?? 0,
+                'nilai_bayar_daerah' => $request->nilai_bayar_daerah ?? 0,
+                'nilai_bayar_desa' => $request->nilai_bayar_desa ?? 0,
                 'nilai_bayar_bos_blud' => $request->nilai_bayar_bos_blud ?? 0,
             ]);
 
@@ -87,7 +86,8 @@ class TindakLanjutCicilanController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Gagal menyimpan cicilan: ' . $e->getMessage());
+            \Log::error('Gagal menyimpan cicilan: '.$e->getMessage());
+
             return back()->withInput()->with('error', 'Gagal menyimpan cicilan. Silakan coba lagi.');
         }
     }
@@ -140,10 +140,10 @@ class TindakLanjutCicilanController extends Controller
         DB::beginTransaction();
         try {
             $cicilan->update(array_merge($request->validated(), [
-                'updated_by'           => auth()->id(),
-                'nilai_bayar_negara'   => $request->nilai_bayar_negara   ?? 0,
-                'nilai_bayar_daerah'   => $request->nilai_bayar_daerah   ?? 0,
-                'nilai_bayar_desa'     => $request->nilai_bayar_desa     ?? 0,
+                'updated_by' => auth()->id(),
+                'nilai_bayar_negara' => $request->nilai_bayar_negara ?? 0,
+                'nilai_bayar_daerah' => $request->nilai_bayar_daerah ?? 0,
+                'nilai_bayar_desa' => $request->nilai_bayar_desa ?? 0,
                 'nilai_bayar_bos_blud' => $request->nilai_bayar_bos_blud ?? 0,
             ]));
 
@@ -157,7 +157,8 @@ class TindakLanjutCicilanController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Gagal memperbarui cicilan: ' . $e->getMessage());
+            \Log::error('Gagal memperbarui cicilan: '.$e->getMessage());
+
             return back()->withInput()->with('error', 'Gagal memperbarui cicilan. Silakan coba lagi.');
         }
     }
@@ -171,11 +172,11 @@ class TindakLanjutCicilanController extends Controller
         DB::beginTransaction();
         try {
             $cicilan->update([
-                'status'             => $request->status,
-                'diverifikasi_oleh'  => auth()->id(),
-                'diverifikasi_pada'  => now(),
+                'status' => $request->status,
+                'diverifikasi_oleh' => auth()->id(),
+                'diverifikasi_pada' => now(),
                 'catatan_verifikasi' => $request->catatan_verifikasi,
-                'updated_by'         => auth()->id(),
+                'updated_by' => auth()->id(),
             ]);
 
             DB::commit();
@@ -183,13 +184,15 @@ class TindakLanjutCicilanController extends Controller
             $this->updateGlobalStatistik($tindakLanjut);
 
             $label = $request->status === 'diterima' ? 'diterima' : 'ditolak';
+
             return redirect()
                 ->route('tindak-lanjuts.cicilans.index', $tindakLanjut)
                 ->with('success', "Cicilan ke-{$cicilan->ke} berhasil {$label}.");
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Gagal memverifikasi cicilan: ' . $e->getMessage());
+            \Log::error('Gagal memverifikasi cicilan: '.$e->getMessage());
+
             return back()->with('error', 'Gagal memverifikasi cicilan. Silakan coba lagi.');
         }
     }
@@ -216,22 +219,22 @@ class TindakLanjutCicilanController extends Controller
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-   private function updateGlobalStatistik(TindakLanjut $tindakLanjut): void
-{
-    // ✅ Refresh TL dari DB agar relasi cicilan terbaru terbaca
-    $tindakLanjut->refresh();
-    $tindakLanjut->load('recommendation.tindakLanjuts.cicilans');
+    private function updateGlobalStatistik(TindakLanjut $tindakLanjut): void
+    {
+        // ✅ Refresh TL dari DB agar relasi cicilan terbaru terbaca
+        $tindakLanjut->refresh();
+        $tindakLanjut->load('recommendation.tindakLanjuts.cicilans');
 
-    $recommendation = $tindakLanjut->recommendation;
-    if ($recommendation) {
-        // Sync recommendation: update status, nilai_tl_selesai, nilai_sisa
-        // sekaligus trigger temuan->syncStatus()
-        $recommendation->syncStatus();
-    }
+        $recommendation = $tindakLanjut->recommendation;
+        if ($recommendation) {
+            // Sync recommendation: update status, nilai_tl_selesai, nilai_sisa
+            // sekaligus trigger temuan->syncStatus()
+            $recommendation->syncStatus();
+        }
 
-    $lhpId = $recommendation?->temuan?->lhp_id;
-    if ($lhpId) {
-        $this->statistikService->updateStatistik($lhpId);
+        $lhpId = $recommendation?->temuan?->lhp_id;
+        if ($lhpId) {
+            $this->statistikService->updateStatistik($lhpId);
+        }
     }
-}
 }

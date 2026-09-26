@@ -23,16 +23,16 @@ class OpdProfileController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'name'                 => ['required', 'string', 'max:255'],
-            'email'                => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
-            'nip'                  => ['nullable', 'string', 'max:50'],
-            'pangkat_gol'          => ['nullable', 'string', 'max:50'],
-            'jabatan'              => ['nullable', 'string', 'max:255'],
-            'pendidikan_terakhir'  => ['nullable', 'string', 'max:100'],
-            'jenis_kelamin'        => ['nullable', 'string', 'in:L,P'],
-            'unit_kerja'           => ['nullable', 'string', 'max:255'],
-            'phone'                => ['nullable', 'string', 'max:20'],
-            'avatar'               => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
+            'nip' => ['nullable', 'string', 'max:50'],
+            'pangkat_gol' => ['nullable', 'string', 'max:50'],
+            'jabatan' => ['nullable', 'string', 'max:255'],
+            'pendidikan_terakhir' => ['nullable', 'string', 'max:100'],
+            'jenis_kelamin' => ['nullable', 'string', 'in:L,P'],
+            'unit_kerja' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         if ($request->hasFile('avatar')) {

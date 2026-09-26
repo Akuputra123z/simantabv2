@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attachment;
 use App\Models\KodeTemuan;
 use App\Models\Lhp;
 use App\Models\Recommendation;
@@ -10,56 +11,57 @@ use App\Services\LhpStatistikService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class TemuanController extends Controller
 {
     public function __construct(private LhpStatistikService $statistikService) {}
 
-   public function index(Request $request)
-{
-    // 1. Gunakan withCount jika Anda hanya ingin menampilkan jumlah rekomendasi di tabel.
-    // 2. Gunakan select() untuk hanya mengambil kolom yang diperlukan (opsional, tapi bagus untuk performa).
-    $query = Temuan::query()
-        ->with(['lhp:id,nomor_lhp', 'kodeTemuan:id,kode,uraian']) 
-        ->withCount('recommendations');
+    public function index(Request $request)
+    {
+        // 1. Gunakan withCount jika Anda hanya ingin menampilkan jumlah rekomendasi di tabel.
+        // 2. Gunakan select() untuk hanya mengambil kolom yang diperlukan (opsional, tapi bagus untuk performa).
+        $query = Temuan::query()
+            ->with(['lhp:id,nomor_lhp', 'kodeTemuan:id,kode,uraian'])
+            ->withCount('recommendations');
 
-    // 3. Gunakan when() agar kode lebih bersih daripada if-statement manual.
-    $query->when($request->filled('lhp_id'), function ($q) use ($request) {
-        $q->where('lhp_id', $request->lhp_id);
-    });
-
-    $query->when($request->filled('unit_diperiksa_id'), function ($q) use ($request) {
-        $q->whereHas('lhp', fn($lhp) => $lhp->where('unit_diperiksa_id', $request->unit_diperiksa_id));
-    });
-
-    // 4. Tambahkan fitur pencarian sederhana untuk meningkatkan UX.
-    $query->when($request->filled('search'), function ($q) use ($request) {
-        $search = $request->search;
-        $q->where(function($sub) use ($search) {
-            $sub->where('kondisi', 'like', '%' . $search . '%')
-                ->orWhereHas('lhp.unitDiperiksa', fn($u) => $u->where('nama_unit', 'like', '%' . $search . '%'))
-                ->orWhereHas('lhp', fn($l) => $l->where('nomor_lhp', 'like', '%' . $search . '%'));
+        // 3. Gunakan when() agar kode lebih bersih daripada if-statement manual.
+        $query->when($request->filled('lhp_id'), function ($q) use ($request) {
+            $q->where('lhp_id', $request->lhp_id);
         });
-    });
 
-    // 5. withQueryString() memastikan pagination tidak hilang saat user melakukan filter/search.
-    $temuans = $query->latest()->paginate(10)->withQueryString();
+        $query->when($request->filled('unit_diperiksa_id'), function ($q) use ($request) {
+            $q->whereHas('lhp', fn ($lhp) => $lhp->where('unit_diperiksa_id', $request->unit_diperiksa_id));
+        });
 
-    return view('pages.temuan.index', compact('temuans'));
-}
+        // 4. Tambahkan fitur pencarian sederhana untuk meningkatkan UX.
+        $query->when($request->filled('search'), function ($q) use ($request) {
+            $search = $request->search;
+            $q->where(function ($sub) use ($search) {
+                $sub->where('kondisi', 'like', '%'.$search.'%')
+                    ->orWhereHas('lhp.unitDiperiksa', fn ($u) => $u->where('nama_unit', 'like', '%'.$search.'%'))
+                    ->orWhereHas('lhp', fn ($l) => $l->where('nomor_lhp', 'like', '%'.$search.'%'));
+            });
+        });
+
+        // 5. withQueryString() memastikan pagination tidak hilang saat user melakukan filter/search.
+        $temuans = $query->latest()->paginate(10)->withQueryString();
+
+        return view('pages.temuan.index', compact('temuans'));
+    }
 
     public function create(Request $request)
     {
         $lhpId = $request->query('lhp_id');
-        $lhp   = Lhp::findOrFail($lhpId);
+        $lhp = Lhp::findOrFail($lhpId);
 
         $kodeTemuans = KodeTemuan::orderBy('kode', 'asc')->get();
-        $kodeTemuanOptions = $kodeTemuans->map(fn($k) => [
-            'id'          => $k->id,
-            'kode'        => $k->kode,
-            'kelompok'    => $k->kelompok,
+        $kodeTemuanOptions = $kodeTemuans->map(fn ($k) => [
+            'id' => $k->id,
+            'kode' => $k->kode,
+            'kelompok' => $k->kelompok,
             'subKelompok' => $k->sub_kelompok,
-            'deskripsi'   => $k->deskripsi,
+            'deskripsi' => $k->deskripsi,
         ])->values();
 
         return view('pages.temuan.create', compact('lhp', 'kodeTemuans', 'kodeTemuanOptions'));
@@ -68,29 +70,29 @@ class TemuanController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'lhp_id'                  => 'required|exists:lhps,id',
-            'kode_temuan_id'          => 'required|exists:kode_temuans,id',
-            'kondisi'                 => 'required|string',
-            'sebab'                   => 'nullable|string',
-            'akibat'                  => 'nullable|string',
-            'nilai_temuan'            => 'nullable|numeric|min:0',
-            'nilai_kerugian_negara'   => 'nullable|numeric|min:0',
-            'nilai_kerugian_daerah'   => 'nullable|numeric|min:0',
-            'nilai_kerugian_desa'     => 'nullable|numeric|min:0',
+            'lhp_id' => 'required|exists:lhps,id',
+            'kode_temuan_id' => 'required|exists:kode_temuans,id',
+            'kondisi' => 'required|string',
+            'sebab' => 'nullable|string',
+            'akibat' => 'nullable|string',
+            'nilai_temuan' => 'nullable|numeric|min:0',
+            'nilai_kerugian_negara' => 'nullable|numeric|min:0',
+            'nilai_kerugian_daerah' => 'nullable|numeric|min:0',
+            'nilai_kerugian_desa' => 'nullable|numeric|min:0',
             'nilai_kerugian_bos_blud' => 'nullable|numeric|min:0',
-            'nama_barang'             => 'nullable|string',
-            'jumlah_barang'           => 'nullable|numeric|min:0',
-            'kondisi_barang'          => 'nullable|string',
-            'lokasi_barang'           => 'nullable|string',
-            'attachments.*.file'      => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'attachments.*.name'      => 'nullable|string',
+            'nama_barang' => 'nullable|string',
+            'jumlah_barang' => 'nullable|numeric|min:0',
+            'kondisi_barang' => 'nullable|string',
+            'lokasi_barang' => 'nullable|string',
+            'attachments.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'attachments.*.name' => 'nullable|string',
         ]);
 
         try {
             DB::beginTransaction();
-            $validated['nilai_temuan'] = ($validated['nilai_kerugian_negara'] ?? 0) + 
-                             ($validated['nilai_kerugian_daerah'] ?? 0) + 
-                             ($validated['nilai_kerugian_desa'] ?? 0) + 
+            $validated['nilai_temuan'] = ($validated['nilai_kerugian_negara'] ?? 0) +
+                             ($validated['nilai_kerugian_daerah'] ?? 0) +
+                             ($validated['nilai_kerugian_desa'] ?? 0) +
                              ($validated['nilai_kerugian_bos_blud'] ?? 0);
 
             $temuan = Temuan::create($validated);
@@ -100,10 +102,10 @@ class TemuanController extends Controller
                     if (isset($attach['file'])) {
                         $path = $attach['file']->store('attachments/temuan', 'local');
                         $temuan->attachments()->create([
-                            'file_path'   => $path,
-                            'file_name'   => $attach['name'] ?? $attach['file']->getClientOriginalName(),
+                            'file_path' => $path,
+                            'file_name' => $attach['name'] ?? $attach['file']->getClientOriginalName(),
                             'jenis_bukti' => 'temuan',
-                            'urutan'      => $index,
+                            'urutan' => $index,
                         ]);
                     }
                 }
@@ -119,7 +121,8 @@ class TemuanController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error Store Temuan: ' . $e->getMessage());
+            Log::error('Error Store Temuan: '.$e->getMessage());
+
             return back()->withInput()->with('error', 'Gagal menyimpan temuan.');
         }
     }
@@ -133,180 +136,182 @@ class TemuanController extends Controller
 
     public function edit(Temuan $temuan)
     {
-        $lhp         = $temuan->lhp;
+        $lhp = $temuan->lhp;
         $kodeTemuans = KodeTemuan::orderBy('kode', 'asc')->get();
         $temuan->load('attachments');
 
         return view('pages.temuan.edit', compact('temuan', 'lhp', 'kodeTemuans'));
     }
 
-public function update(Request $request, Temuan $temuan)
-{
-    $validated = $request->validate([
-        'kode_temuan_id'          => 'required|exists:kode_temuans,id',
-        'kondisi'                 => 'required|string',
-        'sebab'                   => 'nullable|string',
-        'akibat'                  => 'nullable|string',
-        'nilai_kerugian_negara'   => 'nullable|numeric|min:0',
-        'nilai_kerugian_daerah'   => 'nullable|numeric|min:0',
-        'nilai_kerugian_desa'     => 'nullable|numeric|min:0',
-        'nilai_kerugian_bos_blud' => 'nullable|numeric|min:0',
-        'nama_barang'             => 'nullable|string',
-        'jumlah_barang'           => 'nullable|numeric|min:0',
-        'kondisi_barang'          => 'nullable|string',
-        'lokasi_barang'           => 'nullable|string',
-        'attachments.*.file'      => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
-        'attachments.*.name'      => 'nullable|string',
-        'new_attachments.*'       => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
-    ]);
-
-    try {
-        DB::beginTransaction();
-
-        $totalNilaiBaru = (float)($validated['nilai_kerugian_negara']   ?? 0)
-                        + (float)($validated['nilai_kerugian_daerah']   ?? 0)
-                        + (float)($validated['nilai_kerugian_desa']     ?? 0)
-                        + (float)($validated['nilai_kerugian_bos_blud'] ?? 0);
-
-        $nilaiLama = (float) $temuan->nilai_temuan;
-        $isChanged = abs($nilaiLama - $totalNilaiBaru) > 0.01;
-
-        $validated['nilai_temuan'] = $totalNilaiBaru;
-        $temuan->update($validated);
-
-      if ($isChanged) {
-    $temuan->load('recommendations.tindakLanjuts.cicilans');
-
-    foreach ($temuan->recommendations as $rekom) {
-        
-        // ✅ Reset status rekomendasi ke nilai enum yang valid
-        $rekom->update([
-            'status'           => Recommendation::STATUS_BELUM, // konstanta yang sudah ada
-            'nilai_tl_selesai' => 0,
-            // ❌ JANGAN reset nilai_rekom — itu target bayar per rekom, bukan total temuan
+    public function update(Request $request, Temuan $temuan)
+    {
+        $validated = $request->validate([
+            'kode_temuan_id' => 'required|exists:kode_temuans,id',
+            'kondisi' => 'required|string',
+            'sebab' => 'nullable|string',
+            'akibat' => 'nullable|string',
+            'nilai_kerugian_negara' => 'nullable|numeric|min:0',
+            'nilai_kerugian_daerah' => 'nullable|numeric|min:0',
+            'nilai_kerugian_desa' => 'nullable|numeric|min:0',
+            'nilai_kerugian_bos_blud' => 'nullable|numeric|min:0',
+            'nama_barang' => 'nullable|string',
+            'jumlah_barang' => 'nullable|numeric|min:0',
+            'kondisi_barang' => 'nullable|string',
+            'lokasi_barang' => 'nullable|string',
+            'attachments.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'attachments.*.name' => 'nullable|string',
+            'new_attachments.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
-        foreach ($rekom->tindakLanjuts as $tl) {
-            
-            if ($tl->jenis_penyelesaian === 'cicilan') {
-                // ✅ Reset cicilan: kembalikan status ke 'menunggu' (bukan 'diterima')
-                $tl->cicilans()->update([
-                    'status'             => 'menunggu', // enum valid di TindakLanjutCicilan
-                    'diverifikasi_oleh'  => null,
-                    'diverifikasi_pada'  => null,
-                    'catatan_verifikasi' => null,
-                ]);
-            }
-            
-            // ✅ Reset TL ke enum yang valid sesuai TindakLanjutController
-            $tl->update([
-                'status_verifikasi' => 'menunggu_verifikasi', // ✅ bukan 'menunggu' atau 'berjalan'
-                'nilai_tindak_lanjut' => 0,
-            ]);
-        }
-    }
+        try {
+            DB::beginTransaction();
 
-    // ✅ Sinkronkan status_tl di level Temuan
-    $temuan->fresh(['recommendations'])->syncStatus();
-}
+            $totalNilaiBaru = (float) ($validated['nilai_kerugian_negara'] ?? 0)
+                            + (float) ($validated['nilai_kerugian_daerah'] ?? 0)
+                            + (float) ($validated['nilai_kerugian_desa'] ?? 0)
+                            + (float) ($validated['nilai_kerugian_bos_blud'] ?? 0);
 
-        if ($request->has('attachments')) {
-            $this->uploadAttachments($temuan, $request->attachments);
-        }
+            $nilaiLama = (float) $temuan->nilai_temuan;
+            $isChanged = abs($nilaiLama - $totalNilaiBaru) > 0.01;
 
-        // Hapus attachment yang dicentang
-        if ($request->has('delete_attachments')) {
-            $deletes = \App\Models\Attachment::whereIn('id', $request->delete_attachments)
-                ->where('attachable_id', $temuan->id)
-                ->where('attachable_type', get_class($temuan))
-                ->get();
-            foreach ($deletes as $att) {
-                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($att->file_path)) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($att->file_path);
-                }
-                $att->delete();
-            }
-        }
+            $validated['nilai_temuan'] = $totalNilaiBaru;
+            $temuan->update($validated);
 
-        // Upload file baru
-        if ($request->hasFile('new_attachments')) {
-            $existingCount = $temuan->attachments()->count();
-            foreach ($request->file('new_attachments') as $i => $file) {
-                if ($file && $file->isValid()) {
-                    $path = $file->store('attachments/temuan', 'local');
-                    $temuan->attachments()->create([
-                        'file_path'   => $path,
-                        'file_name'   => $file->getClientOriginalName(),
-                        'jenis_bukti' => 'temuan',
-                        'urutan'      => $existingCount + $i,
+            if ($isChanged) {
+                $temuan->load('recommendations.tindakLanjuts.cicilans');
+
+                foreach ($temuan->recommendations as $rekom) {
+
+                    // ✅ Reset status rekomendasi ke nilai enum yang valid
+                    $rekom->update([
+                        'status' => Recommendation::STATUS_BELUM, // konstanta yang sudah ada
+                        'nilai_tl_selesai' => 0,
+                        // ❌ JANGAN reset nilai_rekom — itu target bayar per rekom, bukan total temuan
                     ]);
-                }
-            }
-        }
 
-        DB::commit();
+                    foreach ($rekom->tindakLanjuts as $tl) {
 
-        // 🔥 WAJIB: Hitung ulang statistik LHP agar Progress Bar di dashboard berubah
-        $this->statistikService->updateStatistik($temuan->lhp_id);
+                        if ($tl->jenis_penyelesaian === 'cicilan') {
+                            // ✅ Reset cicilan: kembalikan status ke 'menunggu_verifikasi'
+                            $tl->cicilans()->update([
+                                'status' => \App\Models\TindakLanjutCicilan::STATUS_MENUNGGU,
+                                'diverifikasi_oleh' => null,
+                                'diverifikasi_pada' => null,
+                                'catatan_verifikasi' => null,
+                            ]);
+                        }
 
-        return redirect()->route('lhps.show', $temuan->lhp_id)
-            ->with('success', 'Temuan diperbarui. Progres dihitung ulang berdasarkan nilai baru.');
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error Update Temuan: ' . $e->getMessage());
-        return back()->withInput()->with('error', 'Gagal memperbarui: ' . $e->getMessage());
-    }
-}
-
-   public function destroy(Temuan $temuan)
-{
-    $lhpId = $temuan->lhp_id;
-
-    try {
-        DB::beginTransaction();
-
-        // 1. Hapus file fisik dan data attachment dari DB
-        foreach ($temuan->attachments as $file) {
-            // Hapus dari Storage
-            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($file->file_path)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($file->file_path);
-            }
-            // Hapus record attachment (jika tidak cascade)
-            $file->delete();
-        }
-
-        // 2. Hapus anak rekomendasi beserta tindak lanjut dan cicilannya
-        foreach ($temuan->recommendations as $rec) {
-            foreach ($rec->tindakLanjuts as $tl) {
-                foreach ($tl->attachments as $file) {
-                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($file->file_path)) {
-                        \Illuminate\Support\Facades\Storage::disk('public')->delete($file->file_path);
+                        // ✅ Reset TL ke enum yang valid sesuai TindakLanjutController
+                        $tl->update([
+                            'status_verifikasi' => 'menunggu_verifikasi', // ✅ bukan 'menunggu' atau 'berjalan'
+                            'nilai_tindak_lanjut' => 0,
+                        ]);
                     }
-                    $file->delete();
                 }
-                $tl->cicilans()->delete();
-                $tl->delete();
+
+                // ✅ Sinkronkan status_tl di level Temuan
+                $temuan->fresh(['recommendations'])->syncStatus();
             }
-            $rec->delete();
+
+            if ($request->has('attachments')) {
+                $this->uploadAttachments($temuan, $request->attachments);
+            }
+
+            // Hapus attachment yang dicentang
+            if ($request->has('delete_attachments')) {
+                $deletes = Attachment::whereIn('id', $request->delete_attachments)
+                    ->where('attachable_id', $temuan->id)
+                    ->where('attachable_type', get_class($temuan))
+                    ->get();
+                foreach ($deletes as $att) {
+                    if (Storage::disk('public')->exists($att->file_path)) {
+                        Storage::disk('public')->delete($att->file_path);
+                    }
+                    $att->delete();
+                }
+            }
+
+            // Upload file baru
+            if ($request->hasFile('new_attachments')) {
+                $existingCount = $temuan->attachments()->count();
+                foreach ($request->file('new_attachments') as $i => $file) {
+                    if ($file && $file->isValid()) {
+                        $path = $file->store('attachments/temuan', 'local');
+                        $temuan->attachments()->create([
+                            'file_path' => $path,
+                            'file_name' => $file->getClientOriginalName(),
+                            'jenis_bukti' => 'temuan',
+                            'urutan' => $existingCount + $i,
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            // 🔥 WAJIB: Hitung ulang statistik LHP agar Progress Bar di dashboard berubah
+            $this->statistikService->updateStatistik($temuan->lhp_id);
+
+            return redirect()->route('lhps.show', $temuan->lhp_id)
+                ->with('success', 'Temuan diperbarui. Progres dihitung ulang berdasarkan nilai baru.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error Update Temuan: '.$e->getMessage());
+
+            return back()->withInput()->with('error', 'Gagal memperbarui: '.$e->getMessage());
         }
-
-        // 3. Hapus data Temuan
-        $temuan->delete();
-
-        DB::commit();
-
-        // 3. Update statistik
-        $this->statistikService->updateStatistik($lhpId);
-
-        return redirect()->route('lhps.show', $lhpId)
-            ->with('success', 'Temuan dan file lampiran berhasil dihapus.');
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
     }
-}
+
+    public function destroy(Temuan $temuan)
+    {
+        $lhpId = $temuan->lhp_id;
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Hapus file fisik dan data attachment dari DB
+            foreach ($temuan->attachments as $file) {
+                // Hapus dari Storage
+                if (Storage::disk('public')->exists($file->file_path)) {
+                    Storage::disk('public')->delete($file->file_path);
+                }
+                // Hapus record attachment (jika tidak cascade)
+                $file->delete();
+            }
+
+            // 2. Hapus anak rekomendasi beserta tindak lanjut dan cicilannya
+            foreach ($temuan->recommendations as $rec) {
+                foreach ($rec->tindakLanjuts as $tl) {
+                    foreach ($tl->attachments as $file) {
+                        if (Storage::disk('public')->exists($file->file_path)) {
+                            Storage::disk('public')->delete($file->file_path);
+                        }
+                        $file->delete();
+                    }
+                    $tl->cicilans()->delete();
+                    $tl->delete();
+                }
+                $rec->delete();
+            }
+
+            // 3. Hapus data Temuan
+            $temuan->delete();
+
+            DB::commit();
+
+            // 3. Update statistik
+            $this->statistikService->updateStatistik($lhpId);
+
+            return redirect()->route('lhps.show', $lhpId)
+                ->with('success', 'Temuan dan file lampiran berhasil dihapus.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return back()->with('error', 'Gagal menghapus data: '.$e->getMessage());
+        }
+    }
 
     private function uploadAttachments($temuan, $attachments)
     {
@@ -314,12 +319,12 @@ public function update(Request $request, Temuan $temuan)
             if (isset($attach['file'])) {
                 $path = $attach['file']->store('attachments/temuan', 'local');
                 $temuan->attachments()->create([
-                    'file_path'   => $path,
-                'file_name'   => $attach['name'] ?? $attach['file']->getClientOriginalName(),
-                'jenis_bukti' => 'temuan',
-                'urutan'      => $index,
-            ]);
+                    'file_path' => $path,
+                    'file_name' => $attach['name'] ?? $attach['file']->getClientOriginalName(),
+                    'jenis_bukti' => 'temuan',
+                    'urutan' => $index,
+                ]);
+            }
         }
     }
-}
 }

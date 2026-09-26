@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('nama_program', 255); // Contoh: PKPT 2026
             $table->year('tahun')->index();
             $table->string('status', 20)->default('draft'); // Status agregat dari detailnya
-            
+
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

@@ -2,17 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\HasActivityLog;
 use App\Traits\HasAttachments;
 use App\Traits\HasCreatedUpdatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Traits\HasActivityLog;
 
 class TindakLanjut extends Model
 {
-    use SoftDeletes, HasCreatedUpdatedBy, HasAttachments, HasActivityLog;
+    use HasActivityLog, HasAttachments, HasCreatedUpdatedBy, SoftDeletes;
 
     protected static $logExcept = ['created_by', 'updated_by', 'created_at', 'updated_at', 'deleted_at'];
 
@@ -32,25 +32,25 @@ class TindakLanjut extends Model
     protected function casts(): array
     {
         return [
-            'is_cicilan'                => 'boolean',
-            'jumlah_cicilan_rencana'    => 'integer',
-            'jumlah_cicilan_realisasi'  => 'integer',
-            'tanggal_mulai_cicilan'     => 'date',
-            'tanggal_jatuh_tempo'       => 'date',
-            'nilai_tindak_lanjut'       => 'decimal:2',
+            'is_cicilan' => 'boolean',
+            'jumlah_cicilan_rencana' => 'integer',
+            'jumlah_cicilan_realisasi' => 'integer',
+            'tanggal_mulai_cicilan' => 'date',
+            'tanggal_jatuh_tempo' => 'date',
+            'nilai_tindak_lanjut' => 'decimal:2',
             'nilai_per_cicilan_rencana' => 'decimal:2',
-            'total_terbayar'            => 'decimal:2',
-            'sisa_belum_bayar'          => 'decimal:2',
-            'diverifikasi_pada'         => 'datetime',
-            'dikirim_pada'              => 'datetime',
+            'total_terbayar' => 'decimal:2',
+            'sisa_belum_bayar' => 'decimal:2',
+            'diverifikasi_pada' => 'datetime',
+            'dikirim_pada' => 'datetime',
         ];
     }
 
     protected $attributes = [
         'nilai_tindak_lanjut' => 0,
-        'total_terbayar'      => 0,
-        'sisa_belum_bayar'    => 0,
-        'status_verifikasi'   => 'menunggu_verifikasi',
+        'total_terbayar' => 0,
+        'sisa_belum_bayar' => 0,
+        'status_verifikasi' => 'menunggu_verifikasi',
     ];
 
     // ── Relationships ─────────────────────────────────────────────────────────
@@ -90,9 +90,9 @@ class TindakLanjut extends Model
 
         return $query->whereHas('recommendation.temuan.lhp.auditAssignment', function ($q) use ($user) {
             $q->where('ketua_tim_id', $user->id)
-              ->orWhereHas('members', function ($q2) use ($user) {
-                  $q2->where('audit_assignment_members.user_id', $user->id);
-              });
+                ->orWhereHas('members', function ($q2) use ($user) {
+                    $q2->where('audit_assignment_members.user_id', $user->id);
+                });
         });
     }
 
@@ -137,15 +137,15 @@ class TindakLanjut extends Model
         $query->when($filters['search'] ?? null, function ($query, $search) {
             $query->where(function ($q) use ($search) {
                 // Cari di tabel tindak_lanjuts sendiri (catatan)
-                $q->where('catatan_tl', 'like', '%' . $search . '%')
+                $q->where('catatan_tl', 'like', '%'.$search.'%')
                   // Atau cari di relasi Recommendation (uraian_rekom)
-                  ->orWhereHas('recommendation', function ($qRekom) use ($search) {
-                      $qRekom->where('uraian_rekom', 'like', '%' . $search . '%')
-                             // Atau cari di relasi Temuan -> LHP (nomor_lhp)
-                             ->orWhereHas('temuan.lhp', function ($qLhp) use ($search) {
-                                 $qLhp->where('nomor_lhp', 'like', '%' . $search . '%');
-                             });
-                  });
+                    ->orWhereHas('recommendation', function ($qRekom) use ($search) {
+                        $qRekom->where('uraian_rekom', 'like', '%'.$search.'%')
+                               // Atau cari di relasi Temuan -> LHP (nomor_lhp)
+                            ->orWhereHas('temuan.lhp', function ($qLhp) use ($search) {
+                                $qLhp->where('nomor_lhp', 'like', '%'.$search.'%');
+                            });
+                    });
             });
         });
 
@@ -174,12 +174,12 @@ class TindakLanjut extends Model
         }
 
         $nilaiRekom = (float) ($rekom->nilai_rekom ?? 0);
-        $nilaiTl    = (float) ($this->nilai_tindak_lanjut ?? 0);
+        $nilaiTl = (float) ($this->nilai_tindak_lanjut ?? 0);
 
         if ($nilaiRekom > 0 && $nilaiTl > $nilaiRekom) {
             throw new \InvalidArgumentException(
-                'Nilai tindak lanjut (Rp ' . number_format($nilaiTl, 0, ',', '.') . ') ' .
-                'tidak boleh melebihi nilai rekomendasi (Rp ' . number_format($nilaiRekom, 0, ',', '.') . ').'
+                'Nilai tindak lanjut (Rp '.number_format($nilaiTl, 0, ',', '.').') '.
+                'tidak boleh melebihi nilai rekomendasi (Rp '.number_format($nilaiRekom, 0, ',', '.').').'
             );
         }
     }
@@ -202,7 +202,7 @@ class TindakLanjut extends Model
      */
     public function syncCalculations(bool $fromCascade = false): static
     {
-        $rekom     = $this->recommendation;
+        $rekom = $this->recommendation;
         $isNonUang = $rekom?->isNonUang() ?? false;
         $isCicilan = $this->jenis_penyelesaian === 'cicilan';
 
@@ -211,13 +211,13 @@ class TindakLanjut extends Model
             // Status ditentukan sepenuhnya oleh user (tidak di-override).
             // Hanya mapping sisa/terbayar untuk konsistensi data.
             $isLunas = $this->status_verifikasi === 'lunas';
-            $this->total_terbayar           = $isLunas ? 1 : 0;
-            $this->sisa_belum_bayar         = $isLunas ? 0 : 1;
+            $this->total_terbayar = $isLunas ? 1 : 0;
+            $this->sisa_belum_bayar = $isLunas ? 0 : 1;
             $this->jumlah_cicilan_realisasi = 0;
 
         } else {
             // ── UANG ──────────────────────────────────────────────────────────
-            $nilaiRekom  = (float) ($rekom?->nilai_rekom ?? 0);
+            $nilaiRekom = (float) ($rekom?->nilai_rekom ?? 0);
             $targetNilai = (float) ($this->nilai_tindak_lanjut > 0
                             ? $this->nilai_tindak_lanjut
                             : $nilaiRekom);
@@ -226,7 +226,7 @@ class TindakLanjut extends Model
                 // Total terbayar dari cicilan yang diterima (selalu dihitung dari DB)
                 $terbayar = (float) $this->cicilanDiterima()->sum('nilai_bayar');
                 // Cap total_terbayar agar tidak melebihi target → mencegah progress > 100%
-                $this->total_terbayar           = min($terbayar, $targetNilai);
+                $this->total_terbayar = min($terbayar, $targetNilai);
                 $this->jumlah_cicilan_realisasi = $this->cicilanDiterima()->count();
             } else {
                 // Jenis langsung: jika user set status = lunas, terbayar = target
@@ -271,17 +271,23 @@ class TindakLanjut extends Model
     public function progress(): float
     {
         $rekom = $this->recommendation;
-        if (! $rekom) return 0;
+        if (! $rekom) {
+            return 0;
+        }
 
         if ($rekom->isNonUang()) {
             return $this->status_verifikasi === 'lunas' ? 100 : 0;
         }
 
-        if ($this->status_verifikasi === 'lunas') return 100;
+        if ($this->status_verifikasi === 'lunas') {
+            return 100;
+        }
 
         $nilaiRekom = (float) ($rekom->nilai_rekom ?? 0);
 
-        if ($nilaiRekom <= 0) return 0;
+        if ($nilaiRekom <= 0) {
+            return 0;
+        }
 
         return min(100, round($this->total_terbayar / $nilaiRekom * 100, 2));
     }

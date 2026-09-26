@@ -13,7 +13,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class UnitDiperiksaExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithTitle
+class UnitDiperiksaExport implements FromCollection, WithColumnWidths, WithHeadings, WithStyles, WithTitle
 {
     public function __construct(private Collection $units) {}
 
@@ -26,13 +26,13 @@ class UnitDiperiksaExport implements FromCollection, WithHeadings, WithStyles, W
     {
         return $this->units->map(function ($u, $i) {
             return [
-                'no'             => $i + 1,
-                'nama_unit'      => $u->nama_unit ?? '-',
-                'kategori'       => $u->kategori ?? '-',
+                'no' => $i + 1,
+                'nama_unit' => $u->nama_unit ?? '-',
+                'kategori' => $u->kategori ?? '-',
                 'nama_kecamatan' => $u->nama_kecamatan ?? '-',
-                'alamat'         => $u->alamat ?? '-',
-                'telepon'        => $u->telepon ?? '-',
-                'keterangan'     => $u->keterangan ?? '-',
+                'alamat' => $u->alamat ?? '-',
+                'telepon' => $u->telepon ?? '-',
+                'keterangan' => $u->keterangan ?? '-',
             ];
         });
     }
@@ -70,16 +70,16 @@ class UnitDiperiksaExport implements FromCollection, WithHeadings, WithStyles, W
         // Header style
         $sheet->getStyle('A1:G1')->applyFromArray([
             'font' => [
-                'bold'  => true,
+                'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
-                'size'  => 11,
+                'size' => 11,
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical'   => Alignment::VERTICAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
             ],
             'fill' => [
-                'fillType'   => Fill::FILL_SOLID,
+                'fillType' => Fill::FILL_SOLID,
                 'startColor' => ['rgb' => '1E3A8A'], // Dark Blue
             ],
         ]);
@@ -97,7 +97,7 @@ class UnitDiperiksaExport implements FromCollection, WithHeadings, WithStyles, W
                 'borders' => [
                     'allBorders' => [
                         'borderStyle' => Border::BORDER_THIN,
-                        'color'       => ['rgb' => 'CBD5E1'],
+                        'color' => ['rgb' => 'CBD5E1'],
                     ],
                 ],
             ]);
@@ -107,7 +107,7 @@ class UnitDiperiksaExport implements FromCollection, WithHeadings, WithStyles, W
                 if ($row % 2 === 0) {
                     $sheet->getStyle("A{$row}:G{$row}")->applyFromArray([
                         'fill' => [
-                            'fillType'   => Fill::FILL_SOLID,
+                            'fillType' => Fill::FILL_SOLID,
                             'startColor' => ['rgb' => 'F8FAFC'],
                         ],
                     ]);

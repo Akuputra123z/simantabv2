@@ -1,0 +1,635 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Actions\Lhr\ApplyStandardRkpdFindings;
+use App\Actions\Lhr\ApproveAndIssueLhr;
+use App\Actions\Lhr\CreateLhrFromAssignment;
+use App\Actions\Lhr\GenerateLhrPdf;
+use App\Actions\Lhr\GenerateLhrWord;
+use App\Actions\Lhr\ReviewLhr;
+use App\Actions\Lhr\SubmitLhr;
+use App\Enums\SimpulanStatus;
+use App\Models\AuditAssignment;
+use App\Models\Lhr\JenisDokumenReviu;
+use App\Models\Lhr\Lhr;
+use App\Models\Lhr\LhrCatatan;
+use App\Models\Lhr\LhrKategoriCatatan;
+use App\Models\Lhr\LhrPengujian;
+use App\Models\Recommendation;
+use App\Models\UnitDiperiksa;
+use App\Models\User;
+use App\Services\Lhr\LhrDocumentBuilder;
+use App\Services\Lhr\LhrLinter;
+use Carbon\Carbon;
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+
+class LhrController extends Controller implements HasMiddleware
+{
+    public static function middleware(): array
+    {
+        return [
+            function ($request, Closure $next) {
+                $user = auth()->user();
+                if ($user && $user->hasRole(User::ROLE_OPD)) {
+                    abort(403, 'Akses Modul Laporan Hasil Reviu (LHR) hanya untuk auditor dan staf Inspektorat.');
+                }
+
+                return $next($request);
+            },
+        ];
+    }
+
+    /**
+     * Daftar dokumen LHR dengan filter tahun, OPD, jenis dokumen, dan status.
+     */
+    public function index(Request $request)
+    {
+        $query = Lhr::with([
+            'unitDiperiksa',
+            'jenisDokumen',
+            'auditAssignment',
+            'statistik',
+            'signer',
+        ]);
+
+        // Filter Tahun
+        if ($request->filled('tahun')) {
+            $query->where('tahun_anggaran', $request->tahun);
+        }
+
+        // Filter Jenis Dokumen (by ID or by Kode)
+        if ($request->filled('jenis_kode')) {
+            $query->whereHas('jenisDokumen', fn ($j) => $j->where('kode', $request->jenis_kode));
+        } elseif ($request->filled('jenis_dokumen_id')) {
+            $query->where('jenis_dokumen_reviu_id', $request->jenis_dokumen_id);
+        }
+
+        // Filter OPD
+        if ($request->filled('unit_id')) {
+            $query->where('unit_diperiksa_id', $request->unit_id);
+        }
+
+        // Filter Status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Search text
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nomor_lhr', 'like', "%{$search}%")
+                    ->orWhereHas('unitDiperiksa', fn ($u) => $u->where('nama_unit', 'like', "%{$search}%"))
+                    ->orWhereHas('jenisDokumen', fn ($j) => $j->where('nama', 'like', "%{$search}%"));
+            });
+        }
+
+        $lhrs = $query->latest()->paginate(10)->withQueryString();
+
+        $jenisDokumens = JenisDokumenReviu::where('aktif', true)
+            ->orderByRaw("CASE WHEN kode = 'RKPD' THEN 1 WHEN kode = 'KUA_PPAS' THEN 2 ELSE 3 END, nama ASC")
+            ->get();
+        $units = UnitDiperiksa::orderBy('nama_unit')->get();
+
+        // Opsi tahun
+        $tahunList = Lhr::select('tahun_anggaran')
+            ->distinct()
+            ->pluck('tahun_anggaran')
+            ->merge([date('Y'), date('Y') + 1, date('Y') - 1])
+            ->unique()
+            ->sortDesc()
+            ->values();
+
+        return view('pages.lhr.index', compact('lhrs', 'jenisDokumens', 'units', 'tahunList'));
+    }
+
+    /**
+     * Form wizard pembuatan LHR baru.
+     */
+    public function create(\App\Services\Lhr\LhrNumberingService $numberingService)
+    {
+        $assignments = AuditAssignment::with(['ketuaTim', 'pengendaliTeknis'])
+            ->where('jenis_pengawasan', 'reviu')
+            ->orWhereNull('jenis_pengawasan')
+            ->latest()
+            ->get();
+
+        $jenisDokumens = JenisDokumenReviu::where('aktif', true)
+            ->orderByRaw("CASE WHEN kode = 'RKPD' THEN 1 WHEN kode = 'KUA_PPAS' THEN 2 ELSE 3 END, nama ASC")
+            ->get();
+
+        // Dahulukan BAPPEDA dan OPD untuk dokumen perencanaan
+        $units = UnitDiperiksa::where('kategori', 'OPD')
+            ->orderByRaw("CASE WHEN nama_unit LIKE '%Perencanaan Pembangunan%' THEN 1 WHEN nama_unit LIKE '%Pendapatan%' THEN 2 ELSE 3 END, nama_unit ASC")
+            ->get();
+
+        $signers = User::role(['kepala_inspektorat', 'super_admin'])->orderBy('name')->get();
+
+        $suggestedNomorLhr = $numberingService->getNextSuggestedNomor(\App\Services\Lhr\LhrNumberingService::JENIS_LHR);
+
+        return view('pages.lhr.create', compact('assignments', 'jenisDokumens', 'units', 'signers', 'suggestedNomorLhr'));
+    }
+
+    /**
+     * Simpan LHR baru dari SPT.
+     */
+    public function store(Request $request, CreateLhrFromAssignment $action)
+    {
+        $validated = $request->validate([
+            'audit_assignment_id' => 'required|exists:audit_assignments,id',
+            'unit_diperiksa_id' => 'required|exists:unit_diperiksas,id',
+            'jenis_dokumen_reviu_id' => 'required|exists:jenis_dokumen_reviu,id',
+            'tahun_anggaran' => 'required|integer|min:2020|max:2035',
+            'nomor_lhr' => 'nullable|string|max:100|unique:lhrs,nomor_lhr',
+            'tanggal_lhr' => 'nullable|date',
+            'ditandatangani_oleh' => 'nullable|exists:users,id',
+            'permohonan_nomor' => 'nullable|string|max:100',
+            'permohonan_tanggal' => 'nullable|date',
+            'tanggal_mulai' => 'nullable|date',
+            'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
+        ], [
+            'nomor_lhr.unique' => 'Nomor LHR :input sudah terdaftar pada dokumen lain. Silakan ubah nomor atau kosongkan agar terisi otomatis.',
+        ]);
+
+        $assignment = AuditAssignment::findOrFail($validated['audit_assignment_id']);
+        $unit = UnitDiperiksa::findOrFail($validated['unit_diperiksa_id']);
+        $jenisDokumen = JenisDokumenReviu::findOrFail($validated['jenis_dokumen_reviu_id']);
+
+        $lhr = $action->execute(
+            assignment: $assignment,
+            unit: $unit,
+            jenisDokumen: $jenisDokumen,
+            tahunAnggaran: (int) $validated['tahun_anggaran'],
+            permohonanNomor: $validated['permohonan_nomor'] ?? null,
+            permohonanTanggal: ! empty($validated['permohonan_tanggal']) ? Carbon::parse($validated['permohonan_tanggal']) : null,
+            tanggalMulai: ! empty($validated['tanggal_mulai']) ? Carbon::parse($validated['tanggal_mulai']) : null,
+            tanggalSelesai: ! empty($validated['tanggal_selesai']) ? Carbon::parse($validated['tanggal_selesai']) : null,
+            nomorLhr: $validated['nomor_lhr'] ?? null,
+            tanggalLhr: ! empty($validated['tanggal_lhr']) ? Carbon::parse($validated['tanggal_lhr']) : null,
+            ditandatanganiOleh: ! empty($validated['ditandatangani_oleh']) ? (int) $validated['ditandatangani_oleh'] : null,
+            creator: auth()->user()
+        );
+
+        return redirect()->route('lhr.show', $lhr->uuid)
+            ->with('success', 'Dokumen LHR berhasil dibuat. Silakan lengkapi pengujian dan catatan reviu.');
+    }
+
+    /**
+     * Ruang Kerja LHR (Workspace 3-kolom).
+     */
+    public function show(Request $request, string $uuid, LhrLinter $linter)
+    {
+        $lhr = Lhr::where('uuid', $uuid)
+            ->with([
+                'unitDiperiksa',
+                'jenisDokumen',
+                'auditAssignment.ketuaTim',
+                'auditAssignment.pengendaliTeknis',
+                'auditAssignment.members',
+                'sections',
+                'dasarHukums',
+                'pengujians.children',
+                'pengujians.parent',
+                'pengujians.catatans.rekomendasis',
+                'pengujians.catatans.kategori',
+                'statistik',
+                'signer',
+            ])
+            ->firstOrFail();
+
+        // Urutkan pengujian secara hierarkis: Format dahulu, lalu Substansi (S1 s/d S8)
+        // Sub-pengujian (seperti S6.a s/d e) tepat bersarang di bawah induknya
+        $parents = $lhr->pengujians->whereNull('parent_id')->sortBy([
+            ['grup', 'asc'],
+            ['urutan', 'asc'],
+        ]);
+        $orderedPengujians = collect();
+        foreach ($parents as $parent) {
+            $orderedPengujians->push($parent);
+            foreach ($parent->children->sortBy('urutan') as $child) {
+                $orderedPengujians->push($child);
+            }
+        }
+        $remaining = $lhr->pengujians->diff($orderedPengujians);
+        $orderedPengujians = $orderedPengujians->concat($remaining)->values();
+        $lhr->setRelation('pengujians', $orderedPengujians);
+
+        $lintResult = $linter->lint($lhr);
+        $kategoris = LhrKategoriCatatan::where('aktif', true)->orderBy('nama')->get();
+        $currentStep = (int) $request->get('step', 1);
+
+        $units = UnitDiperiksa::where('kategori', 'OPD')
+            ->orderByRaw("CASE WHEN nama_unit LIKE '%Perencanaan Pembangunan%' THEN 1 WHEN nama_unit LIKE '%Pendapatan%' THEN 2 ELSE 3 END, nama_unit ASC")
+            ->get();
+
+        $signers = User::role(['kepala_inspektorat', 'super_admin'])->orderBy('name')->get();
+
+        return view('pages.lhr.workspace', compact('lhr', 'lintResult', 'kategoris', 'currentStep', 'units', 'signers'));
+    }
+
+    /**
+     * Form edit metadata dokumen LHR.
+     */
+    public function edit(string $uuid)
+    {
+        $lhr = Lhr::where('uuid', $uuid)
+            ->with(['unitDiperiksa', 'jenisDokumen', 'auditAssignment.ketuaTim', 'signer'])
+            ->firstOrFail();
+
+        if (! $lhr->canEdit()) {
+            return redirect()->route('lhr.show', $lhr->uuid)
+                ->with('error', 'Dokumen LHR berstatus ' . $lhr->status->label() . ' terkunci dan tidak dapat diubah informasinya.');
+        }
+
+        $units = UnitDiperiksa::where('kategori', 'OPD')
+            ->orderByRaw("CASE WHEN nama_unit LIKE '%Perencanaan Pembangunan%' THEN 1 WHEN nama_unit LIKE '%Pendapatan%' THEN 2 ELSE 3 END, nama_unit ASC")
+            ->get();
+
+        $signers = User::role(['kepala_inspektorat', 'super_admin'])->orderBy('name')->get();
+
+        return view('pages.lhr.edit', compact('lhr', 'units', 'signers'));
+    }
+
+    /**
+     * Update metadata dokumen LHR.
+     */
+    public function update(Request $request, string $uuid)
+    {
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+
+        if (! $lhr->canEdit()) {
+            return back()->with('error', 'Dokumen LHR terkunci dan tidak dapat diubah.');
+        }
+
+        $validated = $request->validate([
+            'unit_diperiksa_id' => 'required|exists:unit_diperiksas,id',
+            'tahun_anggaran' => 'required|integer|min:2020|max:2035',
+            'nomor_lhr' => ['nullable', 'string', 'max:100', \Illuminate\Validation\Rule::unique('lhrs', 'nomor_lhr')->ignore($lhr->id)],
+            'tanggal_lhr' => 'nullable|date',
+            'ditandatangani_oleh' => 'nullable|exists:users,id',
+            'permohonan_nomor' => 'nullable|string|max:100',
+            'permohonan_tanggal' => 'nullable|date',
+            'tanggal_mulai' => 'nullable|date',
+            'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
+            'next_step' => 'nullable|integer|min:1|max:6',
+        ], [
+            'nomor_lhr.unique' => 'Nomor LHR :input sudah terdaftar pada dokumen lain.',
+        ]);
+
+        $lhr->update([
+            'unit_diperiksa_id' => $validated['unit_diperiksa_id'],
+            'tahun_anggaran' => (int) $validated['tahun_anggaran'],
+            'nomor_lhr' => $validated['nomor_lhr'] ?? null,
+            'tanggal_lhr' => ! empty($validated['tanggal_lhr']) ? Carbon::parse($validated['tanggal_lhr']) : null,
+            'ditandatangani_oleh' => ! empty($validated['ditandatangani_oleh']) ? (int) $validated['ditandatangani_oleh'] : null,
+            'permohonan_nomor' => $validated['permohonan_nomor'] ?? null,
+            'permohonan_tanggal' => ! empty($validated['permohonan_tanggal']) ? Carbon::parse($validated['permohonan_tanggal']) : null,
+            'tanggal_mulai' => ! empty($validated['tanggal_mulai']) ? Carbon::parse($validated['tanggal_mulai']) : null,
+            'tanggal_selesai' => ! empty($validated['tanggal_selesai']) ? Carbon::parse($validated['tanggal_selesai']) : null,
+        ]);
+
+        if ($request->filled('next_step')) {
+            return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => $request->input('next_step')])
+                ->with('success', 'Informasi dokumen LHR berhasil diperbarui.');
+        }
+
+        return redirect()->route('lhr.show', $lhr->uuid)
+            ->with('success', 'Informasi dokumen LHR berhasil diperbarui.');
+    }
+
+    /**
+     * Hapus dokumen LHR berstatus Draft.
+     */
+    public function destroy(string $uuid)
+    {
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+
+        $user = auth()->user();
+        if (! $user->hasAnyRole([User::ROLE_SUPER_ADMIN, User::ROLE_KEPALA_INSPEKTORAT, User::ROLE_KETUA_TIM, 'admin'])) {
+            abort(403, 'Anda tidak memiliki hak untuk menghapus dokumen LHR.');
+        }
+
+        if ($lhr->isTerbit()) {
+            return back()->with('error', 'Dokumen LHR yang sudah terbit resmi tidak dapat dihapus.');
+        }
+
+        DB::transaction(function () use ($lhr) {
+            foreach ($lhr->pengujians as $pengujian) {
+                foreach ($pengujian->catatans as $catatan) {
+                    $catatan->rekomendasis()->delete();
+                    $catatan->delete();
+                }
+                $pengujian->delete();
+            }
+            $lhr->sections()->delete();
+            $lhr->dasarHukums()->delete();
+            $lhr->statistik()->delete();
+            $lhr->delete();
+        });
+
+        return redirect()->route('lhr.index')
+            ->with('success', 'Dokumen LHR draft berhasil dihapus.');
+    }
+
+    /**
+     * Terapkan 14 catatan & simpulan standar template Rembang 2027 ke LHR ini.
+     */
+    public function applyStandardTemplate(string $uuid, ApplyStandardRkpdFindings $action)
+    {
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+
+        if (! $lhr->canEdit()) {
+            return back()->with('error', 'Dokumen LHR terkunci dan tidak dapat diubah.');
+        }
+
+        $action->execute($lhr);
+
+        return back()->with('success', '14 Catatan temuan & rekomendasi standar template Rembang 2027 berhasil disinkronkan ke ruang kerja.');
+    }
+
+    /**
+     * Update simpulan pada pengujian LHR.
+     */
+    public function updatePengujian(Request $request, string $uuid, LhrPengujian $pengujian)
+    {
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+
+        if (! $lhr->canEdit()) {
+            return back()->with('error', 'Dokumen LHR terkunci dan tidak dapat diubah.');
+        }
+
+        $validated = $request->validate([
+            'status_simpulan' => ['required', Rule::enum(SimpulanStatus::class)],
+            'teks_simpulan' => 'nullable|string',
+        ]);
+
+        $pengujian->update([
+            'status_simpulan' => $validated['status_simpulan'],
+            'teks_simpulan' => $validated['teks_simpulan'],
+            'selesai_pada' => now(),
+        ]);
+
+        return back()->with('success', "Simpulan pengujian '{$pengujian->kode}' berhasil disimpan.");
+    }
+
+    /**
+     * Tambah catatan & rekomendasi pada pengujian LHR.
+     */
+    public function storeCatatan(Request $request, string $uuid, LhrPengujian $pengujian)
+    {
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+
+        if (! $lhr->canEdit()) {
+            return back()->with('error', 'Dokumen LHR terkunci dan tidak dapat diubah.');
+        }
+
+        $validated = $request->validate([
+            'kategori_id' => 'required|exists:lhr_kategori_catatans,id',
+            'referensi_bagian' => 'nullable|string|max:120',
+            'isi' => 'required|string',
+            'uraian_rekom' => 'required|string',
+            'batas_waktu' => 'nullable|date',
+        ]);
+
+        DB::transaction(function () use ($lhr, $pengujian, $validated) {
+            $catatan = LhrCatatan::create([
+                'lhr_pengujian_id' => $pengujian->id,
+                'kategori_id' => $validated['kategori_id'],
+                'referensi_bagian' => $validated['referensi_bagian'] ?? null,
+                'isi' => $validated['isi'],
+                'urutan' => $pengujian->catatans()->count() + 1,
+                'created_by' => auth()->id(),
+            ]);
+
+            Recommendation::create([
+                'lhr_catatan_id' => $catatan->id,
+                'uraian_rekom' => $validated['uraian_rekom'],
+                'jenis_rekomendasi' => Recommendation::JENIS_ADMIN,
+                'batas_waktu' => ! empty($validated['batas_waktu']) ? Carbon::parse($validated['batas_waktu']) : null,
+                'status' => Recommendation::STATUS_BELUM,
+                'status_tl' => Recommendation::STATUS_TL_BELUM_SELESAI,
+                'created_by' => auth()->id(),
+            ]);
+
+            $this->syncStatistik($lhr);
+        });
+
+        return back()->with('success', 'Catatan temuan dan rekomendasi berhasil ditambahkan.');
+    }
+
+    /**
+     * Update catatan & rekomendasi pada pengujian LHR.
+     */
+    public function updateCatatan(Request $request, string $uuid, LhrCatatan $catatan)
+    {
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+
+        if (! $lhr->canEdit()) {
+            return back()->with('error', 'Dokumen LHR terkunci dan tidak dapat diubah.');
+        }
+
+        $validated = $request->validate([
+            'kategori_id' => 'required|exists:lhr_kategori_catatans,id',
+            'referensi_bagian' => 'nullable|string|max:150',
+            'isi' => 'required|string',
+            'uraian_rekom' => 'required|string',
+            'batas_waktu' => 'nullable|date',
+        ]);
+
+        DB::transaction(function () use ($lhr, $catatan, $validated) {
+            $catatan->update([
+                'kategori_id' => $validated['kategori_id'],
+                'referensi_bagian' => $validated['referensi_bagian'] ?? null,
+                'isi' => $validated['isi'],
+            ]);
+
+            $rekom = $catatan->rekomendasis()->first();
+            if ($rekom) {
+                $rekom->update([
+                    'uraian_rekom' => $validated['uraian_rekom'],
+                    'batas_waktu' => ! empty($validated['batas_waktu']) ? Carbon::parse($validated['batas_waktu']) : null,
+                ]);
+            } else {
+                Recommendation::create([
+                    'lhr_catatan_id' => $catatan->id,
+                    'audit_assignment_id' => $lhr->audit_assignment_id,
+                    'uraian_rekom' => $validated['uraian_rekom'],
+                    'jenis_rekomendasi' => Recommendation::JENIS_ADMIN,
+                    'batas_waktu' => ! empty($validated['batas_waktu']) ? Carbon::parse($validated['batas_waktu']) : null,
+                    'status' => Recommendation::STATUS_BELUM,
+                    'status_tl' => Recommendation::STATUS_TL_BELUM_SELESAI,
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            $this->syncStatistik($lhr);
+        });
+
+        return back()->with('success', 'Catatan temuan dan rekomendasi berhasil diperbarui.');
+    }
+
+    /**
+     * Hapus catatan.
+     */
+    public function destroyCatatan(string $uuid, LhrCatatan $catatan)
+    {
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+
+        if (! $lhr->canEdit()) {
+            return back()->with('error', 'Dokumen LHR terkunci dan tidak dapat diubah.');
+        }
+
+        $catatan->rekomendasis()->delete();
+        $catatan->delete();
+
+        $this->syncStatistik($lhr);
+
+        return back()->with('success', 'Catatan reviu berhasil dihapus.');
+    }
+
+    /**
+     * Hitung ulang statistik rekomendasi LHR.
+     */
+    protected function syncStatistik(Lhr $lhr): void
+    {
+        $catatanIds = $lhr->catatans()->pluck('lhr_catatans.id');
+        $totalRekom = Recommendation::whereIn('lhr_catatan_id', $catatanIds)->count();
+        $selesaiRekom = Recommendation::whereIn('lhr_catatan_id', $catatanIds)
+            ->where('status_tl', Recommendation::STATUS_TL_SELESAI)
+            ->count();
+
+        $persen = $totalRekom > 0 ? round(($selesaiRekom / $totalRekom) * 100, 2) : 0.00;
+
+        $lhr->statistik()->updateOrCreate(
+            ['lhr_id' => $lhr->id],
+            [
+                'total_rekomendasi' => $totalRekom,
+                'selesai' => $selesaiRekom,
+                'persen' => $persen,
+                'dihitung_pada' => now(),
+            ]
+        );
+    }
+
+    /**
+     * Pratinjau Dokumen HTML.
+     */
+    public function preview(string $uuid, LhrDocumentBuilder $builder)
+    {
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+        $data = $builder->build($lhr);
+
+        $view = match ($lhr->jenisDokumen?->kode) {
+            'RKPD', 'KUA_PPAS' => 'lhr.pdf.rkpd_kua',
+            default => 'lhr.pdf.shsd',
+        };
+
+        return view($view, $data);
+    }
+
+    /**
+     * Unduh PDF Dokumen LHR.
+     */
+    public function downloadPdf(string $uuid, GenerateLhrPdf $generator)
+    {
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+        $res = $generator->execute($lhr, $lhr->isTerbit());
+
+        $filename = 'LHR-'.str($lhr->nomor_lhr ?? 'DRAFT')->slug().'.pdf';
+
+        return response($res['binary'])
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', "inline; filename=\"{$filename}\"");
+    }
+
+    /**
+     * Unduh Word (.docx) Dokumen LHR.
+     */
+    public function downloadWord(string $uuid, GenerateLhrWord $generator)
+    {
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+        $res = $generator->execute($lhr, false);
+
+        $filename = 'LHR-'.str($lhr->nomor_lhr ?? 'DRAFT')->slug().'.docx';
+
+        return response($res['binary'], 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Length' => strlen($res['binary']),
+            'Cache-Control' => 'private, max-age=0, must-revalidate',
+            'Pragma' => 'public',
+        ]);
+    }
+
+    /**
+     * Ajukan LHR ke Pengendali Teknis (Irban).
+     */
+    public function submit(string $uuid, SubmitLhr $action)
+    {
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+
+        try {
+            $action->execute($lhr);
+
+            return back()->with('success', 'LHR berhasil diajukan ke Pengendali Teknis untuk penelaahan.');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Telaah LHR oleh Pengendali Teknis (Irban).
+     */
+    public function review(Request $request, string $uuid, ReviewLhr $action)
+    {
+        $user = auth()->user();
+        if (! $user->hasAnyRole([User::ROLE_SUPER_ADMIN, User::ROLE_KEPALA_INSPEKTORAT, User::ROLE_PENGENDALI_TEKNIS, 'admin', 'admin_inspektorat'])) {
+            abort(403, 'Hanya Pengendali Teknis, Kepala Inspektorat, atau Administrator yang berhak menelaah LHR.');
+        }
+
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+
+        $validated = $request->validate([
+            'action' => 'required|in:setujui,kembalikan',
+            'catatan' => 'nullable|string',
+        ]);
+
+        try {
+            $action->execute($lhr, $user, $validated['action'], $validated['catatan'] ?? null);
+            $msg = ($validated['action'] === 'setujui')
+                ? 'LHR telah disetujui Pengendali Teknis dan diteruskan ke Kepala Inspektorat.'
+                : 'LHR dikembalikan ke Ketua Tim untuk dilakukan perbaikan.';
+
+            return back()->with('success', $msg);
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Persetujuan akhir dan penerbitan nomor atomik LHR oleh Inspektur.
+     */
+    public function approve(string $uuid, ApproveAndIssueLhr $action)
+    {
+        $user = auth()->user();
+        if (! $user->hasAnyRole([User::ROLE_SUPER_ADMIN, User::ROLE_KEPALA_INSPEKTORAT])) {
+            abort(403, 'Hanya Kepala Inspektorat atau Super Admin yang berhak menyetujui dan menerbitkan LHR.');
+        }
+
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+
+        try {
+            $action->execute($lhr, $user);
+
+            return back()->with('success', "LHR berhasil disetujui dan diterbitkan dengan Nomor: {$lhr->fresh()->nomor_lhr}");
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+}

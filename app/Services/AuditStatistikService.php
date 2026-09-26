@@ -2,16 +2,14 @@
 
 namespace App\Services;
 
-use App\Models\Lhp;
 use App\Models\LhpStatistik;
-use Illuminate\Support\Facades\DB;
 
 class AuditStatistikService
 {
     public function updateStatistik(int $lhpId): void
-{
-    app(LhpStatistikService::class)->updateStatistik($lhpId);
-}
+    {
+        app(LhpStatistikService::class)->updateStatistik($lhpId);
+    }
 
     private function resetStatistik(int $lhpId): void
     {

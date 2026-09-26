@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 class UnitDiperiksa extends Model
 {
@@ -85,19 +86,19 @@ class UnitDiperiksa extends Model
     /**
      * Helper query terpusat untuk mengambil daftar kecamatan unik tanpa duplikasi (Title Case).
      */
-    public static function getKecamatanList(?string $kategori = null): \Illuminate\Support\Collection
+    public static function getKecamatanList(?string $kategori = null): Collection
     {
         $standardKecamatan = collect([
             'Bulu', 'Gunem', 'Kaliori', 'Kragan', 'Lasem', 'Pamotan',
-            'Pancur', 'Rembang', 'Sale', 'Sarang', 'Sedan', 'Sluke', 'Sulang', 'Sumber'
+            'Pancur', 'Rembang', 'Sale', 'Sarang', 'Sedan', 'Sluke', 'Sulang', 'Sumber',
         ]);
 
         $dbList = static::query()
-            ->when($kategori, fn($q) => $q->where('kategori', $kategori))
+            ->when($kategori, fn ($q) => $q->where('kategori', $kategori))
             ->whereNotNull('nama_kecamatan')
             ->where('nama_kecamatan', '!=', '')
             ->pluck('nama_kecamatan')
-            ->map(fn($val) => ucwords(strtolower(trim($val))));
+            ->map(fn ($val) => ucwords(strtolower(trim($val))));
 
         return $standardKecamatan
             ->merge($dbList)

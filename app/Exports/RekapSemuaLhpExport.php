@@ -5,15 +5,15 @@ namespace App\Exports;
 use App\Models\Lhp;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithColumnWidths;
-use Maatwebsite\Excel\Concerns\WithMultipleSheets;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class RekapSemuaLhpExport implements WithMultipleSheets
 {
@@ -30,34 +30,38 @@ class RekapSemuaLhpExport implements WithMultipleSheets
 
 // ── Sheet 1: Rekap Semua LHP ──────────────────────────────────────────────────
 
-class RekapSemuaLhpSheet implements FromCollection, WithHeadings, WithStyles, WithTitle, WithColumnWidths
+class RekapSemuaLhpSheet implements FromCollection, WithColumnWidths, WithHeadings, WithStyles, WithTitle
 {
     public function __construct(private Collection $lhps) {}
 
-    public function title(): string { return 'Rekap LHP'; }
+    public function title(): string
+    {
+        return 'Rekap LHP';
+    }
 
     public function collection(): Collection
     {
         return $this->lhps->map(function ($lhp, $i) {
             $stat = $lhp->statistik;
+
             return [
-                'no'               => $i + 1,
-                'nomor_lhp'        => $lhp->nomor_lhp,
-                'program_audit'    => $lhp->auditAssignment?->auditProgram?->nama_program ?? '-',
-                'unit_diperiksa'   => $lhp->unitDiperiksa?->nama_unit ?? '-',
-                'tanggal_lhp'      => $lhp->tanggal_lhp?->format('d/m/Y') ?? '-',
-                'semester'         => 'Semester ' . $lhp->semester,
-                'irban'            => $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-',
-                'status'           => ucfirst(str_replace('_', ' ', $lhp->status)),
-                'total_temuan'     => $stat?->total_temuan ?? 0,
-                'total_rekom'      => $stat?->total_rekomendasi ?? 0,
-                'rekom_selesai'    => $stat?->rekom_selesai ?? 0,
-                'rekom_proses'     => $stat?->rekom_proses ?? 0,
-                'rekom_belum'      => $stat?->rekom_belum ?? 0,
-                'total_kerugian'   => (float) ($stat?->total_kerugian ?? 0),
-                'tl_selesai'       => (float) ($stat?->total_nilai_tl_selesai ?? 0),
-                'sisa_kerugian'    => (float) ($stat?->total_sisa_kerugian ?? 0),
-                'persen_selesai'   => round($stat?->persen_selesai_gabungan ?? 0, 1) . '%',
+                'no' => $i + 1,
+                'nomor_lhp' => $lhp->nomor_lhp,
+                'program_audit' => $lhp->auditAssignment?->auditProgram?->nama_program ?? '-',
+                'unit_diperiksa' => $lhp->unitDiperiksa?->nama_unit ?? '-',
+                'tanggal_lhp' => $lhp->tanggal_lhp?->format('d/m/Y') ?? '-',
+                'semester' => 'Semester '.$lhp->semester,
+                'irban' => $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-',
+                'status' => ucfirst(str_replace('_', ' ', $lhp->status)),
+                'total_temuan' => $stat?->total_temuan ?? 0,
+                'total_rekom' => $stat?->total_rekomendasi ?? 0,
+                'rekom_selesai' => $stat?->rekom_selesai ?? 0,
+                'rekom_proses' => $stat?->rekom_proses ?? 0,
+                'rekom_belum' => $stat?->rekom_belum ?? 0,
+                'total_kerugian' => (float) ($stat?->total_kerugian ?? 0),
+                'tl_selesai' => (float) ($stat?->total_nilai_tl_selesai ?? 0),
+                'sisa_kerugian' => (float) ($stat?->total_sisa_kerugian ?? 0),
+                'persen_selesai' => round($stat?->persen_selesai_gabungan ?? 0, 1).'%',
             ];
         });
     }
@@ -89,10 +93,10 @@ class RekapSemuaLhpSheet implements FromCollection, WithHeadings, WithStyles, Wi
 
         // Header baris
         $sheet->getStyle('A1:Q1')->applyFromArray([
-            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
-            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D4ED8']],
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D4ED8']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
-            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'BFDBFE']]],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'BFDBFE']]],
         ]);
         $sheet->getRowDimension(1)->setRowHeight(30);
 
@@ -100,9 +104,9 @@ class RekapSemuaLhpSheet implements FromCollection, WithHeadings, WithStyles, Wi
         for ($row = 2; $row <= $lastRow; $row++) {
             $bgColor = ($row % 2 === 0) ? 'F0F9FF' : 'FFFFFF';
             $sheet->getStyle("A{$row}:Q{$row}")->applyFromArray([
-                'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bgColor]],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bgColor]],
                 'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
-                'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E2E8F0']]],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E2E8F0']]],
             ]);
         }
 
@@ -124,38 +128,41 @@ class RekapSemuaLhpSheet implements FromCollection, WithHeadings, WithStyles, Wi
 
 // ── Sheet 2: Statistik Ringkasan ──────────────────────────────────────────────
 
-class RekapStatistikSheet implements FromCollection, WithHeadings, WithStyles, WithTitle, WithColumnWidths
+class RekapStatistikSheet implements FromCollection, WithColumnWidths, WithHeadings, WithStyles, WithTitle
 {
     public function __construct(private Collection $lhps) {}
 
-    public function title(): string { return 'Ringkasan Statistik'; }
+    public function title(): string
+    {
+        return 'Ringkasan Statistik';
+    }
 
     public function collection(): Collection
     {
         $total = [
-            'total_lhp'      => $this->lhps->count(),
-            'total_temuan'   => $this->lhps->sum(fn ($l) => $l->statistik?->total_temuan ?? 0),
-            'total_rekom'    => $this->lhps->sum(fn ($l) => $l->statistik?->total_rekomendasi ?? 0),
-            'rekom_selesai'  => $this->lhps->sum(fn ($l) => $l->statistik?->rekom_selesai ?? 0),
-            'rekom_proses'   => $this->lhps->sum(fn ($l) => $l->statistik?->rekom_proses ?? 0),
-            'rekom_belum'    => $this->lhps->sum(fn ($l) => $l->statistik?->rekom_belum ?? 0),
+            'total_lhp' => $this->lhps->count(),
+            'total_temuan' => $this->lhps->sum(fn ($l) => $l->statistik?->total_temuan ?? 0),
+            'total_rekom' => $this->lhps->sum(fn ($l) => $l->statistik?->total_rekomendasi ?? 0),
+            'rekom_selesai' => $this->lhps->sum(fn ($l) => $l->statistik?->rekom_selesai ?? 0),
+            'rekom_proses' => $this->lhps->sum(fn ($l) => $l->statistik?->rekom_proses ?? 0),
+            'rekom_belum' => $this->lhps->sum(fn ($l) => $l->statistik?->rekom_belum ?? 0),
             'total_kerugian' => $this->lhps->sum(fn ($l) => $l->statistik?->total_kerugian ?? 0),
-            'tl_selesai'     => $this->lhps->sum(fn ($l) => $l->statistik?->total_nilai_tl_selesai ?? 0),
-            'sisa_kerugian'  => $this->lhps->sum(fn ($l) => $l->statistik?->total_sisa_kerugian ?? 0),
-            'avg_persen'     => round($this->lhps->avg(fn ($l) => $l->statistik?->persen_selesai_gabungan ?? 0), 1),
+            'tl_selesai' => $this->lhps->sum(fn ($l) => $l->statistik?->total_nilai_tl_selesai ?? 0),
+            'sisa_kerugian' => $this->lhps->sum(fn ($l) => $l->statistik?->total_sisa_kerugian ?? 0),
+            'avg_persen' => round($this->lhps->avg(fn ($l) => $l->statistik?->persen_selesai_gabungan ?? 0), 1),
         ];
 
         return collect([
             ['Total LHP',            $total['total_lhp'],      '-'],
             ['Total Temuan',         $total['total_temuan'],    '-'],
             ['Total Rekomendasi',    $total['total_rekom'],     '-'],
-            ['Rekom Selesai',        $total['rekom_selesai'],   round($total['rekom_selesai'] / max($total['total_rekom'], 1) * 100, 1) . '%'],
-            ['Rekom Proses',         $total['rekom_proses'],    round($total['rekom_proses'] / max($total['total_rekom'], 1) * 100, 1) . '%'],
-            ['Rekom Belum TL',       $total['rekom_belum'],     round($total['rekom_belum'] / max($total['total_rekom'], 1) * 100, 1) . '%'],
+            ['Rekom Selesai',        $total['rekom_selesai'],   round($total['rekom_selesai'] / max($total['total_rekom'], 1) * 100, 1).'%'],
+            ['Rekom Proses',         $total['rekom_proses'],    round($total['rekom_proses'] / max($total['total_rekom'], 1) * 100, 1).'%'],
+            ['Rekom Belum TL',       $total['rekom_belum'],     round($total['rekom_belum'] / max($total['total_rekom'], 1) * 100, 1).'%'],
             ['Total Kerugian (Rp)',  $total['total_kerugian'],  '-'],
-            ['TL Selesai (Rp)',      $total['tl_selesai'],      round($total['tl_selesai'] / max($total['total_kerugian'], 1) * 100, 1) . '%'],
-            ['Sisa Kerugian (Rp)',   $total['sisa_kerugian'],   round($total['sisa_kerugian'] / max($total['total_kerugian'], 1) * 100, 1) . '%'],
-            ['Avg Progress TL',      $total['avg_persen'] . '%','-'],
+            ['TL Selesai (Rp)',      $total['tl_selesai'],      round($total['tl_selesai'] / max($total['total_kerugian'], 1) * 100, 1).'%'],
+            ['Sisa Kerugian (Rp)',   $total['sisa_kerugian'],   round($total['sisa_kerugian'] / max($total['total_kerugian'], 1) * 100, 1).'%'],
+            ['Avg Progress TL',      $total['avg_persen'].'%', '-'],
         ]);
     }
 
@@ -172,8 +179,8 @@ class RekapStatistikSheet implements FromCollection, WithHeadings, WithStyles, W
     public function styles(Worksheet $sheet): array
     {
         $sheet->getStyle('A1:C1')->applyFromArray([
-            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D4ED8']],
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D4ED8']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         ]);
         $sheet->getStyle('A2:C11')->applyFromArray([
@@ -183,6 +190,7 @@ class RekapStatistikSheet implements FromCollection, WithHeadings, WithStyles, W
         foreach ([7, 8, 9] as $row) {
             $sheet->getStyle("B{$row}")->getNumberFormat()->setFormatCode('#,##0');
         }
+
         return [];
     }
 }

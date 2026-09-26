@@ -50,37 +50,36 @@ class LhpStatistik extends Model
     protected function casts(): array
     {
         return [
-            'lhp_id'                  => 'integer',
-            'total_temuan'            => 'integer',
-            'total_rekomendasi'       => 'integer',
-            'total_kerugian_negara'   => 'float',
-            'total_kerugian_daerah'   => 'float',
-            'total_kerugian_desa'     => 'float',
+            'lhp_id' => 'integer',
+            'total_temuan' => 'integer',
+            'total_rekomendasi' => 'integer',
+            'total_kerugian_negara' => 'float',
+            'total_kerugian_daerah' => 'float',
+            'total_kerugian_desa' => 'float',
             'total_kerugian_bos_blud' => 'float',
-            'total_kerugian'          => 'float',
-            'total_nilai_tl_selesai'  => 'float',
-            'total_sisa_kerugian'     => 'float',
-            'rekom_belum'             => 'integer',
-            'rekom_proses'            => 'integer',
-            'rekom_selesai'           => 'integer',
-            'rekom_uang_total'        => 'integer',
-            'rekom_uang_selesai'      => 'integer',
-            'rekom_nonutang_total'    => 'integer',
-            'rekom_nonutang_selesai'  => 'integer',
-            'persen_selesai'          => 'float',
-            'persen_selesai_nilai'    => 'float',
+            'total_kerugian' => 'float',
+            'total_nilai_tl_selesai' => 'float',
+            'total_sisa_kerugian' => 'float',
+            'rekom_belum' => 'integer',
+            'rekom_proses' => 'integer',
+            'rekom_selesai' => 'integer',
+            'rekom_uang_total' => 'integer',
+            'rekom_uang_selesai' => 'integer',
+            'rekom_nonutang_total' => 'integer',
+            'rekom_nonutang_selesai' => 'integer',
+            'persen_selesai' => 'float',
+            'persen_selesai_nilai' => 'float',
             'persen_selesai_gabungan' => 'float',
-            'dihitung_pada'           => 'datetime',
+            'dihitung_pada' => 'datetime',
         ];
     }
 
     // ── Relationships ─────────────────────────────────────────────────────────
 
-    
-  public function lhp(): BelongsTo
-{
-    return $this->belongsTo(Lhp::class, 'lhp_id', 'id'); // ← BENAR
-}
+    public function lhp(): BelongsTo
+    {
+        return $this->belongsTo(Lhp::class, 'lhp_id', 'id'); // ← BENAR
+    }
     // ── Accessors ─────────────────────────────────────────────────────────────
 
     /** Status label berdasarkan metrik gabungan */
@@ -88,8 +87,8 @@ class LhpStatistik extends Model
     {
         return match (true) {
             $this->persen_selesai_gabungan >= 100 => 'Lunas',
-            $this->persen_selesai_gabungan > 0    => 'Sebagian',
-            default                               => 'Belum',
+            $this->persen_selesai_gabungan > 0 => 'Sebagian',
+            default => 'Belum',
         };
     }
 
@@ -98,9 +97,9 @@ class LhpStatistik extends Model
     {
         return match (true) {
             $this->persen_selesai_gabungan >= 100 => 'success',
-            $this->persen_selesai_gabungan >= 50  => 'warning',
-            $this->persen_selesai_gabungan > 0    => 'info',
-            default                               => 'danger',
+            $this->persen_selesai_gabungan >= 50 => 'warning',
+            $this->persen_selesai_gabungan > 0 => 'info',
+            default => 'danger',
         };
     }
 

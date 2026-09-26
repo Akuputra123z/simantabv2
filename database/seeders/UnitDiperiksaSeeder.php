@@ -15,7 +15,6 @@ class UnitDiperiksaSeeder extends Seeder
 
         $data = [
 
-            
             // Sumber
             ['kategori' => 'Desa', 'nama_kecamatan' => 'Sumber', 'nama_unit' => 'Desa Ronggomulyo'],
             ['kategori' => 'Desa', 'nama_kecamatan' => 'Sumber', 'nama_unit' => 'Desa Logede'],
@@ -337,7 +336,7 @@ class UnitDiperiksaSeeder extends Seeder
             ['kategori' => 'Desa', 'nama_kecamatan' => 'Lasem', 'nama_unit' => 'Desa Sriombo'],
             ['kategori' => 'Desa', 'nama_kecamatan' => 'Lasem', 'nama_unit' => 'Desa Bonang'],
             ['kategori' => 'Desa', 'nama_kecamatan' => 'Lasem', 'nama_unit' => 'Desa Binangun'],
-            //OPD
+            // OPD
             ['kategori' => 'OPD', 'nama_kecamatan' => 'Rembang', 'nama_unit' => 'Bupati Rembang'],
             ['kategori' => 'OPD', 'nama_kecamatan' => 'Rembang', 'nama_unit' => 'Wakil Bupati Rembang'],
             ['kategori' => 'OPD', 'nama_kecamatan' => 'Rembang', 'nama_unit' => 'Sekretaris Daerah Kabupaten Rembang'],
@@ -382,7 +381,6 @@ class UnitDiperiksaSeeder extends Seeder
             ['kategori' => 'OPD', 'nama_kecamatan' => 'Kaliori', 'nama_unit' => 'Camat Kaliori'],
             ['kategori' => 'OPD', 'nama_kecamatan' => 'Sedan', 'nama_unit' => 'Camat Sedan'],
             ['kategori' => 'OPD', 'nama_kecamatan' => 'Rembang', 'nama_unit' => 'Camat Rembang'],
-
 
         ];
 

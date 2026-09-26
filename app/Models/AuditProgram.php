@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\AuditProgramDetail;
-use App\Models\AuditAssignment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,10 +15,13 @@ class AuditProgram extends Model
 
     const KATEGORI = ['PKPT', 'BPK', 'BPKP', 'ITPROV', 'ITDA', 'LAINNYA'];
 
-    const APPROVAL_DRAFT    = 'draft';
+    const APPROVAL_DRAFT = 'draft';
+
     const APPROVAL_MENUNGGU = 'menunggu';
+
     const APPROVAL_DISETUJUI = 'disetujui';
-    const APPROVAL_DITOLAK  = 'ditolak';
+
+    const APPROVAL_DITOLAK = 'ditolak';
 
     protected $fillable = [
         'nama_program',
@@ -36,7 +37,7 @@ class AuditProgram extends Model
     ];
 
     protected $casts = [
-        'tahun'       => 'integer',
+        'tahun' => 'integer',
         'approved_at' => 'datetime',
     ];
 
@@ -74,6 +75,7 @@ class AuditProgram extends Model
         if (array_key_exists('details_count', $this->attributes)) {
             return (int) $this->attributes['details_count'];
         }
+
         return $this->details()->count();
     }
 
@@ -86,14 +88,15 @@ class AuditProgram extends Model
         if (array_key_exists('sudah_lhp_count', $this->attributes)) {
             return (int) $this->attributes['sudah_lhp_count'];
         }
+
         return $this->details()
-            ->where(function($q) {
-                $q->whereHas('assignments.lhps', function($q) {
+            ->where(function ($q) {
+                $q->whereHas('assignments.lhps', function ($q) {
                     $q->whereIn('status', ['final', 'ditandatangani'])
-                      ->whereHas('statistik', function($s) {
-                          $s->where('persen_selesai_gabungan', 100);
-                      });
-                })->orWhereHas('assignments', function($q) {
+                        ->whereHas('statistik', function ($s) {
+                            $s->where('persen_selesai_gabungan', 100);
+                        });
+                })->orWhereHas('assignments', function ($q) {
                     $q->where('status', 'selesai');
                 });
             })
@@ -106,8 +109,10 @@ class AuditProgram extends Model
     public function getProgressPersenAttribute(): int
     {
         $total = $this->target_assignment;
-        
-        if ($total <= 0) return 0;
+
+        if ($total <= 0) {
+            return 0;
+        }
 
         return (int) min(100, round(($this->sudah_lhp / $total) * 100));
     }
@@ -120,9 +125,13 @@ class AuditProgram extends Model
         $progress = $this->progress_persen;
         $total = $this->target_assignment;
 
-        if ($total === 0) return 'draft';
-        if ($progress >= 100) return 'selesai';
-        
+        if ($total === 0) {
+            return 'draft';
+        }
+        if ($progress >= 100) {
+            return 'selesai';
+        }
+
         return 'berjalan';
     }
 

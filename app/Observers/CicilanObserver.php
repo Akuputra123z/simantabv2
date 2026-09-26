@@ -53,7 +53,7 @@ class CicilanObserver
             ->selectRaw('SUM(nilai_bayar) as total, COUNT(*) as jumlah')
             ->first();
 
-        $totalTerbayar   = (string) ($agg->total ?? '0');
+        $totalTerbayar = (string) ($agg->total ?? '0');
         $jumlahRealisasi = (int) ($agg->jumlah ?? 0);
 
         $sisaBelumBayar = bcsub($nilaiRekom, $totalTerbayar, 2);
@@ -62,16 +62,16 @@ class CicilanObserver
         }
 
         $statusVerifikasi = match (true) {
-            bccomp($totalTerbayar, '0', 2) <= 0         => 'menunggu_verifikasi',
+            bccomp($totalTerbayar, '0', 2) <= 0 => 'menunggu_verifikasi',
             bccomp($totalTerbayar, $nilaiRekom, 2) >= 0 => 'lunas',
-            default                                      => 'berjalan',
+            default => 'berjalan',
         };
 
         $tl->updateQuietly([
-            'total_terbayar'           => $totalTerbayar,
-            'sisa_belum_bayar'         => $sisaBelumBayar,
+            'total_terbayar' => $totalTerbayar,
+            'sisa_belum_bayar' => $sisaBelumBayar,
             'jumlah_cicilan_realisasi' => $jumlahRealisasi,
-            'status_verifikasi'        => $statusVerifikasi,
+            'status_verifikasi' => $statusVerifikasi,
         ]);
 
         $this->recalculateRecommendation($tl->recommendation);
@@ -85,9 +85,9 @@ class CicilanObserver
                 subject: $tl,
                 causer: auth()->user(),
                 properties: [
-                    'total_terbayar'   => $totalTerbayar,
+                    'total_terbayar' => $totalTerbayar,
                     'sisa_belum_bayar' => $sisaBelumBayar,
-                    'status'           => $statusVerifikasi,
+                    'status' => $statusVerifikasi,
                 ]
             );
         })->afterResponse();
@@ -108,15 +108,15 @@ class CicilanObserver
         }
 
         $status = match (true) {
-            bccomp($nilaiTlSelesai, '0', 2) <= 0                          => 'belum_ditindaklanjuti',
+            bccomp($nilaiTlSelesai, '0', 2) <= 0 => 'belum_ditindaklanjuti',
             bccomp($nilaiTlSelesai, (string) $rekom->nilai_rekom, 2) >= 0 => 'selesai',
-            default                                                        => 'dalam_proses',
+            default => 'dalam_proses',
         };
 
         $rekom->updateQuietly([
             'nilai_tl_selesai' => $nilaiTlSelesai,
-            'nilai_sisa'       => $nilaiSisa,
-            'status'           => $status,
+            'nilai_sisa' => $nilaiSisa,
+            'status' => $status,
         ]);
 
         // OPTIMASI: ambil temuan dengan select minimal
@@ -136,14 +136,14 @@ class CicilanObserver
             ")
             ->first();
 
-        $total   = (int) ($counts->total ?? 0);
+        $total = (int) ($counts->total ?? 0);
         $selesai = (int) ($counts->selesai ?? 0);
-        $proses  = (int) ($counts->proses ?? 0);
+        $proses = (int) ($counts->proses ?? 0);
 
         $statusTl = match (true) {
             $total > 0 && $selesai === $total => 'selesai',
-            $proses > 0 || $selesai > 0       => 'dalam_proses',
-            default                           => 'belum_ditindaklanjuti',
+            $proses > 0 || $selesai > 0 => 'dalam_proses',
+            default => 'belum_ditindaklanjuti',
         };
 
         DB::table('temuans')
@@ -167,21 +167,21 @@ class CicilanObserver
         $kerugian = DB::table('temuans')
             ->where('lhp_id', $lhpId)
             ->whereNull('deleted_at')
-            ->selectRaw("
+            ->selectRaw('
                 COUNT(*) as total_temuan,
                 SUM(nilai_kerugian_negara)   as negara,
                 SUM(nilai_kerugian_daerah)   as daerah,
                 SUM(nilai_kerugian_desa)     as desa,
                 SUM(nilai_kerugian_bos_blud) as bos_blud
-            ")
+            ')
             ->first();
 
-        $totalTemuan         = (int) ($kerugian->total_temuan ?? 0);
-        $totalKerugianNegara = (string) ($kerugian->negara   ?? '0');
-        $totalKerugianDaerah = (string) ($kerugian->daerah   ?? '0');
-        $totalKerugianDesa   = (string) ($kerugian->desa     ?? '0');
-        $totalKerugianBos    = (string) ($kerugian->bos_blud ?? '0');
-        $totalKerugian       = bcadd(
+        $totalTemuan = (int) ($kerugian->total_temuan ?? 0);
+        $totalKerugianNegara = (string) ($kerugian->negara ?? '0');
+        $totalKerugianDaerah = (string) ($kerugian->daerah ?? '0');
+        $totalKerugianDesa = (string) ($kerugian->desa ?? '0');
+        $totalKerugianBos = (string) ($kerugian->bos_blud ?? '0');
+        $totalKerugian = bcadd(
             bcadd($totalKerugianNegara, $totalKerugianDaerah, 2),
             bcadd($totalKerugianDesa, $totalKerugianBos, 2),
             2
@@ -191,8 +191,8 @@ class CicilanObserver
         $rekomStats = DB::table('recommendations')
             ->whereIn('temuan_id', function ($q) use ($lhpId) {
                 $q->select('id')->from('temuans')
-                  ->where('lhp_id', $lhpId)
-                  ->whereNull('deleted_at');
+                    ->where('lhp_id', $lhpId)
+                    ->whereNull('deleted_at');
             })
             ->whereNull('deleted_at')
             ->selectRaw("
@@ -204,33 +204,33 @@ class CicilanObserver
             ")
             ->first();
 
-        $totalRekom   = (int) ($rekomStats->total ?? 0);
-        $rekomBelum   = (int) ($rekomStats->belum ?? 0);
-        $rekomProses  = (int) ($rekomStats->proses ?? 0);
+        $totalRekom = (int) ($rekomStats->total ?? 0);
+        $rekomBelum = (int) ($rekomStats->belum ?? 0);
+        $rekomProses = (int) ($rekomStats->proses ?? 0);
         $rekomSelesai = (int) ($rekomStats->selesai ?? 0);
         $totalTlSelesai = (string) ($rekomStats->total_tl_selesai ?? '0');
-        $totalSisa      = bcsub($totalKerugian, $totalTlSelesai, 2);
-        $persen         = $totalRekom > 0
+        $totalSisa = bcsub($totalKerugian, $totalTlSelesai, 2);
+        $persen = $totalRekom > 0
             ? round(($rekomSelesai / $totalRekom) * 100, 2)
             : 0;
 
         LhpStatistik::updateOrCreate(
             ['lhp_id' => $lhpId],
             [
-                'total_temuan'            => $totalTemuan,
-                'total_rekomendasi'       => $totalRekom,
-                'total_kerugian_negara'   => $totalKerugianNegara,
-                'total_kerugian_daerah'   => $totalKerugianDaerah,
-                'total_kerugian_desa'     => $totalKerugianDesa,
+                'total_temuan' => $totalTemuan,
+                'total_rekomendasi' => $totalRekom,
+                'total_kerugian_negara' => $totalKerugianNegara,
+                'total_kerugian_daerah' => $totalKerugianDaerah,
+                'total_kerugian_desa' => $totalKerugianDesa,
                 'total_kerugian_bos_blud' => $totalKerugianBos,
-                'total_kerugian'          => $totalKerugian,
-                'total_nilai_tl_selesai'  => $totalTlSelesai,
-                'total_sisa_kerugian'     => $totalSisa,
-                'rekom_belum'             => $rekomBelum,
-                'rekom_proses'            => $rekomProses,
-                'rekom_selesai'           => $rekomSelesai,
-                'persen_selesai'          => $persen,
-                'dihitung_pada'           => now(),
+                'total_kerugian' => $totalKerugian,
+                'total_nilai_tl_selesai' => $totalTlSelesai,
+                'total_sisa_kerugian' => $totalSisa,
+                'rekom_belum' => $rekomBelum,
+                'rekom_proses' => $rekomProses,
+                'rekom_selesai' => $rekomSelesai,
+                'persen_selesai' => $persen,
+                'dihitung_pada' => now(),
             ]
         );
     }

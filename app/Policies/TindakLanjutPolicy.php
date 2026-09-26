@@ -20,21 +20,18 @@ class TindakLanjutPolicy
 
         if ($user->hasRole('opd')) {
             $unitIds = $user->opdUnits()->pluck('unit_diperiksas.id');
+            $targetUnitId = $tindakLanjut->recommendation?->temuan?->lhp?->unit_diperiksa_id;
 
-            return $tindakLanjut->recommendation
-                ?->temuan
-                ?->lhp
-                ?->unit_diperiksa_id
-                ?->isNotEmpty() ?? false;
+            return $targetUnitId ? $unitIds->contains($targetUnitId) : false;
         }
 
-        return $tindakLanjut->recommendation
-            ?->temuan
-            ?->lhp
-            ?->auditAssignment
-            ?->where('ketua_tim_id', $user->id)
-            ?->orWhereHas('members', fn($q) => $q->where('user_id', $user->id))
-            ?->exists();
+        $assignment = $tindakLanjut->recommendation?->temuan?->lhp?->auditAssignment;
+        if (! $assignment) {
+            return false;
+        }
+
+        return $assignment->ketua_tim_id === $user->id
+            || $assignment->members()->where('user_id', $user->id)->exists();
     }
 
     public function uploadOpd(User $user, TindakLanjut $tindakLanjut): bool

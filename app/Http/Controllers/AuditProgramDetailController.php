@@ -19,9 +19,9 @@ class AuditProgramDetailController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file'             => 'required|mimes:xlsx,xls,csv|max:10240',
+            'file' => 'required|mimes:xlsx,xls,csv|max:10240',
             'audit_program_id' => 'required|exists:audit_programs,id',
-            'mode'             => 'required|in:add,replace',
+            'mode' => 'required|in:add,replace',
         ]);
 
         $auditProgramId = $request->audit_program_id;
@@ -55,8 +55,8 @@ class AuditProgramDetailController extends Controller
 
             if ($request->mode === 'replace') {
                 $msg = "$deletedCount data lama diganti.";
-                if (!empty($skippedNames)) {
-                    $msg .= ' ' . count($skippedNames) . ' data dilewati (sudah punya penugasan): ' . implode(', ', $skippedNames) . '.';
+                if (! empty($skippedNames)) {
+                    $msg .= ' '.count($skippedNames).' data dilewati (sudah punya penugasan): '.implode(', ', $skippedNames).'.';
                 }
             } else {
                 $msg = "$importedCount data sub-program berhasil ditambahkan.";
@@ -68,7 +68,8 @@ class AuditProgramDetailController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Gagal mengimport data: ' . $e->getMessage());
+
+            return back()->with('error', 'Gagal mengimport data: '.$e->getMessage());
         }
     }
 
@@ -81,6 +82,7 @@ class AuditProgramDetailController extends Controller
     {
         $auditProgram = AuditProgram::findOrFail($audit_program_id);
         $kategori = $auditProgram->kategori;
+
         return view('pages.audit-program-detail.create', compact('auditProgram', 'kategori'));
     }
 
@@ -91,19 +93,19 @@ class AuditProgramDetailController extends Controller
         }
 
         $validated = $request->validate([
-            'audit_program_id'    => 'required|exists:audit_programs,id',
+            'audit_program_id' => 'required|exists:audit_programs,id',
             'nama_detail_program' => 'required|string|max:255',
-            'jenis_kegiatan'      => 'required|string|max:100',
-            'objek_pengawasan'    => 'nullable|string|max:255',
-            'ruang_lingkup'       => 'nullable|string',
-            'personil'            => 'nullable|string|max:100',
-            'tujuan'              => 'required|string',
-            'anggaran'            => 'required|numeric|min:0',
-            'tingkat_resiko'      => 'nullable|in:Tinggi,Sedang,Rendah',
-            'jadwal'              => 'nullable|string|max:100',
-            'status'              => 'required|in:aktif,rencana',
-            'tim'                 => 'nullable|string|max:255',
-            'laporan_akhir'       => 'nullable|string|max:100',
+            'jenis_kegiatan' => 'required|string|max:100',
+            'objek_pengawasan' => 'nullable|string|max:255',
+            'ruang_lingkup' => 'nullable|string',
+            'personil' => 'nullable|string|max:100',
+            'tujuan' => 'required|string',
+            'anggaran' => 'required|numeric|min:0',
+            'tingkat_resiko' => 'nullable|in:Tinggi,Sedang,Rendah',
+            'jadwal' => 'nullable|string|max:100',
+            'status' => 'required|in:aktif,rencana',
+            'tim' => 'nullable|string|max:255',
+            'laporan_akhir' => 'nullable|string|max:100',
         ]);
 
         if ($request->filled('jadwal')) {
@@ -112,9 +114,10 @@ class AuditProgramDetailController extends Controller
 
         try {
             $detail = AuditProgramDetail::create($validated);
+
             return redirect()->route('audit-program.show', $detail->audit_program_id)->with('success', 'Sub-program berhasil ditambahkan.');
         } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal menyimpan data: '.$e->getMessage());
         }
     }
 
@@ -122,6 +125,7 @@ class AuditProgramDetailController extends Controller
     {
         $detail = AuditProgramDetail::with(['parentProgram', 'assignments.ketuaTim', 'assignments.unitDiperiksas'])->findOrFail($id);
         $assignments = $detail->assignments;
+
         return view('pages.audit-program-detail.show', compact('detail', 'assignments'));
     }
 
@@ -129,10 +133,11 @@ class AuditProgramDetailController extends Controller
     {
         $detail = $auditProgramDetail;
         $auditProgram = $detail->parentProgram;
-        if (!$auditProgram) {
+        if (! $auditProgram) {
             abort(404, 'Program induk tidak ditemukan.');
         }
         $kategori = $auditProgram->kategori;
+
         return view('pages.audit-program-detail.edit', compact('detail', 'auditProgram', 'kategori'));
     }
 
@@ -144,17 +149,17 @@ class AuditProgramDetailController extends Controller
 
         $validated = $request->validate([
             'nama_detail_program' => 'required|string|max:255',
-            'jenis_kegiatan'      => 'required|string|max:100',
-            'objek_pengawasan'    => 'nullable|string|max:255',
-            'ruang_lingkup'       => 'nullable|string',
-            'personil'            => 'nullable|string|max:100',
-            'tujuan'              => 'required|string',
-            'anggaran'            => 'required|numeric|min:0',
-            'tingkat_resiko'      => 'nullable|in:Tinggi,Sedang,Rendah',
-            'jadwal'              => 'nullable|string|max:100',
-            'status'              => 'required|in:aktif,rencana',
-            'tim'                 => 'nullable|string|max:255',
-            'laporan_akhir'       => 'nullable|string|max:100',
+            'jenis_kegiatan' => 'required|string|max:100',
+            'objek_pengawasan' => 'nullable|string|max:255',
+            'ruang_lingkup' => 'nullable|string',
+            'personil' => 'nullable|string|max:100',
+            'tujuan' => 'required|string',
+            'anggaran' => 'required|numeric|min:0',
+            'tingkat_resiko' => 'nullable|in:Tinggi,Sedang,Rendah',
+            'jadwal' => 'nullable|string|max:100',
+            'status' => 'required|in:aktif,rencana',
+            'tim' => 'nullable|string|max:255',
+            'laporan_akhir' => 'nullable|string|max:100',
         ]);
 
         if ($request->filled('jadwal')) {
@@ -163,7 +168,8 @@ class AuditProgramDetailController extends Controller
 
         try {
             $auditProgramDetail->update($validated);
-            return redirect()->route('audit-program-detail.show', $auditProgramDetail->id)->with('success', "Data diperbarui.");
+
+            return redirect()->route('audit-program-detail.show', $auditProgramDetail->id)->with('success', 'Data diperbarui.');
         } catch (\Exception $e) {
             return back()->withInput()->with('error', 'Gagal memperbarui data.');
         }
@@ -172,7 +178,7 @@ class AuditProgramDetailController extends Controller
     public function bulkDelete(Request $request)
     {
         $request->validate([
-            'ids'   => 'required|array',
+            'ids' => 'required|array',
             'ids.*' => 'exists:audit_program_details,id',
         ]);
 
@@ -182,7 +188,7 @@ class AuditProgramDetailController extends Controller
         $blocked = AuditProgramDetail::whereIn('id', $ids)->whereHas('assignments')->pluck('id');
         $allowed = array_diff($ids, $blocked->toArray());
 
-        if (!empty($allowed)) {
+        if (! empty($allowed)) {
             AuditProgramDetail::whereIn('id', $allowed)->delete();
         }
 
@@ -211,6 +217,7 @@ class AuditProgramDetailController extends Controller
         }
         $parentId = $auditProgramDetail->audit_program_id;
         $auditProgramDetail->delete();
+
         return redirect()->route('audit-program.show', $parentId)->with('success', 'Sub-program berhasil dihapus.');
     }
 }

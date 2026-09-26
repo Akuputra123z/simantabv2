@@ -16,11 +16,11 @@ trait HasActivityLog
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->setDescriptionForEvent(fn (string $eventName) => match ($eventName) {
-                'created'  => 'Membuat ' . class_basename($this),
-                'updated'  => 'Mengubah ' . class_basename($this),
-                'deleted'  => 'Menghapus ' . class_basename($this),
-                'restored' => 'Memulihkan ' . class_basename($this),
-                default    => $eventName . ' ' . class_basename($this),
+                'created' => 'Membuat '.class_basename($this),
+                'updated' => 'Mengubah '.class_basename($this),
+                'deleted' => 'Menghapus '.class_basename($this),
+                'restored' => 'Memulihkan '.class_basename($this),
+                default => $eventName.' '.class_basename($this),
             });
     }
 

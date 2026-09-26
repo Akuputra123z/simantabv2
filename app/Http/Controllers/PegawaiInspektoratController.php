@@ -15,15 +15,13 @@ class PegawaiInspektoratController extends Controller
             ->when($request->filled('search'), function ($q) use ($request) {
                 $q->where(function ($query) use ($request) {
                     $query->where('name', 'like', "%{$request->search}%")
-                          ->orWhere('email', 'like', "%{$request->search}%")
-                          ->orWhere('nip', 'like', "%{$request->search}%");
+                        ->orWhere('email', 'like', "%{$request->search}%")
+                        ->orWhere('nip', 'like', "%{$request->search}%");
                 });
             })
-            ->when($request->filled('unit_kerja'), fn ($q) =>
-                $q->where('unit_kerja', $request->unit_kerja)
+            ->when($request->filled('unit_kerja'), fn ($q) => $q->where('unit_kerja', $request->unit_kerja)
             )
-            ->when($request->filled('jabatan'), fn ($q) =>
-                $q->where('jabatan', $request->jabatan)
+            ->when($request->filled('jabatan'), fn ($q) => $q->where('jabatan', $request->jabatan)
             )
             ->latest()
             ->paginate(min((int) $request->per_page, 100) ?: 15)
@@ -33,8 +31,8 @@ class PegawaiInspektoratController extends Controller
         $jabatanOptions = User::JABATAN_OPTIONS;
 
         $stats = [
-            'total'    => User::inspektorat()->count(),
-            'aktif'    => User::inspektorat()->where('is_active', true)->count(),
+            'total' => User::inspektorat()->count(),
+            'aktif' => User::inspektorat()->where('is_active', true)->count(),
             'nonaktif' => User::inspektorat()->where('is_active', false)->count(),
         ];
 
@@ -44,6 +42,7 @@ class PegawaiInspektoratController extends Controller
     public function show(User $user): View
     {
         $user->load('roles');
+
         return view('pegawai.inspektorat.show', compact('user'));
     }
 }

@@ -11,7 +11,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class TemplateUnitDiperiksaExport implements FromArray, WithHeadings, WithStyles, WithColumnWidths
+class TemplateUnitDiperiksaExport implements FromArray, WithColumnWidths, WithHeadings, WithStyles
 {
     public function array(): array
     {
@@ -90,10 +90,10 @@ class TemplateUnitDiperiksaExport implements FromArray, WithHeadings, WithStyles
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical'   => Alignment::VERTICAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
             ],
             'fill' => [
-                'fillType'   => Fill::FILL_SOLID,
+                'fillType' => Fill::FILL_SOLID,
                 'startColor' => ['rgb' => '1E40AF'], // Blue 800
             ],
         ]);
@@ -101,11 +101,11 @@ class TemplateUnitDiperiksaExport implements FromArray, WithHeadings, WithStyles
         $highestRow = $sheet->getHighestRow();
 
         // Apply Borders and Font formatting
-        $sheet->getStyle('A1:F' . $highestRow)->applyFromArray([
+        $sheet->getStyle('A1:F'.$highestRow)->applyFromArray([
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color'       => ['rgb' => 'CBD5E1'],
+                    'color' => ['rgb' => 'CBD5E1'],
                 ],
             ],
             'alignment' => [
@@ -114,7 +114,7 @@ class TemplateUnitDiperiksaExport implements FromArray, WithHeadings, WithStyles
         ]);
 
         // Center align category and kecamatan
-        $sheet->getStyle('B2:C' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('B2:C'.$highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         return [];
     }

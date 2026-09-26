@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\LhpStatistikService;
+use App\Traits\HasActivityLog;
 use App\Traits\HasAttachments;
 use App\Traits\HasCreatedUpdatedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,22 +13,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Services\LhpStatistikService;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use App\Traits\HasActivityLog;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Lhp extends Model
 {
-    use SoftDeletes, HasCreatedUpdatedBy, HasAttachments, HasActivityLog;
+    use HasActivityLog, HasAttachments, HasCreatedUpdatedBy, SoftDeletes;
 
     protected static $logExcept = ['created_by', 'updated_by', 'created_at', 'updated_at', 'deleted_at'];
 
-    protected $table      = 'lhps';
-    protected $primaryKey = 'id';   
+    protected $table = 'lhps';
+
+    protected $primaryKey = 'id';
 
     protected $fillable = [
-        'audit_assignment_id', 'nomor_lhp', 'tanggal_lhp','unit_diperiksa_id','is_nihil','catatan_umum', 
+        'audit_assignment_id', 'nomor_lhp', 'tanggal_lhp', 'unit_diperiksa_id', 'is_nihil', 'catatan_umum',
         'status_batal_keterangan', 'status_batal_user_id', 'status_batal_at',
         'status', 'created_by', 'updated_by',
     ];
@@ -34,21 +35,40 @@ class Lhp extends Model
     protected function casts(): array
     {
         return [
-            'is_nihil'       => 'boolean',
-            'tanggal_lhp'    => 'date',
-            'semester'       => 'integer',
-            'deleted_at'     => 'datetime',
+            'is_nihil' => 'boolean',
+            'tanggal_lhp' => 'date',
+            'semester' => 'integer',
+            'deleted_at' => 'datetime',
             'status_batal_at' => 'datetime',
         ];
     }
 
     // ── Relationships ─────────────────────────────────────────────────────────
 
-    public function auditAssignment(): BelongsTo { return $this->belongsTo(AuditAssignment::class); }
-    public function creator(): BelongsTo         { return $this->belongsTo(User::class, 'created_by'); }
-    public function batalUser(): BelongsTo        { return $this->belongsTo(User::class, 'status_batal_user_id'); }
-    public function temuans(): HasMany            { return $this->hasMany(Temuan::class); }
-    public function reports(): HasMany            { return $this->hasMany(LhpReport::class); }
+    public function auditAssignment(): BelongsTo
+    {
+        return $this->belongsTo(AuditAssignment::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function batalUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'status_batal_user_id');
+    }
+
+    public function temuans(): HasMany
+    {
+        return $this->hasMany(Temuan::class);
+    }
+
+    public function reports(): HasMany
+    {
+        return $this->hasMany(LhpReport::class);
+    }
 
     public function statistik(): HasOne
     {
@@ -71,6 +91,7 @@ class Lhp extends Model
             'id'
         )->with('kodeRekomendasi');
     }
+
     public function unitDiperiksa(): BelongsTo
     {
         return $this->belongsTo(UnitDiperiksa::class, 'unit_diperiksa_id');
@@ -98,6 +119,7 @@ class Lhp extends Model
         if ($this->relationLoaded('unitDiperiksas') && $this->unitDiperiksas->isNotEmpty()) {
             return $this->unitDiperiksas->pluck('nama_unit')->join(', ');
         }
+
         return $this->unitDiperiksa?->nama_unit ?? '-';
     }
 
@@ -141,18 +163,26 @@ class Lhp extends Model
     {
         return $q->where(function ($sq) {
             $sq->where('is_nihil', true)
-               ->orWhereHas('statistik', function ($statQ) {
-                   $statQ->where('persen_selesai_gabungan', '>=', 100)
-                         ->orWhere('persen_selesai', '>=', 100);
-               });
+                ->orWhereHas('statistik', function ($statQ) {
+                    $statQ->where('persen_selesai_gabungan', '>=', 100)
+                        ->orWhere('persen_selesai', '>=', 100);
+                });
         });
     }
 
-    public function scopeStatus(Builder $q, string $s): Builder  { return $q->where('status', $s); }
-    public function scopeSemester(Builder $q, int $s): Builder   { return $q->where('semester', $s); }
+    public function scopeStatus(Builder $q, string $s): Builder
+    {
+        return $q->where('status', $s);
+    }
+
+    public function scopeSemester(Builder $q, int $s): Builder
+    {
+        return $q->where('semester', $s);
+    }
+
     public function scopeIrban(Builder $q, string $i): Builder
     {
-        return $q->whereHas('auditAssignment.auditProgramDetail', fn($sq) => $sq->where('tim', $i));
+        return $q->whereHas('auditAssignment.auditProgramDetail', fn ($sq) => $sq->where('tim', $i));
     }
 
     public function scopeForUser(Builder $query, ?User $user): Builder
@@ -174,17 +204,18 @@ class Lhp extends Model
             if ($unitIds->isEmpty()) {
                 return $query->whereRaw('1 = 0');
             }
+
             return $query->where(function ($q) use ($unitIds) {
                 $q->whereIn('unit_diperiksa_id', $unitIds)
-                  ->orWhereHas('unitDiperiksas', fn($uq) => $uq->whereIn('unit_diperiksas.id', $unitIds));
+                    ->orWhereHas('unitDiperiksas', fn ($uq) => $uq->whereIn('unit_diperiksas.id', $unitIds));
             });
         }
 
         return $query->whereHas('auditAssignment', function ($q) use ($user) {
             $q->where('ketua_tim_id', $user->id)
-              ->orWhereHas('members', function ($q2) use ($user) {
-                  $q2->where('user_id', $user->id);
-              });
+                ->orWhereHas('members', function ($q2) use ($user) {
+                    $q2->where('user_id', $user->id);
+                });
         });
     }
 
@@ -198,11 +229,9 @@ class Lhp extends Model
         return $q
             ->whereIn('status', ['final', 'ditandatangani'])
             ->has('auditAssignment')
-            ->whereHas('statistik', fn (Builder $s) =>
-                $s->where('persen_selesai_gabungan', 100)
+            ->whereHas('statistik', fn (Builder $s) => $s->where('persen_selesai_gabungan', 100)
             );
     }
-
 
     public function programDetail()
     {
@@ -233,9 +262,9 @@ class Lhp extends Model
 
         if ($this->relationLoaded('temuans')) {
             return (float) $this->temuans->sum(function ($t) {
-                return ($t->nilai_kerugian_negara  ?? 0)
-                     + ($t->nilai_kerugian_daerah  ?? 0)
-                     + ($t->nilai_kerugian_desa     ?? 0)
+                return ($t->nilai_kerugian_negara ?? 0)
+                     + ($t->nilai_kerugian_daerah ?? 0)
+                     + ($t->nilai_kerugian_desa ?? 0)
                      + ($t->nilai_kerugian_bos_blud ?? 0);
             });
         }
@@ -245,9 +274,12 @@ class Lhp extends Model
 
     public function getStatusBatalInfoAttribute(): string
     {
-        if (! $this->status_batal_at) return '-';
+        if (! $this->status_batal_at) {
+            return '-';
+        }
         $user = $this->batalUser?->name ?? 'Unknown';
-        return "Dibatalkan oleh {$user} pada " . $this->status_batal_at->format('d M Y H:i') .
+
+        return "Dibatalkan oleh {$user} pada ".$this->status_batal_at->format('d M Y H:i').
                ($this->status_batal_keterangan ? " (Alasan: {$this->status_batal_keterangan})" : '');
     }
 
@@ -273,24 +305,20 @@ class Lhp extends Model
     {
         $this->refreshStatistik();
     }
-    public function auditProgramDetail()
-{
-    return $this->hasOneThrough(
-        AuditProgramDetail::class,
-        AuditAssignment::class,
-        'id', // Foreign key di audit_assignments (LHP.audit_assignment_id)
-        'id', // Foreign key di audit_program_details (Assignment.audit_program_detail_id)
-        'audit_assignment_id', // Local key di LHPs
-        'audit_program_detail_id' // Local key di Audit Assignments
-    );
-}
 
-    
+    public function auditProgramDetail()
+    {
+        return $this->hasOneThrough(
+            AuditProgramDetail::class,
+            AuditAssignment::class,
+            'id', // Foreign key di audit_assignments (LHP.audit_assignment_id)
+            'id', // Foreign key di audit_program_details (Assignment.audit_program_detail_id)
+            'audit_assignment_id', // Local key di LHPs
+            'audit_program_detail_id' // Local key di Audit Assignments
+        );
+    }
 
     // ── Events ────────────────────────────────────────────────────────────────
 
-    protected static function booted(): void
-    {
-       
-    }
+    protected static function booted(): void {}
 }

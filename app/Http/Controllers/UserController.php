@@ -23,15 +23,13 @@ class UserController extends Controller
             ->when($request->filled('search'), function ($q) use ($request) {
                 $q->where(function ($query) use ($request) {
                     $query->where('name', 'like', "%{$request->search}%")
-                          ->orWhere('email', 'like', "%{$request->search}%")
-                          ->orWhere('nip', 'like', "%{$request->search}%");
+                        ->orWhere('email', 'like', "%{$request->search}%")
+                        ->orWhere('nip', 'like', "%{$request->search}%");
                 });
             })
-            ->when($request->filled('unit_kerja'), fn ($q) =>
-                $q->where('unit_kerja', $request->unit_kerja)
+            ->when($request->filled('unit_kerja'), fn ($q) => $q->where('unit_kerja', $request->unit_kerja)
             )
-            ->when($request->filled('jabatan'), fn ($q) =>
-                $q->where('jabatan', $request->jabatan)
+            ->when($request->filled('jabatan'), fn ($q) => $q->where('jabatan', $request->jabatan)
             )
             ->latest()
             ->paginate(15)
@@ -40,11 +38,11 @@ class UserController extends Controller
         $unitKerjaOptions = User::UNIT_KERJA_OPTIONS;
         $jabatanOptions = User::JABATAN_OPTIONS;
 
-        $stats = User::selectRaw("
+        $stats = User::selectRaw('
                 COUNT(*) as total,
                 SUM(is_active = 1) as aktif,
                 SUM(is_active = 0) as nonaktif
-            ")->first();
+            ')->first();
 
         return view('users.index', [
             'users' => $users,
@@ -54,7 +52,7 @@ class UserController extends Controller
                 'total' => $stats->total ?? 0,
                 'aktif' => $stats->aktif ?? 0,
                 'nonaktif' => $stats->nonaktif ?? 0,
-            ]
+            ],
         ]);
     }
 
@@ -66,6 +64,7 @@ class UserController extends Controller
         $unitKerjaOptions = User::UNIT_KERJA_OPTIONS;
         $jabatanOptions = User::JABATAN_OPTIONS;
         $opdUnits = UnitDiperiksa::orderBy('nama_unit')->get(['id', 'nama_unit', 'nama_kecamatan']);
+
         return view('users.create', compact('roles', 'unitKerjaOptions', 'jabatanOptions', 'opdUnits'));
     }
 
@@ -74,32 +73,32 @@ class UserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'                => ['required', 'string', 'max:255'],
-            'email'               => ['required', 'email', 'max:255', 'unique:users,email'],
-            'nip'                 => ['nullable', 'string', 'max:30', 'unique:users,nip'],
-            'jabatan'             => ['nullable', 'string', Rule::in(User::JABATAN_OPTIONS)],
-            'phone'               => ['nullable', 'string', 'max:20'],
-            'password'            => ['required', Password::min(8)->letters()->numbers()],
-            'role'                => ['required', 'string', 'exists:roles,name'],
-            'is_active'           => ['boolean'],
-            'unit_kerja'          => ['nullable', 'string', Rule::in(User::UNIT_KERJA_OPTIONS)],
-            'jenis_kelamin'       => ['nullable', 'string', Rule::in(['L', 'P'])],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'nip' => ['nullable', 'string', 'max:30', 'unique:users,nip'],
+            'jabatan' => ['nullable', 'string', Rule::in(User::JABATAN_OPTIONS)],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'password' => ['required', Password::min(8)->letters()->numbers()],
+            'role' => ['required', 'string', 'exists:roles,name'],
+            'is_active' => ['boolean'],
+            'unit_kerja' => ['nullable', 'string', Rule::in(User::UNIT_KERJA_OPTIONS)],
+            'jenis_kelamin' => ['nullable', 'string', Rule::in(['L', 'P'])],
             'pendidikan_terakhir' => ['nullable', 'string', 'max:100'],
-            'pangkat_gol'         => ['nullable', 'string', 'max:50'],
+            'pangkat_gol' => ['nullable', 'string', 'max:50'],
         ]);
 
         $user = User::create([
-            'name'                => $validated['name'],
-            'email'               => $validated['email'],
-            'nip'                 => $validated['nip'] ?? null,
-            'jabatan'             => $validated['jabatan'] ?? null,
-            'unit_kerja'          => $validated['unit_kerja'] ?? null,
-            'phone'               => $validated['phone'] ?? null,
-            'password'            => Hash::make($validated['password']),
-            'is_active'           => $request->boolean('is_active', true),
-            'jenis_kelamin'       => $validated['jenis_kelamin'] ?? null,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'nip' => $validated['nip'] ?? null,
+            'jabatan' => $validated['jabatan'] ?? null,
+            'unit_kerja' => $validated['unit_kerja'] ?? null,
+            'phone' => $validated['phone'] ?? null,
+            'password' => Hash::make($validated['password']),
+            'is_active' => $request->boolean('is_active', true),
+            'jenis_kelamin' => $validated['jenis_kelamin'] ?? null,
             'pendidikan_terakhir' => $validated['pendidikan_terakhir'] ?? null,
-            'pangkat_gol'         => $validated['pangkat_gol'] ?? null,
+            'pangkat_gol' => $validated['pangkat_gol'] ?? null,
         ]);
 
         $user->assignRole($validated['role']);
@@ -118,6 +117,7 @@ class UserController extends Controller
     public function show(User $user): View
     {
         $user->load('roles');
+
         return view('users.show', compact('user'));
     }
 
@@ -131,6 +131,7 @@ class UserController extends Controller
         $jabatanOptions = User::JABATAN_OPTIONS;
         $opdUnits = UnitDiperiksa::orderBy('nama_unit')->get(['id', 'nama_unit', 'nama_kecamatan']);
         $user->load('opdUnits');
+
         return view('users.edit', compact('user', 'roles', 'unitKerjaOptions', 'jabatanOptions', 'opdUnits'));
     }
 
@@ -139,18 +140,18 @@ class UserController extends Controller
     public function update(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate([
-            'name'                => ['required', 'string', 'max:255'],
-            'email'               => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'nip'                 => ['nullable', 'string', 'max:30', Rule::unique('users')->ignore($user->id)],
-            'jabatan'             => ['nullable', 'string', Rule::in(User::JABATAN_OPTIONS)],
-            'phone'               => ['nullable', 'string', 'max:20'],
-            'password'            => ['nullable', Password::min(8)->letters()->numbers()],
-            'role'                => ['required', 'string', 'exists:roles,name'],
-            'is_active'           => ['boolean'],
-            'unit_kerja'          => ['nullable', 'string', Rule::in(User::UNIT_KERJA_OPTIONS)],
-            'jenis_kelamin'       => ['nullable', 'string', Rule::in(['L', 'P'])],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'nip' => ['nullable', 'string', 'max:30', Rule::unique('users')->ignore($user->id)],
+            'jabatan' => ['nullable', 'string', Rule::in(User::JABATAN_OPTIONS)],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'password' => ['nullable', Password::min(8)->letters()->numbers()],
+            'role' => ['required', 'string', 'exists:roles,name'],
+            'is_active' => ['boolean'],
+            'unit_kerja' => ['nullable', 'string', Rule::in(User::UNIT_KERJA_OPTIONS)],
+            'jenis_kelamin' => ['nullable', 'string', Rule::in(['L', 'P'])],
             'pendidikan_terakhir' => ['nullable', 'string', 'max:100'],
-            'pangkat_gol'         => ['nullable', 'string', 'max:50'],
+            'pangkat_gol' => ['nullable', 'string', 'max:50'],
         ]);
 
         if ($user->id === auth()->id() && ! $request->boolean('is_active')) {
@@ -158,21 +159,21 @@ class UserController extends Controller
         }
 
         $user->update([
-            'name'                => $validated['name'],
-            'email'               => $validated['email'],
-            'nip'                 => $validated['nip'] ?? null,
-            'jabatan'             => $validated['jabatan'] ?? null,
-            'unit_kerja'          => $validated['unit_kerja'] ?? null,
-            'phone'               => $validated['phone'] ?? null,
-            'is_active'           => $request->boolean('is_active', true),
-            'jenis_kelamin'       => $validated['jenis_kelamin'] ?? null,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'nip' => $validated['nip'] ?? null,
+            'jabatan' => $validated['jabatan'] ?? null,
+            'unit_kerja' => $validated['unit_kerja'] ?? null,
+            'phone' => $validated['phone'] ?? null,
+            'is_active' => $request->boolean('is_active', true),
+            'jenis_kelamin' => $validated['jenis_kelamin'] ?? null,
             'pendidikan_terakhir' => $validated['pendidikan_terakhir'] ?? null,
-            'pangkat_gol'         => $validated['pangkat_gol'] ?? null,
+            'pangkat_gol' => $validated['pangkat_gol'] ?? null,
         ]);
 
         if (! empty($validated['password'])) {
             $user->update([
-                'password' => Hash::make($validated['password'])
+                'password' => Hash::make($validated['password']),
             ]);
         }
 
@@ -198,7 +199,7 @@ class UserController extends Controller
         }
 
         $user->update([
-            'is_active' => ! $user->is_active
+            'is_active' => ! $user->is_active,
         ]);
 
         return back()->with('success', 'Status user berhasil diperbarui.');

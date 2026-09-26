@@ -14,7 +14,7 @@ class VerifikasiCicilanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status'             => ['required', 'in:diterima,ditolak'],
+            'status' => ['required', 'in:diterima,ditolak'],
             'catatan_verifikasi' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -23,7 +23,7 @@ class VerifikasiCicilanRequest extends FormRequest
     {
         return [
             'status.required' => 'Status verifikasi wajib dipilih.',
-            'status.in'       => 'Status harus diterima atau ditolak.',
+            'status.in' => 'Status harus diterima atau ditolak.',
         ];
     }
 }

@@ -143,6 +143,18 @@ body.dark .theme-switch {
     color: #9CA3AF;
 }
 
+body.dark .btn-refresh-captcha {
+    background: #111827 !important;
+    border-color: #374151 !important;
+    color: #94A3B8 !important;
+}
+
+body.dark .btn-refresh-captcha:hover {
+    background: #1F2937 !important;
+    color: #FFFFFF !important;
+    border-color: #4B5563 !important;
+}
+
 /* =========================================================
    LOGIN SHELL
 ========================================================= */
@@ -1907,7 +1919,53 @@ body.dark .theme-switch {
 
             </div>
 
+            <!-- CAPTCHA -->
+            <div class="field">
+                <label for="captcha">
+                    Kode Keamanan (Captcha)
+                </label>
 
+                <div style="display: flex; gap: 8px; align-items: stretch; margin-bottom: 8px;">
+                    <div style="border-radius: 12px; overflow: hidden; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; background: #FFFFFF; flex: 1; max-width: 170px; height: 46px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);" title="Klik untuk mengganti gambar">
+                        <img id="captchaImage" src="{{ $captcha['image'] ?? '' }}" alt="Kode Captcha" style="height: 100%; width: 100%; object-fit: contain; cursor: pointer; user-select: none;" onclick="refreshCaptcha()">
+                    </div>
+
+                    <button type="button" onclick="refreshCaptcha()" id="btnRefreshCaptcha" class="btn-refresh-captcha" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 14px; height: 46px; border: 1px solid var(--border); background: #FFFFFF; border-radius: 12px; cursor: pointer; color: var(--muted); font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif; transition: all .2s ease;" title="Ganti kode acak">
+                        <svg id="refreshIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                        </svg>
+                        <span>Acak Ulang</span>
+                    </button>
+                </div>
+
+                <div class="input-group @error('captcha') input-error @enderror">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+
+                    <input
+                        id="captcha"
+                        type="text"
+                        name="captcha"
+                        placeholder="Ketik 5 karakter di atas"
+                        required
+                        autocomplete="off"
+                        style="letter-spacing: 2px; font-weight: 700; text-transform: uppercase;"
+                        maxlength="6"
+                    >
+                </div>
+
+                @error('captcha')
+                    <p class="field-error">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 8v4"/>
+                            <path d="M12 16h.01"/>
+                        </svg>
+                        {{ $message }}
+                    </p>
+                @enderror
+            </div>
 
             <!-- OPTIONS -->
 
@@ -2191,6 +2249,37 @@ style.innerHTML = `
 
 document.head.appendChild(style);
 
+function refreshCaptcha() {
+    const img = document.getElementById('captchaImage');
+    const icon = document.getElementById('refreshIcon');
+    const btn = document.getElementById('btnRefreshCaptcha');
+
+    if (btn) btn.disabled = true;
+    if (icon) icon.style.animation = 'spin 0.6s linear infinite';
+
+    fetch('{{ route('captcha.refresh') }}')
+        .then(response => {
+            if (!response.ok) throw new Error('Network error');
+            return response.json();
+        })
+        .then(data => {
+            if (data && data.image) {
+                img.src = data.image;
+                const captchaInput = document.getElementById('captcha');
+                if (captchaInput) {
+                    captchaInput.value = '';
+                    captchaInput.focus();
+                }
+            }
+        })
+        .catch(err => {
+            console.error('Gagal memperbarui captcha:', err);
+        })
+        .finally(() => {
+            if (btn) btn.disabled = false;
+            if (icon) icon.style.animation = '';
+        });
+}
 </script>
 
 <!-- PWA Service Worker Registration -->

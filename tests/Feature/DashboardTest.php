@@ -9,6 +9,7 @@ use App\Models\Lhp;
 use App\Models\Recommendation;
 use App\Models\Temuan;
 use App\Models\TindakLanjut;
+use App\Models\UnitDiperiksa;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -63,20 +64,20 @@ class DashboardTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('opd');
 
-        $unit = \App\Models\UnitDiperiksa::create([
+        $unit = UnitDiperiksa::create([
             'nama_unit' => 'Dinas Pendidikan',
             'jenis' => 'opd',
         ]);
         $user->opdUnits()->attach($unit->id);
 
-        $program = \App\Models\AuditProgram::create([
+        $program = AuditProgram::create([
             'nama_program' => 'Audit Kinerja',
             'kategori' => 'PKPT',
             'tahun' => 2026,
             'status' => 'draft',
         ]);
 
-        $detail = \App\Models\AuditProgramDetail::create([
+        $detail = AuditProgramDetail::create([
             'audit_program_id' => $program->id,
             'nama_detail_program' => 'Detail Program 1',
             'jenis_kegiatan' => 'Pemeriksaan',
@@ -84,7 +85,7 @@ class DashboardTest extends TestCase
             'ruang_lingkup' => 'Pendidikan',
         ]);
 
-        $assignment = \App\Models\AuditAssignment::create([
+        $assignment = AuditAssignment::create([
             'audit_program_detail_id' => $detail->id,
             'ketua_tim_id' => $user->id,
             'nomor_surat' => 'ST/2026/001',
@@ -93,7 +94,7 @@ class DashboardTest extends TestCase
             'status' => 'berjalan',
         ]);
 
-        $lhp = \App\Models\Lhp::create([
+        $lhp = Lhp::create([
             'audit_assignment_id' => $assignment->id,
             'nomor_lhp' => 'LHP/2026/001',
             'tanggal_lhp' => now(),
@@ -119,20 +120,20 @@ class DashboardTest extends TestCase
         $adminUser = User::factory()->create();
         $adminUser->assignRole('super_admin');
 
-        $unit = \App\Models\UnitDiperiksa::create([
+        $unit = UnitDiperiksa::create([
             'nama_unit' => 'Dinas Kesehatan',
             'jenis' => 'opd',
         ]);
         $opdUser->opdUnits()->attach($unit->id);
 
-        $program = \App\Models\AuditProgram::create([
+        $program = AuditProgram::create([
             'nama_program' => 'Audit Dana BOK',
             'kategori' => 'PKPT',
             'tahun' => 2026,
             'status' => 'draft',
         ]);
 
-        $detail = \App\Models\AuditProgramDetail::create([
+        $detail = AuditProgramDetail::create([
             'audit_program_id' => $program->id,
             'nama_detail_program' => 'Pemeriksaan BOK',
             'jenis_kegiatan' => 'Pemeriksaan',
@@ -140,7 +141,7 @@ class DashboardTest extends TestCase
             'ruang_lingkup' => 'Kesehatan',
         ]);
 
-        $assignment = \App\Models\AuditAssignment::create([
+        $assignment = AuditAssignment::create([
             'audit_program_detail_id' => $detail->id,
             'ketua_tim_id' => $adminUser->id,
             'nomor_surat' => 'ST/2026/002',
@@ -149,7 +150,7 @@ class DashboardTest extends TestCase
             'status' => 'berjalan',
         ]);
 
-        $lhp = \App\Models\Lhp::create([
+        $lhp = Lhp::create([
             'audit_assignment_id' => $assignment->id,
             'nomor_lhp' => 'LHP/2026/002',
             'tanggal_lhp' => now(),
@@ -157,14 +158,14 @@ class DashboardTest extends TestCase
             'status' => 'final',
         ]);
 
-        $temuan = \App\Models\Temuan::create([
+        $temuan = Temuan::create([
             'lhp_id' => $lhp->id,
             'uraian_temuan' => 'Kelebihan pembayaran insentif nakes',
             'kondisi' => 'Terdapat kelebihan pembayaran',
             'nilai_temuan' => 10000000,
         ]);
 
-        $rekom = \App\Models\Recommendation::create([
+        $rekom = Recommendation::create([
             'temuan_id' => $temuan->id,
             'uraian_rekom' => 'Setorkan kelebihan insentif ke kas daerah',
             'jenis_rekomendasi' => 'uang',
@@ -215,20 +216,20 @@ class DashboardTest extends TestCase
         $adminUser = User::factory()->create();
         $adminUser->assignRole('super_admin');
 
-        $unit = \App\Models\UnitDiperiksa::create([
+        $unit = UnitDiperiksa::create([
             'nama_unit' => 'Dinas Perhubungan',
             'jenis' => 'opd',
         ]);
         $opdUser->opdUnits()->attach($unit->id);
 
-        $program = \App\Models\AuditProgram::create([
+        $program = AuditProgram::create([
             'nama_program' => 'Audit Pengelolaan Aset',
             'kategori' => 'PKPT',
             'tahun' => 2026,
             'status' => 'draft',
         ]);
 
-        $detail = \App\Models\AuditProgramDetail::create([
+        $detail = AuditProgramDetail::create([
             'audit_program_id' => $program->id,
             'nama_detail_program' => 'Pemeriksaan Aset Randis',
             'jenis_kegiatan' => 'Pemeriksaan',
@@ -236,7 +237,7 @@ class DashboardTest extends TestCase
             'ruang_lingkup' => 'Aset Daerah',
         ]);
 
-        $assignment = \App\Models\AuditAssignment::create([
+        $assignment = AuditAssignment::create([
             'audit_program_detail_id' => $detail->id,
             'ketua_tim_id' => $adminUser->id,
             'nomor_surat' => 'ST/2026/003',
@@ -245,7 +246,7 @@ class DashboardTest extends TestCase
             'status' => 'berjalan',
         ]);
 
-        $lhp = \App\Models\Lhp::create([
+        $lhp = Lhp::create([
             'audit_assignment_id' => $assignment->id,
             'nomor_lhp' => 'LHP/2026/003',
             'tanggal_lhp' => now(),
@@ -253,14 +254,14 @@ class DashboardTest extends TestCase
             'status' => 'final',
         ]);
 
-        $temuan = \App\Models\Temuan::create([
+        $temuan = Temuan::create([
             'lhp_id' => $lhp->id,
             'uraian_temuan' => 'Kendaraan dinas belum dikembalikan oleh pensiunan',
             'kondisi' => 'Randis belum diserahkan',
             'nilai_temuan' => 0,
         ]);
 
-        $rekom = \App\Models\Recommendation::create([
+        $rekom = Recommendation::create([
             'temuan_id' => $temuan->id,
             'uraian_rekom' => 'Tarik dan amankan randis disertai Berita Acara Serah Terima (BAST)',
             'jenis_rekomendasi' => 'barang',
@@ -295,7 +296,7 @@ class DashboardTest extends TestCase
         $tl->refresh();
         $this->assertEquals('lunas', $tl->status_verifikasi);
         $rekom->refresh();
-        $this->assertEquals(\App\Models\Recommendation::STATUS_SELESAI, $rekom->status);
+        $this->assertEquals(Recommendation::STATUS_SELESAI, $rekom->status);
     }
 
     public function test_admin_can_view_tindak_lanjut_detail_and_synchronize_opd_upload(): void
@@ -309,20 +310,20 @@ class DashboardTest extends TestCase
         $adminUser = User::factory()->create();
         $adminUser->assignRole('super_admin');
 
-        $unit = \App\Models\UnitDiperiksa::create([
+        $unit = UnitDiperiksa::create([
             'nama_unit' => 'Dinas Pendidikan',
             'jenis' => 'opd',
         ]);
         $opdUser->opdUnits()->attach($unit->id);
 
-        $program = \App\Models\AuditProgram::create([
+        $program = AuditProgram::create([
             'nama_program' => 'Audit Operasional Sekolah',
             'kategori' => 'PKPT',
             'tahun' => 2026,
             'status' => 'draft',
         ]);
 
-        $detail = \App\Models\AuditProgramDetail::create([
+        $detail = AuditProgramDetail::create([
             'audit_program_id' => $program->id,
             'nama_detail_program' => 'Pemeriksaan Dana BOS',
             'jenis_kegiatan' => 'Pemeriksaan',
@@ -330,7 +331,7 @@ class DashboardTest extends TestCase
             'ruang_lingkup' => 'BOS',
         ]);
 
-        $assignment = \App\Models\AuditAssignment::create([
+        $assignment = AuditAssignment::create([
             'audit_program_detail_id' => $detail->id,
             'ketua_tim_id' => $adminUser->id,
             'nomor_surat' => 'ST/2026/013',
@@ -339,7 +340,7 @@ class DashboardTest extends TestCase
             'status' => 'berjalan',
         ]);
 
-        $lhp = \App\Models\Lhp::create([
+        $lhp = Lhp::create([
             'audit_assignment_id' => $assignment->id,
             'nomor_lhp' => 'LHP/2026/013',
             'tanggal_lhp' => now(),
@@ -347,14 +348,14 @@ class DashboardTest extends TestCase
             'status' => 'final',
         ]);
 
-        $temuan = \App\Models\Temuan::create([
+        $temuan = Temuan::create([
             'lhp_id' => $lhp->id,
             'uraian_temuan' => 'Kelebihan pembayaran honorarium',
             'kondisi' => 'Terdapat kelebihan bayar',
             'nilai_temuan' => 10000000,
         ]);
 
-        $rekom = \App\Models\Recommendation::create([
+        $rekom = Recommendation::create([
             'temuan_id' => $temuan->id,
             'uraian_rekom' => 'Setorkan kelebihan honorarium ke Kas Daerah',
             'jenis_rekomendasi' => 'uang',
@@ -397,7 +398,7 @@ class DashboardTest extends TestCase
         $this->assertEquals(0, (float) $tl->sisa_belum_bayar);
 
         $rekom->refresh();
-        $this->assertEquals(\App\Models\Recommendation::STATUS_SELESAI, $rekom->status);
+        $this->assertEquals(Recommendation::STATUS_SELESAI, $rekom->status);
     }
 
     public function test_admin_can_visit_tindak_lanjut_lhp_index_and_view_all_recommendations_with_dropdown(): void
@@ -406,19 +407,19 @@ class DashboardTest extends TestCase
         $adminUser = User::factory()->create();
         $adminUser->assignRole('super_admin');
 
-        $unit = \App\Models\UnitDiperiksa::create([
+        $unit = UnitDiperiksa::create([
             'nama_unit' => 'Dinas Pekerjaan Umum',
             'jenis' => 'opd',
         ]);
 
-        $program = \App\Models\AuditProgram::create([
+        $program = AuditProgram::create([
             'nama_program' => 'Audit Infrastruktur Jalan',
             'kategori' => 'PKPT',
             'tahun' => 2026,
             'status' => 'draft',
         ]);
 
-        $detail = \App\Models\AuditProgramDetail::create([
+        $detail = AuditProgramDetail::create([
             'audit_program_id' => $program->id,
             'nama_detail_program' => 'Pemeriksaan Aspal Hotmix',
             'jenis_kegiatan' => 'Pemeriksaan',
@@ -426,7 +427,7 @@ class DashboardTest extends TestCase
             'ruang_lingkup' => 'Jalan',
         ]);
 
-        $assignment = \App\Models\AuditAssignment::create([
+        $assignment = AuditAssignment::create([
             'audit_program_detail_id' => $detail->id,
             'ketua_tim_id' => $adminUser->id,
             'nomor_surat' => 'ST/2026/088',
@@ -435,7 +436,7 @@ class DashboardTest extends TestCase
             'status' => 'berjalan',
         ]);
 
-        $lhp = \App\Models\Lhp::create([
+        $lhp = Lhp::create([
             'audit_assignment_id' => $assignment->id,
             'nomor_lhp' => 'LHP/2026/088',
             'tanggal_lhp' => now(),
@@ -443,14 +444,14 @@ class DashboardTest extends TestCase
             'status' => 'final',
         ]);
 
-        $temuan = \App\Models\Temuan::create([
+        $temuan = Temuan::create([
             'lhp_id' => $lhp->id,
             'uraian_temuan' => 'Kekurangan volume pekerjaan jalan',
             'kondisi' => 'Tebal aspal kurang 1 cm',
             'nilai_temuan' => 15000000,
         ]);
 
-        $rekom1 = \App\Models\Recommendation::create([
+        $rekom1 = Recommendation::create([
             'temuan_id' => $temuan->id,
             'uraian_rekom' => 'Setor kekurangan volume ke kasda',
             'jenis_rekomendasi' => 'uang',
@@ -485,19 +486,19 @@ class DashboardTest extends TestCase
         $adminUser = User::factory()->create();
         $adminUser->assignRole('super_admin');
 
-        $unit = \App\Models\UnitDiperiksa::create([
+        $unit = UnitDiperiksa::create([
             'nama_unit' => 'Inspektorat Pembantu IV',
             'jenis' => 'opd',
         ]);
 
-        $program = \App\Models\AuditProgram::create([
+        $program = AuditProgram::create([
             'nama_program' => 'Pemeriksaan Kepatuhan 2026',
             'kategori' => 'PKPT',
             'tahun' => 2026,
             'status' => 'draft',
         ]);
 
-        $detail = \App\Models\AuditProgramDetail::create([
+        $detail = AuditProgramDetail::create([
             'audit_program_id' => $program->id,
             'nama_detail_program' => 'Audit Dana BOS',
             'jenis_kegiatan' => 'Pemeriksaan',
@@ -505,7 +506,7 @@ class DashboardTest extends TestCase
             'ruang_lingkup' => 'Keuangan',
         ]);
 
-        $assignment = \App\Models\AuditAssignment::create([
+        $assignment = AuditAssignment::create([
             'audit_program_detail_id' => $detail->id,
             'ketua_tim_id' => $adminUser->id,
             'nomor_surat' => 'ST/2026/099',
@@ -514,7 +515,7 @@ class DashboardTest extends TestCase
             'status' => 'berjalan',
         ]);
 
-        $lhp = \App\Models\Lhp::create([
+        $lhp = Lhp::create([
             'audit_assignment_id' => $assignment->id,
             'nomor_lhp' => 'LHP/2026/099',
             'tanggal_lhp' => now(),
@@ -522,14 +523,14 @@ class DashboardTest extends TestCase
             'status' => 'final',
         ]);
 
-        $temuan = \App\Models\Temuan::create([
+        $temuan = Temuan::create([
             'lhp_id' => $lhp->id,
             'uraian_temuan' => 'Pengeluaran tanpa kuitansi sah',
             'kondisi' => 'Terdapat belanja ATK tanpa bukti pengeluaran',
             'nilai_temuan' => 5000000,
         ]);
 
-        $rekom = \App\Models\Recommendation::create([
+        $rekom = Recommendation::create([
             'temuan_id' => $temuan->id,
             'uraian_rekom' => 'Setor ke kasda sebesar Rp 5.000.000',
             'jenis_rekomendasi' => 'uang',
@@ -597,7 +598,7 @@ class DashboardTest extends TestCase
         $opdUser = User::factory()->create();
         $opdUser->assignRole('opd');
 
-        $unit = \App\Models\UnitDiperiksa::create([
+        $unit = UnitDiperiksa::create([
             'nama_unit' => 'Kecamatan Kragan',
             'kategori' => 'OPD',
         ]);
@@ -683,5 +684,3 @@ class DashboardTest extends TestCase
         $opdDetailRes->assertSee('Setorkan kelebihan kas ke kas daerah');
     }
 }
-
-

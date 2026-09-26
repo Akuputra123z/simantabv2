@@ -8,6 +8,7 @@ use App\Models\AuditProgram;
 use App\Models\Lhp;
 use App\Models\Recommendation;
 use App\Models\TindakLanjut;
+use App\Models\TindakLanjutCicilan;
 use App\Models\UnitDiperiksa;
 use App\Services\LhpStatistikService;
 use Illuminate\Http\JsonResponse;
@@ -52,20 +53,20 @@ class OpdTindakLanjutController extends Controller
                 TindakLanjut::firstOrCreate(
                     ['recommendation_id' => $rekomId],
                     [
-                        'status_verifikasi'   => 'menunggu_verifikasi',
+                        'status_verifikasi' => 'menunggu_verifikasi',
                         'nilai_tindak_lanjut' => 0,
-                        'total_terbayar'      => 0,
-                        'sisa_belum_bayar'    => 0,
+                        'total_terbayar' => 0,
+                        'sisa_belum_bayar' => 0,
                     ]
                 );
             }
         }
 
         // Filters (Default 'semua' to synchronize with OPD Dashboard)
-        $kategori  = $request->input('kategori', 'semua');
+        $kategori = $request->input('kategori', 'semua');
         $statusOpd = $request->input('status_opd');
-        $status    = $request->input('status');
-        $search    = $request->input('search');
+        $status = $request->input('status');
+        $search = $request->input('search');
 
         $query = Lhp::query();
         if (! $isSuperOrAdmin) {
@@ -117,13 +118,13 @@ class OpdTindakLanjutController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('nomor_lhp', 'like', "%{$search}%")
-                  ->orWhere('catatan_umum', 'like', "%{$search}%")
-                  ->orWhereHas('temuans', function ($qT) use ($search) {
-                      $qT->where('uraian_temuan', 'like', "%{$search}%")
-                         ->orWhereHas('recommendations', function ($qR) use ($search) {
-                             $qR->where('uraian_rekom', 'like', "%{$search}%");
-                         });
-                  });
+                    ->orWhere('catatan_umum', 'like', "%{$search}%")
+                    ->orWhereHas('temuans', function ($qT) use ($search) {
+                        $qT->where('uraian_temuan', 'like', "%{$search}%")
+                            ->orWhereHas('recommendations', function ($qR) use ($search) {
+                                $qR->where('uraian_rekom', 'like', "%{$search}%");
+                            });
+                    });
             });
         }
 
@@ -194,7 +195,7 @@ class OpdTindakLanjutController extends Controller
         }
 
         // Auto-ensure default TindakLanjut stubs exist for all recommendations in this LHP
-        $missingRekomIds = Recommendation::whereHas('temuan', fn($q) => $q->where('lhp_id', $lhp->id))
+        $missingRekomIds = Recommendation::whereHas('temuan', fn ($q) => $q->where('lhp_id', $lhp->id))
             ->doesntHave('tindakLanjuts')
             ->pluck('id');
 
@@ -202,10 +203,10 @@ class OpdTindakLanjutController extends Controller
             TindakLanjut::firstOrCreate(
                 ['recommendation_id' => $rekomId],
                 [
-                    'status_verifikasi'   => 'menunggu_verifikasi',
+                    'status_verifikasi' => 'menunggu_verifikasi',
                     'nilai_tindak_lanjut' => 0,
-                    'total_terbayar'      => 0,
-                    'sisa_belum_bayar'    => 0,
+                    'total_terbayar' => 0,
+                    'sisa_belum_bayar' => 0,
                 ]
             );
         }
@@ -256,8 +257,8 @@ class OpdTindakLanjutController extends Controller
 
         foreach ($draftTls as $tl) {
             $tl->update([
-                'status_opd'       => 'dikirim',
-                'dikirim_pada'     => now(),
+                'status_opd' => 'dikirim',
+                'dikirim_pada' => now(),
                 'alasan_tolak_opd' => null,
             ]);
         }
@@ -292,14 +293,14 @@ class OpdTindakLanjutController extends Controller
         try {
             DB::beginTransaction();
 
-            $rekom     = $tindakLanjut->recommendation;
-            $jenis     = $request->input('jenis_penyelesaian');
+            $rekom = $tindakLanjut->recommendation;
+            $jenis = $request->input('jenis_penyelesaian');
             $keterangan = trim($request->input('keterangan_pendukung') ?? '');
 
             $updateData = [
-                'upload_opd_oleh'          => auth()->id(),
-                'status_opd'               => 'draft',
-                'alasan_tolak_opd'         => null,
+                'upload_opd_oleh' => auth()->id(),
+                'status_opd' => 'draft',
+                'alasan_tolak_opd' => null,
             ];
 
             if ($jenis) {
@@ -318,13 +319,13 @@ class OpdTindakLanjutController extends Controller
                 $nominalBayar = (float) ($request->input('nilai_tindak_lanjut') ?? 0);
                 if ($nominalBayar > 0) {
                     $cicilanRecord = $tindakLanjut->cicilans()->create([
-                        'nilai_bayar'   => $nominalBayar,
+                        'nilai_bayar' => $nominalBayar,
                         'tanggal_bayar' => $request->input('tanggal_bayar') ?? now(),
-                        'nomor_bukti'   => $request->input('nomor_bukti'),
-                        'keterangan'    => $keterangan,
-                        'jenis_bayar'   => 'setor_kas',
-                        'status'        => \App\Models\TindakLanjutCicilan::STATUS_MENUNGGU,
-                        'created_by'    => auth()->id(),
+                        'nomor_bukti' => $request->input('nomor_bukti'),
+                        'keterangan' => $keterangan,
+                        'jenis_bayar' => 'setor_kas',
+                        'status' => TindakLanjutCicilan::STATUS_MENUNGGU,
+                        'created_by' => auth()->id(),
                     ]);
                 }
             } elseif ($jenis === 'setor_kas') {
@@ -332,9 +333,9 @@ class OpdTindakLanjutController extends Controller
                 $updateData['nilai_tindak_lanjut'] = $nominalBayar;
 
                 if ($request->filled('nomor_bukti')) {
-                    $buktiPrefix = 'No. Bukti / STS: ' . $request->input('nomor_bukti');
+                    $buktiPrefix = 'No. Bukti / STS: '.$request->input('nomor_bukti');
                     if (! str_contains($keterangan, $buktiPrefix)) {
-                        $keterangan = trim($buktiPrefix . ($keterangan ? "\n" . $keterangan : ''));
+                        $keterangan = trim($buktiPrefix.($keterangan ? "\n".$keterangan : ''));
                     }
                 }
             } elseif (in_array($jenis, ['pengembalian_barang', 'perbaikan_administrasi'])) {
@@ -342,9 +343,9 @@ class OpdTindakLanjutController extends Controller
 
                 if ($request->filled('nomor_bukti')) {
                     $label = ($jenis === 'pengembalian_barang') ? 'No. BAST / Aset: ' : 'No. Dokumen: ';
-                    $buktiPrefix = $label . $request->input('nomor_bukti');
+                    $buktiPrefix = $label.$request->input('nomor_bukti');
                     if (! str_contains($keterangan, $buktiPrefix)) {
-                        $keterangan = trim($buktiPrefix . ($keterangan ? "\n" . $keterangan : ''));
+                        $keterangan = trim($buktiPrefix.($keterangan ? "\n".$keterangan : ''));
                     }
                 }
             }
@@ -358,24 +359,24 @@ class OpdTindakLanjutController extends Controller
                     if ($file && $file->isValid()) {
                         $path = $file->store('attachments/opd-upload', 'public');
                         $tindakLanjut->attachments()->create([
-                            'file_path'   => $path,
-                            'file_name'   => $file->getClientOriginalName(),
-                            'file_type'   => $file->getMimeType(),
-                            'file_size'   => $file->getSize(),
+                            'file_path' => $path,
+                            'file_name' => $file->getClientOriginalName(),
+                            'file_type' => $file->getMimeType(),
+                            'file_size' => $file->getSize(),
                             'jenis_bukti' => 'opd_upload',
-                            'urutan'      => $existingCount + $i,
+                            'urutan' => $existingCount + $i,
                             'visibilitas' => 'internal',
                             'uploaded_by' => auth()->id(),
                         ]);
 
                         if ($cicilanRecord) {
                             $cicilanRecord->attachments()->create([
-                                'file_path'   => $path,
-                                'file_name'   => $file->getClientOriginalName(),
-                                'file_type'   => $file->getMimeType(),
-                                'file_size'   => $file->getSize(),
+                                'file_path' => $path,
+                                'file_name' => $file->getClientOriginalName(),
+                                'file_type' => $file->getMimeType(),
+                                'file_size' => $file->getSize(),
                                 'jenis_bukti' => 'cicilan_bukti',
-                                'urutan'      => $i,
+                                'urutan' => $i,
                                 'visibilitas' => 'internal',
                                 'uploaded_by' => auth()->id(),
                             ]);
@@ -397,9 +398,9 @@ class OpdTindakLanjutController extends Controller
             return back()->with('success', 'Bukti tindak lanjut berhasil disimpan sebagai draft.');
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('OPD upload error: ' . $e->getMessage());
+            Log::error('OPD upload error: '.$e->getMessage());
 
-            return back()->withInput()->with('error', 'Gagal mengupload bukti: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal mengupload bukti: '.$e->getMessage());
         }
     }
 
@@ -430,7 +431,7 @@ class OpdTindakLanjutController extends Controller
                 ? response()->json(['message' => 'Lampiran berhasil dihapus.'])
                 : back()->with('success', 'Lampiran berhasil dihapus.');
         } catch (\Throwable $e) {
-            Log::error('Hapus lampiran OPD error: ' . $e->getMessage());
+            Log::error('Hapus lampiran OPD error: '.$e->getMessage());
 
             return request()->wantsJson()
                 ? response()->json(['message' => 'Gagal menghapus lampiran.'], 500)
@@ -444,8 +445,8 @@ class OpdTindakLanjutController extends Controller
 
         try {
             $tindakLanjut->update([
-                'status_opd'       => 'dikirim',
-                'dikirim_pada'     => now(),
+                'status_opd' => 'dikirim',
+                'dikirim_pada' => now(),
                 'alasan_tolak_opd' => null, // Reset rejection reason when OPD re-submits
             ]);
 
@@ -457,10 +458,9 @@ class OpdTindakLanjutController extends Controller
 
             return back()->with('success', 'Tindak lanjut berhasil dikirim.');
         } catch (\Throwable $e) {
-            Log::error('OPD kirim error: ' . $e->getMessage());
+            Log::error('OPD kirim error: '.$e->getMessage());
 
             return back()->with('error', 'Gagal mengirim tindak lanjut.');
         }
     }
 }
-

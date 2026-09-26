@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\DetailProgramExport;
 use App\Models\AuditProgram;
 use App\Models\AuditProgramDetail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -26,7 +26,7 @@ class AuditProgramController extends Controller
                     $q->where(function ($q) {
                         $q->whereHas('assignments.lhps', function ($q) {
                             $q->whereIn('status', ['final', 'ditandatangani'])
-                              ->whereHas('statistik', fn ($s) => $s->where('persen_selesai_gabungan', 100));
+                                ->whereHas('statistik', fn ($s) => $s->where('persen_selesai_gabungan', 100));
                         })->orWhereHas('assignments', fn ($q) => $q->where('status', 'selesai'));
                     });
                 },
@@ -37,9 +37,9 @@ class AuditProgramController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('nama_program', 'like', "%{$search}%")
-                  ->orWhereHas('details', function ($dq) use ($search) {
-                      $dq->where('nama_detail_program', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('details', function ($dq) use ($search) {
+                        $dq->where('nama_detail_program', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -57,7 +57,7 @@ class AuditProgramController extends Controller
                 $q->where(function ($sq) {
                     $sq->whereHas('assignments.lhps', function ($lq) {
                         $lq->whereIn('status', ['final', 'ditandatangani'])
-                           ->whereHas('statistik', fn ($s) => $s->where('persen_selesai_gabungan', 100));
+                            ->whereHas('statistik', fn ($s) => $s->where('persen_selesai_gabungan', 100));
                     })->orWhereHas('assignments', fn ($aq) => $aq->where('status', 'selesai'));
                 });
             };
@@ -66,9 +66,9 @@ class AuditProgramController extends Controller
                 $query->whereDoesntHave('details');
             } elseif ($status === 'selesai') {
                 $query->whereHas('details')
-                      ->whereDoesntHave('details', function ($dq) use ($isDetailSelesai) {
-                          $dq->whereNot($isDetailSelesai);
-                      });
+                    ->whereDoesntHave('details', function ($dq) use ($isDetailSelesai) {
+                        $dq->whereNot($isDetailSelesai);
+                    });
             } elseif ($status === 'berjalan') {
                 $query->whereHas('details', function ($dq) use ($isDetailSelesai) {
                     $dq->whereNot($isDetailSelesai);
@@ -78,12 +78,12 @@ class AuditProgramController extends Controller
 
         // Per page & Sorting dinamis
         $perPage = (int) $request->input('per_page', 10);
-        if (!in_array($perPage, [5, 8, 10, 20, 25, 30, 50, 100])) {
+        if (! in_array($perPage, [5, 8, 10, 20, 25, 30, 50, 100])) {
             $perPage = 10;
         }
 
         $sortableColumns = ['tahun', 'nama_program', 'kategori'];
-        $sort      = in_array($request->sort, $sortableColumns) ? $request->sort : 'tahun';
+        $sort = in_array($request->sort, $sortableColumns) ? $request->sort : 'tahun';
         $direction = $request->direction === 'asc' ? 'asc' : 'desc';
 
         $data = $query->orderBy($sort, $direction)
@@ -111,6 +111,7 @@ class AuditProgramController extends Controller
     public function create()
     {
         $kategoriOptions = AuditProgram::KATEGORI;
+
         return view('pages.audit-program.create', compact('kategoriOptions'));
     }
 
@@ -121,12 +122,12 @@ class AuditProgramController extends Controller
     {
         $validated = $request->validate([
             'nama_program' => 'required|string|max:255',
-            'tahun'        => 'required|integer|digits:4',
-            'kategori'     => 'required|string|in:' . implode(',', AuditProgram::KATEGORI),
+            'tahun' => 'required|integer|digits:4',
+            'kategori' => 'required|string|in:'.implode(',', AuditProgram::KATEGORI),
         ]);
 
         $program = AuditProgram::create(array_merge($validated, [
-            'status'     => 'draft',
+            'status' => 'draft',
             'created_by' => auth()->id(),
             'updated_by' => auth()->id(),
         ]));
@@ -146,7 +147,7 @@ class AuditProgramController extends Controller
                 $q->where(function ($q) {
                     $q->whereHas('assignments.lhps', function ($q) {
                         $q->whereIn('status', ['final', 'ditandatangani'])
-                          ->whereHas('statistik', fn ($s) => $s->where('persen_selesai_gabungan', 100));
+                            ->whereHas('statistik', fn ($s) => $s->where('persen_selesai_gabungan', 100));
                     })->orWhereHas('assignments', fn ($q) => $q->where('status', 'selesai'));
                 });
             },
@@ -157,10 +158,10 @@ class AuditProgramController extends Controller
         $details = $auditProgram->details()
             ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
                 $q->where('nama_detail_program', 'like', "%{$search}%")
-                  ->orWhere('jenis_kegiatan', 'like', "%{$search}%")
-                  ->orWhere('objek_pengawasan', 'like', "%{$search}%")
-                  ->orWhere('ruang_lingkup', 'like', "%{$search}%")
-                  ->orWhere('tim', 'like', "%{$search}%");
+                    ->orWhere('jenis_kegiatan', 'like', "%{$search}%")
+                    ->orWhere('objek_pengawasan', 'like', "%{$search}%")
+                    ->orWhere('ruang_lingkup', 'like', "%{$search}%")
+                    ->orWhere('tim', 'like', "%{$search}%");
             }))
             ->withCount([
                 'assignments',
@@ -181,6 +182,7 @@ class AuditProgramController extends Controller
     {
         $program = $auditProgram;
         $kategoriOptions = AuditProgram::KATEGORI;
+
         return view('pages.audit-program.edit', compact('program', 'kategoriOptions'));
     }
 
@@ -191,9 +193,9 @@ class AuditProgramController extends Controller
     {
         $validated = $request->validate([
             'nama_program' => 'required|string|max:255',
-            'tahun'        => 'required|integer|digits:4',
-            'kategori'     => 'required|string|in:' . implode(',', AuditProgram::KATEGORI),
-            'status'       => 'required|in:draft,berjalan,selesai',
+            'tahun' => 'required|integer|digits:4',
+            'kategori' => 'required|string|in:'.implode(',', AuditProgram::KATEGORI),
+            'status' => 'required|in:draft,berjalan,selesai',
         ]);
 
         $auditProgram->update(array_merge($validated, [
@@ -238,12 +240,12 @@ class AuditProgramController extends Controller
         $pdf = Pdf::loadView('pages.audit-program.pdf.detail', compact('auditProgram', 'details'))
             ->setPaper('a4', 'landscape')
             ->setOptions([
-                'defaultFont'          => 'sans-serif',
+                'defaultFont' => 'sans-serif',
                 'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled'      => false,
+                'isRemoteEnabled' => false,
             ]);
 
-        return $pdf->stream('preview-' . str_replace('/', '-', $auditProgram->nama_program) . '-' . now()->format('Ymd') . '.pdf');
+        return $pdf->stream('preview-'.str_replace('/', '-', $auditProgram->nama_program).'-'.now()->format('Ymd').'.pdf');
     }
 
     /**
@@ -257,12 +259,13 @@ class AuditProgramController extends Controller
         $pdf = Pdf::loadView('pages.audit-program.pdf.detail', compact('auditProgram', 'details'))
             ->setPaper('a4', 'landscape')
             ->setOptions([
-                'defaultFont'          => 'sans-serif',
+                'defaultFont' => 'sans-serif',
                 'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled'      => false,
+                'isRemoteEnabled' => false,
             ]);
 
-        $filename = 'sub-program-' . str_replace('/', '-', $auditProgram->nama_program) . '-' . now()->format('Ymd') . '.pdf';
+        $filename = 'sub-program-'.str_replace('/', '-', $auditProgram->nama_program).'-'.now()->format('Ymd').'.pdf';
+
         return $pdf->download($filename);
     }
 
@@ -273,13 +276,14 @@ class AuditProgramController extends Controller
     {
         $details = $this->getFilteredDetails($auditProgram);
 
-        $filename = 'sub-program-' . str_replace('/', '-', $auditProgram->nama_program) . '-' . now()->format('Ymd') . '.xlsx';
-        return Excel::download(new \App\Exports\DetailProgramExport($auditProgram, $details), $filename);
+        $filename = 'sub-program-'.str_replace('/', '-', $auditProgram->nama_program).'-'.now()->format('Ymd').'.xlsx';
+
+        return Excel::download(new DetailProgramExport($auditProgram, $details), $filename);
     }
 
     public function approve(AuditProgram $auditProgram)
     {
-        if (!auth()->user()->hasRole('kepala_inspektorat') && !auth()->user()->hasRole('super_admin')) {
+        if (! auth()->user()->hasRole('kepala_inspektorat') && ! auth()->user()->hasRole('super_admin')) {
             return back()->with('error', 'Hanya Kepala Inspektorat yang dapat menyetujui PKPT.');
         }
 
@@ -289,37 +293,37 @@ class AuditProgramController extends Controller
 
         $auditProgram->update([
             'approval_status' => AuditProgram::APPROVAL_DISETUJUI,
-            'approved_by'     => auth()->id(),
-            'approved_at'     => now(),
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
         ]);
 
         $auditProgram = AuditProgram::with('approver')->find($auditProgram->id);
         $details = $this->getFilteredDetails($auditProgram);
 
-        $filename = 'approved-' . str_replace('/', '-', $auditProgram->nama_program) . '-' . now()->format('Ymd') . '.pdf';
+        $filename = 'approved-'.str_replace('/', '-', $auditProgram->nama_program).'-'.now()->format('Ymd').'.pdf';
 
         $pdf = Pdf::loadView('pages.audit-program.pdf.detail', compact('auditProgram', 'details'))
             ->setPaper('a4', 'landscape')
             ->setOptions([
-                'defaultFont'          => 'sans-serif',
+                'defaultFont' => 'sans-serif',
                 'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled'      => false,
+                'isRemoteEnabled' => false,
             ]);
 
-        Storage::disk('public')->put('approved-pdfs/' . $filename, $pdf->output());
+        Storage::disk('public')->put('approved-pdfs/'.$filename, $pdf->output());
 
-        $auditProgram->update(['approved_pdf' => 'approved-pdfs/' . $filename]);
+        $auditProgram->update(['approved_pdf' => 'approved-pdfs/'.$filename]);
 
         return back()->with('success', 'PKPT berhasil disetujui.');
     }
 
     public function batalSetujui(AuditProgram $auditProgram)
     {
-        if (!auth()->user()->hasRole('kepala_inspektorat') && !auth()->user()->hasRole('super_admin')) {
+        if (! auth()->user()->hasRole('kepala_inspektorat') && ! auth()->user()->hasRole('super_admin')) {
             return back()->with('error', 'Hanya Kepala Inspektorat yang dapat membatalkan persetujuan PKPT.');
         }
 
-        if (!$auditProgram->isApproved()) {
+        if (! $auditProgram->isApproved()) {
             return back()->with('error', 'PKPT ini belum disetujui.');
         }
 
@@ -329,9 +333,9 @@ class AuditProgramController extends Controller
 
         $auditProgram->update([
             'approval_status' => AuditProgram::APPROVAL_DRAFT,
-            'approved_by'     => null,
-            'approved_at'     => null,
-            'approved_pdf'    => null,
+            'approved_by' => null,
+            'approved_at' => null,
+            'approved_pdf' => null,
         ]);
 
         return back()->with('success', 'Persetujuan PKPT berhasil dibatalkan.');
@@ -339,14 +343,14 @@ class AuditProgramController extends Controller
 
     public function reject(AuditProgram $auditProgram)
     {
-        if (!auth()->user()->hasRole('kepala_inspektorat') && !auth()->user()->hasRole('super_admin')) {
+        if (! auth()->user()->hasRole('kepala_inspektorat') && ! auth()->user()->hasRole('super_admin')) {
             return back()->with('error', 'Hanya Kepala Inspektorat yang dapat menolak PKPT.');
         }
 
         $auditProgram->update([
             'approval_status' => AuditProgram::APPROVAL_DITOLAK,
-            'approved_by'     => auth()->id(),
-            'approved_at'     => now(),
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
         ]);
 
         return back()->with('success', 'PKPT ditolak.');
@@ -357,20 +361,20 @@ class AuditProgramController extends Controller
      */
     private function getFilteredDetails(AuditProgram $auditProgram)
     {
-        $ids    = request('ids');
+        $ids = request('ids');
         $search = request('search');
 
         $query = $auditProgram->details()->withCount('assignments');
 
-        if (!empty($ids)) {
+        if (! empty($ids)) {
             $query->whereIn('id', (array) $ids);
         } elseif ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('nama_detail_program', 'like', "%{$search}%")
-                  ->orWhere('jenis_kegiatan', 'like', "%{$search}%")
-                  ->orWhere('objek_pengawasan', 'like', "%{$search}%")
-                  ->orWhere('ruang_lingkup', 'like', "%{$search}%")
-                  ->orWhere('tim', 'like', "%{$search}%");
+                    ->orWhere('jenis_kegiatan', 'like', "%{$search}%")
+                    ->orWhere('objek_pengawasan', 'like', "%{$search}%")
+                    ->orWhere('ruang_lingkup', 'like', "%{$search}%")
+                    ->orWhere('tim', 'like', "%{$search}%");
             });
         }
 
@@ -386,7 +390,7 @@ class AuditProgramController extends Controller
             ->select('id', 'nama_detail_program', 'jenis_kegiatan')
             ->orderBy('nama_detail_program')
             ->get();
-            
+
         return response()->json($details);
     }
 }

@@ -2,21 +2,23 @@
 
 namespace App\Exports;
 
+use App\Helpers\DateHelper;
 use App\Models\AuditProgram;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithTitle;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class DetailProgramExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithTitle
+class DetailProgramExport implements FromCollection, WithColumnWidths, WithHeadings, WithStyles, WithTitle
 {
     protected $auditProgram;
+
     protected $details;
 
     public function __construct(AuditProgram $auditProgram, Collection $details)
@@ -29,16 +31,16 @@ class DetailProgramExport implements FromCollection, WithHeadings, WithStyles, W
     {
         return $this->details->map(function ($d, $i) {
             return [
-                'no'       => $i + 1,
-                'nama'     => $d->nama_detail_program,
-                'jenis'    => $d->jenis_kegiatan ?? '-',
-                'objek'    => $d->objek_pengawasan ?? '-',
+                'no' => $i + 1,
+                'nama' => $d->nama_detail_program,
+                'jenis' => $d->jenis_kegiatan ?? '-',
+                'objek' => $d->objek_pengawasan ?? '-',
                 'personil' => $d->personil ?? '-',
                 'anggaran' => (float) $d->anggaran,
-                'risiko'   => $d->tingkat_resiko ?? '-',
-                'jadwal'   => \App\Helpers\DateHelper::formatJadwal($d->jadwal),
-                'tim'      => $d->tim ?? '-',
-                'status'   => strtoupper($d->status),
+                'risiko' => $d->tingkat_resiko ?? '-',
+                'jadwal' => DateHelper::formatJadwal($d->jadwal),
+                'tim' => $d->tim ?? '-',
+                'status' => strtoupper($d->status),
             ];
         });
     }
@@ -67,9 +69,9 @@ class DetailProgramExport implements FromCollection, WithHeadings, WithStyles, W
         // Header row
         $sheet->getStyle('A1:J1')->applyFromArray([
             'font' => [
-                'bold'   => true,
-                'color'  => ['argb' => 'FFFFFFFF'],
-                'size'   => 10,
+                'bold' => true,
+                'color' => ['argb' => 'FFFFFFFF'],
+                'size' => 10,
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
@@ -77,7 +79,7 @@ class DetailProgramExport implements FromCollection, WithHeadings, WithStyles, W
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical'   => Alignment::VERTICAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
             ],
         ]);
 
@@ -86,7 +88,7 @@ class DetailProgramExport implements FromCollection, WithHeadings, WithStyles, W
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color'       => ['argb' => 'FFD1D5DB'],
+                    'color' => ['argb' => 'FFD1D5DB'],
                 ],
             ],
         ]);

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * PermissionController
@@ -27,15 +28,15 @@ class PermissionController extends Controller
      * Tambahkan modul baru di sini tanpa perlu ubah blade.
      */
     private const PERMISSION_GROUPS = [
-        'LHP'               => ['lhp.view', 'lhp.create', 'lhp.edit', 'lhp.delete'],
-        'Temuan'            => ['temuan.view', 'temuan.create', 'temuan.edit', 'temuan.delete'],
-        'Rekomendasi'       => ['rekomendasi.view', 'rekomendasi.create', 'rekomendasi.edit', 'rekomendasi.delete'],
-        'Tindak Lanjut'     => ['tindak-lanjut.view', 'tindak-lanjut.create', 'tindak-lanjut.edit', 'tindak-lanjut.delete'],
-        'Cicilan'           => ['cicilan.view', 'cicilan.create', 'cicilan.edit', 'cicilan.delete', 'cicilan.verifikasi'],
-        'Audit Assignment'  => ['audit-assignment.view', 'audit-assignment.create', 'audit-assignment.edit', 'audit-assignment.delete'],
-        'Master Data'       => ['kode-temuan.manage', 'kode-rekomendasi.manage', 'unit-diperiksa.manage'],
-        'User'              => ['user.view', 'user.create', 'user.edit', 'user.delete', 'user.assign-role'],
-        'Laporan'           => ['laporan.view', 'laporan.export'],
+        'LHP' => ['lhp.view', 'lhp.create', 'lhp.edit', 'lhp.delete'],
+        'Temuan' => ['temuan.view', 'temuan.create', 'temuan.edit', 'temuan.delete'],
+        'Rekomendasi' => ['rekomendasi.view', 'rekomendasi.create', 'rekomendasi.edit', 'rekomendasi.delete'],
+        'Tindak Lanjut' => ['tindak-lanjut.view', 'tindak-lanjut.create', 'tindak-lanjut.edit', 'tindak-lanjut.delete'],
+        'Cicilan' => ['cicilan.view', 'cicilan.create', 'cicilan.edit', 'cicilan.delete', 'cicilan.verifikasi'],
+        'Audit Assignment' => ['audit-assignment.view', 'audit-assignment.create', 'audit-assignment.edit', 'audit-assignment.delete'],
+        'Master Data' => ['kode-temuan.manage', 'kode-rekomendasi.manage', 'unit-diperiksa.manage'],
+        'User' => ['user.view', 'user.create', 'user.edit', 'user.delete', 'user.assign-role'],
+        'Laporan' => ['laporan.view', 'laporan.export'],
     ];
 
     // ── Index — semua role + ringkasan permission ─────────────────────────────
@@ -55,7 +56,7 @@ class PermissionController extends Controller
 
     public function create(): View
     {
-        $permissions     = Permission::orderBy('name')->get();
+        $permissions = Permission::orderBy('name')->get();
         $permissionGroups = $this->buildPermissionGroups($permissions);
 
         return view('pages.permissions.create', compact('permissionGroups'));
@@ -66,7 +67,7 @@ class PermissionController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:100', 'unique:roles,name', 'regex:/^[a-z0-9_]+$/'],
+            'name' => ['required', 'string', 'max:100', 'unique:roles,name', 'regex:/^[a-z0-9_]+$/'],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['exists:permissions,name'],
         ], [
@@ -95,10 +96,10 @@ class PermissionController extends Controller
             'Permission super admin tidak dapat diubah.'
         );
 
-        $permissions      = Permission::orderBy('name')->get();
-        $rolePermissions  = $role->permissions->pluck('name')->toArray();
+        $permissions = Permission::orderBy('name')->get();
+        $rolePermissions = $role->permissions->pluck('name')->toArray();
         $permissionGroups = $this->buildPermissionGroups($permissions);
-        $userCount        = $role->users()->count();
+        $userCount = $role->users()->count();
 
         return view('pages.permissions.edit', compact(
             'role', 'permissionGroups', 'rolePermissions', 'userCount'
@@ -112,7 +113,7 @@ class PermissionController extends Controller
         abort_if($role->name === User::ROLE_SUPER_ADMIN, 403, 'Permission super admin tidak dapat diubah.');
 
         $validated = $request->validate([
-            'permissions'   => ['nullable', 'array'],
+            'permissions' => ['nullable', 'array'],
             'permissions.*' => ['exists:permissions,name'],
         ]);
 
@@ -120,7 +121,7 @@ class PermissionController extends Controller
         $role->syncPermissions($validated['permissions'] ?? []);
 
         // Bersihkan cache Spatie agar perubahan langsung efektif
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         return redirect()
             ->route('permissions.index')
@@ -169,7 +170,7 @@ class PermissionController extends Controller
 
         Permission::create(['name' => $validated['name']]);
 
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         return back()->with('success', "Permission \"{$validated['name']}\" berhasil dibuat.");
     }
@@ -188,7 +189,7 @@ class PermissionController extends Controller
         $name = $permission->name;
         $permission->delete();
 
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         return back()->with('success', "Permission \"{$name}\" berhasil dihapus.");
     }
@@ -201,15 +202,15 @@ class PermissionController extends Controller
      */
     private function buildPermissionGroups($permissions): array
     {
-        $grouped   = [];
-        $allNamed  = $permissions->pluck('name')->toArray();
-        $covered   = [];
+        $grouped = [];
+        $allNamed = $permissions->pluck('name')->toArray();
+        $covered = [];
 
         foreach (self::PERMISSION_GROUPS as $group => $names) {
             $exists = array_filter($names, fn ($n) => in_array($n, $allNamed));
             if (! empty($exists)) {
                 $grouped[$group] = array_values($exists);
-                $covered         = array_merge($covered, $exists);
+                $covered = array_merge($covered, $exists);
             }
         }
 

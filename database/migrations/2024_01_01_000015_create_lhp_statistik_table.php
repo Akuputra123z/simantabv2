@@ -60,21 +60,20 @@ return new class extends Migration
                 ->comment('Jumlah rekomendasi barang + administrasi');
             $table->unsignedInteger('rekom_nonutang_selesai')->default(0)
                 ->comment('Jumlah rekomendasi non-uang yang sudah selesai');
- 
 
             $table->decimal('persen_selesai', 5, 2)
                 ->default(0)
                 ->comment('rekom_selesai / total_rekomendasi * 100');
             $table->decimal('persen_selesai_nilai', 5, 2)->default(0)
                 ->comment(
-                    'Persentase nilai rupiah. ' .
-                    'nilai_tl_selesai (uang) / nilai_rekom (uang) × 100. ' .
+                    'Persentase nilai rupiah. '.
+                    'nilai_tl_selesai (uang) / nilai_rekom (uang) × 100. '.
                     'Include cicilan karena nilai_tl_selesai di-cascade dari cicilan.'
                 );
             $table->decimal('persen_selesai_gabungan', 5, 2)->default(0)
                 ->comment(
-                    'Metrik utama dashboard. ' .
-                    'Ada rekom uang: 80% × persen_nilai + 20% × persen_count. ' .
+                    'Metrik utama dashboard. '.
+                    'Ada rekom uang: 80% × persen_nilai + 20% × persen_count. '.
                     'Semua non-uang: 100% × persen_count.'
                 );
             $table->timestamp('dihitung_pada')

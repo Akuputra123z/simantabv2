@@ -2,17 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LhpReport extends Model
 {
     use SoftDeletes;
 
     protected $table = 'lhps';
+
     protected $primaryKey = 'id';
 
     protected $fillable = [
@@ -25,7 +26,7 @@ class LhpReport extends Model
     {
         return [
             'tanggal_lhp' => 'date',
-            'deleted_at'  => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 
@@ -55,8 +56,7 @@ class LhpReport extends Model
         return $query
             ->whereIn('status', ['final', 'ditandatangani'])
             ->has('auditAssignment')
-            ->whereHas('statistik', fn (Builder $q) => 
-                $q->where('persen_selesai_gabungan', 100)
+            ->whereHas('statistik', fn (Builder $q) => $q->where('persen_selesai_gabungan', 100)
             );
     }
 }

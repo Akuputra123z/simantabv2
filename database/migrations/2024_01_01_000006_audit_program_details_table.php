@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('jenis_kegiatan', 100)->index();
             $table->string('objek_pengawasan', 255)->nullable();
             $table->text('ruang_lingkup')->nullable();
-           $table->text('tujuan')->nullable();
+            $table->text('tujuan')->nullable();
             $table->string('personil', 100)->index();
             $table->decimal('anggaran', 15, 2)->default(0);
             $table->string('tingkat_resiko', 50);

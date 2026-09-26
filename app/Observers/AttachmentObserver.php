@@ -38,19 +38,24 @@ class AttachmentObserver
 
     private function deleteFile(?string $filePath, int $attachmentId): void
     {
-        if (! $filePath) return;
+        if (! $filePath) {
+            return;
+        }
 
         try {
             if (Storage::disk('public')->exists($filePath)) {
                 Storage::disk('public')->delete($filePath);
+            }
+            if (Storage::disk('local')->exists($filePath)) {
+                Storage::disk('local')->delete($filePath);
             }
         } catch (\Throwable $e) {
             // Jangan throw — file mungkin sudah tidak ada.
             // Log saja agar bisa diaudit jika perlu cleanup manual.
             Log::warning('AttachmentObserver: gagal hapus file', [
                 'attachment_id' => $attachmentId,
-                'file_path'     => $filePath,
-                'error'         => $e->getMessage(),
+                'file_path' => $filePath,
+                'error' => $e->getMessage(),
             ]);
         }
     }

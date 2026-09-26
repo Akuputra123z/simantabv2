@@ -5,10 +5,14 @@ use App\Http\Controllers\AuditAssignmentController;
 use App\Http\Controllers\AuditProgramController;
 use App\Http\Controllers\AuditProgramDetailController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\JenisDokumenReviuController;
 use App\Http\Controllers\KodeRekomendasiController;
 use App\Http\Controllers\KodeTemuanController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LhpController;
+use App\Http\Controllers\LhrController;
+use App\Http\Controllers\LhrKategoriCatatanController;
+use App\Http\Controllers\NomorFormatController;
 use App\Http\Controllers\OpdDashboardController;
 use App\Http\Controllers\OpdProfileController;
 use App\Http\Controllers\OpdTindakLanjutController;
@@ -32,11 +36,13 @@ Route::get('/tracking', function () {
     return view('pages.tracking', ['search' => null, 'lhp' => null]);
 })->name('tracking.public');
 
-Route::post('/tracking', [LhpController::class, 'tracking'])->name('tracking.public.post');
+Route::post('/tracking', [LhpController::class, 'tracking'])
+    ->middleware('throttle:15,1')
+    ->name('tracking.public.post');
 
 // --- GRUP 1: Akses untuk Semua User (Login & Aktif) ---
 Route::middleware(['auth', 'active'])->group(function () {
-    
+
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -61,7 +67,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->name('tindak-lanjuts.tolak-opd');
     Route::post('/tindak-lanjuts/{tindakLanjut}/verifikasi-opd', [TindakLanjutController::class, 'verifikasiOpd'])
         ->name('tindak-lanjuts.verifikasi-opd');
-    
+
     // Audit Assignment
     Route::resource('audit-assignment', AuditAssignmentController::class);
     Route::delete('/audit-assignment/bulk-delete', [AuditAssignmentController::class, 'bulkDelete'])->name('audit-assignment.bulkDelete');
@@ -69,52 +75,50 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/lhps-by-program/{programId}', [RecommendationController::class, 'getLhpsByProgram']);
 
     // --- Audit Program Detail (Fleksibel) ---
-    // --- Audit Program Detail (Fleksibel) ---
-// --- Audit Program Detail (Fleksibel) ---
-Route::prefix('audit-program-detail')->name('audit-program-detail.')->group(function () {
-    
-    // 1. PINDAHKAN KE SINI (Rute statis/pasti harus di atas rute wildcard {id})
-    Route::get('/download-template', [AuditProgramDetailController::class, 'downloadTemplate'])
-        ->name('download-template');
+    Route::prefix('audit-program-detail')->name('audit-program-detail.')->group(function () {
 
-    Route::post('/import', [AuditProgramDetailController::class, 'import'])
-        ->name('import');
-    Route::post('/bulk-delete', [AuditProgramDetailController::class, 'bulkDelete'])
-        ->name('bulk-delete');
+        // 1. PINDAHKAN KE SINI (Rute statis/pasti harus di atas rute wildcard {id})
+        Route::get('/download-template', [AuditProgramDetailController::class, 'downloadTemplate'])
+            ->name('download-template');
 
-    // 2. Rute dengan parameter/wildcard diletakkan di bawah
-    Route::get('/create/{audit_program_id}', [AuditProgramDetailController::class, 'create'])->name('create');
-    Route::post('/', [AuditProgramDetailController::class, 'store'])->name('store');
-    
-    // Rute ini yang sebelumnya "memakan" rute download-template
-    Route::get('/{id}', [AuditProgramDetailController::class, 'show'])->name('show');
-    
-    Route::get('/{auditProgramDetail}/edit', [AuditProgramDetailController::class, 'edit'])->name('edit');
-    Route::put('/{auditProgramDetail}', [AuditProgramDetailController::class, 'update'])->name('update');
-    Route::delete('/{auditProgramDetail}', [AuditProgramDetailController::class, 'destroy'])->name('destroy');
-});
+        Route::post('/import', [AuditProgramDetailController::class, 'import'])
+            ->name('import');
+        Route::post('/bulk-delete', [AuditProgramDetailController::class, 'bulkDelete'])
+            ->name('bulk-delete');
+
+        // 2. Rute dengan parameter/wildcard diletakkan di bawah
+        Route::get('/create/{audit_program_id}', [AuditProgramDetailController::class, 'create'])->name('create');
+        Route::post('/', [AuditProgramDetailController::class, 'store'])->name('store');
+
+        // Rute ini yang sebelumnya "memakan" rute download-template
+        Route::get('/{id}', [AuditProgramDetailController::class, 'show'])->name('show');
+
+        Route::get('/{auditProgramDetail}/edit', [AuditProgramDetailController::class, 'edit'])->name('edit');
+        Route::put('/{auditProgramDetail}', [AuditProgramDetailController::class, 'update'])->name('update');
+        Route::delete('/{auditProgramDetail}', [AuditProgramDetailController::class, 'destroy'])->name('destroy');
+    });
 
     // Cicilan Tindak Lanjut
     Route::prefix('tindak-lanjuts/{tindakLanjut}/cicilans')
         ->name('tindak-lanjuts.cicilans.')
         ->group(function () {
-            Route::get('/',           [TindakLanjutCicilanController::class, 'index'])->name('index');
-            Route::get('/create',     [TindakLanjutCicilanController::class, 'create'])->name('create');
-            Route::post('/',          [TindakLanjutCicilanController::class, 'store'])->name('store');
-            Route::get('/{cicilan}',  [TindakLanjutCicilanController::class, 'show'])->name('show');
+            Route::get('/', [TindakLanjutCicilanController::class, 'index'])->name('index');
+            Route::get('/create', [TindakLanjutCicilanController::class, 'create'])->name('create');
+            Route::post('/', [TindakLanjutCicilanController::class, 'store'])->name('store');
+            Route::get('/{cicilan}', [TindakLanjutCicilanController::class, 'show'])->name('show');
             Route::get('/{cicilan}/edit', [TindakLanjutCicilanController::class, 'edit'])->name('edit');
-            Route::put('/{cicilan}',  [TindakLanjutCicilanController::class, 'update'])->name('update');
+            Route::put('/{cicilan}', [TindakLanjutCicilanController::class, 'update'])->name('update');
             Route::delete('/{cicilan}', [TindakLanjutCicilanController::class, 'destroy'])->name('destroy');
             Route::patch('/{cicilan}/verifikasi', [TindakLanjutCicilanController::class, 'verifikasi'])->name('verifikasi');
         });
 
     // Helpers & Attachments
-   Route::get('/get-program-details/{programId}', [AuditAssignmentController::class, 'getProgramDetails'])->name('get-program-details'); // TAMBAHKAN INI
-Route::get('/get-kecamatan/{kategori}', [AuditAssignmentController::class, 'getKecamatan'])->name('get-kecamatan');
-Route::get('/get-unit/{kecamatan}', [AuditAssignmentController::class, 'getUnit'])->name('get-unit');
-Route::get('/audit-assignment/{id}/preview', [AuditAssignmentController::class, 'print'])->name('audit-assignment.preview');
-Route::get('/audit-assignment/{id}/print', [AuditAssignmentController::class, 'printPdf'])->name('audit-assignment.print');
-Route::post('/audit-assignment/{auditAssignment}/sign', [AuditAssignmentController::class, 'sign'])->name('audit-assignment.sign');
+    Route::get('/get-program-details/{programId}', [AuditAssignmentController::class, 'getProgramDetails'])->name('get-program-details'); // TAMBAHKAN INI
+    Route::get('/get-kecamatan/{kategori}', [AuditAssignmentController::class, 'getKecamatan'])->name('get-kecamatan');
+    Route::get('/get-unit/{kecamatan}', [AuditAssignmentController::class, 'getUnit'])->name('get-unit');
+    Route::get('/audit-assignment/{id}/preview', [AuditAssignmentController::class, 'print'])->name('audit-assignment.preview');
+    Route::get('/audit-assignment/{id}/print', [AuditAssignmentController::class, 'printPdf'])->name('audit-assignment.print');
+    Route::post('/audit-assignment/{auditAssignment}/sign', [AuditAssignmentController::class, 'sign'])->name('audit-assignment.sign');
 
     // Master Data & Audit Program Utama
     Route::resource('kode-temuan', KodeTemuanController::class);
@@ -133,6 +137,33 @@ Route::post('/audit-assignment/{auditAssignment}/sign', [AuditAssignmentControll
     Route::post('/audit-program/{auditProgram}/batal-setujui', [AuditProgramController::class, 'batalSetujui'])->name('audit-program.batal-setujui');
     Route::resource('kode-rekomendasi', KodeRekomendasiController::class);
     Route::patch('kode-rekomendasi/{kodeRekomendasi}/toggle', [KodeRekomendasiController::class, 'toggleStatus'])->name('kode-rekomendasi.toggle');
+
+    // ── Modul Laporan Hasil Reviu (LHR) ──
+    Route::prefix('lhr')->name('lhr.')->group(function () {
+        Route::get('/', [LhrController::class, 'index'])->name('index');
+        Route::get('/create', [LhrController::class, 'create'])->name('create');
+        Route::post('/', [LhrController::class, 'store'])->name('store');
+        Route::get('/{uuid}', [LhrController::class, 'show'])->name('show');
+        Route::get('/{uuid}/edit', [LhrController::class, 'edit'])->name('edit');
+        Route::put('/{uuid}', [LhrController::class, 'update'])->name('update');
+        Route::delete('/{uuid}', [LhrController::class, 'destroy'])->name('destroy');
+        Route::get('/{uuid}/preview', [LhrController::class, 'preview'])->name('preview');
+        Route::get('/{uuid}/pdf', [LhrController::class, 'downloadPdf'])->name('pdf');
+        Route::get('/{uuid}/word', [LhrController::class, 'downloadWord'])->name('word');
+        Route::put('/{uuid}/pengujian/{pengujian}', [LhrController::class, 'updatePengujian'])->name('update-pengujian');
+        Route::post('/{uuid}/pengujian/{pengujian}/catatan', [LhrController::class, 'storeCatatan'])->name('store-catatan');
+        Route::put('/{uuid}/catatan/{catatan}', [LhrController::class, 'updateCatatan'])->name('update-catatan');
+        Route::delete('/{uuid}/catatan/{catatan}', [LhrController::class, 'destroyCatatan'])->name('destroy-catatan');
+        Route::post('/{uuid}/submit', [LhrController::class, 'submit'])->name('submit');
+        Route::post('/{uuid}/review', [LhrController::class, 'review'])->name('review');
+        Route::post('/{uuid}/approve', [LhrController::class, 'approve'])->name('approve');
+        Route::post('/{uuid}/apply-standard-template', [LhrController::class, 'applyStandardTemplate'])->name('apply-standard-template');
+    });
+
+    // ── Master Data Reviu & Penomoran ──
+    Route::resource('jenis-dokumen-reviu', JenisDokumenReviuController::class)->except(['create', 'show', 'edit']);
+    Route::resource('lhr-kategori-catatans', LhrKategoriCatatanController::class)->except(['create', 'show', 'edit']);
+    Route::resource('nomor-formats', NomorFormatController::class)->only(['index', 'update']);
 });
 
 // --- GRUP 2: Khusus Super Admin (Manajemen User) ---
@@ -140,8 +171,8 @@ Route::middleware(['auth', 'active', 'role:super_admin'])->group(function () {
 
     // Permissions Management
     Route::resource('permissions', PermissionController::class)
-         ->parameters(['permissions' => 'role'])
-         ->except(['show']);
+        ->parameters(['permissions' => 'role'])
+        ->except(['show']);
     Route::post('permissions/permission/store', [PermissionController::class, 'storePermission'])->name('permissions.permission.store');
     Route::delete('permissions/permission/{permission}', [PermissionController::class, 'destroyPermission'])->name('permissions.permission.destroy');
 

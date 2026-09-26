@@ -5,10 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Attachment extends Model
 {
@@ -29,16 +29,15 @@ class Attachment extends Model
     ];
 
     protected $casts = [
-        'file_size'  => 'integer',
-        'urutan'     => 'integer',
+        'file_size' => 'integer',
+        'urutan' => 'integer',
         'deleted_at' => 'datetime',
     ];
 
-
-public function attachments(): MorphMany
-{
-    return $this->morphMany(Attachment::class, 'attachable');
-}
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
+    }
     // ================= BOOT =================
 
     protected static function booted(): void
@@ -50,43 +49,21 @@ public function attachments(): MorphMany
             }
         });
 
-        // Auto copy saat create agar dapat diakses via symlink public/storage
-        static::created(function (self $attachment) {
-            if (! $attachment->file_path) return;
-
-            $sourcePublic  = storage_path('app/public/' . $attachment->file_path);
-            $sourcePrivate = storage_path('app/private/' . $attachment->file_path);
-            $sourceLocal   = storage_path('app/' . $attachment->file_path);
-
-            $source = file_exists($sourcePublic)
-                ? $sourcePublic
-                : (file_exists($sourcePrivate) ? $sourcePrivate : (file_exists($sourceLocal) ? $sourceLocal : null));
-
-            if (! $source) return;
-
-            // Pastikan file tersedia di storage/app/public untuk symlink
-            if ($source !== $sourcePublic) {
-                if (! is_dir(dirname($sourcePublic))) {
-                    mkdir(dirname($sourcePublic), 0775, true);
-                }
-                @copy($source, $sourcePublic);
-            }
-        });
-
-        // Delete file (storage public & private)
+        // Delete file saat force deleted (storage public & local/private)
         static::deleted(function (self $attachment) {
-            if (! $attachment->isForceDeleting()) return;
-            if (! $attachment->file_path) return;
-
-            $storagePublic  = storage_path('app/public/' . $attachment->file_path);
-            $storagePrivate = storage_path('app/private/' . $attachment->file_path);
-
-            if (file_exists($storagePublic)) {
-                @unlink($storagePublic);
+            if (! $attachment->isForceDeleting()) {
+                return;
+            }
+            if (! $attachment->file_path) {
+                return;
             }
 
-            if (file_exists($storagePrivate)) {
-                @unlink($storagePrivate);
+            if (Storage::disk('public')->exists($attachment->file_path)) {
+                Storage::disk('public')->delete($attachment->file_path);
+            }
+
+            if (Storage::disk('local')->exists($attachment->file_path)) {
+                Storage::disk('local')->delete($attachment->file_path);
             }
         });
     }
@@ -107,18 +84,20 @@ public function attachments(): MorphMany
 
     public function getFileSizeFormattedAttribute(): string
     {
-        if (! $this->file_size) return '-';
+        if (! $this->file_size) {
+            return '-';
+        }
 
         $units = ['B', 'KB', 'MB', 'GB'];
-        $size  = $this->file_size;
-        $unit  = 0;
+        $size = $this->file_size;
+        $unit = 0;
 
         while ($size >= 1024 && $unit < 3) {
             $size /= 1024;
             $unit++;
         }
 
-        return round($size, 2) . ' ' . $units[$unit];
+        return round($size, 2).' '.$units[$unit];
     }
 
     public function getFileUrlAttribute(): string

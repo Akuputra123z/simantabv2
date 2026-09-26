@@ -92,7 +92,7 @@
                                 <label class="flex-1 flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer transition-all has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50/20 dark:border-gray-700">
                                     <input type="radio" name="jenis_penyelesaian" value="langsung"
                                         class="text-brand-500 focus:ring-brand-500"
-                                        {{ old('jenis_penyelesaian', $tindakLanjut->jenis_penyelesaian) == 'langsung' ? 'checked' : '' }}>
+                                        {{ in_array(old('jenis_penyelesaian', $tindakLanjut->jenis_penyelesaian), ['langsung', 'setor_kas', 'pengembalian_barang', 'perbaikan_administrasi']) ? 'checked' : '' }}>
                                     <div class="ml-2">
                                         <span class="block text-sm font-bold text-gray-700 dark:text-gray-300">Langsung</span>
                                         <span class="block text-[10px] text-gray-400 uppercase">Sekali Bayar</span>

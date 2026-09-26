@@ -47,12 +47,12 @@ class UnitDiperiksaImportTest extends TestCase
 
         $this->assertDatabaseHas('unit_diperiksas', [
             'nama_unit' => 'Dinas Kesehatan Kab Rembang',
-            'kategori'  => 'OPD',
+            'kategori' => 'OPD',
         ]);
 
         $this->assertDatabaseHas('unit_diperiksas', [
-            'nama_unit'      => 'Desa Ronggomulyo',
-            'kategori'       => 'Desa',
+            'nama_unit' => 'Desa Ronggomulyo',
+            'kategori' => 'Desa',
             'nama_kecamatan' => 'Sumber',
         ]);
     }
@@ -60,10 +60,10 @@ class UnitDiperiksaImportTest extends TestCase
     public function test_import_updates_existing_unit_diperiksa(): void
     {
         $existing = UnitDiperiksa::create([
-            'nama_unit'      => 'Desa Logung',
-            'kategori'       => 'Desa',
+            'nama_unit' => 'Desa Logung',
+            'kategori' => 'Desa',
             'nama_kecamatan' => 'Sumber',
-            'alamat'         => 'Alamat Lama',
+            'alamat' => 'Alamat Lama',
         ]);
 
         $csvContent = "nama_unit,kategori,nama_kecamatan,alamat,telepon,keterangan\n";
@@ -78,10 +78,10 @@ class UnitDiperiksaImportTest extends TestCase
         $response->assertRedirect(route('unit-diperiksa.index'));
 
         $this->assertDatabaseHas('unit_diperiksas', [
-            'id'         => $existing->id,
-            'nama_unit'  => 'Desa Logung',
-            'alamat'     => 'Alamat Baru',
-            'telepon'    => '08999999',
+            'id' => $existing->id,
+            'nama_unit' => 'Desa Logung',
+            'alamat' => 'Alamat Baru',
+            'telepon' => '08999999',
             'keterangan' => 'Diperbarui via Import',
         ]);
     }

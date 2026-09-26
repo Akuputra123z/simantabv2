@@ -11,11 +11,11 @@ return new class extends Migration
         Schema::create('audit_assignments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('audit_program_detail_id')
-                  ->constrained('audit_program_details')
-                  ->cascadeOnDelete();
+                ->constrained('audit_program_details')
+                ->cascadeOnDelete();
             $table->foreignId('ketua_tim_id')
-                  ->constrained('users')
-                  ->restrictOnDelete();
+                ->constrained('users')
+                ->restrictOnDelete();
             $table->string('nomor_surat', 255)->unique();
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
@@ -37,25 +38,25 @@ class PegawaiController extends Controller
             $validationRules = array_merge(
                 $this->userService->rules(),
                 [
-                    'password'     => $this->userService->passwordRules(true),
+                    'password' => $this->userService->passwordRules(true),
                     'opd_unit_ids' => $isOpd ? ['required', 'array', 'min:1'] : ['nullable', 'array'],
                 ]
             );
 
             $validationMessages = [
-                'name.required'         => 'Nama lengkap wajib diisi.',
-                'email.required'        => 'Alamat email wajib diisi.',
-                'email.email'           => 'Format email tidak valid (contoh: user@domain.com).',
-                'email.unique'          => 'Alamat email ini sudah terdaftar pada sistem.',
-                'nip.unique'            => 'NIP ini sudah terdaftar pada sistem.',
-                'role.required'         => 'Role akses wajib dipilih.',
-                'role.exists'           => 'Role akses yang dipilih tidak terdaftar.',
-                'password.required'     => 'Password wajib diisi.',
-                'password.min'          => 'Password minimal harus 8 karakter.',
-                'jenis_kelamin.required'=> 'Jenis kelamin wajib dipilih (Laki-laki atau Perempuan).',
-                'jenis_kelamin.in'      => 'Pilihan jenis kelamin tidak valid (pilih Laki-laki atau Perempuan).',
+                'name.required' => 'Nama lengkap wajib diisi.',
+                'email.required' => 'Alamat email wajib diisi.',
+                'email.email' => 'Format email tidak valid (contoh: user@domain.com).',
+                'email.unique' => 'Alamat email ini sudah terdaftar pada sistem.',
+                'nip.unique' => 'NIP ini sudah terdaftar pada sistem.',
+                'role.required' => 'Role akses wajib dipilih.',
+                'role.exists' => 'Role akses yang dipilih tidak terdaftar.',
+                'password.required' => 'Password wajib diisi.',
+                'password.min' => 'Password minimal harus 8 karakter.',
+                'jenis_kelamin.required' => 'Jenis kelamin wajib dipilih (Laki-laki atau Perempuan).',
+                'jenis_kelamin.in' => 'Pilihan jenis kelamin tidak valid (pilih Laki-laki atau Perempuan).',
                 'opd_unit_ids.required' => 'Pilih minimal 1 Unit OPD yang dapat diakses oleh user ini.',
-                'opd_unit_ids.min'      => 'Pilih minimal 1 Unit OPD yang dapat diakses oleh user ini.',
+                'opd_unit_ids.min' => 'Pilih minimal 1 Unit OPD yang dapat diakses oleh user ini.',
             ];
 
             $data = $request->validate($validationRules, $validationMessages);
@@ -76,12 +77,12 @@ class PegawaiController extends Controller
                 ->route($redirectRoute)
                 ->with('success', "User {$user->name} berhasil ditambahkan.");
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Gagal menambahkan user: ' . $e->getMessage());
+                ->with('error', 'Gagal menambahkan user: '.$e->getMessage());
         }
     }
 
@@ -108,20 +109,20 @@ class PegawaiController extends Controller
             $validationRules = array_merge(
                 $this->userService->rules($user),
                 [
-                    'password'     => $this->userService->passwordRules(false),
+                    'password' => $this->userService->passwordRules(false),
                     'opd_unit_ids' => $isOpd ? ['required', 'array', 'min:1'] : ['nullable', 'array'],
                 ]
             );
 
             $validationMessages = [
-                'name.required'         => 'Nama lengkap wajib diisi.',
-                'email.required'        => 'Alamat email wajib diisi.',
-                'email.email'           => 'Format email tidak valid.',
-                'email.unique'          => 'Alamat email ini sudah terdaftar pada sistem.',
-                'nip.unique'            => 'NIP ini sudah terdaftar pada sistem.',
-                'role.required'         => 'Role akses wajib dipilih.',
+                'name.required' => 'Nama lengkap wajib diisi.',
+                'email.required' => 'Alamat email wajib diisi.',
+                'email.email' => 'Format email tidak valid.',
+                'email.unique' => 'Alamat email ini sudah terdaftar pada sistem.',
+                'nip.unique' => 'NIP ini sudah terdaftar pada sistem.',
+                'role.required' => 'Role akses wajib dipilih.',
                 'opd_unit_ids.required' => 'Pilih minimal 1 Unit OPD yang dapat diakses oleh user ini.',
-                'opd_unit_ids.min'      => 'Pilih minimal 1 Unit OPD yang dapat diakses oleh user ini.',
+                'opd_unit_ids.min' => 'Pilih minimal 1 Unit OPD yang dapat diakses oleh user ini.',
             ];
 
             $data = $request->validate($validationRules, $validationMessages);
@@ -147,12 +148,12 @@ class PegawaiController extends Controller
                 ->route($redirectRoute)
                 ->with('success', "User {$user->name} berhasil diperbarui.");
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Gagal memperbarui user: ' . $e->getMessage());
+                ->with('error', 'Gagal memperbarui user: '.$e->getMessage());
         }
     }
 

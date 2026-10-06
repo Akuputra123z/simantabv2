@@ -8,7 +8,7 @@
         <div>
             <div class="flex items-center gap-2">
                 <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800">
-                    SIMANTAB OPD
+                    SIAPTUNTAS OPD
                 </span>
                 <span class="text-xs text-slate-400 font-medium">&bull;</span>
                 <span class="text-xs text-slate-500 font-semibold dark:text-slate-400">

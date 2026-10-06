@@ -1160,7 +1160,7 @@ function lhpCreateWizard() {
 
             {{-- <!-- Footer -->
             <p class="mt-7 text-center text-xs font-medium text-slate-400 dark:text-slate-500">
-                © <span>{{ date('Y') }}</span> SIMANTAB • TailAdmin
+                © <span>{{ date('Y') }}</span> SIAPTUNTAS • TailAdmin
             </p> --}}
         </div>
     </div>

@@ -1,1907 +1,965 @@
+{{--
+    LHR Reviu Rankir RKPD — template terstruktur (data-driven)
+
+    Variabel dari controller (sama seperti sebelumnya):
+      $lhr, $unit, $assignment, $team, $signer, $pengujians, $attachments, $isPdf
+    Variabel opsional baru:
+      $pdfEngine   : 'dompdf' (default) | 'chrome'  → menentukan cara footer & nomor halaman
+      $konsistensi : array baris tabel RPJMD vs RKPD (jika null dipakai data default di bawah)
+      $lhr->link_lampiran, $lhr->tanggal_mulai_reviu : menggantikan nilai hardcode
+--}}
+@php
+    /* ───────────── 1. VARIABEL DASAR ───────────── */
+    $isPdf  = !empty($isPdf);
+    $engine = $isPdf ? ($pdfEngine ?? 'dompdf') : 'browser';
+    $team   = $team ?? [];
+
+    $fmtTgl = fn($d, $fallback) => $d ? \Carbon\Carbon::parse($d)->locale('id')->isoFormat('D MMMM Y') : $fallback;
+
+    $tahun             = $lhr->tahun_anggaran ?: 2027;
+    $tahunTerbit       = $lhr->tanggal_lhr ? \Carbon\Carbon::parse($lhr->tanggal_lhr)->format('Y') : '2026';
+    $nomorLhr          = $lhr->nomor_lhr ?: '700/026/REVIU/INSP/2026';
+    $tanggalLhr        = $fmtTgl($lhr->tanggal_lhr, '11 Mei 2026');
+    $namaUnit          = $unit->nama_unit ?? 'BADAN PERENCANAAN PEMBANGUNAN DAERAH KABUPATEN REMBANG';
+    $nomorSpt          = $assignment->nomor_spt ?? '000.1.2.3/020/INSP/2026';
+    $tanggalSpt        = $fmtTgl($assignment->tanggal_mulai ?? null, '29 April 2026');
+    $tanggalMulaiReviu = $fmtTgl($lhr->tanggal_mulai_reviu ?? null, '30 April 2026');
+    $nomorPermohonan   = $lhr->permohonan_nomor ?: '000.7/250/2026';
+    $tanggalPermohonan = $fmtTgl($lhr->permohonan_tanggal, '28 April 2026');
+    $footerText        = "Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {$tahun}";
+    $showBackCover     = true;
+
+    $logoPath = public_path('images/logos/rembang.png');
+    $logoSrc  = file_exists($logoPath)
+        ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath))
+        : 'https://upload.wikimedia.org/wikipedia/commons/3/30/Lambang_Kabupaten_Rembang.png';
+
+    $link = $lhr->link_lampiran ?? 'https://bit.ly/Lampiran-CHRRankirRKPD-2027';
+    $lnk  = '<a href="' . e($link) . '">' . e($link) . '</a>';
+
+    /* ───────────── 2. TIM (fallback → pindahkan ke config/lhr.php bila perlu) ───────────── */
+    $defaultTeam = [
+        'penanggung_jawab' => ['nama' => 'IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.', 'nip' => '19741128 199903 2 003', 'jabatan' => 'Inspektur Daerah'],
+        'pengendali_teknis' => ['nama' => 'SRI SURYANDARI, S.Sos.', 'nip' => '19690827 199603 2 005', 'jabatan' => 'Inspektur Pembantu I'],
+        'ketua_tim' => ['nama' => 'SITI AMINAH, S.E.', 'nip' => '19920714 201902 2 002', 'jabatan' => 'Auditor Ahli Pertama'],
+        'anggota' => [
+            ['nama' => 'PARIJAN, S.E., M.M.', 'nip' => '19680314 199103 1 014', 'jabatan' => 'Pengawas Pemerintahan Urusan Pemerintah Daerah Ahli Madya'],
+            ['nama' => 'AGUNG TRI PRASTIYO, S.E.', 'nip' => '19820821 200501 1 006', 'jabatan' => 'Auditor Ahli Muda'],
+            ['nama' => 'IKA PERTIWI, S.H.', 'nip' => '19860908 202203 2 002', 'jabatan' => 'Auditor Ahli Pertama'],
+            ['nama' => 'TAUFIQUR RACHMAN, S.E.', 'nip' => '19940326 202203 1 016', 'jabatan' => 'Auditor Ahli Pertama'],
+            ['nama' => 'SIHONO, S.I.P.', 'nip' => '19960703 202203 1 007', 'jabatan' => 'Pengawas Pemerintahan Urusan Pemerintah Daerah Ahli Pertama'],
+            ['nama' => 'WAHYU ANJAR, S.Tr.I.P', 'nip' => '20000727 202409 2 001', 'jabatan' => 'Pengawas Pemerintahan Urusan Pemerintah Daerah Ahli Pertama'],
+            ['nama' => 'DEWI ZAHRO WAHYUNINGTYAS, S.T.', 'nip' => '20010524 202505 2 004', 'jabatan' => 'Calon Auditor'],
+        ],
+    ];
+    $pick = function ($key, $field) use ($team, $defaultTeam) {
+        $v = data_get($team, "$key.$field");
+        return ($v && $v !== '-') ? $v : data_get($defaultTeam, "$key.$field");
+    };
+    $single = fn($key) => ['nama' => $pick($key, 'nama'), 'nip' => $pick($key, 'nip'), 'jabatan' => $pick($key, 'jabatan')];
+    $anggota = !empty($team['anggota']) ? $team['anggota'] : $defaultTeam['anggota'];
+    $blokTim = [
+        'PENANGGUNGJAWAB'   => [$single('penanggung_jawab')],
+        'PENGENDALI TEKNIS' => [$single('pengendali_teknis')],
+        'KETUA TIM'         => [$single('ketua_tim')],
+        'ANGGOTA TIM'       => $anggota,
+    ];
+
+    /* ───────────── 3. TEKS STATIS ───────────── */
+    $dasarHukum = [
+        'Peraturan Menteri Dalam Negeri Republik Indonesia Nomor 86 Tahun 2017 tentang Tata Cara Perencanaan, Pengendalian dan Evaluasi Pembangunan Daerah, Tata Cara Evaluasi Rancangan Peraturan Daerah Tentang Rencana Pembangunan Jangka Panjang Daerah dan Rencana Pembangunan Jangka Menengah Daerah, Serta Tata Cara Perubahan Rencana Pembangunan Jangka Panjang Daerah, Rencana Pembangunan Jangka Menengah Daerah, dan Rencana Kerja Pemerintah Daerah;',
+        'Peraturan Menteri Dalam Negeri Republik Indonesia Nomor 10 Tahun 2018 tentang Reviu atas Dokumen Perencanaan Pembangunan dan Anggaran Daerah Tahunan;',
+        'Peraturan Menteri Dalam Negeri Nomor 14 Tahun 2025 tentang Pedoman Penyusunan Anggaran Pendapatan dan Belanja Daerah Tahun Anggaran 2026;',
+        'Peraturan Menteri Dalam Negeri Republik Indonesia Nomor 3 Tahun 2026 tentang Reviu Dokumen Perencanaan Pembangunan Daerah dan Dokumen Keuangan Daerah;',
+        'Peraturan Daerah Kabupaten Rembang Nomor 6 Tahun 2021 tentang Perubahan Kedua atas Peraturan Daerah Kabupaten Rembang Nomor 5 Tahun 2016 tentang Pembentukan dan Susunan Perangkat daerah Kabupaten Rembang;',
+        'Peraturan Bupati Rembang Nomor 54 Tahun 2021 tentang Kedudukan Susunan Organisasi, Tugas dan Fungsi serta Tata Kerja Inspektorat Kabupaten Rembang;',
+        'Peraturan Bupati Rembang Nomor 4 Tahun 2026 tentang Perubahan atas Peraturan Bupati Rembang Nomor 110 Tahun 2025 tentang Penjabaran APBD Tahun Anggaran 2026;',
+        "Surat dari Inspektorat Jenderal Kementerian Dalam Negeri Republik Indonesia Nomor: 700.1.1.1/1642/IJ perihal Reviu Rancangan Akhir Rencana Kerja Pemerintah Daerah Tahun Anggaran {$tahun};",
+        'Keputusan Bupati Rembang Nomor: 100.3.3.2/0282/2026 tentang Program Kerja Pengawasan Tahunan Berbasis Risiko Inspektorat Daerah Kabupaten Rembang Tahun 2026;',
+        "Surat dari Kepala Badan Perencanaan Pembangunan Daerah Kabupaten Rembang Nomor: {$nomorPermohonan} tanggal {$tanggalPermohonan} tentang Permohonan Reviu Dokumen Rancangan Akhir RKPD Kabupaten Rembang Tahun {$tahun};",
+        "Surat Perintah Tugas Inspektur Daerah Kabupaten Rembang Nomor: {$nomorSpt} tanggal {$tanggalSpt} dengan susunan Tim:",
+    ];
+
+    $ruangLingkupSubstansi = [
+        'Pengujian atas Kelengkapan Dokumen Pendukung Rancangan Akhir RKPD;',
+        'Pengujian atas Analisis Isi BAB Rancangan Akhir RKPD;',
+        'Pengujian atas Kesesuaian Rumusan Prioritas dan Sasaran Pembangunan dalam RKPD dan RPJMD;',
+        'Kesesuaian Program/Outcome, Indikator, Target beserta Pagu Indikatifnya pada Rencana Pembangunan Jangka Menengah Daerah (RPJMD) dengan Rancangan Akhir RKPD;',
+        'Kewajaran proyeksi pendanaan pada rancangan akhir RKPD;',
+        [
+            'Kesesuaian Informasi pada rancangan akhir RKPD dengan Program Prioritas Nasional',
+            [
+                'Kesesuaian urusan yang mendukung pelaksanaan Asta Cita berdasarkan hasil rapat koordinasi teknis pembangunan (Rakortekbang) dengan urusan pada rancangan akhir RKPD;',
+                'Kesesuaian penetapan target Indikator Makro Pembangunan pada rancangan akhir RKPD berdasarkan Rencana Kerja Pemerintah (RKP);',
+                'Kesesuaian dan ketepatan dukungan pelaksanaan ProSN pada rancangan akhir RKPD;',
+                'Memastikan Program, Kegiatan dan Sub Kegiatan Standar Pelayanan Minimal (SPM) tersedia pada rancangan akhir RKPD;',
+                'Memastikan kesesuaian dukungan Sub Kegiatan Tematik Pembangunan pada rancangan akhir RKPD;',
+            ],
+        ],
+        'Kesesuaian Informasi pada rancangan akhir RKPD dengan tata cara dan kaidah Perencanaan Pembangunan Daerah lainnya (kesesuaian pengusulan pokok-pokok pikiran Dewan Perwakilan Rakyat Daerah (DPRD) sesuai dengan ketentuan peraturan perundang-undangan);',
+        'Pengujian atas Konsistensi Pencantuman Indikator serta Target Kinerja Tujuan dan Sasaran dalam Rancangan Akhir RKPD dan RPJMD.',
+    ];
+
+    $gambaranUmum = [
+        'Pemerintah Kabupaten Rembang telah menyusun Peraturan Daerah Nomor 3 Tahun 2024 tentang Rencana Pembangunan Jangka Panjang Daerah Kabupaten Rembang Tahun 2025-2045;',
+        'Pemerintah Kabupaten Rembang telah menyusun Peraturan Daerah Nomor 7 tahun 2025 tentang Rencana Pembangunan Jangka Menengah Daerah Kabupaten Rembang tahun 2025-2029 sebagai acuan dalam menentukan arah kebijakan pembangunan setiap tahunnya dengan membuat Rancangan Rencana Kerja Pemerintah Daerah Kabupaten Rembang;',
+        "Sebagai penjabaran Rencana Pembangunan Jangka Menengah Daerah Kabupaten Rembang 2025-2029, kedudukan RKPD Kabupaten Rembang Tahun {$tahun} dalam pelaksanaan pembangunan di Kabupaten Rembang adalah menjembatani antara perencanaan strategis jangka menengah dengan perencanaan dan penganggaran tahunan yang memuat rancangan kerangka ekonomi daerah, prioritas pembangunan daerah, rencana kerja dan pendanaan yang disusun berdasarkan pada orientasi proses dengan pendekatan teknokratik, partisipatif, politis dan top-down, bottom-up, serta berdasarkan pada orientasi substansi dengan pendekatan secara holistik, integratif, tematik dan spasial, yang selanjutnya sebagai pedoman dalam penyusunan Kebijakan Umum Anggaran serta penentuan Prioritas Plafon Anggaran Sementara yang menjadi dasar penyusunan Rancangan Anggaran Pendapatan dan Belanja Daerah (RAPBD) Tahun {$tahun};",
+        "Inspektorat Daerah Kabupaten Rembang berdasarkan kewenangannya melakukan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {$tahun}.",
+    ];
+
+    /* ───────────── 4. TABEL PERBANDINGAN FORMAT (Permendagri 86/2017 vs Rankir) ───────────── */
+    // [no, permendagri, rankir, isBab]
+    $formatRows = [
+        ['1.', 'BAB I PENDAHULUAN', 'BAB I PENDAHULUAN', 1],
+        ['1.1.', 'Latar Belakang', 'Latar Belakang'],
+        ['1.2.', 'Dasar Hukum Penyusunan', 'Dasar Hukum'],
+        ['1.3.', 'Hubungan Antar Dokumen', 'Hubungan Antara Dokumen'],
+        ['1.4.', 'Maksud dan Tujuan', 'Maksud dan Tujuan'],
+        ['1.5.', 'Sistematika Dokumen RKPD', "Sistematika Dokumen RKPD Tahun {$tahun}"],
+        ['2.', 'BAB II GAMBARAN UMUM KONDISI DAERAH', 'BAB II GAMBARAN UMUM KONDISI DAERAH', 1],
+        ['2.1.', 'Kondisi Umum Daerah', 'Kondisi Umum Daerah'],
+        ['2.1.1.', 'Aspek Geografi dan Demografi', 'Aspek Geografi dan Demografi'],
+        ['2.1.2.', 'Aspek Kesejahteraan Masyarakat', 'Aspek Kesejahteraan Masyarakat'],
+        ['2.1.3.', 'Aspek Pelayanan Umum', 'Aspek Daya Saing Daerah'],
+        ['2.1.4.', 'Aspek Daya Saing Daerah', 'Aspek Pelayanan Umum'],
+        ['2.2.', 'Evaluasi Pelaksanaan Program dan Kegiatan RKPD sampai Tahun Berjalan dan Realisasi RPJMD', 'Evaluasi Pelaksanaan Kinerja RKPD sampai Tahun 2025 dan Realisasi RPJMD'],
+        ['2.2.1', '-', 'Hasil Evaluasi Indikator Makro Daerah Tahun 2021-2025'],
+        ['2.2.2', '-', 'Hasil Evaluasi Capaian Kinerja Tahun 2025'],
+        ['2.3.', 'Permasalahan Pembangunan Daerah', 'Permasalahan Pembangunan Daerah'],
+        ['2.3.1.', 'Permasalahan daerah yang berhubungan dengan prioritas dan sasaran pembangunan daerah', 'Permasalahan daerah yang berhubungan dengan prioritas dan sasaran pembangunan daerah'],
+        ['2.3.2.', 'Identifikasi Permasalahan penyelenggaraan urusan pemerintah daerah', 'Identifikasi Permasalahan penyelenggaraan urusan pemerintah daerah'],
+        ['3.', 'BAB III KERANGKA EKONOMI DAERAH DAN KEUANGAN DAERAH', 'BAB III KERANGKA EKONOMI DAERAH DAN KEUANGAN DAERAH', 1],
+        ['3.1.', 'Arah Kebijakan Ekonomi Daerah', 'Arah Kebijakan Ekonomi Daerah'],
+        ['3.2.', 'Arah Kebijakan Keuangan Daerah', 'Arah Kebijakan Keuangan Daerah'],
+        ['3.2.1.', '-', 'Arah Kebijakan Pendapatan Daerah'],
+        ['3.2.2.', '-', 'Arah Kebijakan Belanja Daerah'],
+        ['3.2.3.', '-', 'Arah Kebijakan Pembiayaan Daerah'],
+        ['3.2.4.', '-', 'Proyeksi Pendapatan dan Belanja'],
+        ['4.', 'BAB IV SASARAN DAN PRIORITAS PEMBANGUNAN DAERAH', "BAB IV SASARAN DAN PRIORITAS PEMBANGUNAN DAERAH TAHUN {$tahun}", 1],
+        ['4.1.', 'Tujuan dan Sasaran Pembangunan', 'Tujuan dan Sasaran Pembangunan'],
+        ['4.2.', 'Arah Kebijakan Pembangunan', 'Arah Kebijakan Pembangunan'],
+        ['4.3.', "Prioritas dan Sasaran Pembangunan Tahun {$tahun}", 'Prioritas Pembangunan'],
+        ['4.3.1.', '-', "Prioritas Pembangunan Nasional Tahun {$tahun}"],
+        ['4.3.2.', '-', "Prioritas Pembangunan Provinsi Jawa Tengah Tahun {$tahun}"],
+        ['4.3.3.', '-', "Prioritas Pembangunan Kabupaten Rembang Tahun {$tahun}"],
+        ['4.3.4.', '-', "Keterkaitan Prioritas Nasional, Prioritas Jawa Tengah dan Prioritas Kabupaten Rembang Tahun {$tahun}"],
+        ['4.3.5.', '-', 'Penyelarasan Target Indikator Makro dan Tematik Berdasarkan Hasil Rakortekrenbang Provinsi'],
+        ['4.4.', 'Pokok-Pokok Pikiran DPRD', 'Pokok-Pokok Pikiran DPRD'],
+        ['4.5.', 'Inovasi Kebijakan Pembangunan', 'Inovasi Kebijakan Pembangunan'],
+        ['5.', 'BAB V RENCANA KERJA DAN PENDANAAN DAERAH', 'BAB V RENCANA KERJA DAN PENDANAAN DAERAH', 1],
+        ['5.1.', '-', 'Program Prioritas Daerah yang mendukung Prioritas Nasional dan Provinsi Jawa Tengah'],
+        ['5.2.', '-', 'Program Perangkat Daerah'],
+        ['5.2.1.', '-', 'Urusan Wajib Pemerintah Daerah'],
+        ['5.2.2.', '-', 'Urusan Pemerintahan Wajib yang tidak berkaitan dengan Pelayanan Dasar'],
+        ['5.2.3.', '-', 'Urusan Pemerintahan Pilihan'],
+        ['5.2.4.', '-', 'Urusan Penunjang Pemerintah'],
+        ['5.3.', '-', "Kerangka Pendanaan Tahun {$tahun}"],
+        ['6.', 'BAB VI KINERJA PENYELENGGARAAN PEMERINTAHAN DAERAH', 'BAB VI KINERJA PENYELENGGARAAN PEMERINTAHAN DAERAH', 1],
+        ['6.1.', 'Indikator Kinerja Utama Daerah', 'Indikator Kinerja Utama Daerah'],
+        ['6.2.', 'Indikator Kinerja Daerah', 'Indikator Kinerja Daerah'],
+        ['7.', 'BAB VII PENUTUP', 'BAB VII PENUTUP', 1],
+    ];
+
+    /* ───────────── 5. TABEL KONSISTENSI RPJMD vs RKPD ─────────────
+       ['misi', 'judul misi']  atau
+       [sasaran|null, ind RPJMD, satuan, target RPJMD, ind RKPD, satuan, target RKPD]
+       Baris yang target RPJMD ≠ target RKPD otomatis diberi tanda (class "diff"). */
+    $konsistensiRows = $konsistensi ?? [
+        ['misi', 'Misi 1: Meningkatkan Kualitas Sumber Daya Manusia yang Unggul, Sehat dan Berdaya Saing'],
+        ['Terwujudnya kualitas sumber daya manusia yang berdaya saing dan produktif', 'Indeks Daya Saing Daerah', 'Angka', '3,78', 'Indeks Daya Saing Daerah', 'Angka', '3,78'],
+        ['Meningkatnya akses terhadap pendidikan dan kesehatan yang berkualitas, serta kesetaraan gender', 'Indeks Pembangunan Manusia', 'Tahun', '74,38', 'Indeks Pembangunan Manusia', 'Tahun', '73,70'],
+        [null, 'Indeks Ketimpangan Gender (IUP 21)', 'Tahun', '0,246 / 0,22', 'Indeks Ketimpangan Gender (IUP 21)', 'Tahun', '0,246 / 2,22'],
+        ['misi', 'Misi 2: Mewujudkan Pertumbuhan Ekonomi Daerah yang Berkelanjutan, Inklusif Berbasis Potensi Unggul, serta Mampu Mengurangi Kemiskinan'],
+        ['Meningkatnya pertumbuhan ekonomi yang berdampak pada penurunan kemiskinan', 'Pertumbuhan Ekonomi', '%', '5,90 - 7,75', 'Pertumbuhan Ekonomi', '%', '5,40 - 6,20'],
+        ['Meningkatnya nilai investasi, penyerapan tenaga kerja, kontribusi sektor unggulan dalam perekonomian, dan ketahanan pangan', 'Pembentukan Modal Tetap Bruto (PMTB) dalam PDRB (IUP 32)', '%', '24,02', 'Pembentukan Modal Tetap Bruto (PMTB) dalam PDRB', '%', '24,02'],
+        [null, 'Produk Domestik Regional Bruto (PDRB) Per Kapita Kabupaten/Kota (IUP 33)', 'Juta Rp.', '57,81', 'Produk Domestik Regional Bruto (PDRB) Per Kapita Kabupaten/Kota', 'Juta Rp.', '57,81'],
+        [null, 'Tingkat Pengangguran Terbuka (IUP 29)', '%', '2,45 / 2,15', 'Tingkat Pengangguran Terbuka', '%', '2,45 / 2,15'],
+        ['-', 'Tingkat Kemiskinan (IUP 12)', '%', '12,01 / 11,70', 'Tingkat Kemiskinan', '%', '12,73 / 12,43'],
+        [null, 'Indeks Ketahanan Pangan (IUP 53)', 'Angka', '85,34', 'Indeks Ketahanan Pangan (IKP)', 'Angka', '85,34'],
+        ['misi', 'Misi 3: Mewujudkan Tata Kelola Pemerintahan dan Pelayanan Publik yang Profesional'],
+        ['Meningkatnya tata kelola pemerintahan yang profesional dan berintegritas', 'Indeks Reformasi Birokrasi (IUP 39)<br>- RB General<br>- RB Tematik', 'Angka<br>Angka<br>Angka', '89,66<br>79,05<br>10,61', 'Indeks Reformasi Birokrasi<br>- RB General<br>- RB Tematik', 'Angka<br>Angka<br>Angka', '89,66<br>79,05<br>10,61'],
+        ['misi', 'Misi 4: Mewujudkan Pembangunan Infrastruktur yang Berkualitas dan Berkelanjutan'],
+        ['Meningkatnya pemerataan pembangunan infrastruktur yang tangguh', 'Indeks Infrastruktur', 'Angka', '70,31', 'Indeks Infrastruktur', 'Angka', '70,31'],
+        ['1. Meningkatnya kinerja layanan infrastruktur konektivitas wilayah', 'Indeks Infrastruktur Konektivitas Wilayah', 'Angka', '68,18', 'Indeks Infrastruktur Konektivitas Wilayah', 'Angka', '68,18'],
+        ['2. Meningkatnya pemenuhan permukiman Layak dan Berkelanjutan', 'Indeks Kinerja Infrastruktur Permukiman', '%', '72,44', 'Indeks Kinerja Infrastruktur Permukiman', '%', '72,44'],
+        ['misi', 'Misi 5: Meningkatkan Kualitas Lingkungan Hidup dan Pengelolaan Sumber Daya Alam yang Berkelanjutan'],
+        ['Meningkatnya kualitas lingkungan hidup berkelanjutan', 'Indeks Kualitas Lingkungan Hidup (IKLH)', 'Angka', '76,23', 'Indeks Kualitas Lingkungan Hidup (IKLH)', 'Angka', '76,23'],
+        ['Meningkatnya pengelolaan lingkungan hidup dan Ketahanan Bencana Daerah', 'Kontribusi penurunan emisi GRK kumulatif (IUP 49)', 'TonCO2 eq', '1.815.353,68', 'Kontribusi penurunan emisi GRK kumulatif', 'TonCO2 eq', '1.815.353,68'],
+        [null, 'Indeks Risiko Bencana (IRB)', 'Angka', '107,82 - 106,8', 'Indeks Risiko Bencana', 'Angka', '107,82 - 106,8'],
+    ];
+
+    /* ───────────── 6. HELPER DATA PENGUJIAN ───────────── */
+    $pKeyed = ($pengujians ?? $lhr->pengujians)->keyBy('kode');
+
+    $getSimpulan = function ($kode, $fallback) use ($pKeyed) {
+        $val = $pKeyed->get($kode)?->teks_simpulan;
+        return !empty(trim($val ?? '')) ? $val : $fallback;
+    };
+    $getCatatans = function ($kode) use ($pKeyed) {
+        $p = $pKeyed->get($kode);
+        if (!$p) return collect();
+        $cats = $p->catatans ?? collect();
+        if ($p->relationLoaded('children') && $p->children && $p->children->isNotEmpty()) {
+            foreach ($p->children as $child) $cats = $cats->concat($child->catatans ?? collect());
+        }
+        return $cats;
+    };
+    $getRekomendasis = function ($kode) use ($pKeyed) {
+        $p = $pKeyed->get($kode);
+        if (!$p) return collect();
+        $reks = ($p->catatans ?? collect())->pluck('rekomendasis')->flatten()->filter();
+        if ($p->relationLoaded('children') && $p->children && $p->children->isNotEmpty()) {
+            foreach ($p->children as $child) {
+                $reks = $reks->concat(($child->catatans ?? collect())->pluck('rekomendasis')->flatten()->filter());
+            }
+        }
+        return $reks;
+    };
+
+    // Render catatan/rekomendasi: data DB bila ada, kalau kosong → default.
+    $catatanHtml = function ($kode, $default = '') use ($getCatatans) {
+        $cats = $getCatatans($kode);
+        if ($cats->isEmpty()) return $default;
+        return $cats->map(function ($c) {
+            $ref = $c->referensi_bagian ? '<span class="ref">' . e($c->referensi_bagian) . '</span><br>' : '';
+            return '<div class="note">' . $ref . $c->isi . '</div>';
+        })->implode('');
+    };
+    $rekomHtml = function ($kode, $default = '') use ($getRekomendasis) {
+        $reks = $getRekomendasis($kode);
+        if ($reks->isEmpty()) return $default;
+        return $reks->map(fn($r) => '<div class="note">' . $r->uraian_rekom . '</div>')->implode('');
+    };
+    $ol = fn(array $items, $type = 'a') => '<ol type="' . $type . '">' . implode('', array_map(fn($i) => "<li>{$i}</li>", $items)) . '</ol>';
+    $ul = fn(array $items) => '<ul>' . implode('', array_map(fn($i) => "<li>{$i}</li>", $items)) . '</ul>';
+
+    /* ───────────── 7. DEFINISI PENGUJIAN (tambah/ubah pengujian cukup di sini) ───────────── */
+    $dokumenPendukung = [
+        'RPJMN tahun 2025-2029',
+        'RPJMD Prov. Jateng tahun 2025-2029',
+        "Rancangan RKPD Prov. Jateng tahun {$tahun}",
+        'RPJMD Kab. Rembang tahun 2025-2029',
+        'Renstra Perangkat Daerah tahun 2025-2029',
+        'Hasil Evaluasi RKPD tahun 2025',
+        "Rancangan Akhir RKPD tahun {$tahun}",
+        "Berita Acara FKP RKPD tahun {$tahun}",
+        "Berita Acara Musrenbang RKPD tahun {$tahun}",
+        "SK Tim Penyusun RKPD Kab. Rembang tahun {$tahun}",
+        "Lampiran Rancangan Akhir RKPD tahun {$tahun} (Rekapitulasi Rumusan Rencana Program, Kegiatan dan Sub Kegiatan Perangkat Daerah Tahun {$tahun})",
+    ];
+    $dokumenKurang = [
+        'Hasil Evaluasi RKPD tahun 2026 (Triwulan 1);',
+        'Laporan hasil pengendalian kebijakan penyusunan RKPD Formulir E.35 Pengendalian dan Evaluasi terhadap Kebijakan Perencanaan Pembangunan Tahunan Daerah (Cek List: 27 komponen);',
+        "Jadwal / Agenda Kerja Tim Penyusunan RKPD tahun {$tahun}; dan",
+        "Rekapitulasi Pokok-pokok Pikiran DPRD tahun {$tahun}.",
+    ];
+    $tema = "&quot;Pengembangan Perekonomian Daerah termasuk Ekonomi Syariah dan Pariwisata, Didukung SDM Produktif, Tata Kelola Pemerintahan yang Responsif dan Infrastruktur yang Mantap&quot;";
+    $lampSipd = "Lampiran SIPD-RI PDF dan Excel (Renja OPD Kabupaten Rembang tahun {$tahun}) Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun}";
+
+    $format = [
+        'kode' => 'RKPD.F',
+        'judul' => 'Kesesuaian Format Rancangan Akhir RKPD',
+        'simpulan' => "Format/sistematika dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} kurang sesuai dengan yang diatur dalam Lampiran Peraturan Menteri Dalam Negeri Nomor 86 tahun 2017 (halaman 384).",
+        'catatan' => "Format/sistematika dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} kurang sesuai dengan yang diatur dalam Lampiran Peraturan Menteri Dalam Negeri Nomor 86 tahun 2017 (halaman 384), sebagai berikut:",
+        'rekom' => "Menyesuaikan judul: 1) Sub Bab 1.2, 2) Sub Bab 1.3, 3) Sub Bab 1.5, 4) Sub Bab 2.1.3, 5) Sub Bab 2.1.4, 6) Bab 4, 7) Sub Bab 4.3 Dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} dengan mempedomani Lampiran Peraturan Menteri Dalam Negeri nomor 86 Tahun 2017 tentang Tata Cara Perencanaan, Pengendalian dan Evaluasi Pembangunan Daerah, Tata Cara Evaluasi Rancangan Peraturan Daerah tentang Rencana Pembangunan Jangka Panjang Daerah dan Rencana Pembangunan Jangka Menengah Daerah, serta Tata Cara Perubahan Rencana Pembangunan Jangka Panjang Daerah, Rencana Pembangunan Jangka Menengah Daerah dan Rencana Kerja Pemerintah Daerah (halaman 384);",
+    ];
+
+    // Baris default tabel Analisis Isi BAB (S2): bab, ref, catatan, rekomendasi
+    $s2Default = [
+        ['bab' => 'BAB II GAMBARAN UMUM KONDISI DAERAH', 'ref' => '2.1.4 Aspek Pelayanan Umum',
+         'catatan' => $ol(['Belum menguraikan terkait Indikator Standar Pelayanan Minimum (SPM) sebagaimana tercantum dalam Peraturan Pemerintah Nomor 2 Tahun 2018; dan', 'Masih mencantumkan terkait anggaran, Sumber Daya Manusia dan sarana prasarana sebagai faktor penghambat kegagalan/ketidaktercapaian atas indikator kinerja tahun 2025.']),
+         'rekom' => $ol(['Menambahkan uraian terkait Indikator Standar Pelayanan Minimum (SPM) sebagaimana tercantum dalam Peraturan Pemerintah Nomor 2 Tahun 2018; dan', 'Menghapus faktor penghambat kegagalan/ketidaktercapaian atas indikator kinerja tahun 2025 yang terkait dengan anggaran, Sumber Daya Manusia dan sarana prasarana.'])],
+        ['bab' => 'BAB III. KERANGKA EKONOMI DAERAH DAN KEUANGAN DAERAH', 'ref' => '3.1 Arah Kebijakan Ekonomi Daerah',
+         'catatan' => 'Penjelasan terkait pertumbuhan ekonomi belum didukung dengan data pendukung yang disajikan pada tabel secara lengkap, yaitu:' . $ul(['PDRB Atas Dasar Harga Konstan Menurut Lapangan Usaha Kabupaten Rembang Tahun 2024-2025;', 'PDRB Atas Dasar Harga Berlaku (ADHB) Menurut Pengeluaran Kabupaten Rembang Tahun 2024 - 2025;', 'PDRB Atas Dasar Harga Konstan (ADHK) Menurut Pengeluaran Kabupaten Rembang Tahun 2024 - 2025; dan', 'Laju Inflasi.']),
+         'rekom' => 'Melengkapi data pendukung pertumbuhan ekonomi yang meliputi:' . $ul(['PDRB Atas Dasar Harga Konstan Menurut Lapangan Usaha Kabupaten Rembang Tahun 2024-2025;', 'PDRB Atas Dasar Harga Berlaku (ADHB) Menurut Pengeluaran Kabupaten Rembang Tahun 2024 - 2025;', 'PDRB Atas Dasar Harga Konstan (ADHK) Menurut Pengeluaran Kabupaten Rembang Tahun 2024 - 2025; dan', 'Laju Inflasi.'])],
+        ['bab' => 'BAB III. KERANGKA EKONOMI DAERAH DAN KEUANGAN DAERAH', 'ref' => '3.2 Arah Kebijakan Keuangan Daerah',
+         'catatan' => $ol([
+            "Terdapat ketidaksesuaian angka proyeksi PAD dan belanja pada dokumen Rankir RKPD (tabel 3.5) dengan SIPD (tabel 3.5. Proyeksi Anggaran Pendapatan dan Belanja Daerah Kabupaten Rembang Tahun {$tahun});",
+            'Kebijakan belanja belum memprioritaskan belanja untuk mendukung pelayanan dasar;',
+            'Belum memproyeksikan belanja tidak terduga dan belanja transfer;',
+            'Proyeksi belanja belum dirinci berdasarkan kategori rekening belanja;',
+            'Terdapat proyeksi pembayaran Pembiayaan Utang Daerah sebesar Rp. 4.500.000.000,- yang tidak dijelaskan peruntukannya;',
+            'Belum menginformasikan rasio ruang fiskal tahunan (grafik/tabel); dan',
+            "Belum menginformasikan Kapasitas Riil Kemampuan Keuangan Daerah Kabupaten Rembang tahun {$tahun} (tabel & penjelasan).",
+         ]),
+         'rekom' => "Menyelaraskan proyeksi Pendapatan, Belanja dan Pembiayaan pada dokumen Rankir RKPD tahun {$tahun} (bab III) dengan Rankir RKPD tahun {$tahun} pada SIPD;<br><br>Dalam penetapan arah kebijakan belanja agar berdasarkan skala prioritas meliputi:" . $ul(['Wajib Mengikat', 'Pelayanan Dasar', 'Mandatory spending', 'Mendukung visi misi Kepala Daerah (RPJMD)']) .
+            $ol(['Agar memproyeksikan belanja tidak terduga dan belanja transfer;', 'Proyeksi belanja agar dirinci berdasarkan rekening belanja;', 'Menambahkan penjelasan atas peruntukan pembayaran Pembiayaan Utang Daerah sebesar Rp. 4.500.000.000,-;', 'Menambahkan data rasio ruang fiskal tahunan (grafik/tabel); dan', "Menambahkan data Kapasitas Riil Kemampuan Keuangan Daerah Kabupaten Rembang tahun {$tahun} (tabel & penjelasan)."])],
+        ['bab' => "BAB IV. SASARAN DAN PRIORITAS PEMBANGUNAN DAERAH TAHUN {$tahun}", 'ref' => '4.2 Arah Kebijakan Pembangunan',
+         'catatan' => "Arah kebijakan pembangunan RKPD Kabupaten Rembang yang tertuang dalam tabel 4.2 (halaman IV-8) belum difokuskan dalam mewujudkan tema pembangunan tahun {$tahun} {$tema}.",
+         'rekom' => "Memfokuskan arah kebijakan pembangunan RKPD Kabupaten Rembang yang tertuang dalam tabel 4.2 (halaman IV-8) dalam mewujudkan tema pembangunan tahun {$tahun} {$tema}."],
+        ['bab' => "BAB IV. SASARAN DAN PRIORITAS PEMBANGUNAN DAERAH TAHUN {$tahun}", 'ref' => "4.3.3 Prioritas Pembangunan Kabupaten Rembang Tahun {$tahun}",
+         'catatan' => 'Inventarisasi permasalahan di Bab II belum sepenuhnya menjadi prioritas yang ditangani.',
+         'rekom' => 'Menambahkan prioritas pembangunan sesuai dengan permasalahan yang dituangkan dalam Bab II.'],
+    ];
+
+    $tabelPrioritas = '<table class="bordered"><thead><tr><th style="width:50%">Prioritas Pembangunan tahun ' . $tahun . '<br>(RPJMD 2025-2029)</th><th style="width:50%">Prioritas Pembangunan tahun ' . $tahun . '<br>(Rankir RKPD ' . $tahun . ')</th></tr></thead><tbody>'
+        . implode('', array_map(fn($p) => "<tr><td>{$p}</td><td>{$p}</td></tr>", [
+            '1. Peningkatan Pembangunan SDM', '2. Peningkatan Perekonomian Daerah', '3. Peningkatan Kualitas Pelayanan Publik',
+            '4. Peningkatan Infrastruktur Mantap', '5. Peningkatan Daya Dukung Lingkungan Hidup']))
+        . '</tbody></table>';
+
+    $substansi = [
+        ['kode' => 'RKPD.S1', 'judul' => 'Pengujian atas Kelengkapan Dokumen Pendukung RKPD',
+         'simpulan' => "Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} telah didukung dengan dokumen perencanaan yang memadai yaitu:",
+         'daftar' => $dokumenPendukung,
+         'catatan' => 'Terdapat data/dokumen pendukung yang belum ada, yaitu:' . $ol($dokumenKurang),
+         'rekom' => 'Melengkapi data/dokumen pendukung sebagai berikut:' . $ol($dokumenKurang)],
+
+        ['kode' => 'RKPD.S2', 'judul' => 'Pengujian atas Analisis Isi BAB Rancangan Akhir RKPD',
+         'simpulan' => "Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {$tahun}, masih terdapat kekurangsesuaian data yang disajikan.",
+         'tabel' => $s2Default],
+
+        ['kode' => 'RKPD.S3', 'judul' => 'Pengujian atas Kesesuaian Rumusan Prioritas dan Sasaran Pembangunan dalam RKPD dan RPJMD',
+         'simpulan' => "Rumusan Prioritas dan Sasaran Pembangunan dalam Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {$tahun} telah sesuai dengan Dokumen RPJMD Kabupaten Rembang tahun 2025-2029.",
+         'catatan' => "Rumusan prioritas pembangunan daerah pada Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} (hal IV-16) telah selaras dengan prioritas pembangunan daerah yang telah ditetapkan pada RPJMD Kabupaten Rembang tahun 2025-2029 (hal III-143) sebagaimana penyandingan berikut:" . $tabelPrioritas,
+         'rekom' => ''],
+
+        ['kode' => 'RKPD.S4', 'judul' => 'Kesesuaian Program/Outcome, Indikator, Target beserta Pagu Indikatifnya pada RPJMD dengan Rancangan Akhir RKPD',
+         'simpulan' => "Program/Outcome, Indikator, Target beserta Pagu Indikatifnya pada Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {$tahun} belum sesuai dengan Rencana Pembangunan Jangka Menengah Daerah (RPJMD) Kabupaten Rembang tahun 2025-2029.",
+         'catatan' => $ol([
+            "Terdapat ketidaksesuaian Indikator Kinerja, Target beserta Pagu Indikatif (Program) yang dicantumkan pada tabel 4.1 RPJMD Kabupaten Rembang tahun 2025-2029 (halaman IV-34) dengan Lampiran SIPD-RI Excel (Renja OPD Kabupaten Rembang tahun {$tahun}) Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun}, sebagaimana penyandingan pada link {$lnk};",
+            "Seluruh Program pada Lampiran SIPD-RI PDF (Renja OPD Kabupaten Rembang tahun {$tahun}) Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} belum dilengkapi outcome, indikator, satuan, capaian (T-2) dan target;",
+            "Terdapat ketidaksesuaian Indikator Kinerja, Target beserta Pagu Indikatif (Program) yang dicantumkan pada tabel 5.1 (halaman V-1 sampai halaman V-28) dan tabel 5.3 Rancangan Akhir RKPD tahun {$tahun} (halaman V-85 sampai halaman V-123) dengan {$lampSipd}, sebagaimana penyandingan pada link {$lnk};",
+            "Terdapat beberapa Program yang termasuk Program Prioritas Nasional tetapi dalam dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} kurang mendapatkan proporsi anggaran, sebagaimana catatan pada link {$lnk};",
+            "Terdapat penetapan target kinerja &quot;Persentase terbangunnya sarana prasarana persampahan sesuai standar (%)&quot; namun tidak disertai dengan penetapan anggaran, padahal indikator kinerja yang digunakan sebagai tolok ukur menunjukkan pembangunan fisik/infrastruktur sebagaimana catatan pada link {$lnk};",
+            "Terdapat kenaikan proporsi anggaran yang cukup signifikan pada beberapa Program di dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} dibandingkan dengan proporsi anggaran pada dokumen RPJMD Kabupaten Rembang tahun 2025-2029 sebagaimana catatan pada link {$lnk};",
+            "Program Pengolahan dan Pemasaran Hasil Perikanan termasuk dalam program utama unggulan Bupati dan Wakil Bupati namun proporsi anggaran pada dokumen RPJMD Kabupaten Rembang tahun 2025-2029 dengan dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} selisih cukup besar dibanding program pendukung maupun bukan program pendukung sebagaimana catatan pada link {$lnk}; dan",
+            "Terdapat beberapa program yang bukan termasuk program prioritas maupun nomenklatur program utama namun proporsi anggaran yang diberikan pada dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} cukup besar dibandingkan dengan anggaran pada program prioritas sebagaimana catatan pada link {$lnk}.",
+         ]),
+         'rekom' => $ol([
+            "Menyesuaikan indikator kinerja, target beserta pagu indikatif (Program) yang dicantumkan tabel 5.1 (halaman V-1 sampai halaman V-28), tabel 5.3 Rancangan Akhir RKPD tahun {$tahun} (halaman V-85 sampai halaman V-123) dan {$lampSipd} dengan tabel 4.1 RPJMD Kabupaten Rembang tahun 2025-2029 (halaman IV-34);",
+            "Seluruh Program pada Lampiran SIPD-RI PDF (Renja OPD Kabupaten Rembang tahun {$tahun}) Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} agar dilengkapi outcome, indikator, satuan, capaian (T-2), target, dan pagu indikatif;",
+            "Memproporsikan anggaran program dalam dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} yang termasuk Program Prioritas Nasional;",
+            'Memproporsikan anggaran pada indikator kinerja &quot;Persentase terbangunnya sarana prasarana persampahan sesuai standar (%)&quot; yang digunakan sebagai tolok ukur pembangunan fisik/infrastruktur;',
+            "Mengkaji kembali kenaikan proporsi anggaran yang cukup signifikan pada beberapa Program di dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} dibandingkan dengan proporsi anggaran pada dokumen RPJMD Kabupaten Rembang tahun 2025-2029;",
+            'Memproporsikan anggaran untuk Program Pengolahan dan Pemasaran Hasil Perikanan yang merupakan program utama unggulan Bupati dan Wakil Bupati; dan',
+            "Mengkaji kembali program yang bukan termasuk program prioritas maupun nomenklatur program utama namun proporsi anggaran yang diberikan pada dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} cukup besar dibandingkan dengan anggaran pada program prioritas.",
+         ])],
+
+        ['kode' => 'RKPD.S5', 'judul' => 'Kewajaran proyeksi pendanaan pada rancangan akhir RKPD',
+         'simpulan' => "Proyeksi pendanaan pada Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {$tahun} telah wajar.",
+         'catatan' => $ol([
+            "Data APBD tahun berjalan (tahun anggaran 2026) pada tabel 3.5 (halaman III-17) dokumen Rancangan Akhir RKPD Kabupaten Rembang belum menggunakan APBD berdasarkan Peraturan Bupati Rembang Nomor 4 tahun 2026 tentang Perubahan atas Peraturan Bupati Rembang Nomor 110 tahun 2025 tentang Penjabaran APBD tahun anggaran 2026 sebagaimana penyandingan pada link {$lnk};",
+            "Data Realisasi Anggaran tahun 2025 unaudited pada tabel 3.2 (halaman III-10), tabel 3.3 (halaman III-15), dan tabel 3.4 (halaman III-16) Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} belum sesuai dengan LRA tahun 2025 unaudited terupdate sebagaimana penyandingan pada link {$lnk};",
+            "Proyeksi APBD tahun anggaran {$tahun} pada tabel 3.5 Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} (halaman III-17) tidak sesuai dengan data proyeksi APBD tahun anggaran {$tahun} di SIPD-RI sebagaimana penyandingan pada link {$lnk}; dan",
+            "Pada tabel 3.5 Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} (halaman III-17) belum memproyeksikan belanja tidak terduga dan belanja transfer.",
+         ]),
+         'rekom' => $ol([
+            'Penyajian Data APBD tahun anggaran 2026 agar mempedomani Peraturan Bupati Rembang Nomor 4 tahun 2026 tentang Perubahan atas Peraturan Bupati Rembang Nomor 110 tahun 2025 tentang Penjabaran APBD tahun anggaran 2026;',
+            "Penyajian Data Realisasi Anggaran tahun 2025 unaudited pada tabel 3.2 (halaman III-10), tabel 3.3 (halaman III-15), dan tabel 3.4 (halaman III-16) Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} agar disesuaikan dengan LRA tahun 2025 unaudited terupdate;",
+            "Menyesuaikan penyajian Proyeksi APBD tahun anggaran {$tahun} pada tabel 3.5 Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} (halaman III-17) dengan data proyeksi APBD tahun anggaran {$tahun} di SIPD-RI; dan",
+            "Pada tabel 3.5 Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} (halaman III-17) agar memproyeksikan belanja tidak terduga dan belanja transfer.",
+         ])],
+
+        ['kode' => 'RKPD.S6', 'judul' => 'Kesesuaian Informasi pada rancangan akhir RKPD dengan Program Prioritas Nasional',
+         'sub' => [
+            ['kode' => 'RKPD.S6.a', 'judul' => 'Kesesuaian urusan yang mendukung pelaksanaan Asta Cita berdasarkan hasil rapat koordinasi teknis pembangunan (Rakortekbang) dengan urusan pada rancangan akhir RKPD:',
+             'simpulan' => "Urusan yang mendukung pelaksanaan Asta Cita berdasarkan hasil rapat koordinasi teknis pembangunan (Rakortekrenbang Nasional tahun 2026) pada Lampiran SIPD-RI PDF dan Excel (Renja OPD Kabupaten Rembang tahun {$tahun}) Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} belum selaras.",
+             'catatan' => $ul([
+                "Terdapat ketidakselarasan pemetaan urusan pemerintah daerah terhadap Asta Cita berdasarkan RAKORTEKRENBANG Nasional Tahun 2026 sebagaimana penyandingan pada link {$lnk};",
+                "Belum teridentifikasinya pemetaan dukungan subkegiatan terhadap outcome prioritas (program prioritas) pemerintah pusat sebagaimana tertuang pada link {$lnk};",
+                "Terdapat subkegiatan dengan target kinerja nihil yang dimasukkan dalam pemetaan dukungan terhadap asta cita sebagaimana tertuang pada link {$lnk}.",
+             ]),
+             'rekom' => $ul(['Melakukan perbaikan pemetaan urusan pemerintah daerah terhadap dukungan Asta Cita;', 'Mengidentifikasi pemetaan subkegiatan yang mendukung outcome prioritas (program prioritas) pemerintah pusat; dan', 'Memperbaiki target subkegiatan yang tidak mendukung/kurang mendukung Asta Cita dan outcome prioritas pemerintah pusat.'])],
+            ['kode' => 'RKPD.S6.b', 'judul' => 'Kesesuaian penetapan target Indikator Makro Pembangunan pada rancangan akhir RKPD berdasarkan Rencana Kerja Pemerintah (RKP):',
+             'simpulan' => "Rencana Kerja Pemerintah (RKP) tahun {$tahun} belum tersedia.",
+             'catatan' => "Rencana Kerja Pemerintah (RKP) tahun {$tahun} belum tersedia.",
+             'rekom' => ''],
+            ['kode' => 'RKPD.S6.c', 'judul' => 'Kesesuaian dan ketepatan dukungan pelaksanaan ProSN pada rancangan akhir RKPD:',
+             'simpulan' => "Program Strategis Nasional (ProSN) dalam dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} belum seluruhnya terpetakan dalam {$lampSipd}.",
+             'catatan' => "Subkegiatan yang mendukung pelaksanaan ProSN belum seluruhnya terpetakan dalam {$lampSipd} sebagaimana penyandingan pada link {$lnk}.",
+             'rekom' => 'Penyusunan dokumen perencanaan Kabupaten Rembang agar diselaraskan dan dipetakan sesuai dengan Program Strategis Nasional.'],
+            ['kode' => 'RKPD.S6.d', 'judul' => 'Memastikan Program, Kegiatan dan Sub Kegiatan Standar Pelayanan Minimal (SPM) tersedia pada rancangan akhir RKPD:',
+             'simpulan' => "Program, kegiatan dan subkegiatan Standar Pelayanan Minimal (SPM) pada Rancangan Akhir RKPD belum seluruhnya terpetakan dalam {$lampSipd}.",
+             'catatan' => $ul([
+                "Terdapat subkegiatan Standar Pelayanan Minimal (SPM) yang belum terpetakan dalam {$lampSipd}; dan",
+                "Terdapat beberapa subkegiatan yang termasuk subkegiatan Standar Pelayanan Minimal (SPM) tetapi dalam dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} tidak mendapatkan proporsi anggaran, sebagaimana catatan pada link {$lnk}.",
+             ]),
+             'rekom' => $ul(['Penetapan subkegiatan dalam dokumen perencanaan Kabupaten Rembang agar diselaraskan dan dipetakan dengan semua subkegiatan Standar Pelayanan Minimal (SPM);', 'Memproporsikan anggaran untuk semua indikator kinerja subkegiatan Standar Pelayanan Minimal (SPM).'])],
+            ['kode' => 'RKPD.S6.e', 'judul' => 'Memastikan kesesuaian dukungan Sub Kegiatan Tematik Pembangunan pada rancangan akhir RKPD:',
+             'simpulan' => "Sub Kegiatan Tematik Pembangunan pada Rancangan Akhir RKPD belum seluruhnya terpetakan dalam {$lampSipd}.",
+             'catatan' => $ul([
+                "Terdapat subkegiatan Tematik Pembangunan yang belum terpetakan dalam {$lampSipd}; dan",
+                "Terdapat beberapa subkegiatan yang termasuk Tematik Pembangunan tetapi dalam dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} tidak mendapatkan proporsi anggaran, sebagaimana catatan pada link {$lnk}.",
+             ]),
+             'rekom' => $ul(['Penetapan subkegiatan dalam dokumen perencanaan Kabupaten Rembang agar diselaraskan dan dipetakan dengan semua subkegiatan Tematik Pembangunan / Asta Cita Nasional;', 'Memproporsikan anggaran untuk semua indikator kinerja subkegiatan Tematik Pembangunan / Asta Cita Nasional.'])],
+         ]],
+
+        ['kode' => 'RKPD.S7', 'judul' => 'Kesesuaian Informasi pada rancangan akhir RKPD dengan tata cara dan kaidah Perencanaan Pembangunan Daerah lainnya (Pokok-Pokok Pikiran DPRD)',
+         'simpulan' => "Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {$tahun} belum dilengkapi dengan rekapitulasi data pokok-pokok pikiran Dewan Perwakilan Rakyat Daerah (DPRD) Kabupaten Rembang tahun {$tahun}.",
+         'catatan' => "Bab IV Sasaran dan Prioritas Pembangunan Daerah Tahun {$tahun} telah menjelaskan pokok-pokok pikiran DPRD (halaman IV-33 sampai dengan halaman IV-34), namun belum dilengkapi dengan rekapitulasi data pokok-pokok pikiran DPRD yang berisi: Program/Kegiatan/Sub Kegiatan/Aktivitas, Indikator, Volume, Kelompok Sasaran, Lokasi dan Perangkat Daerah terkait.",
+         'rekom' => "Penjelasan Pokok-Pokok Pikiran DPRD pada Bab IV Sasaran dan Prioritas Pembangunan Daerah Tahun {$tahun} agar dilengkapi dengan rekapitulasi data pokok-pokok pikiran DPRD yang berisi: Program/Kegiatan/Sub Kegiatan/Aktivitas, Indikator, Volume, Kelompok Sasaran, Lokasi dan Perangkat Daerah terkait."],
+
+        ['kode' => 'RKPD.S8', 'judul' => 'Pengujian atas Konsistensi Pencantuman Indikator serta Target Kinerja Tujuan dan Sasaran dalam Rancangan Akhir RKPD dan RPJMD',
+         'simpulan' => "Target Kinerja Tujuan dan Sasaran dalam dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} belum konsisten dengan Dokumen RPJMD Kabupaten Rembang Tahun 2025-2029.",
+         'catatan' => "Terdapat ketidakkonsistenan target Indikator Kinerja Tujuan dan Sasaran yang dicantumkan pada tabel 3.6 RPJMD Kabupaten Rembang tahun 2025-2029 dengan tabel 4.1 Rancangan Akhir RKPD tahun {$tahun}, sebagaimana penyandingan sebagai berikut:",
+         'rekom' => "Mengkaji kembali penetapan target indikator kinerja Tujuan dan Sasaran yang tercantum pada tabel 3.6 Misi, Tujuan Dan Sasaran Pembangunan Kabupaten Rembang Beserta Indikator dan Target Kinerja Tahun 2025-2029 dan tabel 3.9 Teknik Perumusan Program Prioritas Pembangunan Daerah Rancangan Akhir RPJMD tahun 2025-2029 dengan Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} yang tidak konsisten."],
+    ];
+
+    // Rekomendasi: hanya tampilkan pengujian yang benar-benar punya rekomendasi
+    $nonEmpty = fn($h) => trim(strip_tags((string) $h)) !== '';
+    $rekomItems = [];
+    foreach ($substansi as $n => $u) {
+        if (!empty($u['tabel'])) { $rekomItems[] = ['n' => $n + 1, 'u' => $u, 'type' => 'tabel']; continue; }
+        if (!empty($u['sub'])) {
+            $subs = [];
+            foreach ($u['sub'] as $i => $s) {
+                $h = $rekomHtml($s['kode'], $s['rekom'] ?? '');
+                if ($nonEmpty($h)) $subs[] = ['l' => chr(97 + $i), 'judul' => $s['judul'], 'h' => $h];
+            }
+            if ($subs) $rekomItems[] = ['n' => $n + 1, 'u' => $u, 'type' => 'sub', 'subs' => $subs];
+            continue;
+        }
+        $h = $rekomHtml($u['kode'], $u['rekom'] ?? '');
+        if ($nonEmpty($h)) $rekomItems[] = ['n' => $n + 1, 'u' => $u, 'type' => 'single', 'h' => $h];
+    }
+
+    $attList = $attachments ?? $lhr->attachments;
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Hasil Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $lhr->tahun_anggaran ?? 2027 }}</title>
-    @if(!empty($isPdf))
+    <title>Laporan Hasil Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahun }}</title>
     <style>
-        @page {
-            size: 210mm 297mm;
-            margin: 15mm 15mm 15mm 20mm;
-        }
-        * {
-            box-sizing: border-box;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: #ffffff;
-            color: #000;
-            font-size: 9.5pt;
-            line-height: 1.35;
-        }
-        .preview-toolbar {
-            display: none !important;
-        }
-        .page {
-            width: 100%;
-            page-break-after: always;
-            clear: both;
-            padding: 0;
-            margin: 0;
-            min-height: auto;
-            box-shadow: none;
-            background: transparent;
-        }
-        .page:last-child {
-            page-break-after: avoid;
-        }
-        .cover-page {
-            margin: -15mm -15mm -15mm -20mm;
-            padding: 25mm 20mm 20mm 20mm;
-            background-color: #f7b267;
-            text-align: center;
-            width: 210mm;
-        }
-        .page-footer {
-            margin-top: 15px;
-            padding-top: 4px;
-            border-top: 1px solid #ccc;
-            font-size: 8pt;
-            font-style: italic;
-        }
-        .footer-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 8pt;
-            font-style: italic;
-        }
-        .footer-table td {
-            padding: 0;
-            border: none;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 8px 0;
-            font-size: 8.5pt;
-        }
-        table.bordered, table.bordered th, table.bordered td {
-            border: 1px solid #000;
-        }
-        table th, table td {
-            padding: 3px 5px;
-            vertical-align: top;
-        }
-        table th {
-            background-color: #f2f2f2;
-            text-align: center;
-        }
-        .header-kop {
-            text-align: center;
-            border-bottom: 3px double #000;
-            padding-bottom: 4px;
-            margin-bottom: 10px;
-        }
+        /* ================= DASAR (semua mode) ================= */
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; line-height: 1.35; color: #000; margin: 0; padding: 0; }
+        h3, h4 { margin: 10px 0 4px; page-break-after: avoid; break-after: avoid; }
+        p { margin: 4px 0; }
+        ol, ul { margin: 2px 0 5px; padding-left: 18px; }
+        li { margin-bottom: 3px; text-align: justify; }
+        a { color: #000; word-break: break-all; }
+
+        .text-center { text-align: center; }
+        .text-justify { text-align: justify; }
+        .text-right { text-align: right; }
+        .indent  { margin-left: 15px; }
+        .indent2 { margin-left: 30px; }
+        .nobreak { page-break-inside: avoid; break-inside: avoid; }
+        .new-page { page-break-before: always; break-before: page; }
+        .sec-title { font-weight: bold; margin: 10px 0 2px; page-break-after: avoid; break-after: avoid; }
+        .item { margin: 6px 0; }
+        .item > .note, .note { margin: 4px 0 6px; text-align: justify; }
+        .ref { font-weight: bold; background: #eee; padding: 1px 4px; font-size: 8.5pt; }
+        .sub-rekom { margin: 3px 0 3px 18px; text-align: justify; }
+
+        /* tabel */
+        table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 8.5pt; }
+        table th, table td { padding: 3px 5px; vertical-align: top; }
+        table.plain th, table.plain td { border: 0; }
+        table.bordered, table.bordered th, table.bordered td { border: 1px solid #000; }
+        table.bordered th { background: #f2f2f2; text-align: center; }
+        thead { display: table-header-group; }
+        tr { page-break-inside: avoid; break-inside: avoid; }
+        td.c { text-align: center; }
+        td.grp, td.misi { background: #e6e6e6; font-weight: bold; }
+        td.cont { border-top-color: transparent !important; }
+        td.diff { background: #fde8e8; font-weight: bold; }
+        table.data-table th, table.data-table td { border: 1px solid #cbd5e1; padding: 5px 6px; }
+        table.data-table th { background: #f1f5f9; }
+        .mono { font-family: monospace; font-size: 8pt; background: #e2e8f0; padding: 1px 5px; }
+
+        .person td { padding: 2px; font-size: 9pt; }
+        .person td:first-child { width: 100px; }
+        .person-sep td { padding: 2px; }
+        .surat-meta td { padding: 1px 4px; font-size: 9pt; }
+
+        /* kop */
+        .header-kop { text-align: center; border-bottom: 3px double #000; padding-bottom: 4px; margin-bottom: 10px; }
         .header-kop h3 { margin: 0; font-size: 11pt; }
         .header-kop h2 { margin: 0; font-size: 13pt; }
         .header-kop p { margin: 1px 0; font-size: 8pt; }
+
+        /* cover & penutup */
+        .bleed { background: #f7b267; text-align: center; page-break-after: always; break-after: page; }
+        .bleed:last-of-type { page-break-after: auto; break-after: auto; }
         .cover-logo { width: 100px; margin: 0 auto 10px; display: block; }
         .cover-header { font-weight: bold; font-size: 13pt; }
         .cover-title { font-size: 13.5pt; font-weight: bold; margin: 20px 0 15px; line-height: 1.3; }
         .cover-meta { text-align: left; margin: 20px auto; width: 85%; font-weight: bold; font-size: 10pt; }
-        .surat-meta td { padding: 1px 4px; font-size: 9pt; }
-        ol, ul { margin-top: 0; margin-bottom: 5px; padding-left: 18px; }
-        li { margin-bottom: 3px; text-align: justify; }
-        p { margin-top: 4px; margin-bottom: 4px; }
-        .text-center { text-align: center; }
-        .text-justify { text-align: justify; }
-        .text-right { text-align: right; }
-        .font-bold { font-weight: bold; }
-        .underline { text-decoration: underline; }
-    </style>
-    @else
-    <style>
-        @page {
-            size: A4 portrait;
-            margin: 0;
+        .cover-year { font-weight: bold; font-size: 14pt; margin-top: 40px; }
+
+        /* tanda tangan */
+        .ttd { width: 100%; margin-top: 30px; }
+        .ttd td { border: 0; }
+
+        @if($engine === 'dompdf')
+        /* ================= DOMPDF ================= */
+        @page { size: 210mm 297mm; margin: 15mm 15mm 20mm 20mm; }
+        .preview-toolbar { display: none !important; }
+        .running-footer { position: fixed; left: 0; right: 0; bottom: -12mm; border-top: 1px solid #ccc; padding-top: 3px; font-size: 8pt; font-style: italic; z-index: -10; }
+        .running-footer table { margin: 0; font-size: 8pt; }
+        .running-footer td { border: 0; padding: 0; }
+        .pagenum:before { content: counter(page); }
+        .bleed { margin: -15mm -15mm -20mm -20mm; width: 210mm; height: 262mm; overflow: hidden; padding: 20mm 15mm 15mm; position: relative; z-index: 10; }
+        .cover-title { font-size: 13.5pt; font-weight: bold; margin: 15px 0 10px; line-height: 1.3; }
+        .cover-meta { text-align: left; margin: 15px auto; width: 85%; font-weight: bold; font-size: 10pt; }
+        .cover-year { font-weight: bold; font-size: 14pt; margin-top: 25px; }
+        @elseif($engine === 'chrome')
+        /* ================= CHROME / BROWSERSHOT ================= */
+        @page { size: A4; margin: 15mm 15mm 20mm 20mm;
+            @bottom-left  { content: "{{ $footerText }}"; font: italic 8pt Arial; border-top: 1px solid #ccc; width: 100%; vertical-align: top; padding-top: 3px; }
+            @bottom-right { content: counter(page); font: italic 8pt Arial; border-top: 1px solid #ccc; vertical-align: top; padding-top: 3px; }
         }
-        * {
-            box-sizing: border-box;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+        @page bleed { margin: 0; @bottom-left { content: none; border: 0 } @bottom-right { content: none; border: 0 } }
+        .preview-toolbar { display: none !important; }
+        .bleed { page: bleed; height: 297mm; padding: 25mm 20mm 20mm; }
+        @else
+        /* ================= PREVIEW LAYAR ================= */
+        @page { size: A4; margin: 15mm 15mm 20mm 20mm;
+            @bottom-left  { content: "{{ $footerText }}"; font: italic 8pt Arial; }
+            @bottom-right { content: counter(page); font: italic 8pt Arial; }
         }
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #525659;
-            color: #000;
-            font-size: 11pt;
-            line-height: 1.4;
-        }
-        .page {
-            width: 210mm;
-            min-height: 297mm;
-            padding: 20mm 15mm 20mm 20mm;
-            margin: 10px auto;
-            background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.3);
-            position: relative;
-            page-break-after: always;
-            break-after: page;
-        }
-        .page:last-child {
-            page-break-after: auto;
-            break-after: auto;
-        }
+        @page bleed { margin: 0; @bottom-left { content: none } @bottom-right { content: none } }
+        body { background: #525659; }
+        .sheet { width: 210mm; max-width: 100%; margin: 15px auto; background: #fff; padding: 15mm 15mm 15mm 20mm; box-shadow: 0 4px 15px rgba(0,0,0,.25); }
+        .bleed { page: bleed; width: 210mm; max-width: 100%; min-height: 297mm; margin: 15px auto; padding: 25mm 20mm 20mm; box-shadow: 0 4px 15px rgba(0,0,0,.25); }
+        .running-footer { display: none; }
+        .preview-toolbar { position: sticky; top: 0; z-index: 9999; background: #1e293b; color: #fff; padding: 10px 20px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+        .preview-toolbar a, .preview-toolbar button { font: bold 12px Arial, sans-serif; padding: 6px 14px; border-radius: 6px; text-decoration: none; cursor: pointer; border: 0; color: #fff; display: inline-block; }
+        .btn-back { background: #475569; } .btn-print { background: #2563eb; } .btn-pdf { background: #dc2626; } .btn-word { background: #2563eb; }
         @media print {
-            body {
-                background: none;
-            }
-            .page {
-                margin: 0;
-                box-shadow: none;
-                width: 100%;
-                min-height: 100%;
-            }
-            .no-print {
-                display: none !important;
-            }
+            body { background: none; }
+            .sheet { width: auto; margin: 0; padding: 0; box-shadow: none; }
+            .bleed { width: 100%; height: 297mm; margin: 0; box-shadow: none; }
+            .no-print { display: none !important; }
         }
-        .preview-toolbar {
-            position: sticky;
-            top: 0;
-            z-index: 9999;
-            background: #1e293b;
-            color: #fff;
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-        .preview-toolbar button, .preview-toolbar a {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            font-weight: bold;
-            padding: 6px 14px;
-            border-radius: 6px;
-            text-decoration: none;
-            cursor: pointer;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .btn-print { background: #2563eb; color: #fff; }
-        .btn-print:hover { background: #1d4ed8; }
-        .btn-pdf { background: #dc2626; color: #fff; margin-left: 8px; }
-        .btn-pdf:hover { background: #b91c1c; }
-        .btn-back { background: #475569; color: #fff; margin-right: 8px; }
-        .btn-back:hover { background: #334155; }
-        .page-footer {
-            position: absolute;
-            bottom: 15mm;
-            left: 20mm;
-            right: 15mm;
-            font-size: 9pt;
-            font-style: italic;
-            border-top: 1px solid #ccc;
-            padding-top: 4px;
-        }
-        .footer-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 0;
-            font-size: 9pt;
-            font-style: italic;
-        }
-        .footer-table td {
-            padding: 0;
-            border: none;
-        }
-        .cover-page {
-            background-color: #f7b267;
-            text-align: center;
-            padding: 25mm 20mm 20mm 20mm;
-        }
-        .cover-logo {
-            width: 120px;
-            margin: 0 auto 10px;
-            display: block;
-        }
-        .cover-header {
-            font-weight: bold;
-            font-size: 14pt;
-        }
-        .cover-title {
-            font-size: 15pt;
-            font-weight: bold;
-            margin: 25px 0 20px;
-            line-height: 1.3;
-        }
-        .cover-meta {
-            text-align: left;
-            margin: 25px auto;
-            width: 80%;
-            font-weight: bold;
-        }
-        h1, h2, h3, h4 { margin-top: 0; color: #000; }
-        .text-center { text-align: center; }
-        .text-justify { text-align: justify; }
-        .text-right { text-align: right; }
-        .font-bold { font-weight: bold; }
-        .underline { text-decoration: underline; }
-        .header-kop {
-            text-align: center;
-            border-bottom: 3px double #000;
-            padding-bottom: 5px;
-            margin-bottom: 15px;
-        }
-        .header-kop h3 { margin: 0; font-size: 12pt; }
-        .header-kop h2 { margin: 0; font-size: 14pt; }
-        .header-kop p { margin: 2px 0; font-size: 8.5pt; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 10px 0;
-            font-size: 9.5pt;
-        }
-        table.bordered, table.bordered th, table.bordered td {
-            border: 1px solid #000;
-        }
-        table th, table td {
-            padding: 5px;
-            vertical-align: top;
-        }
-        table th {
-            background-color: #f2f2f2;
-            text-align: center;
-        }
-        .surat-meta td { padding: 2px 5px; }
-        ol, ul { margin-top: 0; padding-left: 20px; }
-        li { margin-bottom: 5px; text-align: justify; }
+        @endif
     </style>
-    @endif
 </head>
 <body>
 
-    @php
-        $logoPath = public_path('images/logos/rembang.png');
-        $logoSrc = file_exists($logoPath)
-            ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath))
-            : 'https://upload.wikimedia.org/wikipedia/commons/3/30/Lambang_Kabupaten_Rembang.png';
-            
-        $nomorLhr = $lhr->nomor_lhr ?: '700/026/REVIU/INSP/2026';
-        $tanggalLhr = $lhr->tanggal_lhr 
-            ? \Carbon\Carbon::parse($lhr->tanggal_lhr)->locale('id')->isoFormat('D MMMM Y') 
-            : '11 Mei 2026';
-        $tahunAnggaran = $lhr->tahun_anggaran ?: 2027;
-        $tahunTerbit = $lhr->tanggal_lhr ? \Carbon\Carbon::parse($lhr->tanggal_lhr)->format('Y') : '2026';
-        $namaUnit = $unit->nama_unit ?? 'BADAN PERENCANAAN PEMBANGUNAN DAERAH KABUPATEN REMBANG';
-        $nomorSpt = $assignment->nomor_spt ?? '000.1.2.3/020/INSP/2026';
-        $tanggalSpt = $assignment->tanggal_mulai 
-            ? \Carbon\Carbon::parse($assignment->tanggal_mulai)->locale('id')->isoFormat('D MMMM Y') 
-            : '29 April 2026';
-        $nomorPermohonan = $lhr->permohonan_nomor ?: '000.7/250/2026';
-        $tanggalPermohonan = $lhr->permohonan_tanggal 
-            ? \Carbon\Carbon::parse($lhr->permohonan_tanggal)->locale('id')->isoFormat('D MMMM Y') 
-            : '28 April 2026';
+@if($engine === 'dompdf')
+    {{-- harus pertama di body agar cover menimpanya --}}
+    <div class="running-footer">
+        <table><tr>
+            <td style="text-align:left">{{ $footerText }}</td>
+            <td style="text-align:right"><span class="pagenum"></span></td>
+        </tr></table>
+    </div>
+@endif
 
-        $pKeyed = ($pengujians ?? $lhr->pengujians)->keyBy('kode');
-
-        $getSimpulan = function($kode, $fallback) use ($pKeyed) {
-            $val = $pKeyed->get($kode)?->teks_simpulan;
-            return !empty(trim($val ?? '')) ? $val : $fallback;
-        };
-
-        $getCatatans = function($kode) use ($pKeyed) {
-            $p = $pKeyed->get($kode);
-            if (!$p) return collect();
-            $cats = $p->catatans ?? collect();
-            if ($p->relationLoaded('children') && $p->children && $p->children->isNotEmpty()) {
-                foreach ($p->children as $child) {
-                    $cats = $cats->concat($child->catatans ?? collect());
-                }
-            }
-            return $cats;
-        };
-
-        $getRekomendasis = function($kode) use ($pKeyed) {
-            $p = $pKeyed->get($kode);
-            if (!$p) return collect();
-            $reks = ($p->catatans ?? collect())->pluck('rekomendasis')->flatten()->filter();
-            if ($p->relationLoaded('children') && $p->children && $p->children->isNotEmpty()) {
-                foreach ($p->children as $child) {
-                    $reks = $reks->concat(($child->catatans ?? collect())->pluck('rekomendasis')->flatten()->filter());
-                }
-            }
-            return $reks;
-        };
-    @endphp
-
-    @if(empty($isPdf))
-    <!-- Screen Preview Toolbar -->
+@if($engine === 'browser')
     <div class="preview-toolbar no-print">
         <div>
-            <a href="{{ route('lhr.show', $lhr->uuid) }}" class="btn-back">
-                &larr; Kembali ke Ruang Kerja LHR
-            </a>
-            <span style="font-size:13px; font-weight:bold; color:#cbd5e1;">
-                Dokumen LHR: {{ $nomorLhr }} | Mode: Template Resmi 26 Halaman (Rembang)
-            </span>
+            <a href="{{ route('lhr.show', $lhr->uuid) }}" class="btn-back">&larr; Kembali ke Ruang Kerja LHR</a>
+            <span style="font-size:13px;font-weight:bold;color:#cbd5e1;margin-left:8px">Dokumen LHR: {{ $nomorLhr }}</span>
         </div>
         <div>
-            <button type="button" class="btn-print" onclick="window.print()">
-                &#128438; Cetak / Print Browser
-            </button>
-            <a href="{{ route('lhr.pdf', $lhr->uuid) }}" class="btn-pdf">
-                &#128190; Unduh PDF Asli
-            </a>
-            <a href="{{ route('lhr.word', $lhr->uuid) }}" class="btn-pdf" style="background:#2563eb; color:#fff; text-decoration:none; margin-left:6px;">
-                &#128196; Unduh Word (.docx)
-            </a>
+            <button type="button" class="btn-print" onclick="window.print()">&#128438; Cetak / Print Browser</button>
+            <a href="{{ route('lhr.pdf', $lhr->uuid) }}" class="btn-pdf">&#128190; Unduh PDF</a>
+            <a href="{{ route('lhr.word', $lhr->uuid) }}" class="btn-word">&#128196; Unduh Word (.docx)</a>
         </div>
     </div>
-    @endif
+@endif
 
-    <!-- ==================== HALAMAN 1: COVER ==================== -->
-    <section class="page cover-page">
-        <div>
-            <div class="cover-header">
-                <p style="margin:0;">KABUPATEN REMBANG</p>
-                <p style="margin:0;">INSPEKTORAT DAERAH KABUPATEN REMBANG</p>
-            </div>
-            <div style="margin-top: 25px;">
-                <img src="{{ $logoSrc }}" alt="Logo Rembang" class="cover-logo">
-                <p style="font-weight:bold; font-size:10pt; margin:5px 0;">BerAKHLAK</p>
-                <p style="font-size:8pt; margin:0;">bangga melayani bangsa</p>
-            </div>
-            <div class="cover-title">
-                LAPORAN HASIL REVIU<br>
-                DOKUMEN RANCANGAN AKHIR<br>
-                RENCANA KERJA PEMERINTAH DAERAH (RKPD) KABUPATEN REMBANG<br>
-                TAHUN {{ $tahunAnggaran }}<br>
-                <span style="font-size:12pt; text-transform:uppercase;">{{ $namaUnit }}</span>
-            </div>
-        </div>
-
-        <div class="cover-meta">
-            <table style="width:100%; border:none;">
-                <tr>
-                    <td style="width:100px; border:none; padding:3px;">Nomor</td>
-                    <td style="border:none; padding:3px;">: {{ $nomorLhr }}</td>
-                </tr>
-                <tr>
-                    <td style="border:none; padding:3px;">Tanggal</td>
-                    <td style="border:none; padding:3px;">: {{ $tanggalLhr }}</td>
-                </tr>
-            </table>
-        </div>
-
-        <div style="font-weight:bold; font-size:14pt; margin-top: 40px;">
-            {{ $tahunTerbit }}
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 2: SURAT PENGANTAR ==================== -->
-    <section class="page">
-        <div class="header-kop">
-            <h3>PEMERINTAH KABUPATEN REMBANG</h3>
-            <h2>INSPEKTORAT DAERAH</h2>
-            <p>JL. RAYA REMBANG LASEM KM. 1.1 REMBANG TELP. (0295) 691320</p>
-            <p>Fax. (0295) 693525 Rembang - 59219 Email: Inspektorat@rembangkab.go.id</p>
-        </div>
-
-        <table class="surat-meta" style="width:100%; border:none;">
-            <tr>
-                <td style="width:15%; border:none;">Nomor</td>
-                <td style="width:2%; border:none;">:</td>
-                <td style="width:48%; border:none;">{{ $nomorLhr }}</td>
-                <td style="width:35%; border:none;">Rembang, {{ $tanggalLhr }}</td>
-            </tr>
-            <tr>
-                <td style="border:none;">Lampiran</td>
-                <td style="border:none;">:</td>
-                <td style="border:none;">-</td>
-                <td style="border:none;"></td>
-            </tr>
-            <tr>
-                <td style="border:none;">Perihal</td>
-                <td style="border:none;">:</td>
-                <td style="border:none;">Hasil Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                <td style="border:none;">Kepada Yth.<br>Kepala {{ $namaUnit }}<br>di - REMBANG</td>
-            </tr>
+{{-- ==================== COVER ==================== --}}
+<section class="bleed">
+    <div class="cover-header">
+        <p style="margin:0">KABUPATEN REMBANG</p>
+        <p style="margin:0">INSPEKTORAT DAERAH KABUPATEN REMBANG</p>
+    </div>
+    <div style="margin-top:25px">
+        <img src="{{ $logoSrc }}" alt="Logo Rembang" class="cover-logo">
+        <p style="font-weight:bold;font-size:10pt;margin:5px 0">BerAKHLAK</p>
+        <p style="font-size:8pt;margin:0">bangga melayani bangsa</p>
+    </div>
+    <div class="cover-title">
+        LAPORAN HASIL REVIU<br>
+        DOKUMEN RANCANGAN AKHIR<br>
+        RENCANA KERJA PEMERINTAH DAERAH (RKPD) KABUPATEN REMBANG<br>
+        TAHUN {{ $tahun }}<br>
+        <span style="font-size:12pt;text-transform:uppercase">{{ $namaUnit }}</span>
+    </div>
+    <div class="cover-meta">
+        <table class="plain" style="font-size:10pt">
+            <tr><td style="width:100px">Nomor</td><td>: {{ $nomorLhr }}</td></tr>
+            <tr><td>Tanggal</td><td>: {{ $tanggalLhr }}</td></tr>
         </table>
+    </div>
+    <div class="cover-year">{{ $tahunTerbit }}</div>
+</section>
 
-        <br>
-        <div class="text-justify">
-            <p>Inspektorat Daerah Kabupaten Rembang sebagai Aparat Pengawasan Intern Pemerintah telah melakukan reviu atas Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahunAnggaran }} berupa pengujian terbatas terhadap substansi yang termuat pada Rancangan Akhir Rencana Kerja Pemerintah Daerah. Reviu ditujukan untuk membantu terlaksananya penyusunan dan penyajikan dokumen Rencana Kerja Pemerintah Daerah (RKPD) serta memberikan keyakinan terbatas mengenai kepatuhan dan keabsahan informasi yang disajikan telah sesuai dengan kaidah-kaidah perencanaan, sehingga dapat menghasilkan dokumen Rencana Kerja Pemerintah Daerah (RKPD) yang berkualitas.</p>
-            <p>Dalam pelaksanaan reviu, kami telah melakukan serangkaian aktivitas untuk menguji proses penyusunan atas penyajian dan substansi dalam dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Tahun {{ $tahunAnggaran }} dengan dokumen pendukung lainnya, permintaan keterangan mengenai proses penyusunan untuk mengetahui hubungan dan hal-hal yang tidak terdapat dalam dokumen penyajian. Bersama ini kami sampaikan Laporan Hasil Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahunAnggaran }}. Uraian rinci atas pelaksanaan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahunAnggaran }} adalah sebagai berikut:</p>
-        </div>
+{{-- ==================== ISI LAPORAN (mengalir otomatis antar halaman) ==================== --}}
+<main class="sheet">
 
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">1</td>
-                </tr>
-            </table>
-        </div>
-    </section>
+    {{-- Surat pengantar --}}
+    <div class="header-kop">
+        <h3>PEMERINTAH KABUPATEN REMBANG</h3>
+        <h2>INSPEKTORAT DAERAH</h2>
+        <p>JL. RAYA REMBANG LASEM KM. 1.1 REMBANG TELP. (0295) 691320</p>
+        <p>Fax. (0295) 693525 Rembang - 59219 Email: Inspektorat@rembangkab.go.id</p>
+    </div>
 
-    <!-- ==================== HALAMAN 3: PERNYATAAN REVIU & DASAR HUKUM (1) ==================== -->
-    <section class="page">
-        <h4>A. Pernyataan Reviu</h4>
-        <p class="text-justify">Kami telah mereviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahunAnggaran }} dengan mempedomani Peraturan Menteri Dalam Negeri Republik Indonesia Nomor 3 Tahun 2026 tentang Reviu Dokumen Perencanaan Pembangunan Daerah dan Dokumen Keuangan Daerah. Semua informasi yang dimuat dalam laporan adalah penyajian manajemen Badan Perencanaan Pembangunan Daerah Kabupaten Rembang dan Aplikasi Sistem Informasi Pemerintahan Daerah Kementerian Dalam Negeri Republik Indonesia.</p>
-        <p class="text-justify">Reviu dilaksanakan sesuai dengan Peraturan Menteri Dalam Negeri Republik Indonesia Nomor 3 Tahun 2026 tentang Reviu Dokumen Perencanaan Pembangunan Daerah dan Dokumen Keuangan Daerah, yaitu tertera dalam:</p>
-        
-        <table style="width:100%; border:none;">
-            <tr>
-                <td style="width:120px; font-weight:bold; border:none;">Pasal 2 ayat (1)</td>
-                <td style="border:none;">: APIP Daerah melaksanakan Reviu terhadap: a. dokumen Perencanaan Pembangunan Daerah; dan b. dokumen Keuangan Daerah;</td>
-            </tr>
-            <tr>
-                <td style="font-weight:bold; border:none;">Pasal 3 ayat (1)</td>
-                <td style="border:none;">: Dokumen Perencanaan Pembangunan Daerah sebagaimana dimaksud dalam Pasal 2 ayat (1) huruf a, terdiri atas: a. rancangan akhir RPJMD; b. rancangan akhir Renstra Perangkat Daerah; dan c. rancangan akhir RKPD.</td>
-            </tr>
-            <tr>
-                <td style="font-weight:bold; border:none;">Pasal 8</td>
-                <td style="border:none;">: Ketentuan lebih lanjut mengenai pedoman Reviu dokumen Perencanaan Pembangunan Daerah dan dokumen Keuangan Daerah tercantum dalam Lampiran yang merupakan bagian tidak terpisahkan dari Peraturan Menteri ini.</td>
-            </tr>
-        </table>
-        
-        <p class="text-justify">Reviu mempunyai lingkup yang jauh lebih sempit dibandingkan dengan lingkup audit yang dilakukan sesuai dengan peraturan terkait dengan tujuan audit.</p>
+    <table class="plain surat-meta">
+        <tr>
+            <td style="width:15%">Nomor</td><td style="width:2%">:</td>
+            <td style="width:48%">{{ $nomorLhr }}</td>
+            <td style="width:35%">Rembang, {{ $tanggalLhr }}</td>
+        </tr>
+        <tr><td>Lampiran</td><td>:</td><td>-</td><td></td></tr>
+        <tr>
+            <td>Perihal</td><td>:</td>
+            <td>Hasil Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }}</td>
+            <td>Kepada Yth.<br>Kepala {{ $namaUnit }}<br>di - REMBANG</td>
+        </tr>
+    </table>
 
-        <h4>B. Dasar Hukum Reviu</h4>
-        <ol class="text-justify">
-            <li>Peraturan Menteri Dalam Negeri Republik Indonesia Nomor 86 Tahun 2017 tentang Tata Cara Perencanaan, Pengendalian dan Evaluasi Pembangunan Daerah, Tata Cara Evaluasi Rancangan Peraturan Daerah Tentang Rencana Pembangunan Jangka Panjang Daerah dan Rencana Pembangunan Jangka Menengah Daerah, Serta Tata Cara Perubahan Rencana Pembangunan Jangka Panjang Daerah, Rencana Pembangunan Jangka Menengah Daerah, dan Rencana Kerja Pemerintah Daerah;</li>
-            <li>Peraturan Menteri Dalam Negeri Republik Indonesia Nomor 10 Tahun 2018 tentang Reviu atas Dokumen Perencanaan Pembangunan dan Anggaran Daerah Tahunan;</li>
-            <li>Peraturan Menteri Dalam Negeri Nomor 14 Tahun 2025 tentang Pedoman Penyusunan Anggaran Pendapatan dan Belanja Daerah Tahun Anggaran 2026;</li>
-        </ol>
+    <div class="text-justify" style="margin-top:12px">
+        <p>Inspektorat Daerah Kabupaten Rembang sebagai Aparat Pengawasan Intern Pemerintah telah melakukan reviu atas Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }} berupa pengujian terbatas terhadap substansi yang termuat pada Rancangan Akhir Rencana Kerja Pemerintah Daerah. Reviu ditujukan untuk membantu terlaksananya penyusunan dan penyajikan dokumen Rencana Kerja Pemerintah Daerah (RKPD) serta memberikan keyakinan terbatas mengenai kepatuhan dan keabsahan informasi yang disajikan telah sesuai dengan kaidah-kaidah perencanaan, sehingga dapat menghasilkan dokumen Rencana Kerja Pemerintah Daerah (RKPD) yang berkualitas.</p>
+        <p>Dalam pelaksanaan reviu, kami telah melakukan serangkaian aktivitas untuk menguji proses penyusunan atas penyajian dan substansi dalam dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Tahun {{ $tahun }} dengan dokumen pendukung lainnya, permintaan keterangan mengenai proses penyusunan untuk mengetahui hubungan dan hal-hal yang tidak terdapat dalam dokumen penyajian. Bersama ini kami sampaikan Laporan Hasil Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }}. Uraian rinci atas pelaksanaan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }} adalah sebagai berikut:</p>
+    </div>
 
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">2</td>
-                </tr>
-            </table>
-        </div>
-    </section>
+    {{-- A. Pernyataan --}}
+    <h4 class="new-page">A. Pernyataan Reviu</h4>
+    <p class="text-justify">Kami telah mereviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }} dengan mempedomani Peraturan Menteri Dalam Negeri Republik Indonesia Nomor 3 Tahun 2026 tentang Reviu Dokumen Perencanaan Pembangunan Daerah dan Dokumen Keuangan Daerah. Semua informasi yang dimuat dalam laporan adalah penyajian manajemen Badan Perencanaan Pembangunan Daerah Kabupaten Rembang dan Aplikasi Sistem Informasi Pemerintahan Daerah Kementerian Dalam Negeri Republik Indonesia.</p>
+    <p class="text-justify">Reviu dilaksanakan sesuai dengan Peraturan Menteri Dalam Negeri Republik Indonesia Nomor 3 Tahun 2026 tentang Reviu Dokumen Perencanaan Pembangunan Daerah dan Dokumen Keuangan Daerah, yaitu tertera dalam:</p>
+    <table class="plain text-justify">
+        <tr><td style="width:100px;font-weight:bold">Pasal 2 ayat (1)</td><td>: APIP Daerah melaksanakan Reviu terhadap: a. dokumen Perencanaan Pembangunan Daerah; dan b. dokumen Keuangan Daerah;</td></tr>
+        <tr><td style="font-weight:bold">Pasal 3 ayat (1)</td><td>: Dokumen Perencanaan Pembangunan Daerah sebagaimana dimaksud dalam Pasal 2 ayat (1) huruf a, terdiri atas: a. rancangan akhir RPJMD; b. rancangan akhir Renstra Perangkat Daerah; dan c. rancangan akhir RKPD.</td></tr>
+        <tr><td style="font-weight:bold">Pasal 8</td><td>: Ketentuan lebih lanjut mengenai pedoman Reviu dokumen Perencanaan Pembangunan Daerah dan dokumen Keuangan Daerah tercantum dalam Lampiran yang merupakan bagian tidak terpisahkan dari Peraturan Menteri ini.</td></tr>
+    </table>
+    <p class="text-justify">Reviu mempunyai lingkup yang jauh lebih sempit dibandingkan dengan lingkup audit yang dilakukan sesuai dengan peraturan terkait dengan tujuan audit.</p>
 
-    <!-- ==================== HALAMAN 4: DASAR HUKUM (2) & TIM PENGAWASAN ==================== -->
-    <section class="page">
-        <ol start="4" class="text-justify">
-            <li>Peraturan Menteri Dalam Negeri Republik Indonesia Nomor 3 Tahun 2026 tentang Reviu Dokumen Perencanaan Pembangunan Daerah dan Dokumen Keuangan Daerah;</li>
-            <li>Peraturan Daerah Kabupaten Rembang Nomor 6 Tahun 2021 tentang Perubahan Kedua atas Peraturan Daerah Kabupaten Rembang Nomor 5 Tahun 2016 tentang Pembentukan dan Susunan Perangkat daerah Kabupaten Rembang;</li>
-            <li>Peraturan Bupati Rembang Nomor 54 Tahun 2021 tentang Kedudukan Susunan Organisasi, Tugas dan Fungsi serta Tata Kerja Inspektorat Kabupaten Rembang;</li>
-            <li>Peraturan Bupati Rembang Nomor 4 Tahun 2026 tentang Perubahan atas Peraturan Bupati Rembang Nomor 110 Tahun 2025 tentang Penjabaran APBD Tahun Anggaran 2026;</li>
-            <li>Surat dari Inspektorat Jenderal Kementerian Dalam Negeri Republik Indonesia Nomor: 700.1.1.1/1642/IJ perihal Reviu Rancangan Akhir Rencana Kerja Pemerintah Daerah Tahun Anggaran {{ $tahunAnggaran }};</li>
-            <li>Keputusan Bupati Rembang Nomor: 100.3.3.2/0282/2026 tentang Program Kerja Pengawasan Tahunan Berbasis Risiko Inspektorat Daerah Kabupaten Rembang Tahun 2026;</li>
-            <li>Surat dari Kepala Badan Perencanaan Pembangunan Daerah Kabupaten Rembang Nomor: {{ $nomorPermohonan }} tanggal {{ $tanggalPermohonan }} tentang Permohonan Reviu Dokumen Rancangan Akhir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }};</li>
-            <li>Surat Perintah Tugas Inspektur Daerah Kabupaten Rembang Nomor: {{ $nomorSpt }} tanggal {{ $tanggalSpt }} dengan susunan Tim:</li>
-        </ol>
+    {{-- B. Dasar hukum + tim --}}
+    <h4>B. Dasar Hukum Reviu</h4>
+    <ol class="text-justify">
+        @foreach($dasarHukum as $dh)<li>{{ $dh }}</li>@endforeach
+    </ol>
 
-        <div style="margin-left: 20px;">
-            <p style="font-weight:bold; margin-bottom:2px;">➤ PENANGGUNGJAWAB</p>
-            <table style="width:100%; border:none; margin-top:0;">
-                <tr><td style="width:100px; border:none; padding:2px;">Nama</td><td style="border:none; padding:2px;">: IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.</td></tr>
-                <tr><td style="border:none; padding:2px;">NIP</td><td style="border:none; padding:2px;">: 19741128 199903 2 003</td></tr>
-                <tr><td style="border:none; padding:2px;">Jabatan</td><td style="border:none; padding:2px;">: Inspektur Daerah</td></tr>
-            </table>
-
-            <p style="font-weight:bold; margin-bottom:2px;">➤ PENGENDALI TEKNIS</p>
-            <table style="width:100%; border:none; margin-top:0;">
-                <tr><td style="width:100px; border:none; padding:2px;">Nama</td><td style="border:none; padding:2px;">: {{ $team['pengendali_teknis']['nama'] !== '-' ? $team['pengendali_teknis']['nama'] : 'SRI SURYANDARI, S.Sos.' }}</td></tr>
-                <tr><td style="border:none; padding:2px;">NIP</td><td style="border:none; padding:2px;">: {{ $team['pengendali_teknis']['nip'] !== '-' ? $team['pengendali_teknis']['nip'] : '19690827 199603 2 005' }}</td></tr>
-                <tr><td style="border:none; padding:2px;">Jabatan</td><td style="border:none; padding:2px;">: {{ $team['pengendali_teknis']['jabatan'] ?: 'Inspektur Pembantu I' }}</td></tr>
-            </table>
-
-            <p style="font-weight:bold; margin-bottom:2px;">➤ KETUA TIM</p>
-            <table style="width:100%; border:none; margin-top:0;">
-                <tr><td style="width:100px; border:none; padding:2px;">Nama</td><td style="border:none; padding:2px;">: {{ $team['ketua_tim']['nama'] !== '-' ? $team['ketua_tim']['nama'] : 'SITI AMINAH, S.E.' }}</td></tr>
-                <tr><td style="border:none; padding:2px;">NIP</td><td style="border:none; padding:2px;">: {{ $team['ketua_tim']['nip'] !== '-' ? $team['ketua_tim']['nip'] : '19920714 201902 2 002' }}</td></tr>
-                <tr><td style="border:none; padding:2px;">Jabatan</td><td style="border:none; padding:2px;">: {{ $team['ketua_tim']['jabatan'] ?: 'Auditor Ahli Pertama' }}</td></tr>
-            </table>
-        </div>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">3</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 5: ANGGOTA TIM & TUJUAN / RUANG LINGKUP ==================== -->
-    <section class="page">
-        <p style="font-weight:bold; margin-bottom:2px; margin-left:20px;">➤ ANGGOTA TIM</p>
-        <table style="width:95%; margin-left:20px; border:none;">
-            @if(!empty($team['anggota']) && count($team['anggota']) > 0)
-                @foreach($team['anggota'] as $agt)
-                <tr><td style="width:100px; border:none; padding:2px;">Nama</td><td style="border:none; padding:2px;">: {{ $agt['nama'] }}</td></tr>
-                <tr><td style="border:none; padding:2px;">NIP</td><td style="border:none; padding:2px;">: {{ $agt['nip'] }}</td></tr>
-                <tr><td style="border:none; padding:2px;">Jabatan</td><td style="border:none; padding:2px;">: {{ $agt['jabatan'] }}</td></tr>
+    <div class="indent">
+        @foreach($blokTim as $judulBlok => $orang)
+            <div class="nobreak">
+                <p style="font-weight:bold;margin:8px 0 2px">&#10148; {{ $judulBlok }}</p>
+                @foreach($orang as $o)
+                    <table class="plain person nobreak" style="margin:0 0 4px">
+                        <tr><td>Nama</td><td>: {{ $o['nama'] }}</td></tr>
+                        <tr><td>NIP</td><td>: {{ $o['nip'] }}</td></tr>
+                        <tr><td>Jabatan</td><td>: {{ $o['jabatan'] }}</td></tr>
+                    </table>
                 @endforeach
+            </div>
+        @endforeach
+    </div>
+
+    {{-- C–G --}}
+    <h4>C. Tujuan Reviu</h4>
+    <p class="text-justify">Tujuan Reviu rancangan akhir Rencana Kerja Pemerintah Daerah (RKPD) yaitu untuk memberikan keyakinan terbatas bahwa Rencana Kerja Pemerintah Daerah telah disusun berpedoman kepada RPJMD, Rencana Kerja Pemerintah, Program Strategis Nasional, pedoman penyusunan RKPD dan kaidah-kaidah perencanaan pembangunan lainnya.</p>
+
+    <h4>D. Ruang Lingkup Reviu</h4>
+    <p class="text-justify">Ruang lingkup reviu adalah pengujian atas penyusunan Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }} yang bersifat tahunan berupa Dokumen RKPD Tahun {{ $tahun }}.</p>
+    <p>Ruang lingkup reviu mencakup pengujian terbatas atas:</p>
+    <p style="font-weight:bold;margin-bottom:0">&#10148; FORMAT</p>
+    <p style="margin:0 0 6px 15px">Kesesuaian Format Rancangan Akhir RKPD.</p>
+    <p style="font-weight:bold;margin-bottom:0">&#10148; SUBSTANSI</p>
+    <ol class="text-justify">
+        @foreach($ruangLingkupSubstansi as $rl)
+            @if(is_array($rl))
+                <li>{{ $rl[0] }}
+                    <ol type="a">@foreach($rl[1] as $sub)<li>{{ $sub }}</li>@endforeach</ol>
+                </li>
             @else
-                <tr><td style="width:100px; border:none; padding:2px;">Nama</td><td style="border:none; padding:2px;">: PARIJAN, S.E., M.M.</td></tr>
-                <tr><td style="border:none; padding:2px;">NIP</td><td style="border:none; padding:2px;">: 19680314 199103 1 014</td></tr>
-                <tr><td style="border:none; padding:2px;">Jabatan</td><td style="border:none; padding:2px;">: Pengawas Pemerintahan Urusan Pemerintah Daerah Ahli Madya</td></tr>
-                
-                <tr><td style="border:none; padding:2px;">Nama</td><td style="border:none; padding:2px;">: AGUNG TRI PRASTIYO, S.E.</td></tr>
-                <tr><td style="border:none; padding:2px;">NIP</td><td style="border:none; padding:2px;">: 19820821 200501 1 006</td></tr>
-                <tr><td style="border:none; padding:2px;">Jabatan</td><td style="border:none; padding:2px;">: Auditor Ahli Muda</td></tr>
-
-                <tr><td style="border:none; padding:2px;">Nama</td><td style="border:none; padding:2px;">: IKA PERTIWI, S.H.</td></tr>
-                <tr><td style="border:none; padding:2px;">NIP</td><td style="border:none; padding:2px;">: 19860908 202203 2 002</td></tr>
-                <tr><td style="border:none; padding:2px;">Jabatan</td><td style="border:none; padding:2px;">: Auditor Ahli Pertama</td></tr>
-
-                <tr><td style="border:none; padding:2px;">Nama</td><td style="border:none; padding:2px;">: TAUFIQUR RACHMAN, S.E.</td></tr>
-                <tr><td style="border:none; padding:2px;">NIP</td><td style="border:none; padding:2px;">: 19940326 202203 1 016</td></tr>
-                <tr><td style="border:none; padding:2px;">Jabatan</td><td style="border:none; padding:2px;">: Auditor Ahli Pertama</td></tr>
-
-                <tr><td style="border:none; padding:2px;">Nama</td><td style="border:none; padding:2px;">: SIHONO, S.I.P.</td></tr>
-                <tr><td style="border:none; padding:2px;">NIP</td><td style="border:none; padding:2px;">: 19960703 202203 1 007</td></tr>
-                <tr><td style="border:none; padding:2px;">Jabatan</td><td style="border:none; padding:2px;">: Pengawas Pemerintahan Urusan Pemerintah Daerah Ahli Pertama</td></tr>
-
-                <tr><td style="border:none; padding:2px;">Nama</td><td style="border:none; padding:2px;">: WAHYU ANJAR, S.Tr.I.P</td></tr>
-                <tr><td style="border:none; padding:2px;">NIP</td><td style="border:none; padding:2px;">: 20000727 202409 2 001</td></tr>
-                <tr><td style="border:none; padding:2px;">Jabatan</td><td style="border:none; padding:2px;">: Pengawas Pemerintahan Urusan Pemerintah Daerah Ahli Pertama</td></tr>
-
-                <tr><td style="border:none; padding:2px;">Nama</td><td style="border:none; padding:2px;">: DEWI ZAHRO WAHYUNINGTYAS, S.T.</td></tr>
-                <tr><td style="border:none; padding:2px;">NIP</td><td style="border:none; padding:2px;">: 20010524 202505 2 004</td></tr>
-                <tr><td style="border:none; padding:2px;">Jabatan</td><td style="border:none; padding:2px;">: Calon Auditor</td></tr>
+                <li>{{ $rl }}</li>
             @endif
-        </table>
+        @endforeach
+    </ol>
 
-        <h4>C. Tujuan Reviu</h4>
-        <p class="text-justify">Tujuan Reviu rancangan akhir Rencana Kerja Pemerintah Daerah (RKPD) yaitu untuk memberikan keyakinan terbatas bahwa Rencana Kerja Pemerintah Daerah telah disusun berpedoman kepada RPJMD, Rencana Kerja Pemerintah, Program Strategis Nasional, pedoman penyusunan RKPD dan kaidah-kaidah perencanaan pembangunan lainnya.</p>
+    <h4>E. Objek Reviu</h4>
+    <p class="text-justify">Objek reviu adalah Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }}.</p>
 
-        <h4>D. Ruang Lingkup Reviu</h4>
-        <p class="text-justify">Ruang lingkup reviu adalah pengujian atas penyusunan Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahunAnggaran }} yang bersifat tahunan berupa Dokumen RKPD Tahun {{ $tahunAnggaran }}.</p>
-        <p>Ruang lingkup reviu mencakup pengujian terbatas atas:</p>
-        <p style="font-weight:bold; margin-bottom:0;">➤ FORMAT</p>
-        <p style="margin-top:0; margin-left:15px;">Kesesuaian Format Rancangan Akhir RKPD.</p>
+    <h4>F. Pelaksanaan Reviu</h4>
+    <p class="text-justify">Pelaksanaan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahun }} dilaksanakan mulai tanggal {{ $tanggalMulaiReviu }} sampai dengan selesai.</p>
 
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">4</td>
-                </tr>
-            </table>
-        </div>
-    </section>
+    <h4>G. Metodologi Reviu</h4>
+    <p class="text-justify">Reviu dilaksanakan dengan menggunakan metodologi mengumpulkan dan melakukan penelaahan atas Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahun }}, konfirmasi, analisis dan prosedur lainnya terkait proses penyusunan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahun }}.</p>
 
-    <!-- ==================== HALAMAN 6: RUANG LINGKUP SUBSTANSI, OBJEK & GAMBARAN UMUM ==================== -->
-    <section class="page">
-        <p style="font-weight:bold; margin-bottom:0;">➤ SUBSTANSI</p>
-        <ol class="text-justify">
-            <li>Pengujian atas Kelengkapan Dokumen Pendukung Rancangan Akhir RKPD;</li>
-            <li>Pengujian atas Analisis Isi BAB Rancangan Akhir RKPD;</li>
-            <li>Pengujian atas Kesesuaian Rumusan Prioritas dan Sasaran Pembangunan dalam RKPD dan RPJMD;</li>
-            <li>Kesesuaian Program/Outcome, Indikator, Target beserta Pagu Indikatifnya pada Rencana Pembangunan Jangka Menengah Daerah (RPJMD) dengan Rancangan Akhir RKPD;</li>
-            <li>Kewajaran proyeksi pendanaan pada rancangan akhir RKPD;</li>
-            <li>Kesesuaian Informasi pada rancangan akhir RKPD dengan Program Prioritas Nasional
-                <ol type="a">
-                    <li>Kesesuaian urusan yang mendukung pelaksanaan Asta Cita berdasarkan hasil rapat koordinasi teknis pembangunan (Rakortekbang) dengan urusan pada rancangan akhir RKPD;</li>
-                    <li>Kesesuaian penetapan target Indikator Makro Pembangunan pada rancangan akhir RKPD berdasarkan Rencana Kerja Pemerintah (RKP);</li>
-                    <li>Kesesuaian dan ketepatan dukungan pelaksanaan ProSN pada rancangan akhir RKPD;</li>
-                    <li>Memastikan Program, Kegiatan dan Sub Kegiatan Standar Pelayanan Minimal (SPM) tersedia pada rancangan akhir RKPD;</li>
-                    <li>Memastikan kesesuaian dukungan Sub Kegiatan Tematik Pembangunan pada rancangan akhir RKPD;</li>
-                </ol>
-            </li>
-            <li>Kesesuaian Informasi pada rancangan akhir RKPD dengan tata cara dan kaidah Perencanaan Pembangunan Daerah lainnya (kesesuaian pengusulan pokok-pokok pikiran Dewan Perwakilan Rakyat Daerah (DPRD) sesuai dengan ketentuan peraturan perundang-undangan);</li>
-            <li>Pengujian atas Konsistensi Pencantuman Indikator serta Target Kinerja Tujuan dan Sasaran dalam Rancangan Akhir RKPD dan RPJMD.</li>
-        </ol>
+    <h4>H. Gambaran Umum</h4>
+    <ol class="text-justify">
+        @foreach($gambaranUmum as $g)<li>{{ $g }}</li>@endforeach
+    </ol>
 
-        <h4>E. Objek Reviu</h4>
-        <p class="text-justify">Objek reviu adalah Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahunAnggaran }}.</p>
+    {{-- I. Uraian hasil --}}
+    <h4>I. Uraian Hasil Reviu</h4>
+    <p class="text-justify">Hasil pelaksanaan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahun }} dapat dijelaskan sebagai berikut:</p>
 
-        <h4>F. Pelaksanaan Reviu</h4>
-        <p class="text-justify">Pelaksanaan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahunAnggaran }} dilaksanakan pada mulai tanggal 30 April 2026 sampai dengan selesai.</p>
-
-        <h4>G. Metodologi Reviu</h4>
-        <p class="text-justify">Reviu dilaksanakan dengan menggunakan metodologi mengumpulkan dan melakukan penelaahan atas Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahunAnggaran }}, konfirmasi, analisis dan prosedur lainnya terkait proses penyusunan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahunAnggaran }}.</p>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">5</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 7: GAMBARAN UMUM & URAIAN HASIL REVIU (SIMPULAN 1) ==================== -->
-    <section class="page">
-        <h4>H. Gambaran Umum</h4>
-        <ol class="text-justify">
-            <li>Pemerintah Kabupaten Rembang telah menyusun Peraturan Daerah Nomor 3 Tahun 2024 tentang Rencana Pembangunan Jangka Panjang Daerah Kabupaten Rembang Tahun 2025-2045;</li>
-            <li>Pemerintah Kabupaten Rembang telah menyusun Peraturan Daerah Nomor 7 tahun 2025 tentang Rencana Pembangunan Jangka Menengah Daerah Kabupaten Rembang tahun 2025-2029 sebagai acuan dalam menentukan arah kebijakan pembangunan setiap tahunnya dengan membuat Rancangan Rencana Kerja Pemerintah Daerah Kabupaten Rembang;</li>
-            <li>Sebagai penjabaran Rencana Pembangunan Jangka Menengah Daerah Kabupaten Rembang 2025-2029, kedudukan RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }} dalam pelaksanaan pembangunan di Kabupaten Rembang adalah menjembatani antara perencanaan strategis jangka menengah dengan perencanaan dan penganggaran tahunan yang memuat rancangan kerangka ekonomi daerah, prioritas pembangunan daerah, rencana kerja dan pendanaan yang disusun berdasarkan pada orientasi proses dengan pendekatan teknokratik, partisipatif, politis dan top-down, bottom-up, serta berdasarkan pada orientasi substansi dengan pendekatan secara holistik, integratif, tematik dan spasial, yang selanjutnya sebagai pedoman dalam penyusunan Kebijakan Umum Anggaran serta penentuan Prioritas Plafon Anggaran Sementara yang menjadi dasar penyusunan Rancangan Anggaran Pendapatan dan Belanja Daerah (RAPBD) Tahun {{ $tahunAnggaran }};</li>
-            <li>Inspektorat Daerah Kabupaten Rembang berdasarkan kewenangannya melakukan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahunAnggaran }}.</li>
-        </ol>
-
-        <h4>I. Uraian Hasil Reviu</h4>
-        <p class="text-justify">Hasil pelaksanaan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahunAnggaran }} dapat dijelaskan sebagai berikut:</p>
-        <p style="font-weight:bold; margin-bottom:2px;">1. Simpulan</p>
-        
-        <div style="margin-left: 15px;">
-            <p style="font-weight:bold; margin-bottom:2px;">a. Format</p>
-            <p style="margin-top:0;" class="text-justify"><b>Kesesuaian Format Rancangan Akhir RKPD</b><br>
-            {{ $getSimpulan('RKPD.F', "Format/sistematika dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahunAnggaran} kurang sesuai dengan yang diatur dalam Lampiran Peraturan Menteri Dalam Negeri Nomor 86 tahun 2017 (halaman 384).") }}</p>
-
-            <p style="font-weight:bold; margin-bottom:2px;">b. Substansi</p>
-            <p style="margin-top:0;" class="text-justify"><b>1) Pengujian atas Kelengkapan Dokumen Pendukung RKPD</b><br>
-            {{ $getSimpulan('RKPD.S1', "Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahunAnggaran} telah didukung dengan dokumen perencanaan yang memadai yaitu:") }}</p>
-            <ol type="a" style="margin-top:0;">
-                <li>RPJMN tahun 2025-2029</li>
-                <li>RPJMD Prov. Jateng tahun 2025-2029</li>
-                <li>Rancangan RKPD Prov. Jateng tahun {{ $tahunAnggaran }}</li>
-                <li>RPJMD Kab. Rembang tahun 2025-2029</li>
-                <li>Renstra Perangkat Daerah tahun 2025-2029</li>
-                <li>Hasil Evaluasi RKPD tahun 2025</li>
-            </ol>
+    {{-- 1. Simpulan --}}
+    <div class="sec-title">1. Simpulan</div>
+    <div class="indent">
+        <div class="sec-title">a. Format</div>
+        <div class="indent text-justify">
+            <b>{{ $format['judul'] }}</b><br>
+            {{ $getSimpulan($format['kode'], $format['simpulan']) }}
         </div>
 
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">6</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 8: SIMPULAN SUBSTANSI (2) ==================== -->
-    <section class="page">
-        <div style="margin-left: 30px;">
-            <ol type="a" start="7" style="margin-top:0;">
-                <li>Rancangan Akhir RKPD tahun {{ $tahunAnggaran }}</li>
-                <li>Berita Acara FKP RKPD tahun {{ $tahunAnggaran }}</li>
-                <li>Berita Acara Musrenbang RKPD tahun {{ $tahunAnggaran }}</li>
-                <li>SK Tim Penyusun RKPD Kab. Rembang tahun {{ $tahunAnggaran }}</li>
-                <li>Lampiran Rancangan Akhir RKPD tahun {{ $tahunAnggaran }} (Rekapitulasi Rumusan Rencana Program, Kegiatan dan Sub Kegiatan Perangkat Daerah Tahun {{ $tahunAnggaran }})</li>
-            </ol>
-
-            <p class="text-justify"><b>2) Pengujian atas Analisis Isi BAB Rancangan Akhir RKPD</b><br>
-            {{ $getSimpulan('RKPD.S2', "Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {$tahunAnggaran}, masih terdapat kekurangsesuaian data yang disajikan.") }}</p>
-
-            <p class="text-justify"><b>3) Pengujian atas Kesesuaian Rumusan Prioritas dan Sasaran Pembangunan dalam RKPD dan RPJMD</b><br>
-            {{ $getSimpulan('RKPD.S3', "Rumusan Prioritas dan Sasaran Pembangunan dalam Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {$tahunAnggaran} telah sesuai dengan Dokumen RPJMD Kabupaten Rembang tahun 2025-2029.") }}</p>
-
-            <p class="text-justify"><b>4) Kesesuaian Program/Outcome, Indikator, Target beserta Pagu Indikatifnya pada Rencana Pembangunan Jangka Menengah Daerah (RPJMD) dengan rancangan akhir RKPD</b><br>
-            {{ $getSimpulan('RKPD.S4', "Program/Outcome, Indikator, Target beserta Pagu Indikatifnya pada Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {$tahunAnggaran} belum sesuai dengan Rencana Pembangunan Jangka Menengah Daerah (RPJMD) Kabupaten Rembang tahun 2025-2029.") }}</p>
-
-            <p class="text-justify"><b>5) Kewajaran proyeksi pendanaan pada rancangan akhir RKPD</b><br>
-            {{ $getSimpulan('RKPD.S5', "Proyeksi pendanaan pada Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {$tahunAnggaran} telah wajar.") }}</p>
-
-            <p class="text-justify"><b>6) Kesesuaian Informasi pada rancangan akhir RKPD dengan Program Prioritas Nasional</b></p>
-            <ol type="a">
-                <li><b>Kesesuaian urusan yang mendukung pelaksanaan Asta Cita berdasarkan hasil rapat koordinasi teknis pembangunan (Rakortekbang) dengan urusan pada rancangan akhir RKPD:</b> {{ $getSimpulan('RKPD.S6.a', "Urusan yang mendukung pelaksanaan Asta Cita berdasarkan hasil rapat koordinasi teknis pembangunan (Rakortekrenbang Nasional tahun 2026) pada Lampiran SIPD-RI PDF dan Excel (Renja OPD Kabupaten Rembang tahun {$tahunAnggaran}) Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahunAnggaran} belum selaras.") }}</li>
-                <li><b>Kesesuaian penetapan target Indikator Makro Pembangunan pada rancangan akhir RKPD berdasarkan Rencana Kerja Pemerintah (RKP):</b> {{ $getSimpulan('RKPD.S6.b', "Rencana Kerja Pemerintah (RKP) tahun {$tahunAnggaran} belum tersedia.") }}</li>
-            </ol>
-        </div>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">7</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 9: SIMPULAN SUBSTANSI (3) & CATATAN FORMAT ==================== -->
-    <section class="page">
-        <div style="margin-left: 45px;">
-            <ol type="a" start="3">
-                <li class="text-justify"><b>Kesesuaian dan ketepatan dukungan pelaksanaan ProSN pada rancangan akhir RKPD:</b> {{ $getSimpulan('RKPD.S6.c', "Program Strategis Nasional (ProSN) dalam dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {$tahunAnggaran} belum seluruhnya terpetakan dalam Lampiran SIPD-RI PDF dan Excel (Renja OPD Kabupaten Rembang tahun {$tahunAnggaran}) Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {$tahunAnggaran}.") }}</li>
-                <li class="text-justify"><b>Memastikan Program, Kegiatan dan Sub Kegiatan Standar Pelayanan Minimal (SPM) tersedia pada rancangan akhir RKPD:</b> {{ $getSimpulan('RKPD.S6.d', "Program, kegiatan dan subkegiatan Standar Pelayanan Minimal (SPM) pada Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD), belum seluruhnya terpetakan dalam Lampiran SIPD-RI PDF dan Excel (Renja OPD Kabupaten Rembang tahun {$tahunAnggaran}) Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {$tahunAnggaran}.") }}</li>
-                <li class="text-justify"><b>Memastikan kesesuaian dukungan Sub Kegiatan Tematik Pembangunan pada rancangan akhir RKPD:</b> {{ $getSimpulan('RKPD.S6.e', "Sub Kegiatan Tematik Pembangunan pada Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD), belum seluruhnya terpetakan dalam Lampiran SIPD-RI PDF dan Excel (Renja OPD Kabupaten Rembang tahun {$tahunAnggaran}) Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {$tahunAnggaran}.") }}</li>
-            </ol>
-        </div>
-
-        <div style="margin-left: 30px;">
-            <p class="text-justify"><b>7) Kesesuaian Informasi pada rancangan akhir RKPD dengan tata cara dan kaidah Perencanaan Pembangunan Daerah lainnya:</b> {{ $getSimpulan('RKPD.S7', "Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {$tahunAnggaran} belum dilengkapi dengan rekapitulasi data pokok-pokok pikiran Dewan Perwakilan Rakyat Daerah (DPRD) Kabupaten Rembang tahun {$tahunAnggaran}.") }}</p>
-            <p class="text-justify"><b>8) Pengujian atas Konsistensi Pencantuman Indikator serta Target Kinerja Tujuan dan Sasaran dalam Rancangan Akhir RKPD dan RPJMD:</b> {{ $getSimpulan('RKPD.S8', "Target Kinerja Tujuan dan Sasaran dalam dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahunAnggaran} belum konsisten dengan Dokumen RPJMD Kabupaten Rembang Tahun 2025-2029.") }}</p>
-        </div>
-
-        <p style="font-weight:bold; margin-bottom:2px;">2. Catatan</p>
-        <p style="margin-top:0;" class="text-justify">Berdasarkan reviu dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} terdapat catatan sebagai berikut:</p>
-        <p style="font-weight:bold; margin-left:15px; margin-bottom:2px;">a. Format</p>
-        <p style="margin-top:0; margin-left:15px;" class="text-justify"><b>Kesesuaian Format Rancangan Akhir RKPD</b><br>
-        @php $catsF = $getCatatans('RKPD.F'); @endphp
-        @if($catsF->isNotEmpty())
-            @foreach($catsF as $cat)
-                <div style="margin-top: 4px; margin-bottom: 8px;">
-                    @if($cat->referensi_bagian)
-                        <span style="font-weight:bold; background:#eee; padding:1px 4px; font-size:8.5pt;">{{ $cat->referensi_bagian }}</span><br>
+        <div class="sec-title">b. Substansi</div>
+        @foreach($substansi as $n => $u)
+            <div class="item indent text-justify">
+                <b>{{ $n + 1 }}) {{ $u['judul'] }}</b>
+                @if(!empty($u['sub']))
+                    <ol type="a">
+                        @foreach($u['sub'] as $s)
+                            <li><b>{{ $s['judul'] }}</b> {{ $getSimpulan($s['kode'], $s['simpulan']) }}</li>
+                        @endforeach
+                    </ol>
+                @else
+                    <br>{{ $getSimpulan($u['kode'], $u['simpulan']) }}
+                    @if(!empty($u['daftar']))
+                        <ol type="a">@foreach($u['daftar'] as $d)<li>{{ $d }}</li>@endforeach</ol>
                     @endif
-                    {!! $cat->isi !!}
-                </div>
-            @endforeach
-        @else
-            Format/sistematika dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} kurang sesuai dengan yang diatur dalam Lampiran Peraturan Menteri Dalam Negeri Nomor 86 tahun 2017 (halaman 384), sebagai berikut:
-        @endif
-        </p>
+                @endif
+            </div>
+        @endforeach
+    </div>
 
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">8</td>
-                </tr>
-            </table>
+    {{-- 2. Catatan --}}
+    <div class="sec-title">2. Catatan</div>
+    <p class="text-justify">Berdasarkan reviu dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahun }} terdapat catatan sebagai berikut:</p>
+    <div class="indent">
+        <div class="sec-title">a. Format</div>
+        <div class="indent text-justify">
+            <b>{{ $format['judul'] }}</b>
+            {!! $catatanHtml($format['kode'], '<div class="note">' . $format['catatan'] . '</div>') !!}
         </div>
-    </section>
-
-    <!-- ==================== HALAMAN 10: TABEL PERBANDINGAN FORMAT RKPD ==================== -->
-    <section class="page">
-        <table class="bordered">
+        <table class="bordered" style="margin-left:15px;width:calc(100% - 15px)">
             <thead>
                 <tr>
-                    <th style="width:10%;">BAB</th>
-                    <th style="width:45%;">Lampiran Permendagri No. 86 tahun 2017</th>
-                    <th style="width:45%;">Rankir RKPD tahun {{ $tahunAnggaran }}</th>
+                    <th style="width:10%">BAB</th>
+                    <th style="width:45%">Lampiran Permendagri No. 86 tahun 2017</th>
+                    <th style="width:45%">Rankir RKPD tahun {{ $tahun }}</th>
                 </tr>
             </thead>
             <tbody>
-                <tr><td>1.</td><td><b>BAB I PENDAHULUAN</b></td><td><b>BAB I PENDAHULUAN</b></td></tr>
-                <tr><td>1.1.</td><td>Latar Belakang</td><td>Latar Belakang</td></tr>
-                <tr><td>1.2.</td><td>Dasar Hukum Penyusunan</td><td>Dasar Hukum</td></tr>
-                <tr><td>1.3.</td><td>Hubungan Antar Dokumen</td><td>Hubungan Antara Dokumen</td></tr>
-                <tr><td>1.4.</td><td>Maksud dan Tujuan</td><td>Maksud dan Tujuan</td></tr>
-                <tr><td>1.5.</td><td>Sistematika Dokumen RKPD</td><td>Sistematika Dokumen RKPD Tahun {{ $tahunAnggaran }}</td></tr>
-                
-                <tr><td>2.</td><td><b>BAB II GAMBARAN UMUM KONDISI DAERAH</b></td><td><b>BAB II GAMBARAN UMUM KONDISI DAERAH</b></td></tr>
-                <tr><td>2.1.</td><td>Kondisi Umum Daerah</td><td>Kondisi Umum Daerah</td></tr>
-                <tr><td>2.1.1.</td><td>Aspek Geografi dan Demografi</td><td>Aspek Geografi dan Demografi</td></tr>
-                <tr><td>2.1.2.</td><td>Aspek Kesejahteraan Masyarakat</td><td>Aspek Kesejahteraan Masyarakat</td></tr>
-                <tr><td>2.1.3.</td><td>Aspek Pelayanan Umum</td><td>Aspek Daya Saing Daerah</td></tr>
-                <tr><td>2.1.4.</td><td>Aspek Daya Saing Daerah</td><td>Aspek Pelayanan Umum</td></tr>
-                <tr><td>2.2.</td><td>Evaluasi Pelaksanaan Program dan Kegiatan RKPD sampai Tahun Berjalan dan Realisasi RPJMD</td><td>Evaluasi Pelaksanaan Kinerja RKPD sampai Tahun 2025 dan Realisasi RPJMD</td></tr>
-                <tr><td>2.2.1</td><td>-</td><td>Hasil Evaluasi Indikator Makro Daerah Tahun 2021-2025</td></tr>
-                <tr><td>2.2.2</td><td>-</td><td>Hasil Evaluasi Capaian Kinerja Tahun 2025</td></tr>
-                <tr><td>2.3.</td><td>Permasalahan Pembangunan Daerah</td><td>Permasalahan Pembangunan Daerah</td></tr>
-                <tr><td>2.3.1.</td><td>Permasalahan daerah yang berhubungan dengan prioritas dan sasaran pembangunan daerah</td><td>Permasalahan daerah yang berhubungan dengan prioritas dan sasaran pembangunan daerah</td></tr>
-                <tr><td>2.3.2.</td><td>Identifikasi Permasalahan penyelenggaraan urusan pemerintah daerah</td><td>Identifikasi Permasalahan penyelenggaraan urusan pemerintah daerah</td></tr>
-            </tbody>
-        </table>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">9</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 11: TABEL PERBANDINGAN FORMAT RKPD (LANJUTAN) ==================== -->
-    <section class="page">
-        <table class="bordered">
-            <thead>
-                <tr>
-                    <th style="width:10%;">BAB</th>
-                    <th style="width:45%;">Lampiran Permendagri No. 86 tahun 2017</th>
-                    <th style="width:45%;">Rankir RKPD tahun {{ $tahunAnggaran }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>3.</td><td><b>BAB III KERANGKA EKONOMI DAERAH DAN KEUANGAN DAERAH</b></td><td><b>BAB III KERANGKA EKONOMI DAERAH DAN KEUANGAN DAERAH</b></td></tr>
-                <tr><td>3.1.</td><td>Arah Kebijakan Ekonomi Daerah</td><td>Arah Kebijakan Ekonomi Daerah</td></tr>
-                <tr><td>3.2.</td><td>Arah Kebijakan Keuangan Daerah</td><td>Arah Kebijakan Keuangan Daerah</td></tr>
-                <tr><td>3.2.1.</td><td>-</td><td>Arah Kebijakan Pendapatan Daerah</td></tr>
-                <tr><td>3.2.2.</td><td>-</td><td>Arah Kebijakan Belanja Daerah</td></tr>
-                <tr><td>3.2.3.</td><td>-</td><td>Arah Kebijakan Pembiayaan Daerah</td></tr>
-                <tr><td>3.2.4.</td><td>-</td><td>Proyeksi Pendapatan dan Belanja</td></tr>
-
-                <tr><td>4.</td><td><b>BAB IV SASARAN DAN PRIORITAS PEMBANGUNAN DAERAH</b></td><td><b>BAB IV SASARAN DAN PRIORITAS PEMBANGUNAN DAERAH TAHUN {{ $tahunAnggaran }}</b></td></tr>
-                <tr><td>4.1.</td><td>Tujuan dan Sasaran Pembangunan</td><td>Tujuan dan Sasaran Pembangunan</td></tr>
-                <tr><td>4.2.</td><td>Arah Kebijakan Pembangunan</td><td>Arah Kebijakan Pembangunan</td></tr>
-                <tr><td>4.3.</td><td>Prioritas dan Sasaran Pembangunan Tahun {{ $tahunAnggaran }}</td><td>Prioritas Pembangunan</td></tr>
-                <tr><td>4.3.1.</td><td>-</td><td>Prioritas Pembangunan Nasional Tahun {{ $tahunAnggaran }}</td></tr>
-                <tr><td>4.3.2.</td><td>-</td><td>Prioritas Pembangunan Provinsi Jawa Tengah Tahun {{ $tahunAnggaran }}</td></tr>
-                <tr><td>4.3.3.</td><td>-</td><td>Prioritas Pembangunan Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td></tr>
-                <tr><td>4.3.4.</td><td>-</td><td>Keterkaitan Prioritas Nasional, Prioritas Jawa Tengah dan Prioritas Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td></tr>
-                <tr><td>4.3.5.</td><td>-</td><td>Penyelarasan Target Indikator Makro dan Tematik Berdasarkan Hasil Rakortekrenbang Provinsi</td></tr>
-                <tr><td>4.4.</td><td>Pokok-Pokok Pikiran DPRD</td><td>Pokok-Pokok Pikiran DPRD</td></tr>
-                <tr><td>4.5.</td><td>Inovasi Kebijakan Pembangunan</td><td>Inovasi Kebijakan Pembangunan</td></tr>
-
-                <tr><td>5.</td><td><b>BAB V RENCANA KERJA DAN PENDANAAN DAERAH</b></td><td><b>BAB V RENCANA KERJA DAN PENDANAAN DAERAH</b></td></tr>
-                <tr><td>5.1.</td><td>-</td><td>Program Prioritas Daerah yang mendukung Prioritas Nasional dan Provinsi Jawa Tengah</td></tr>
-                <tr><td>5.2.</td><td>-</td><td>Program Perangkat Daerah</td></tr>
-                <tr><td>5.2.1.</td><td>-</td><td>Urusan Wajib Pemerintah Daerah</td></tr>
-                <tr><td>5.2.2.</td><td>-</td><td>Urusan Pemerintahan Wajib yang tidak berkaitan dengan Pelayanan Dasar</td></tr>
-                <tr><td>5.2.3.</td><td>-</td><td>Urusan Pemerintahan Pilihan</td></tr>
-                <tr><td>5.2.4.</td><td>-</td><td>Urusan Penunjang Pemerintah</td></tr>
-                <tr><td>5.3.</td><td>-</td><td>Kerangka Pendanaan Tahun {{ $tahunAnggaran }}</td></tr>
-
-                <tr><td>6.</td><td><b>BAB VI KINERJA PENYELENGGARAAN PEMERINTAHAN DAERAH</b></td><td><b>BAB VI KINERJA PENYELENGGARAAN PEMERINTAHAN DAERAH</b></td></tr>
-                <tr><td>6.1.</td><td>Indikator Kinerja Utama Daerah</td><td>Indikator Kinerja Utama Daerah</td></tr>
-                <tr><td>6.2.</td><td>Indikator Kinerja Daerah</td><td>Indikator Kinerja Daerah</td></tr>
-
-                <tr><td>7.</td><td><b>BAB VII PENUTUP</b></td><td><b>BAB VII PENUTUP</b></td></tr>
-            </tbody>
-        </table>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">10</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 12: CATATAN SUBSTANSI (1 & 2) ==================== -->
-    <section class="page">
-        <p style="font-weight:bold; margin-left:15px; margin-bottom:2px;">b. Substansi</p>
-        <div style="margin-left: 15px;">
-            <p class="text-justify"><b>1) Pengujian atas Kelengkapan Dokumen Pendukung RKPD</b><br>
-            @php $catsS1 = $getCatatans('RKPD.S1'); @endphp
-            @if($catsS1->isNotEmpty())
-                @foreach($catsS1 as $cat)
-                    <div style="margin-top: 4px; margin-bottom: 6px;">
-                        {!! $cat->isi !!}
-                    </div>
+                @foreach($formatRows as $r)
+                    @php $b = !empty($r[3]); @endphp
+                    <tr>
+                        <td>{{ $r[0] }}</td>
+                        <td>{!! $b ? '<b>'.e($r[1]).'</b>' : e($r[1]) !!}</td>
+                        <td>{!! $b ? '<b>'.e($r[2]).'</b>' : e($r[2]) !!}</td>
+                    </tr>
                 @endforeach
-            @else
-                Terdapat data/dokumen pendukung yang belum ada, yaitu:
-                <ol type="a" style="margin-top:0;">
-                    <li>Hasil Evaluasi RKPD tahun 2026 (Triwulan 1);</li>
-                    <li>Laporan hasil pengendalian kebijakan penyusunan RKPD Formulir E.35 Pengendalian dan Evaluasi terhadap Kebijakan Perencanaan Pembangunan Tahunan Daerah (Cek List: 27 komponen);</li>
-                    <li>Jadwal / Agenda Kerja Tim Penyusunan RKPD tahun {{ $tahunAnggaran }}; dan</li>
-                    <li>Rekapitulasi Pokok-pokok Pikiran DPRD tahun {{ $tahunAnggaran }}.</li>
-                </ol>
-            @endif
-            </p>
+            </tbody>
+        </table>
 
-            <p class="text-justify"><b>2) Pengujian atas Analisis Isi BAB RKPD</b></p>
-            @php $catsS2 = $getCatatans('RKPD.S2'); @endphp
-            @if($catsS2->isNotEmpty())
-                <table class="bordered">
-                    <thead>
-                        <tr>
-                            <th style="width:8%;">NO</th>
-                            <th>CATATAN</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($catsS2 as $idx => $cat)
+        <div class="sec-title">b. Substansi</div>
+        @foreach($substansi as $n => $u)
+            <div class="item indent text-justify">
+                <b>{{ $n + 1 }}) {{ $u['judul'] }}</b>
+
+                @if(!empty($u['sub']))
+                    <ol type="a">
+                        @foreach($u['sub'] as $s)
+                            <li><b>{{ $s['judul'] }}</b>{!! $catatanHtml($s['kode'], $s['catatan'] ?? '') !!}</li>
+                        @endforeach
+                    </ol>
+
+                @elseif(!empty($u['tabel']))
+                    @php $cats = $getCatatans($u['kode'])->values(); @endphp
+                    <table class="bordered">
+                        <thead><tr><th style="width:8%">NO</th><th>CATATAN</th></tr></thead>
+                        <tbody>
+                        @if($cats->isNotEmpty())
+                            @foreach($cats as $i => $cat)
+                                <tr>
+                                    <td class="c">{{ $i + 1 }}.</td>
+                                    <td>
+                                        @if($cat->referensi_bagian)<b>{{ $cat->referensi_bagian }}</b><br>
+                                        @elseif($cat->kategori)<b>{{ $cat->kategori->nama }}</b><br>@endif
+                                        {!! $cat->isi !!}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            @php $babNow = null; $no = 0; @endphp
+                            @foreach($u['tabel'] as $r)
+                                @if($r['bab'] !== $babNow)
+                                    @php $babNow = $r['bab']; $no = 0; @endphp
+                                    <tr><td colspan="2" class="grp">{{ $babNow }}</td></tr>
+                                @endif
+                                @php $no++; @endphp
+                                <tr><td class="c">{{ $no }}.</td><td><b>{{ $r['ref'] }}</b><br>{!! $r['catatan'] !!}</td></tr>
+                            @endforeach
+                        @endif
+                        </tbody>
+                    </table>
+
+                @else
+                    {!! $catatanHtml($u['kode'], $u['catatan'] ?? '') !!}
+                @endif
+
+                {{-- Tabel konsistensi RPJMD vs RKPD tepat di bawah catatan S8 --}}
+                @if($u['kode'] === 'RKPD.S8')
+                    <table class="bordered" style="font-size:8pt">
+                        <thead>
                             <tr>
-                                <td class="text-center">{{ $idx + 1 }}.</td>
-                                <td>
-                                    @if($cat->referensi_bagian)
-                                        <b>{{ $cat->referensi_bagian }}</b><br>
-                                    @elseif($cat->kategori)
-                                        <b>{{ $cat->kategori->nama }}</b><br>
-                                    @endif
-                                    {!! $cat->isi !!}
-                                </td>
+                                <th rowspan="3" style="width:20%">Misi/Tujuan/Sasaran</th>
+                                <th colspan="3">Rankir RPJMD tahun 2025-2029</th>
+                                <th colspan="3">Rankir RKPD tahun {{ $tahun }}</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            @else
-            <table class="bordered">
-                <thead>
-                    <tr>
-                        <th style="width:8%;">NO</th>
-                        <th>CATATAN</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="2" style="background:#f9f9f9; font-weight:bold;">BAB II GAMBARAN UMUM KONDISI DAERAH</td>
-                    </tr>
-                    <tr>
-                        <td class="text-center">1.</td>
-                        <td>
-                            <b>2.1.4 Aspek Pelayanan Umum</b>
-                            <ol type="a" style="padding-left:15px; margin-bottom:0;">
-                                <li>Belum menguraikan terkait Indikator Standar Pelayanan Minimum (SPM) sebagaimana tercantum dalam Peraturan Pemerintah Nomor 2 Tahun 2018; dan</li>
-                                <li>Masih mencantumkan terkait anggaran, Sumber Daya Manusia dan sarana prasarana sebagai faktor penghambat kegagalan/ketidaktercapaian atas indikator kinerja tahun 2025.</li>
-                            </ol>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" style="background:#f9f9f9; font-weight:bold;">BAB III. KERANGKA EKONOMI DAERAH DAN KEUANGAN DAERAH</td>
-                    </tr>
-                    <tr>
-                        <td class="text-center">1.</td>
-                        <td>
-                            <b>3.1 Arah Kebijakan Ekonomi Daerah</b><br>
-                            Penjelasan terkait pertumbuhan ekonomi belum didukung dengan data pendukung yang disajikan pada tabel secara lengkap, yaitu:
-                            <ul style="padding-left:15px; margin-bottom:0;">
-                                <li>PDRB Atas Dasar Harga Konstan Menurut Lapangan Usaha Kabupaten Rembang Tahun 2024-2025;</li>
-                                <li>PDRB Atas Dasar Harga Berlaku (ADHB) Menurut Pengeluaran Kabupaten Rembang Tahun 2024 - 2025;</li>
-                                <li>PDRB Atas Dasar Harga Konstan (ADHK) Menurut Pengeluaran Kabupaten Rembang Tahun 2024 - 2025; dan</li>
-                                <li>Laju Inflasi.</li>
-                            </ul>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="text-center">2.</td>
-                        <td>
-                            <b>3.2 Arah Kebijakan Keuangan Daerah</b>
-                            <ol type="a" style="padding-left:15px; margin-bottom:0;">
-                                <li>Terdapat ketidaksesuaian angka proyeksi PAD dan belanja pada dokumen Rankir RKPD (tabel 3.5) dengan SIPD (tabel 3.5. Proyeksi Anggaran Pendapatan dan Belanja Daerah Kabupaten Rembang Tahun {{ $tahunAnggaran }});</li>
-                                <li>Kebijakan belanja belum memprioritaskan belanja untuk mendukung pelayanan dasar;</li>
-                                <li>Belum memproyeksikan belanja tidak terduga dan belanja transfer;</li>
-                                <li>Proyeksi belanja belum dirinci berdasarkan kategori rekening belanja;</li>
-                                <li>Terdapat proyeksi pembayaran Pembiayaan Utang Daerah sebesar Rp. 4.500.000.000,- yang tidak dijelaskan peruntukannya;</li>
-                                <li>Belum menginformasikan rasio ruang fiskal tahunan (grafik/tabel); dan</li>
-                                <li>Belum menginformasikan Kapasitas Riil Kemampuan Keuangan Daerah Kabupaten Rembang tahun {{ $tahunAnggaran }} (tabel & penjelasan).</li>
-                            </ol>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            @endif
-        </div>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">11</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 13: CATATAN SUBSTANSI (2 LANJUTAN & 3, 4) ==================== -->
-    <section class="page">
-        <div style="margin-left: 15px;">
-            @if($catsS2->isEmpty())
-            <table class="bordered">
-                <thead>
-                    <tr>
-                        <th style="width:8%;">NO</th>
-                        <th>CATATAN</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="2" style="background:#f9f9f9; font-weight:bold;">BAB IV. SASARAN DAN PRIORITAS PEMBANGUNAN DAERAH TAHUN {{ $tahunAnggaran }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-center">1.</td>
-                        <td>
-                            <b>4.2 Arah Kebijakan Pembangunan</b><br>
-                            Arah kebijakan pembangunan RKPD Kabupaten Rembang yang tertuang dalam tabel 4.2 (halaman IV-8) belum difokuskan dalam mewujudkan tema pembangunan tahun {{ $tahunAnggaran }} "Pengembangan Perekonomian Daerah termasuk Ekonomi Syariah dan Pariwisata, Didukung SDM Produktif, Tata Kelola Pemerintahan yang Responsif dan Infrastruktur yang Mantap".
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="text-center">2.</td>
-                        <td>
-                            <b>4.3 Prioritas Pembangunan</b><br>
-                            <b>4.3.3 Prioritas Pembangunan Kabupaten Rembang Tahun {{ $tahunAnggaran }}</b><br>
-                            Inventarisasi permasalahan di Bab II belum sepenuhnya menjadi prioritas yang ditangani.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            @endif
-
-            <p class="text-justify"><b>3) Pengujian atas Kesesuaian Rumusan Prioritas dan Sasaran Pembangunan dalam RKPD dan RPJMD</b><br>
-            @php $catsS3 = $getCatatans('RKPD.S3'); @endphp
-            @if($catsS3->isNotEmpty())
-                @foreach($catsS3 as $cat)
-                    <div style="margin-top: 4px; margin-bottom: 6px;">
-                        {!! $cat->isi !!}
-                    </div>
-                @endforeach
-            @else
-            Rumusan prioritas pembangunan daerah pada Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} (hal IV-16) telah selaras dengan prioritas pembangunan daerah yang telah ditetapkan pada RPJMD Kabupaten Rembang tahun 2025-2029 (hal III-143) sebagaimana penyandingan berikut:</p>
-
-            <table class="bordered">
-                <thead>
-                    <tr>
-                        <th style="width:50%;">Prioritas Pembangunan tahun {{ $tahunAnggaran }}<br>(RPJMD 2025-2029)</th>
-                        <th style="width:50%;">Prioritas Pembangunan tahun {{ $tahunAnggaran }}<br>(Rankir RKPD {{ $tahunAnggaran }})</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>1. Peningkatan Pembangunan SDM</td><td>1. Peningkatan Pembangunan SDM</td></tr>
-                    <tr><td>2. Peningkatan Perekonomian Daerah</td><td>2. Peningkatan Perekonomian Daerah</td></tr>
-                    <tr><td>3. Peningkatan Kualitas Pelayanan Publik</td><td>3. Peningkatan Kualitas Pelayanan Publik</td></tr>
-                    <tr><td>4. Peningkatan Infrastruktur Mantap</td><td>4. Peningkatan Infrastruktur Mantap</td></tr>
-                    <tr><td>5. Peningkatan Daya Dukung Lingkungan Hidup</td><td>5. Peningkatan Daya Dukung Lingkungan Hidup</td></tr>
-                </tbody>
-            </table>
-            @endif
-
-            <p class="text-justify"><b>4) Kesesuaian Program/Outcome, Indikator, Target beserta Pagu Indikatifnya pada Rencana Pembangunan Jangka Menengah Daerah (RPJMD) dengan rancangan akhir RKPD</b></p>
-            @php $catsS4 = $getCatatans('RKPD.S4'); @endphp
-            @if($catsS4->isNotEmpty())
-                @foreach($catsS4 as $cat)
-                    <div style="margin-top: 4px; margin-bottom: 6px;">
-                        {!! $cat->isi !!}
-                    </div>
-                @endforeach
-            @else
-            <ol type="a" class="text-justify" style="margin-top:0;">
-                <li>Terdapat ketidaksesuaian Indikator Kinerja, Target beserta Pagu Indikatif (Program) yang dicantumkan pada tabel 4.1 RPJMD Kabupaten Rembang tahun 2025-2029 (halaman IV-34) dengan Lampiran SIPD-RI Excel (Renja OPD Kabupaten Rembang tahun {{ $tahunAnggaran }}) Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }}, sebagaimana penyandingan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>;</li>
-                <li>Seluruh Program pada Lampiran SIPD-RI PDF (Renja OPD Kabupaten Rembang tahun {{ $tahunAnggaran }}) Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} belum dilengkapi outcome, indikator, satuan, capaian (T-2) dan target;</li>
-            </ol>
-            @endif
-        </div>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">12</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 14: CATATAN SUBSTANSI (4 LANJUTAN & 5) ==================== -->
-    <section class="page">
-        <div style="margin-left: 15px;">
-            @if($catsS4->isEmpty())
-            <ol type="a" start="3" class="text-justify" style="margin-top:0;">
-                <li>Terdapat ketidaksesuaian Indikator Kinerja, Target beserta Pagu Indikatif (Program) yang dicantumkan pada tabel 5.1 (halaman V-1 sampai halaman V-28) dan tabel 5.3 Rancangan Akhir RKPD tahun {{ $tahunAnggaran }} (halaman V-85 sampai halaman V-123) dengan Lampiran SIPD-RI PDF dan Excel (Renja OPD Kabupaten Rembang tahun {{ $tahunAnggaran }}) Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }}, sebagaimana penyandingan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>;</li>
-                <li>Terdapat beberapa Program yang termasuk Program Prioritas Nasional tetapi dalam dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} kurang mendapatkan proporsi anggaran, sebagaimana catatan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>;</li>
-                <li>Terdapat penetapan target kinerja "Persentase terbangunnya sarana prasarana persampahan sesuai standar (%)" namun tidak disertai dengan penetapan anggaran, padahal indikator kinerja yang digunakan sebagai tolok ukur menunjukkan pembangunan fisik/infrastruktur sebagaimana catatan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>;</li>
-                <li>Terdapat kenaikan proporsi anggaran yang cukup signifikan pada beberapa Program di dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} dibandingkan dengan proporsi anggaran pada dokumen RPJMD Kabupaten Rembang tahun 2025-2029 sebagaimana catatan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>;</li>
-                <li>Program Pengolahan dan Pemasaran Hasil Perikanan termasuk dalam program utama unggulan Bupati dan Wakil Bupati namun proporsi anggaran pada dokumen RPJMD Kabupaten Rembang tahun 2025-2029 dengan dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} selisih cukup besar dibanding program pendukung maupun bukan program pendukung sebagaimana catatan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>; dan</li>
-                <li>Terdapat beberapa program yang bukan termasuk program prioritas maupun nomenklatur program utama namun proporsi anggaran yang diberikan pada dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} cukup besar dibandingkan dengan anggaran pada program prioritas sebagaimana catatan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>.</li>
-            </ol>
-            @endif
-
-            <p class="text-justify"><b>5) Kewajaran proyeksi pendanaan pada rancangan akhir RKPD</b></p>
-            @php $catsS5 = $getCatatans('RKPD.S5'); @endphp
-            @if($catsS5->isNotEmpty())
-                @foreach($catsS5 as $cat)
-                    <div style="margin-top: 4px; margin-bottom: 6px;">
-                        {!! $cat->isi !!}
-                    </div>
-                @endforeach
-            @else
-            <ol type="a" class="text-justify" style="margin-top:0;">
-                <li>Data APBD tahun berjalan (tahun anggaran 2026) pada tabel 3.5 (halaman III-17) dokumen Rancangan Akhir RKPD Kabupaten Rembang belum menggunakan APBD berdasarkan Peraturan Bupati Rembang Nomor 4 tahun 2026 tentang Perubahan atas Peraturan Bupati Rembang Nomor 110 tahun 2025 tentang Penjabaran APBD tahun anggaran 2026 sebagaimana penyandingan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>;</li>
-            </ol>
-            @endif
-        </div>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">13</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 15: CATATAN SUBSTANSI (5 LANJUTAN & 6, 7) ==================== -->
-    <section class="page">
-        <div style="margin-left: 15px;">
-            @if($catsS5->isEmpty())
-            <ol type="a" start="2" class="text-justify" style="margin-top:0;">
-                <li>Data Realisasi Anggaran tahun 2025 unaudited pada tabel 3.2 (halaman III-10), tabel 3.3 (halaman III-15), dan tabel 3.4 (halaman III-16) Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} belum sesuai dengan LRA tahun 2025 unaudited terupdate sebagaimana penyandingan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>;</li>
-                <li>Proyeksi APBD tahun anggaran {{ $tahunAnggaran }} pada tabel 3.5 Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} (halaman III-17) tidak sesuai dengan data proyeksi APBD tahun anggaran {{ $tahunAnggaran }} di SIPD-RI sebagaimana penyandingan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>; dan</li>
-                <li>Pada tabel 3.5 Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} (halaman III-17) belum memproyeksikan belanja tidak terduga dan belanja transfer.</li>
-            </ol>
-            @endif
-
-            <p class="text-justify"><b>6) Kesesuaian Informasi pada rancangan akhir RKPD dengan Program Prioritas Nasional</b></p>
-            @php
-                $catsS6 = $getCatatans('RKPD.S6');
-                $catsS6a = $getCatatans('RKPD.S6.a');
-                $catsS6b = $getCatatans('RKPD.S6.b');
-                $catsS6c = $getCatatans('RKPD.S6.c');
-                $catsS6d = $getCatatans('RKPD.S6.d');
-                $catsS6e = $getCatatans('RKPD.S6.e');
-            @endphp
-            <ol type="a" class="text-justify" style="margin-top:0;">
-                <li><b>Kesesuaian urusan yang mendukung pelaksanaan Asta Cita berdasarkan hasil rapat koordinasi teknis pembangunan (Rakortekbang) dengan urusan pada rancangan akhir RKPD:</b>
-                    @if($catsS6a->isNotEmpty())
-                        @foreach($catsS6a as $cat)
-                            <div style="margin-top: 4px; margin-bottom: 6px;">{!! $cat->isi !!}</div>
-                        @endforeach
-                    @else
-                    <ul style="padding-left:15px;">
-                        <li>Terdapat ketidakselarasan pemetaan urusan pemerintah daerah terhadap Asta Cita berdasarkan RAKORTEKRENBANG Nasional Tahun 2026 sebagaimana penyandingan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>;</li>
-                        <li>Belum teridentifikasinya pemetaan dukungan subkegiatan terhadap outcome prioritas (program prioritas) pemerintah pusat sebagaimana tertuang pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>;</li>
-                        <li>Terdapat subkegiatan dengan target kinerja nihil yang dimasukkan dalam pemetaan dukungan terhadap asta cita sebagaimana tertuang pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>.</li>
-                    </ul>
-                    @endif
-                </li>
-                <li><b>Kesesuaian penetapan target Indikator Makro Pembangunan pada rancangan akhir RKPD berdasarkan Rencana Kerja Pemerintah (RKP):</b>
-                    @if($catsS6b->isNotEmpty())
-                        @foreach($catsS6b as $cat)
-                            <div style="margin-top: 4px; margin-bottom: 6px;">{!! $cat->isi !!}</div>
-                        @endforeach
-                    @else
-                        Rencana Kerja Pemerintah (RKP) tahun {{ $tahunAnggaran }} belum tersedia.
-                    @endif
-                </li>
-                <li><b>Kesesuaian dan ketepatan dukungan pelaksanaan ProSN pada rancangan akhir RKPD:</b>
-                    @if($catsS6c->isNotEmpty())
-                        @foreach($catsS6c as $cat)
-                            <div style="margin-top: 4px; margin-bottom: 6px;">{!! $cat->isi !!}</div>
-                        @endforeach
-                    @else
-                        Subkegiatan yang mendukung pelaksanaan ProSN belum seluruhnya terpetakan dalam Lampiran SIPD-RI PDF dan Excel (Renja OPD Kabupaten Rembang tahun {{ $tahunAnggaran }}) Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} sebagaimana penyandingan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>.
-                    @endif
-                </li>
-            </ol>
-        </div>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">14</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 16: CATATAN SUBSTANSI (6 LANJUTAN & 7, 8) ==================== -->
-    <section class="page">
-        <div style="margin-left: 15px;">
-            <ol type="a" start="4" class="text-justify" style="margin-top:0;">
-                <li><b>Memastikan Program, Kegiatan dan Sub Kegiatan Standar Pelayanan Minimal (SPM) tersedia pada rancangan akhir RKPD:</b>
-                    @if($catsS6d->isNotEmpty())
-                        @foreach($catsS6d as $cat)
-                            <div style="margin-top: 4px; margin-bottom: 6px;">{!! $cat->isi !!}</div>
-                        @endforeach
-                    @else
-                    <ul style="padding-left:15px;">
-                        <li>Terdapat subkegiatan Standar Pelayanan Minimal (SPM) yang belum terpetakan dalam Lampiran SIPD-RI PDF dan Excel (Renja OPD Kabupaten Rembang tahun {{ $tahunAnggaran }}) Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }}; dan</li>
-                        <li>Terdapat beberapa subkegiatan yang termasuk subkegiatan Standar Pelayanan Minimal (SPM) tetapi dalam dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} tidak mendapatkan proporsi anggaran, sebagaimana catatan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>.</li>
-                    </ul>
-                    @endif
-                </li>
-                <li><b>Memastikan kesesuaian dukungan Sub Kegiatan Tematik Pembangunan pada rancangan akhir RKPD:</b>
-                    @if($catsS6e->isNotEmpty())
-                        @foreach($catsS6e as $cat)
-                            <div style="margin-top: 4px; margin-bottom: 6px;">{!! $cat->isi !!}</div>
-                        @endforeach
-                    @else
-                    <ul style="padding-left:15px;">
-                        <li>Terdapat subkegiatan Tematik Pembangunan yang belum terpetakan dalam Lampiran SIPD-RI PDF dan Excel (Renja OPD Kabupaten Rembang tahun {{ $tahunAnggaran }}) Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }}; dan</li>
-                        <li>Terdapat beberapa subkegiatan yang termasuk Tematik Pembangunan tetapi dalam dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} tidak mendapatkan proporsi anggaran, sebagaimana catatan pada link <a href="https://bit.ly/Lampiran-CHRRankirRKPD-2027">https://bit.ly/Lampiran-CHRRankirRKPD-2027</a>.</li>
-                    </ul>
-                    @endif
-                </li>
-            </ol>
-
-            <p class="text-justify"><b>7) Pengujian atas Pokok-Pokok Pikiran DPRD</b><br>
-            @php $catsS7 = $getCatatans('RKPD.S7'); @endphp
-            @if($catsS7->isNotEmpty())
-                @foreach($catsS7 as $cat)
-                    <div style="margin-top: 4px; margin-bottom: 6px;">
-                        {!! $cat->isi !!}
-                    </div>
-                @endforeach
-            @else
-            Bab IV Sasaran dan Prioritas Pembangunan Daerah Tahun {{ $tahunAnggaran }} telah menjelaskan pokok-pokok pikiran DPRD (halaman IV-33 sampai dengan halaman IV-34), namun belum dilengkapi dengan rekapitulasi data pokok-pokok pikiran DPRD yang berisi: Program/Kegiatan/Sub Kegiatan/Aktivitas, Indikator, Volume, Kelompok Sasaran, Lokasi dan Perangkat Daerah terkait.
-            @endif
-            </p>
-
-            <p class="text-justify"><b>8) Pengujian atas Konsistensi pencantuman Indikator serta Target Kinerja Tujuan dan Sasaran dalam Rancangan Akhir RKPD dan RPJMD</b><br>
-            @php $catsS8 = $getCatatans('RKPD.S8'); @endphp
-            @if($catsS8->isNotEmpty())
-                @foreach($catsS8 as $cat)
-                    <div style="margin-top: 4px; margin-bottom: 6px;">
-                        {!! $cat->isi !!}
-                    </div>
-                @endforeach
-            @else
-            Terdapat ketidakkonsistenan target Indikator Kinerja Tujuan dan Sasaran yang dicantumkan pada tabel 3.6 RPJMD Kabupaten Rembang tahun 2025-2029 dengan tabel 4.1 Rancangan Akhir RKPD tahun {{ $tahunAnggaran }}, sebagaimana penyandingan sebagai berikut:
-            @endif
-            </p>
-        </div>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">15</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 17: TABEL KONSISTENSI RPJMD VS RKPD (MISI 1 & 2) ==================== -->
-    <section class="page">
-        <table class="bordered" style="font-size: 8.5pt;">
-            <thead>
-                <tr>
-                    <th rowspan="3" style="width:20%;">Misi/Tujuan/Sasaran</th>
-                    <th colspan="3">Rankir RPJMD tahun 2025-2029</th>
-                    <th colspan="3">Rankir RKPD tahun {{ $tahunAnggaran }}</th>
-                </tr>
-                <tr>
-                    <th colspan="3">Tabel 3.6</th>
-                    <th>Tabel 3.9</th>
-                    <th colspan="2">Teknik Perumusan Program Prioritas Pembangunan Daerah</th>
-                </tr>
-                <tr>
-                    <th>Indikator Tujuan/ Indikator Sasaran</th>
-                    <th>Satuan</th>
-                    <th>Target {{ $tahunAnggaran }}</th>
-                    <th>Indikator Tujuan/ Indikator Sasaran</th>
-                    <th>Satuan</th>
-                    <th>Target {{ $tahunAnggaran }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="7" style="background:#e6e6e6; font-weight:bold;">Misi 1: Meningkatkan Kualitas Sumber Daya Manusia yang Unggul, Sehat dan Berdaya Saing</td>
-                </tr>
-                <tr>
-                    <td>Terwujudnya kualitas sumber daya manusia yang berdaya saing dan produktif</td>
-                    <td>Indeks Daya Saing Daerah</td>
-                    <td class="text-center">Angka</td>
-                    <td class="text-center">3,78</td>
-                    <td>Indeks Daya Saing Daerah</td>
-                    <td class="text-center">Angka</td>
-                    <td class="text-center">3,78</td>
-                </tr>
-                <tr>
-                    <td rowspan="2">Meningkatnya akses terhadap pendidikan dan kesehatan yang berkualitas, serta kesetaraan gender</td>
-                    <td>Indeks Pembangunan Manusia</td>
-                    <td class="text-center">Tahun</td>
-                    <td class="text-center">74,38</td>
-                    <td>Indeks Pembangunan Manusia</td>
-                    <td class="text-center">Tahun</td>
-                    <td class="text-center">73,70</td>
-                </tr>
-                <tr>
-                    <td>Indeks Ketimpangan Gender (IUP 21)</td>
-                    <td class="text-center">Tahun</td>
-                    <td class="text-center">0,246 / 0,22</td>
-                    <td>Indeks Ketimpangan Gender (IUP 21)</td>
-                    <td class="text-center">Tahun</td>
-                    <td class="text-center">0,246 / 2,22</td>
-                </tr>
-                <tr>
-                    <td colspan="7" style="background:#e6e6e6; font-weight:bold;">Misi 2: Mewujudkan Pertumbuhan Ekonomi Daerah yang Berkelanjutan, Inklusif Berbasis Potensi Unggul, serta Mampu Mengurangi Kemiskinan</td>
-                </tr>
-                <tr>
-                    <td>Meningkatnya pertumbuhan ekonomi yang berdampak pada penurunan kemiskinan</td>
-                    <td>Pertumbuhan Ekonomi</td>
-                    <td class="text-center">%</td>
-                    <td class="text-center">5,90 - 7,75</td>
-                    <td>Pertumbuhan Ekonomi</td>
-                    <td class="text-center">%</td>
-                    <td class="text-center">5,40 - 6,20</td>
-                </tr>
-                <tr>
-                    <td rowspan="3">Meningkatnya nilai investasi, penyerapan tenaga kerja, kontribusi sektor unggulan dalam perekonomian, dan ketahanan pangan</td>
-                    <td>Pembentukan Modal Tetap Bruto (PMTB) dalam PDRB (IUP 32)</td>
-                    <td class="text-center">%</td>
-                    <td class="text-center">24,02</td>
-                    <td>Pembentukan Modal Tetap Bruto (PMTB) dalam PDRB</td>
-                    <td class="text-center">%</td>
-                    <td class="text-center">24,02</td>
-                </tr>
-                <tr>
-                    <td>Produk Domestik Regional Bruto (PDRB) Per Kapita Kabupaten/Kota (IUP 33)</td>
-                    <td class="text-center">Juta Rp.</td>
-                    <td class="text-center">57,81</td>
-                    <td>Produk Domestik Regional Bruto (PDRB) Per Kapita Kabupaten/Kota</td>
-                    <td class="text-center">Juta Rp.</td>
-                    <td class="text-center">57,81</td>
-                </tr>
-                <tr>
-                    <td>Tingkat Pengangguran Terbuka (IUP 29)</td>
-                    <td class="text-center">%</td>
-                    <td class="text-center">2,45 / 2,15</td>
-                    <td>Tingkat Pengangguran Terbuka</td>
-                    <td class="text-center">%</td>
-                    <td class="text-center">2,45 / 2,15</td>
-                </tr>
-                <tr>
-                    <td rowspan="2">-</td>
-                    <td>Tingkat Kemiskinan (IUP 12)</td>
-                    <td class="text-center">%</td>
-                    <td class="text-center">12,01 / 11,70</td>
-                    <td>Tingkat Kemiskinan</td>
-                    <td class="text-center">%</td>
-                    <td class="text-center">12,73 / 12,43</td>
-                </tr>
-                <tr>
-                    <td>Indeks Ketahanan Pangan (IUP 53)</td>
-                    <td class="text-center">Angka</td>
-                    <td class="text-center">85,34</td>
-                    <td>Indeks Ketahanan Pangan (IKP)</td>
-                    <td class="text-center">Angka</td>
-                    <td class="text-center">85,34</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">16</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 18: TABEL KONSISTENSI RPJMD VS RKPD (MISI 3, 4, 5) ==================== -->
-    <section class="page">
-        <table class="bordered" style="font-size: 8.5pt;">
-            <thead>
-                <tr>
-                    <th rowspan="3" style="width:20%;">Misi/Tujuan/Sasaran</th>
-                    <th colspan="3">Rankir RPJMD tahun 2025-2029</th>
-                    <th colspan="3">Rankir RKPD tahun {{ $tahunAnggaran }}</th>
-                </tr>
-                <tr>
-                    <th colspan="3">Tabel 3.6</th>
-                    <th>Tabel 3.9</th>
-                    <th colspan="2">Teknik Perumusan Program Prioritas Pembangunan Daerah</th>
-                </tr>
-                <tr>
-                    <th>Indikator Tujuan/ Indikator Sasaran</th>
-                    <th>Satuan</th>
-                    <th>Target {{ $tahunAnggaran }}</th>
-                    <th>Indikator Tujuan/ Indikator Sasaran</th>
-                    <th>Satuan</th>
-                    <th>Target {{ $tahunAnggaran }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="7" style="background:#e6e6e6; font-weight:bold;">Misi 3: Mewujudkan Tata Kelola Pemerintahan dan Pelayanan Publik yang Profesional</td>
-                </tr>
-                <tr>
-                    <td>Meningkatnya tata kelola pemerintahan yang profesional dan berintegritas</td>
-                    <td>Indeks Reformasi Birokrasi (IUP 39)<br>- RB General<br>- RB Tematik</td>
-                    <td class="text-center">Angka<br>Angka<br>Angka</td>
-                    <td class="text-center">89,66<br>79,05<br>10,61</td>
-                    <td>Indeks Reformasi Birokrasi<br>- RB General<br>- RB Tematik</td>
-                    <td class="text-center">Angka<br>Angka<br>Angka</td>
-                    <td class="text-center">89,66<br>79,05<br>10,61</td>
-                </tr>
-                <tr>
-                    <td colspan="7" style="background:#e6e6e6; font-weight:bold;">Misi 4: Mewujudkan Pembangunan Infrastruktur yang Berkualitas dan Berkelanjutan</td>
-                </tr>
-                <tr>
-                    <td>Meningkatnya pemerataan pembangunan infrastruktur yang tangguh</td>
-                    <td>Indeks Infrastruktur</td>
-                    <td class="text-center">Angka</td>
-                    <td class="text-center">70,31</td>
-                    <td>Indeks Infrastruktur</td>
-                    <td class="text-center">Angka</td>
-                    <td class="text-center">70,31</td>
-                </tr>
-                <tr>
-                    <td>1. Meningkatnya kinerja layanan infrastruktur konektivitas wilayah</td>
-                    <td>Indeks Infrastruktur Konektivitas Wilayah</td>
-                    <td class="text-center">Angka</td>
-                    <td class="text-center">68,18</td>
-                    <td>Indeks Infrastruktur Konektivitas Wilayah</td>
-                    <td class="text-center">Angka</td>
-                    <td class="text-center">68,18</td>
-                </tr>
-                <tr>
-                    <td>2. Meningkatnya pemenuhan permukiman Layak dan Berkelanjutan</td>
-                    <td>Indeks Kinerja Infrastruktur Permukiman</td>
-                    <td class="text-center">%</td>
-                    <td class="text-center">72,44</td>
-                    <td>Indeks Kinerja Infrastruktur Permukiman</td>
-                    <td class="text-center">%</td>
-                    <td class="text-center">72,44</td>
-                </tr>
-                <tr>
-                    <td colspan="7" style="background:#e6e6e6; font-weight:bold;">Misi 5: Meningkatkan Kualitas Lingkungan Hidup dan Pengelolaan Sumber Daya Alam yang Berkelanjutan</td>
-                </tr>
-                <tr>
-                    <td>Meningkatnya kualitas lingkungan hidup berkelanjutan</td>
-                    <td>Indeks Kualitas Lingkungan Hidup (IKLH)</td>
-                    <td class="text-center">Angka</td>
-                    <td class="text-center">76,23</td>
-                    <td>Indeks Kualitas Lingkungan Hidup (IKLH)</td>
-                    <td class="text-center">Angka</td>
-                    <td class="text-center">76,23</td>
-                </tr>
-                <tr>
-                    <td rowspan="2">Meningkatnya pengelolaan lingkungan hidup dan Ketahanan Bencana Daerah</td>
-                    <td>Kontribusi penurunan emisi GRK kumulatif (IUP 49)</td>
-                    <td class="text-center">TonCO2 eq</td>
-                    <td class="text-center">1.815.353,68</td>
-                    <td>Kontribusi penurunan emisi GRK kumulatif</td>
-                    <td class="text-center">TonCO2 eq</td>
-                    <td class="text-center">1.815.353,68</td>
-                </tr>
-                <tr>
-                    <td>Indeks Risiko Bencana (IRB)</td>
-                    <td class="text-center">Angka</td>
-                    <td class="text-center">107,82 - 106,8</td>
-                    <td>Indeks Risiko Bencana</td>
-                    <td class="text-center">Angka</td>
-                    <td class="text-center">107,82 - 106,8</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">17</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 19: REKOMENDASI FORMAT & SUBSTANSI (1) ==================== -->
-    <section class="page">
-        <p style="font-weight:bold; margin-bottom:2px;">3. Rekomendasi</p>
-        <p style="margin-top:0;" class="text-justify">Berdasarkan hal tersebut, demi tersusunnya dokumen RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} yang andal, akurat dan sebagai pedoman dalam penyusunan dokumen KUPA PPAS tahun {{ $tahunAnggaran }} direkomendasikan beberapa hal sebagai berikut:</p>
-        
-        <p style="font-weight:bold; margin-left:15px; margin-bottom:2px;">a. Format</p>
-        <p style="margin-top:0; margin-left:15px;" class="text-justify"><b>Kesesuaian Format Rancangan Akhir RKPD</b><br>
-        @php $rekomF = $getRekomendasis('RKPD.F'); @endphp
-        @if($rekomF->isNotEmpty())
-            @foreach($rekomF as $r)
-                <div style="margin-top: 4px; margin-bottom: 6px;">
-                    {!! $r->uraian_rekom !!}
-                </div>
-            @endforeach
-        @else
-            Menyesuaikan judul: 1) Sub Bab 1.2, 2) Sub Bab 1.3, 3) Sub Bab 1.5, 4) Sub Bab 2.1.3, 5) Sub Bab 2.1.4, 6) Bab 4, 7) Sub Bab 4.3 Dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} dengan mempedomani Lampiran Peraturan Menteri Dalam Negeri nomor 86 Tahun 2017 tentang Tata Cara Perencanaan, Pengendalian dan Evaluasi Pembangunan Daerah, Tata Cara Evaluasi Rancangan Peraturan Daerah tentang Rencana Pembangunan Jangka Panjang Daerah dan Rencana Pembangunan Jangka Menengah Daerah, serta Tata Cara Perubahan Rencana Pembangunan Jangka Panjang Daerah, Rencana Pembangunan Jangka Menengah Daerah dan Rencana Kerja Pemerintah Daerah (halaman 384);
-        @endif
-        </p>
-
-        <p style="font-weight:bold; margin-left:15px; margin-bottom:2px;">b. Substansi</p>
-        <div style="margin-left: 15px;">
-            <p class="text-justify"><b>1) Pengujian atas Kelengkapan Dokumen Pendukung RKPD Tahun {{ $tahunAnggaran }}</b><br>
-            @php $rekomS1 = $getRekomendasis('RKPD.S1'); @endphp
-            @if($rekomS1->isNotEmpty())
-                @foreach($rekomS1 as $r)
-                    <div style="margin-top: 4px; margin-bottom: 6px;">
-                        {!! $r->uraian_rekom !!}
-                    </div>
-                @endforeach
-            @else
-                Melengkapi data/dokumen pendukung sebagai berikut:
-                <ol type="a" style="margin-top:0;">
-                    <li>Hasil Evaluasi RKPD tahun 2026 (Triwulan 1);</li>
-                    <li>Laporan hasil pengendalian kebijakan penyusunan RKPD Formulir E.35 Pengendalian dan Evaluasi terhadap Kebijakan Perencanaan Pembangunan Tahunan Daerah (Cek List: 27 komponen);</li>
-                    <li>Jadwal / Agenda Kerja Tim Penyusunan RKPD tahun {{ $tahunAnggaran }}; dan</li>
-                    <li>Rekapitulasi Pokok-pokok Pikiran DPRD tahun {{ $tahunAnggaran }}.</li>
-                </ol>
-            @endif
-            </p>
-
-            <p class="text-justify"><b>2) Pengujian atas Analisis Isi BAB RKPD</b></p>
-            @php $rekomS2 = $getRekomendasis('RKPD.S2'); @endphp
-            @if($rekomS2->isNotEmpty())
-                <table class="bordered">
-                    <thead>
-                        <tr>
-                            <th style="width:8%;">NO</th>
-                            <th style="width:46%;">CATATAN</th>
-                            <th style="width:46%;">REKOMENDASI</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($rekomS2 as $idx => $r)
                             <tr>
-                                <td class="text-center">{{ $idx + 1 }}.</td>
-                                <td>{!! $r->lhrCatatan?->isi ?? '-' !!}</td>
-                                <td>{!! $r->uraian_rekom !!}</td>
+                                <th colspan="3">Tabel 3.6</th>
+                                <th colspan="3">Tabel 3.9 — Teknik Perumusan Program Prioritas Pembangunan Daerah</th>
                             </tr>
+                            <tr>
+                                <th>Indikator Tujuan/Sasaran</th><th>Satuan</th><th>Target {{ $tahun }}</th>
+                                <th>Indikator Tujuan/Sasaran</th><th>Satuan</th><th>Target {{ $tahun }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach($konsistensiRows as $row)
+                            @if($row[0] === 'misi')
+                                <tr><td colspan="7" class="misi">{{ $row[1] }}</td></tr>
+                            @else
+                                @php $beda = trim(strip_tags($row[3])) !== trim(strip_tags($row[6])); @endphp
+                                <tr>
+                                    <td class="{{ $row[0] === null ? 'cont' : '' }}">{{ $row[0] }}</td>
+                                    <td>{!! $row[1] !!}</td>
+                                    <td class="c">{!! $row[2] !!}</td>
+                                    <td class="c">{!! $row[3] !!}</td>
+                                    <td>{!! $row[4] !!}</td>
+                                    <td class="c">{!! $row[5] !!}</td>
+                                    <td class="c {{ $beda ? 'diff' : '' }}">{!! $row[6] !!}</td>
+                                </tr>
+                            @endif
                         @endforeach
-                    </tbody>
-                </table>
-            @endif
+                        </tbody>
+                    </table>
+                @endif
+            </div>
+        @endforeach
+    </div>
+
+    {{-- 3. Rekomendasi --}}
+    <div class="sec-title">3. Rekomendasi</div>
+    <p class="text-justify">Berdasarkan hal tersebut, demi tersusunnya dokumen RKPD Kabupaten Rembang tahun {{ $tahun }} yang andal, akurat dan sebagai pedoman dalam penyusunan dokumen KUA-PPAS tahun {{ $tahun }} direkomendasikan beberapa hal sebagai berikut:</p>
+    <div class="indent">
+        <div class="sec-title">a. Format</div>
+        <div class="indent text-justify">
+            <b>{{ $format['judul'] }}</b>
+            {!! $rekomHtml($format['kode'], '<div class="note">' . $format['rekom'] . '</div>') !!}
         </div>
 
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">18</td>
-                </tr>
-            </table>
-        </div>
-    </section>
+        <div class="sec-title">b. Substansi</div>
+        @foreach($rekomItems as $ri)
+            <div class="item indent text-justify">
+                <b>{{ $ri['n'] }}) {{ $ri['u']['judul'] }}</b>
 
-    <!-- ==================== HALAMAN 20: TABEL REKOMENDASI ANALISIS ISI BAB (1) ==================== -->
-    <section class="page">
-        @if($rekomS2->isEmpty())
-        <table class="bordered">
-            <thead>
-                <tr>
-                    <th style="width:8%;">NO</th>
-                    <th style="width:46%;">CATATAN</th>
-                    <th style="width:46%;">REKOMENDASI</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="3" style="background:#f9f9f9; font-weight:bold;">BAB II GAMBARAN UMUM KONDISI DAERAH</td>
-                </tr>
-                <tr>
-                    <td class="text-center">1.</td>
-                    <td>
-                        <b>2.1.4 Aspek Pelayanan Umum</b>
-                        <ol type="a" style="padding-left:12px; margin:0;">
-                            <li>Belum menguraikan terkait Indikator Standar Pelayanan Minimum (SPM) sebagaimana tercantum dalam Peraturan Pemerintah Nomor 2 Tahun 2018; dan</li>
-                            <li>Masih mencantumkan terkait anggaran, Sumber Daya Manusia dan sarana prasarana sebagai faktor penghambat kegagalan/ketidaktercapaian atas indikator kinerja tahun 2025.</li>
-                        </ol>
-                    </td>
-                    <td>
-                        <br>
-                        Menambahkan uraian terkait Indikator Standar Pelayanan Minimum (SPM) sebagaimana tercantum dalam Peraturan Pemerintah Nomor 2 Tahun 2018; dan<br><br>
-                        Menghapus faktor penghambat kegagalan/ketidaktercapaian atas indikator kinerja tahun 2025 yang terkait dengan anggaran, Sumber Daya Manusia dan sarana prasarana.
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="3" style="background:#f9f9f9; font-weight:bold;">BAB III. KERANGKA EKONOMI DAERAH DAN KEUANGAN DAERAH</td>
-                </tr>
-                <tr>
-                    <td class="text-center">1.</td>
-                    <td>
-                        <b>3.1 Arah Kebijakan Ekonomi Daerah</b><br>
-                        Penjelasan terkait pertumbuhan ekonomi belum didukung dengan data pendukung yang disajikan pada tabel secara lengkap, yaitu:
-                        <ul style="padding-left:12px; margin:0;">
-                            <li>PDRB Atas Dasar Harga Konstan Menurut Lapangan Usaha Kabupaten Rembang Tahun 2024 - 2025;</li>
-                            <li>PDRB Atas Dasar Harga Berlaku (ADHB) Menurut Pengeluaran Kabupaten Rembang Tahun 2024 - 2025;</li>
-                            <li>PDRB Atas Dasar Harga Konstan (ADHK) Menurut Pengeluaran Kabupaten Rembang Tahun 2024 - 2025; dan</li>
-                            <li>Laju Inflasi.</li>
-                        </ul>
-                    </td>
-                    <td>
-                        Melengkapi data pendukungan pertumbuhan ekonomi yang meliputi:
-                        <ul style="padding-left:12px; margin:0;">
-                            <li>PDRB Atas Dasar Harga Konstan Menurut Lapangan Usaha Kabupaten Rembang Tahun 2024 - 2025;</li>
-                            <li>PDRB Atas Dasar Harga Berlaku (ADHB) Menurut Pengeluaran Kabupaten Rembang Tahun 2024 - 2025;</li>
-                            <li>PDRB Atas Dasar Harga Konstan (ADHK) Menurut Pengeluaran Kabupaten Rembang Tahun 2024 - 2025; dan</li>
-                            <li>Laju Inflasi.</li>
-                        </ul>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="text-center">2.</td>
-                    <td>
-                        <b>3.2 Arah Kebijakan Keuangan Daerah</b>
-                        <ol type="a" style="padding-left:12px; margin:0;">
-                            <li>Terdapat ketidaksesuaian angka proyeksi PAD dan belanja pada dokumen Rankir RKPD (tabel 3.5) dengan SIPD (tabel 3.5. Proyeksi Anggaran Pendapatan dan Belanja Daerah Kabupaten Rembang Tahun {{ $tahunAnggaran }});</li>
-                            <li>Kebijakan Belanja belum memprioritaskan belanja untuk mendukung pelayanan dasar;</li>
-                            <li>Belum memproyeksikan belanja tidak terduga dan belanja transfer;</li>
-                            <li>Proyeksi Belanja belum dirinci berdasarkan kategori rekening belanja;</li>
-                            <li>Terdapat proyeksi pembayaran Pembiayaan Utang Daerah sebesar Rp. 4.500.000.000,- yang tidak dijelaskan peruntukannya;</li>
-                        </ol>
-                    </td>
-                    <td>
-                        <br>
-                        Menyelaraskan proyeksi Pendapatan, Belanja dan Pembiayaan pada dokumen Rankir RKPD tahun {{ $tahunAnggaran }} (bab III) dengan Rankir RKPD tahun {{ $tahunAnggaran }} pada SIPD;<br><br>
-                        Dalam penetapan arah kebijakan belanja agar berdasarkan skala prioritas meliputi:<br>
-                        - Wajib Mengikat<br>- Pelayanan Dasar<br>- Mandatory spending<br>- Mendukung visi misi Kepala Daerah (RPJMD)<br>
-                        Agar memproyeksikan belanja tidak terduga dan belanja transfer;<br>
-                        Proyeksi Belanja agar dirinci berdasarkan rekening belanja;<br>
-                        Menambahkan penjelasan atas peruntukan pembayaran Pembiayaan Utang Daerah sebesar Rp. 4.500.000.000,-
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        @endif
+                @if($ri['type'] === 'single')
+                    {!! $ri['h'] !!}
 
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">19</td>
-                </tr>
-            </table>
-        </div>
-    </section>
+                @elseif($ri['type'] === 'sub')
+                    @foreach($ri['subs'] as $s)
+                        <div class="sub-rekom"><b>{{ $s['l'] }}. {{ $s['judul'] }}</b>{!! $s['h'] !!}</div>
+                    @endforeach
 
-    <!-- ==================== HALAMAN 21: TABEL REKOMENDASI ANALISIS ISI BAB (2) ==================== -->
-    <section class="page">
-        @if($rekomS2->isEmpty())
-        <table class="bordered">
-            <thead>
-                <tr>
-                    <th style="width:8%;">NO</th>
-                    <th style="width:46%;">CATATAN</th>
-                    <th style="width:46%;">REKOMENDASI</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="text-center">f.</td>
-                    <td>Belum menginformasikan rasio ruang fiskal tahunan (grafik/tabel); dan</td>
-                    <td>Menambahkan data rasio ruang fiskal tahunan (grafik/tabel); dan</td>
-                </tr>
-                <tr>
-                    <td class="text-center">g.</td>
-                    <td>Belum menginformasikan Kapasitas Riil Kemampuan Keuangan Daerah Kabupaten Rembang tahun {{ $tahunAnggaran }} (tabel & penjelasan).</td>
-                    <td>Menambahkan data Kapasitas Riil Kemampuan Keuangan Daerah Kabupaten Rembang tahun {{ $tahunAnggaran }} (tabel & penjelasan).</td>
-                </tr>
-                <tr>
-                    <td colspan="3" style="background:#f9f9f9; font-weight:bold;">BAB IV. SASARAN DAN PRIORITAS PEMBANGUNAN DAERAH TAHUN {{ $tahunAnggaran }}</td>
-                </tr>
-                <tr>
-                    <td class="text-center">1.</td>
-                    <td>
-                        <b>4.2 Arah Kebijakan Pembangunan</b><br>
-                        Arah kebijakan pembangunan RKPD Kabupaten Rembang yang tertuang dalam tabel 4.2 (halaman IV-8) belum difokuskan dalam mewujudkan tema pembangunan tahun {{ $tahunAnggaran }} "Pengembangan Perekonomian Daerah termasuk Ekonomi Syariah dan Pariwisata, Didukung SDM Produktif, Tata Kelola Pemerintahan yang Responsif dan Infrastruktur yang Mantap".
-                    </td>
-                    <td>
-                        Memfokuskan arah kebijakan pembangunan RKPD Kabupaten Rembang yang tertuang dalam tabel 4.2 (halaman IV-8) dalam mewujudkan tema pembangunan tahun {{ $tahunAnggaran }} "Pengembangan Perekonomian Daerah termasuk Ekonomi Syariah dan Pariwisata, Didukung SDM Produktif, Tata Kelola Pemerintahan yang Responsif dan Infrastruktur yang Mantap".
-                    </td>
-                </tr>
-                <tr>
-                    <td class="text-center">2.</td>
-                    <td>
-                        <b>4.3 Prioritas Pembangunan</b><br>
-                        <b>4.3.3 Prioritas Pembangunan Kabupaten Rembang Tahun {{ $tahunAnggaran }}</b><br>
-                        Inventarisasi permasalahan di Bab II belum sepenuhnya menjadi prioritas yang ditangani.
-                    </td>
-                    <td>
-                        <br><br>
-                        Menambahkan prioritas pembangunan sesuai dengan permasalahan yang dituangkan dalam Bab II.
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        @endif
+                @else {{-- tabel catatan | rekomendasi --}}
+                    @php $rekoms = $getRekomendasis($ri['u']['kode'])->values(); @endphp
+                    <table class="bordered">
+                        <thead><tr><th style="width:8%">NO</th><th style="width:46%">CATATAN</th><th style="width:46%">REKOMENDASI</th></tr></thead>
+                        <tbody>
+                        @if($rekoms->isNotEmpty())
+                            @foreach($rekoms as $i => $r)
+                                <tr>
+                                    <td class="c">{{ $i + 1 }}.</td>
+                                    <td>{!! $r->lhrCatatan?->isi ?? '-' !!}</td>
+                                    <td>{!! $r->uraian_rekom !!}</td>
+                                </tr>
+                            @endforeach
+                        @else
+                            @php $babNow = null; $no = 0; @endphp
+                            @foreach($ri['u']['tabel'] as $r)
+                                @if($r['bab'] !== $babNow)
+                                    @php $babNow = $r['bab']; $no = 0; @endphp
+                                    <tr><td colspan="3" class="grp">{{ $babNow }}</td></tr>
+                                @endif
+                                @php $no++; @endphp
+                                <tr>
+                                    <td class="c">{{ $no }}.</td>
+                                    <td><b>{{ $r['ref'] }}</b><br>{!! $r['catatan'] !!}</td>
+                                    <td>{!! $r['rekom'] !!}</td>
+                                </tr>
+                            @endforeach
+                        @endif
+                        </tbody>
+                    </table>
+                @endif
+            </div>
+        @endforeach
+    </div>
 
-        <div style="margin-left: 15px;">
-            @php $rekomS3 = $getRekomendasis('RKPD.S3'); @endphp
-            @if($rekomS3->isNotEmpty())
-                <p class="text-justify"><b>Pengujian atas Kesesuaian Rumusan Prioritas dan Sasaran Pembangunan dalam RKPD dan RPJMD</b></p>
-                @foreach($rekomS3 as $r)
-                    <div style="margin-top: 4px; margin-bottom: 6px;">
-                        {!! $r->uraian_rekom !!}
-                    </div>
-                @endforeach
-            @endif
-
-            <p class="text-justify"><b>3) Kesesuaian Program/Outcome dan Indikator pada Rencana Pembangunan Jangka Menengah Daerah (RPJMD) dengan rancangan akhir RKPD</b></p>
-            @php $rekomS4 = $getRekomendasis('RKPD.S4'); @endphp
-            @if($rekomS4->isNotEmpty())
-                @foreach($rekomS4 as $r)
-                    <div style="margin-top: 4px; margin-bottom: 6px;">
-                        {!! $r->uraian_rekom !!}
-                    </div>
-                @endforeach
-            @else
-            <ol type="a" class="text-justify" style="margin-top:0;">
-                <li>Menyesuaikan indikator kinerja, target beserta pagu indikatif (Program) yang dicantumkan tabel 5.1 (halaman V-1 sampai halaman V-28), tabel 5.3 Rancangan Akhir RKPD tahun {{ $tahunAnggaran }} (halaman V-85 sampai halaman V-123) dan Lampiran SIPD-RI PDF dan Excel (Renja OPD Kabupaten Rembang tahun {{ $tahunAnggaran }}) Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} dengan tabel 4.1 RPJMD Kabupaten Rembang tahun 2025-2029 (halaman IV-34);</li>
-                <li>Seluruh Program pada Lampiran SIPD-RI PDF (Renja OPD Kabupaten Rembang tahun {{ $tahunAnggaran }}) Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} agar dilengkapi outcome, indikator, satuan, capaian (T-2), target, dan pagu indikatif;</li>
-                <li>Memproporsikan anggaran program dalam dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} yang termasuk Program Prioritas Nasional;</li>
-                <li>Memproporsikan anggaran pada indikator kinerja "Persentase terbangunnya sarana prasarana persampahan sesuai standar (%)" yang digunakan sebagai tolok ukur pembangunan fisik/infrastruktur;</li>
-            </ol>
-            @endif
-        </div>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">20</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 22: REKOMENDASI SUBSTANSI (3 LANJUTAN & 4, 5) ==================== -->
-    <section class="page">
-        <div style="margin-left: 15px;">
-            @if($rekomS4->isEmpty())
-            <ol type="a" start="5" class="text-justify" style="margin-top:0;">
-                <li>Mengkaji kembali kenaikan proporsi anggaran yang cukup signifikan pada beberapa Program di dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} dibandingkan dengan proporsi anggaran pada dokumen RPJMD Kabupaten Rembang tahun 2025-2029;</li>
-                <li>Memproporsikan anggaran untuk Program Pengolahan dan Pemasaran Hasil Perikanan yang merupakan program utama unggulan Bupati dan Wakil Bupati; dan</li>
-                <li>Mengkaji kembali yang bukan termasuk program prioritas maupun nomenklatur program utama namun proporsi anggaran yang diberikan pada dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} cukup besar dibandingkan dengan anggaran pada program prioritas.</li>
-            </ol>
-            @endif
-
-            <p class="text-justify"><b>4) Kewajaran proyeksi pendanaan pada rancangan akhir RKPD</b></p>
-            @php $rekomS5 = $getRekomendasis('RKPD.S5'); @endphp
-            @if($rekomS5->isNotEmpty())
-                @foreach($rekomS5 as $r)
-                    <div style="margin-top: 4px; margin-bottom: 6px;">
-                        {!! $r->uraian_rekom !!}
-                    </div>
-                @endforeach
-            @else
-            <ol type="a" class="text-justify" style="margin-top:0;">
-                <li>Penyajian Data APBD tahun anggaran 2026 agar mempedomani Peraturan Bupati Rembang Nomor 4 tahun 2026 tentang Perubahan atas Peraturan Bupati Rembang Nomor 110 tahun 2025 tentang Penjabaran APBD tahun anggaran 2026;</li>
-                <li>Penyajian Data Realisasi Anggaran tahun 2025 unaudited pada tabel 3.2 (halaman III-10), tabel 3.3 (halaman III-15), dan tabel 3.4 (halaman III-16) Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} agar disesuaikan dengan LRA tahun 2025 unaudited terupdate;</li>
-                <li>Menyesuaikan penyajian Proyeksi APBD tahun anggaran {{ $tahunAnggaran }} pada tabel 3.5 Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} (halaman III-17) dengan data proyeksi APBD tahun anggaran {{ $tahunAnggaran }} di SIPD-RI; dan</li>
-                <li>Pada tabel 3.5 Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} (halaman III-17) agar memproyeksikan belanja tidak terduga dan belanja transfer.</li>
-            </ol>
-            @endif
-
-            <p class="text-justify"><b>5) Kesesuaian Informasi pada rancangan akhir RKPD dengan Program Prioritas Nasional</b></p>
-            @php
-                $rekomS6a = $getRekomendasis('RKPD.S6.a');
-                $rekomS6c = $getRekomendasis('RKPD.S6.c');
-                $rekomS6d = $getRekomendasis('RKPD.S6.d');
-                $rekomS6e = $getRekomendasis('RKPD.S6.e');
-            @endphp
-            <ol type="a" class="text-justify" style="margin-top:0;">
-                <li><b>Kesesuaian target subkegiatan yang mendukung pelaksanaan Asta Cita berdasarkan hasil rapat koordinasi teknis pembangunan (Rakortekbang) dengan target sub kegiatan pada rancangan akhir RKPD:</b>
-                    @if($rekomS6a->isNotEmpty())
-                        @foreach($rekomS6a as $r)
-                            <div style="margin-top: 4px; margin-bottom: 6px;">{!! $r->uraian_rekom !!}</div>
-                        @endforeach
-                    @else
-                    <ul style="padding-left:15px;">
-                        <li>Melakukan perbaikan pemetaan urusan pemerintah daerah terhadap dukungan Asta Cita;</li>
-                        <li>Mengidentifikasi pemetaan subkegiatan yang mendukung outcome prioritas (program prioritas) pemerintah pusat; dan</li>
-                        <li>Memperbaiki target subkegiatan yang tidak mendukung/kurang mendukung Asta Cita dan outcome prioritas pemerintah pusat.</li>
-                    </ul>
-                    @endif
-                </li>
-            </ol>
-        </div>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">21</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 23: REKOMENDASI SUBSTANSI (5 LANJUTAN & 6, 7) ==================== -->
-    <section class="page">
-        <div style="margin-left: 15px;">
-            <ol type="a" start="2" class="text-justify" style="margin-top:0;">
-                <li><b>Kesesuaian dan ketepatan dukungan pelaksanaan ProSN pada rancangan akhir RKPD:</b><br>
-                    @if($rekomS6c->isNotEmpty())
-                        @foreach($rekomS6c as $r)
-                            <div style="margin-top: 4px; margin-bottom: 6px;">{!! $r->uraian_rekom !!}</div>
-                        @endforeach
-                    @else
-                        Penyusunan dokumen perencanaan Kabupaten Rembang agar diselaraskan dan dipetakan sesuai dengan Program Strategis Nasional.
-                    @endif
-                </li>
-                <li><b>Memastikan Program, Kegiatan dan Sub Kegiatan Standar Pelayanan Minimal (SPM) tersedia pada rancangan akhir RKPD:</b><br>
-                    @if($rekomS6d->isNotEmpty())
-                        @foreach($rekomS6d as $r)
-                            <div style="margin-top: 4px; margin-bottom: 6px;">{!! $r->uraian_rekom !!}</div>
-                        @endforeach
-                    @else
-                        - Penetapan subkegiatan dalam dokumen perencanaan Kabupaten Rembang agar diselaraskan dan dipetakan dengan semua subkegiatan Standar Pelayanan Minimal (SPM);<br>
-                        - Memproporsikan anggaran untuk semua indikator kinerja subkegiatan Standar Pelayanan Minimal (SPM).
-                    @endif
-                </li>
-                <li><b>Memastikan kesesuaian dukungan Sub Kegiatan Tematik Pembangunan pada rancangan akhir RKPD:</b><br>
-                    @if($rekomS6e->isNotEmpty())
-                        @foreach($rekomS6e as $r)
-                            <div style="margin-top: 4px; margin-bottom: 6px;">{!! $r->uraian_rekom !!}</div>
-                        @endforeach
-                    @else
-                        - Penetapan subkegiatan dalam dokumen perencanaan Kabupaten Rembang agar diselaraskan dan dipetakan dengan semua subkegiatan Tematik Pembangunan / Asta Cita Nasional;<br>
-                        - Memproporsikan anggaran untuk semua indikator kinerja subkegiatan Tematik Pembangunan / Asta Cita Nasional.
-                    @endif
-                </li>
-            </ol>
-
-            <p class="text-justify"><b>6) Kesesuaian Informasi pada rancangan akhir RKPD dengan tata cara dan kaidah Perencanaan Pembangunan Daerah lainnya (kesesuaian pengusulan pokok-pokok pikiran Dewan Perwakilan Rakyat Daerah (DPRD) sesuai dengan ketentuan peraturan perundang-undangan)</b><br>
-            @php $rekomS7 = $getRekomendasis('RKPD.S7'); @endphp
-            @if($rekomS7->isNotEmpty())
-                @foreach($rekomS7 as $r)
-                    <div style="margin-top: 4px; margin-bottom: 6px;">
-                        {!! $r->uraian_rekom !!}
-                    </div>
-                @endforeach
-            @else
-                Penjelasan Pokok-Pokok Pikiran DPRD pada Bab IV Sasaran dan Prioritas Pembangunan Daerah Tahun agar dilengkapi dengan rekapitulasi data pokok-pokok pikiran DPRD yang berisi: Program/Kegiatan/Sub Kegiatan/Aktivitas, Indikator, Volume, Kelompok Sasaran, Lokasi dan Perangkat Daerah terkait.
-            @endif
-            </p>
-
-            <p class="text-justify"><b>7) Pengujian atas Konsistensi Pencantuman Indikator serta Target Kinerja Sasaran dan Program dalam Rancangan Akhir RKPD dan RPJMD</b><br>
-            @php $rekomS8 = $getRekomendasis('RKPD.S8'); @endphp
-            @if($rekomS8->isNotEmpty())
-                @foreach($rekomS8 as $r)
-                    <div style="margin-top: 4px; margin-bottom: 6px;">
-                        {!! $r->uraian_rekom !!}
-                    </div>
-                @endforeach
-            @else
-                Mengkaji kembali atas penetapan target indikator kinerja Tujuan dan Sasaran yang tercantum pada tabel 3.6 Misi, Tujuan Dan Sasaran Pembangunan Kabupaten Rembang Beserta Indikator dan Target Kinerja Tahun 2025-2029 dan tabel 3.9. Teknik Perumusan Program Prioritas Pembangunan Daerah Rancangan Akhir RPJMD tahun 2025-2029 dengan Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahunAnggaran }} yang tidak konsisten.
-            @endif
-            </p>
-        </div>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">22</td>
-                </tr>
-            </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 24: APRESIASI & TANDA TANGAN ==================== -->
-    <section class="page">
+    {{-- J. Apresiasi + TTD --}}
+    <div class="nobreak">
         <h4>J. Apresiasi</h4>
-        <p class="text-justify">Demikian disampaikan hasil reviu atas rancangan akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {{ $tahunAnggaran }}. Kami menyampaikan terima kasih atas bantuan dan kerjasama dari seluruh pejabat/pegawai pada Badan Perencanaan Pembangunan Daerah Kabupaten Rembang atas kesediaannya memberikan data/dokumen yang diperlukan, sehingga dapat mendukung terlaksananya kegiatan reviu Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) tahun {{ $tahunAnggaran }}. Kami mengharapkan agar Saudara beserta seluruh jajaran untuk menindaklanjuti rekomendasi yang telah kami sampaikan.</p>
+        <p class="text-justify">Demikian disampaikan hasil reviu atas rancangan akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {{ $tahun }}. Kami menyampaikan terima kasih atas bantuan dan kerjasama dari seluruh pejabat/pegawai pada Badan Perencanaan Pembangunan Daerah Kabupaten Rembang atas kesediaannya memberikan data/dokumen yang diperlukan, sehingga dapat mendukung terlaksananya kegiatan reviu Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) tahun {{ $tahun }}. Kami mengharapkan agar Saudara beserta seluruh jajaran untuk menindaklanjuti rekomendasi yang telah kami sampaikan.</p>
 
-        <br><br>
-        <table style="width:100%; border:none;">
+        <table class="ttd">
             <tr>
-                <td style="width:50%; border:none;"></td>
-                <td style="width:50%; border:none; text-align:center;">
-                    <p style="margin-bottom:2px;">INSPEKTUR DAERAH<br>KABUPATEN REMBANG</p>
-                    <br><br><br><br>
-                    <p style="font-weight:bold; text-decoration:underline; margin-bottom:0;">{{ $signer?->name ?? 'IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.' }}</p>
-                    <p style="margin-top:0; margin-bottom:0;">Pembina Utama Muda</p>
-                    <p style="margin-top:0;">NIP. {{ $signer?->nip ?? '19741128 199903 2 003' }}</p>
+                <td style="width:50%"></td>
+                <td style="width:50%;text-align:center">
+                    <p style="margin-bottom:60px">INSPEKTUR DAERAH<br>KABUPATEN REMBANG</p>
+                    <p style="font-weight:bold;text-decoration:underline;margin:0">{{ $signer?->name ?? $defaultTeam['penanggung_jawab']['nama'] }}</p>
+                    <p style="margin:0">Pembina Utama Muda</p>
+                    <p style="margin:0">NIP. {{ $signer?->nip ?? $defaultTeam['penanggung_jawab']['nip'] }}</p>
                 </td>
             </tr>
         </table>
+    </div>
 
-        <div class="page-footer" style="clear:both;">
-            <table class="footer-table">
+    {{-- Lampiran dokumen pendukung --}}
+    @if($attList && $attList->isNotEmpty())
+        <div class="new-page">
+            <table class="plain" style="border-bottom:2px solid #1e3a8a;margin-bottom:12px">
                 <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">23</td>
+                    <td style="width:50px;vertical-align:middle"><img src="{{ $logoSrc }}" alt="Logo" style="height:42px"></td>
+                    <td style="vertical-align:middle;padding-left:10px">
+                        <div style="font-size:11pt;font-weight:bold;color:#1e3a8a;text-transform:uppercase">INSPEKTORAT DAERAH KABUPATEN REMBANG</div>
+                        <div style="font-size:8.5pt;color:#475569">Lampiran Dokumen Pendukung Hasil Reviu RKPD Tahun {{ $tahun }}</div>
+                    </td>
                 </tr>
             </table>
-        </div>
-    </section>
-
-    <!-- ==================== HALAMAN 25: COLOPHON / HALAMAN PENUTUP ==================== -->
-    <section class="page" style="background-color: #f7b267;">
-        <div style="padding-top: 75mm; text-align: center;">
-            <img src="{{ $logoSrc }}" alt="Logo Rembang" style="width: 150px; margin-bottom: 20px; display:inline-block;">
-            <h2 style="font-size: 18pt; margin-bottom: 5px;">INSPEKTORAT DAERAH</h2>
-            <h3 style="font-size: 16pt; margin-top: 0;">KABUPATEN REMBANG</h3>
-            <p style="margin-top: 40px; font-weight: bold;">{{ $tahunTerbit }}</p>
-        </div>
-
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">24</td>
-                </tr>
+            <h3 class="text-center" style="font-size:11pt;text-transform:uppercase">Daftar Lampiran Dokumen Pendukung</h3>
+            <p class="text-justify">Berikut adalah daftar berkas dan dokumen pendukung perencanaan yang dihimpun, diverifikasi, dan ditelaah oleh Tim Reviu Inspektorat Daerah Kabupaten Rembang selama pelaksanaan reviu atas Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }}:</p>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:5%">No</th>
+                        <th style="width:38%;text-align:left">Nama Dokumen / Berkas</th>
+                        <th style="width:32%;text-align:left">Keterangan / Uraian</th>
+                        <th style="width:12%">Format</th>
+                        <th style="width:13%;text-align:right">Ukuran</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach($attList as $i => $att)
+                    <tr style="background:{{ $i % 2 ? '#f8fafc' : '#fff' }}">
+                        <td class="c">{{ $i + 1 }}</td>
+                        <td><strong>{{ $att->file_name }}</strong></td>
+                        <td>{{ $att->keterangan ?: '-' }}</td>
+                        <td class="c"><span class="mono">{{ strtoupper(pathinfo($att->file_name, PATHINFO_EXTENSION) ?: 'BERKAS') }}</span></td>
+                        <td class="text-right">{{ $att->file_size_formatted }}</td>
+                    </tr>
+                @endforeach
+                </tbody>
             </table>
+            <p style="font-size:8pt;color:#64748b;font-style:italic">* Seluruh berkas lampiran di atas tersimpan secara aman dan terenkripsi pada repositori arsip digital Sistem Informasi Pengawasan Terpadu dan Akuntabel (SIAPTUNTAS) Inspektorat Daerah Kabupaten Rembang.</p>
         </div>
-    </section>
+    @endif
+</main>
 
-    <!-- ==================== HALAMAN 26: HALAMAN SAMPUL BELAKANG (POLOS) ==================== -->
-    <section class="page" style="background-color: #f7b267;">
-        <div style="min-height: 240mm;"></div>
-        <div class="page-footer">
-            <table class="footer-table">
-                <tr>
-                    <td style="text-align:left;">Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahunAnggaran }}</td>
-                    <td style="text-align:right;">25</td>
-                </tr>
-            </table>
-        </div>
-    </section>
+{{-- ==================== PENUTUP ==================== --}}
+<section class="bleed">
+    <div style="padding-top:60mm">
+        <img src="{{ $logoSrc }}" alt="Logo Rembang" style="width:150px;margin-bottom:20px">
+        <h2 style="font-size:18pt;margin:0 0 5px">INSPEKTORAT DAERAH</h2>
+        <h3 style="font-size:16pt;margin:0">KABUPATEN REMBANG</h3>
+        <p style="margin-top:40px;font-weight:bold">{{ $tahunTerbit }}</p>
+    </div>
+</section>
+
+@if($showBackCover)
+<section class="bleed"></section>
+@endif
 
 </body>
 </html>

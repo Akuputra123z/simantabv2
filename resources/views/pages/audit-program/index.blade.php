@@ -180,19 +180,14 @@
                                 <span>Sub Program</span>
                             </div>
 
+                            {{-- Approval Column (col-span-2) --}}
+                            <div class="col-span-2 flex items-center border-r border-gray-200 px-3 py-3 justify-center dark:border-gray-800">
+                                <span>Approval</span>
+                            </div>
+
                             {{-- Progress Column (col-span-2) --}}
                             <div class="col-span-2 flex items-center border-r border-gray-200 px-4 py-3 dark:border-gray-800">
                                 <span>Progress Audit</span>
-                            </div>
-
-                            {{-- Status Column (col-span-1) --}}
-                            <div class="col-span-1 flex items-center border-r border-gray-200 px-3 py-3 justify-center dark:border-gray-800">
-                                <span>Status</span>
-                            </div>
-
-                            {{-- Approval Column (col-span-1) --}}
-                            <div class="col-span-1 flex items-center border-r border-gray-200 px-3 py-3 justify-center dark:border-gray-800">
-                                <span>Approval</span>
                             </div>
 
                             {{-- Action Column (col-span-2) --}}
@@ -213,12 +208,6 @@
                                     'ITPROV' => 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/25 dark:text-cyan-400',
                                     'ITDA'   => 'bg-teal-50 text-teal-600 dark:bg-teal-900/25 dark:text-teal-400',
                                     default  => 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-                                };
-                                $displayStatus = $item->status_dinamis;
-                                $statusBadge = match($displayStatus) {
-                                    'selesai' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
-                                    'berjalan' => 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-                                    default => 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
                                 };
                                 $approvalBadge = match($item->approval_status) {
                                     'disetujui' => 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/25 dark:text-emerald-400',
@@ -256,29 +245,9 @@
                                     </span>
                                 </div>
 
-                                {{-- Progress --}}
-                                <div class="col-span-2 flex items-center border-r border-gray-100 px-4 py-3.5 dark:border-gray-800">
-                                    <div class="w-full">
-                                        <div class="flex items-center justify-between text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-                                            <span>{{ $percent }}%</span>
-                                            <span class="text-[10px] text-gray-400 font-medium">{{ $item->sudah_lhp_count ?? 0 }}/{{ $item->details_count ?? 0 }} Selesai</span>
-                                        </div>
-                                        <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                                            <div class="h-full rounded-full transition-all duration-500 {{ $percent >= 100 ? 'bg-emerald-500' : 'bg-blue-600' }}" style="width: {{ min(100, $percent) }}%"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {{-- Status --}}
-                                <div class="col-span-1 flex items-center border-r border-gray-100 px-3 py-3.5 justify-center dark:border-gray-800">
-                                    <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $statusBadge }}">
-                                        {{ $displayStatus }}
-                                    </span>
-                                </div>
-
                                 {{-- Approval --}}
-                                <div class="col-span-1 flex flex-col items-center border-r border-gray-100 px-3 py-3.5 justify-center dark:border-gray-800">
-                                    <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $approvalBadge }}">
+                                <div class="col-span-2 flex flex-col sm:flex-row items-center justify-center gap-1.5 border-r border-gray-100 px-3 py-3.5 dark:border-gray-800">
+                                    <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $approvalBadge }}">
                                         @if($item->isApproved())
                                             ✓ Disetujui
                                         @elseif($item->isWaiting())
@@ -290,10 +259,26 @@
                                         @endif
                                     </span>
                                     @if($item->isApproved() && $item->approved_pdf)
-                                    <a href="{{ Storage::url($item->approved_pdf) }}" target="_blank" class="mt-1 text-[10px] font-bold text-emerald-600 hover:underline dark:text-emerald-400">
-                                        📄 PDF
+                                    <a href="{{ Storage::url($item->approved_pdf) }}" target="_blank" class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60 transition shadow-2xs">
+                                        <svg class="h-3 w-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <span>PDF</span>
                                     </a>
                                     @endif
+                                </div>
+
+                                {{-- Progress --}}
+                                <div class="col-span-2 flex items-center border-r border-gray-100 px-4 py-3.5 dark:border-gray-800">
+                                    <div class="w-full">
+                                        <div class="flex items-center justify-between text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
+                                            <span>{{ $percent }}%</span>
+                                            <span class="text-[10px] text-gray-400 font-medium">{{ $item->sudah_lhp_count ?? 0 }}/{{ $item->details_count ?? 0 }} Selesai</span>
+                                        </div>
+                                        <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                                            <div class="h-full rounded-full transition-all duration-500 {{ $percent >= 100 ? 'bg-emerald-500' : 'bg-blue-600' }}" style="width: {{ min(100, $percent) }}%"></div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {{-- Actions --}}

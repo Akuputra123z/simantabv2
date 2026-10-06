@@ -151,11 +151,16 @@ class AttachmentController extends Controller
             return;
         }
 
-        // Pengunggah boleh menghapus jika belum diverifikasi lunas
+        // Pengunggah boleh menghapus jika belum diverifikasi lunas / terbit
         if ($attachment->uploaded_by === $user->id) {
             if ($attachment->attachable instanceof TindakLanjut) {
                 if ($attachment->attachable->status_verifikasi === 'lunas') {
                     abort(403, 'Lampiran tindak lanjut yang sudah berstatus lunas tidak dapat dihapus.');
+                }
+            }
+            if ($attachment->attachable instanceof \App\Models\Lhr\Lhr) {
+                if ($attachment->attachable->isTerbit()) {
+                    abort(403, 'Lampiran LHR yang sudah berstatus terbit resmi tidak dapat dihapus.');
                 }
             }
 
@@ -184,6 +189,10 @@ class AttachmentController extends Controller
             return $attachable->unit_diperiksa_id;
         }
 
+        if ($attachable instanceof \App\Models\Lhr\Lhr) {
+            return $attachable->unit_diperiksa_id;
+        }
+
         if ($attachable instanceof Temuan) {
             return $attachable->lhp?->unit_diperiksa_id;
         }
@@ -207,6 +216,10 @@ class AttachmentController extends Controller
         }
 
         if ($attachable instanceof Lhp) {
+            return $attachable->auditAssignment;
+        }
+
+        if ($attachable instanceof \App\Models\Lhr\Lhr) {
             return $attachable->auditAssignment;
         }
 

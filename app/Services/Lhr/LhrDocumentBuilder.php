@@ -26,6 +26,7 @@ class LhrDocumentBuilder
             'pengujians.catatans.rekomendasis.kodeRekomendasi',
             'pengujians.catatans.kategori',
             'signer',
+            'attachments',
         ]);
 
         $sectionsKeyed = [];
@@ -64,6 +65,7 @@ class LhrDocumentBuilder
             'signer' => $lhr->signer,
             'isDraft' => ! $lhr->isTerbit(),
             'verifyUrl' => url("/verifikasi/{$lhr->uuid}"),
+            'attachments' => $lhr->attachments,
         ];
     }
 }

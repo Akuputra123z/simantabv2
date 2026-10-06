@@ -9,6 +9,7 @@ use App\Actions\Lhr\GenerateLhrPdf;
 use App\Actions\Lhr\GenerateLhrWord;
 use App\Actions\Lhr\ReviewLhr;
 use App\Actions\Lhr\SubmitLhr;
+use App\Enums\LhrStatus;
 use App\Enums\SimpulanStatus;
 use App\Models\AuditAssignment;
 use App\Models\Lhr\JenisDokumenReviu;
@@ -27,6 +28,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class LhrController extends Controller implements HasMiddleware
@@ -86,7 +88,8 @@ class LhrController extends Controller implements HasMiddleware
             $query->where(function ($q) use ($search) {
                 $q->where('nomor_lhr', 'like', "%{$search}%")
                     ->orWhereHas('unitDiperiksa', fn ($u) => $u->where('nama_unit', 'like', "%{$search}%"))
-                    ->orWhereHas('jenisDokumen', fn ($j) => $j->where('nama', 'like', "%{$search}%"));
+                    ->orWhereHas('jenisDokumen', fn ($j) => $j->where('nama', 'like', "%{$search}%"))
+                    ->orWhereHas('auditAssignment', fn ($a) => $a->where('nomor_surat', 'like', "%{$search}%"));
             });
         }
 
@@ -114,9 +117,19 @@ class LhrController extends Controller implements HasMiddleware
      */
     public function create(\App\Services\Lhr\LhrNumberingService $numberingService)
     {
-        $assignments = AuditAssignment::with(['ketuaTim', 'pengendaliTeknis'])
-            ->where('jenis_pengawasan', 'reviu')
-            ->orWhereNull('jenis_pengawasan')
+        $assignments = AuditAssignment::with(['ketuaTim', 'pengendaliTeknis', 'auditProgramDetail.auditProgram'])
+            ->where(function ($q) {
+                $q->where('jenis_pengawasan', 'reviu')
+                    ->orWhereNull('jenis_pengawasan');
+            })
+            ->where(function ($q) {
+                $q->whereDoesntHave('lhrs', function ($lhrQuery) {
+                    $lhrQuery->where('status', '!=', LhrStatus::Dibatalkan->value);
+                });
+                if (old('audit_assignment_id')) {
+                    $q->orWhere('id', old('audit_assignment_id'));
+                }
+            })
             ->latest()
             ->get();
 
@@ -141,8 +154,36 @@ class LhrController extends Controller implements HasMiddleware
      */
     public function store(Request $request, CreateLhrFromAssignment $action)
     {
+        // Sinkronisasi otomatis Tahun Anggaran & Jadwal Pelaksanaan dari Penugasan Audit (SPT)
+        if ($request->filled('audit_assignment_id')) {
+            $asg = AuditAssignment::with(['auditProgramDetail.auditProgram'])->find($request->audit_assignment_id);
+            if ($asg) {
+                $tahun = $request->input('tahun_anggaran')
+                    ?: ($asg->auditProgram?->tahun
+                        ?: ($asg->auditProgramDetail?->auditProgram?->tahun
+                            ?: ($asg->tanggal_mulai ? (int) $asg->tanggal_mulai->format('Y') : (int) date('Y'))));
+
+                $mergeData = [
+                    'tahun_anggaran' => (int) $tahun,
+                ];
+                if (! $request->filled('tanggal_mulai') && $asg->tanggal_mulai) {
+                    $mergeData['tanggal_mulai'] = $asg->tanggal_mulai->format('Y-m-d');
+                }
+                if (! $request->filled('tanggal_selesai') && $asg->tanggal_selesai) {
+                    $mergeData['tanggal_selesai'] = $asg->tanggal_selesai->format('Y-m-d');
+                }
+                $request->merge($mergeData);
+            }
+        }
+
         $validated = $request->validate([
-            'audit_assignment_id' => 'required|exists:audit_assignments,id',
+            'audit_assignment_id' => [
+                'required',
+                'exists:audit_assignments,id',
+                Rule::unique('lhrs', 'audit_assignment_id')
+                    ->whereNull('deleted_at')
+                    ->where(fn ($query) => $query->where('status', '!=', LhrStatus::Dibatalkan->value)),
+            ],
             'unit_diperiksa_id' => 'required|exists:unit_diperiksas,id',
             'jenis_dokumen_reviu_id' => 'required|exists:jenis_dokumen_reviu,id',
             'tahun_anggaran' => 'required|integer|min:2020|max:2035',
@@ -153,8 +194,33 @@ class LhrController extends Controller implements HasMiddleware
             'permohonan_tanggal' => 'nullable|date',
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png,xlsx,xls,docx,doc|max:10240',
+            'attachment_notes' => 'nullable|array',
+            'attachment_notes.*' => 'nullable|string|max:255',
         ], [
+            'audit_assignment_id.required' => 'Surat Perintah Tugas (SPT) Reviu wajib dipilih.',
+            'audit_assignment_id.exists' => 'Surat Perintah Tugas (SPT) yang dipilih tidak valid atau tidak ditemukan.',
+            'audit_assignment_id.unique' => 'Surat Perintah Tugas (SPT) ini sudah memiliki dokumen LHR. Tidak dapat membuat LHR duplikat untuk SPT yang sama.',
+            'unit_diperiksa_id.required' => 'Perangkat Daerah Pengampu (Auditee) wajib dipilih.',
+            'unit_diperiksa_id.exists' => 'Perangkat Daerah yang dipilih tidak valid atau tidak ditemukan.',
+            'jenis_dokumen_reviu_id.required' => 'Jenis Dokumen Reviu wajib dipilih.',
+            'jenis_dokumen_reviu_id.exists' => 'Jenis Dokumen Reviu yang dipilih tidak valid.',
+            'tahun_anggaran.required' => 'Tahun Anggaran Dokumen wajib diisi.',
+            'tahun_anggaran.integer' => 'Tahun Anggaran harus berupa angka (contoh: 2026).',
+            'tahun_anggaran.min' => 'Tahun Anggaran minimal tahun :min.',
+            'tahun_anggaran.max' => 'Tahun Anggaran maksimal tahun :max.',
             'nomor_lhr.unique' => 'Nomor LHR :input sudah terdaftar pada dokumen lain. Silakan ubah nomor atau kosongkan agar terisi otomatis.',
+            'nomor_lhr.max' => 'Nomor LHR maksimal :max karakter.',
+            'tanggal_lhr.date' => 'Format Tanggal Pengesahan LHR tidak valid.',
+            'ditandatangani_oleh.exists' => 'Pejabat Penandatangan yang dipilih tidak ditemukan dalam sistem.',
+            'permohonan_tanggal.date' => 'Format Tanggal Surat Permohonan OPD tidak valid.',
+            'tanggal_mulai.date' => 'Format Tanggal Mulai Reviu tidak valid.',
+            'tanggal_selesai.date' => 'Format Tanggal Selesai Reviu tidak valid.',
+            'tanggal_selesai.after_or_equal' => 'Tanggal Selesai Reviu tidak boleh lebih awal dari Tanggal Mulai Reviu.',
+            'attachments.*.file' => 'Berkas lampiran yang diunggah harus berupa file yang valid.',
+            'attachments.*.mimes' => 'Format berkas lampiran harus berupa PDF, Word (.docx/.doc), Excel (.xlsx/.xls), atau Gambar (.jpg/.jpeg/.png).',
+            'attachments.*.max' => 'Ukuran setiap berkas lampiran tidak boleh melebihi 10MB.',
         ]);
 
         $assignment = AuditAssignment::findOrFail($validated['audit_assignment_id']);
@@ -175,6 +241,28 @@ class LhrController extends Controller implements HasMiddleware
             ditandatanganiOleh: ! empty($validated['ditandatangani_oleh']) ? (int) $validated['ditandatangani_oleh'] : null,
             creator: auth()->user()
         );
+
+        if ($request->hasFile('attachments')) {
+            $notes = $request->input('attachment_notes', []);
+            foreach ($request->file('attachments') as $idx => $file) {
+                if ($file && $file->isValid()) {
+                    $path = $file->store('attachments/lhr', 'local');
+                    $keterangan = ! empty($notes[$idx]) ? trim($notes[$idx]) : pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
+                    $lhr->attachments()->create([
+                        'file_path' => $path,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_type' => $file->getClientMimeType() ?: 'application/octet-stream',
+                        'file_size' => $file->getSize() ?: 0,
+                        'jenis_bukti' => 'dokumen_pendukung',
+                        'urutan' => $idx + 1,
+                        'keterangan' => $keterangan,
+                        'visibilitas' => 'internal',
+                        'uploaded_by' => auth()->id(),
+                    ]);
+                }
+            }
+        }
 
         return redirect()->route('lhr.show', $lhr->uuid)
             ->with('success', 'Dokumen LHR berhasil dibuat. Silakan lengkapi pengujian dan catatan reviu.');
@@ -200,6 +288,7 @@ class LhrController extends Controller implements HasMiddleware
                 'pengujians.catatans.kategori',
                 'statistik',
                 'signer',
+                'attachments.uploadedBy',
             ])
             ->firstOrFail();
 
@@ -239,7 +328,7 @@ class LhrController extends Controller implements HasMiddleware
     public function edit(string $uuid)
     {
         $lhr = Lhr::where('uuid', $uuid)
-            ->with(['unitDiperiksa', 'jenisDokumen', 'auditAssignment.ketuaTim', 'signer'])
+            ->with(['unitDiperiksa', 'jenisDokumen', 'auditAssignment.ketuaTim', 'signer', 'attachments'])
             ->firstOrFail();
 
         if (! $lhr->canEdit()) {
@@ -278,8 +367,30 @@ class LhrController extends Controller implements HasMiddleware
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
             'next_step' => 'nullable|integer|min:1|max:6',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png,xlsx,xls,docx,doc|max:10240',
+            'attachment_notes' => 'nullable|array',
+            'attachment_notes.*' => 'nullable|string|max:255',
+            'delete_attachments' => 'nullable|array',
+            'delete_attachments.*' => 'integer|exists:attachments,id',
         ], [
+            'unit_diperiksa_id.required' => 'Perangkat Daerah Pengampu (Auditee) wajib dipilih.',
+            'unit_diperiksa_id.exists' => 'Perangkat Daerah yang dipilih tidak valid atau tidak ditemukan.',
+            'tahun_anggaran.required' => 'Tahun Anggaran Dokumen wajib diisi.',
+            'tahun_anggaran.integer' => 'Tahun Anggaran harus berupa angka (contoh: 2026).',
+            'tahun_anggaran.min' => 'Tahun Anggaran minimal tahun :min.',
+            'tahun_anggaran.max' => 'Tahun Anggaran maksimal tahun :max.',
             'nomor_lhr.unique' => 'Nomor LHR :input sudah terdaftar pada dokumen lain.',
+            'nomor_lhr.max' => 'Nomor LHR maksimal :max karakter.',
+            'tanggal_lhr.date' => 'Format Tanggal Pengesahan LHR tidak valid.',
+            'ditandatangani_oleh.exists' => 'Pejabat Penandatangan yang dipilih tidak ditemukan dalam sistem.',
+            'permohonan_tanggal.date' => 'Format Tanggal Surat Permohonan OPD tidak valid.',
+            'tanggal_mulai.date' => 'Format Tanggal Mulai Reviu tidak valid.',
+            'tanggal_selesai.date' => 'Format Tanggal Selesai Reviu tidak valid.',
+            'tanggal_selesai.after_or_equal' => 'Tanggal Selesai Reviu tidak boleh lebih awal dari Tanggal Mulai Reviu.',
+            'attachments.*.file' => 'Berkas lampiran yang diunggah harus berupa file yang valid.',
+            'attachments.*.mimes' => 'Format berkas lampiran harus berupa PDF, Word (.docx/.doc), Excel (.xlsx/.xls), atau Gambar (.jpg/.jpeg/.png).',
+            'attachments.*.max' => 'Ukuran setiap berkas lampiran tidak boleh melebihi 10MB.',
         ]);
 
         $lhr->update([
@@ -293,6 +404,42 @@ class LhrController extends Controller implements HasMiddleware
             'tanggal_mulai' => ! empty($validated['tanggal_mulai']) ? Carbon::parse($validated['tanggal_mulai']) : null,
             'tanggal_selesai' => ! empty($validated['tanggal_selesai']) ? Carbon::parse($validated['tanggal_selesai']) : null,
         ]);
+
+        // Hapus lampiran yang ditandai untuk dihapus
+        $deleteAttachmentIds = $request->input('delete_attachments');
+        if (! empty($deleteAttachmentIds) && is_array($deleteAttachmentIds)) {
+            $attachmentsToDelete = $lhr->attachments()->whereIn('id', $deleteAttachmentIds)->get();
+            foreach ($attachmentsToDelete as $att) {
+                if ($att->file_path && Storage::disk('local')->exists($att->file_path)) {
+                    Storage::disk('local')->delete($att->file_path);
+                }
+                $att->forceDelete();
+            }
+        }
+
+        // Tambah berkas lampiran baru jika ada
+        if ($request->hasFile('attachments')) {
+            $notes = $request->input('attachment_notes', []);
+            $currentMaxOrder = (int) $lhr->attachments()->max('urutan');
+            foreach ($request->file('attachments') as $idx => $file) {
+                if ($file && $file->isValid()) {
+                    $path = $file->store('attachments/lhr', 'local');
+                    $keterangan = ! empty($notes[$idx]) ? trim($notes[$idx]) : pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
+                    $lhr->attachments()->create([
+                        'file_path' => $path,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_type' => $file->getClientMimeType() ?: 'application/octet-stream',
+                        'file_size' => $file->getSize() ?: 0,
+                        'jenis_bukti' => 'dokumen_pendukung',
+                        'urutan' => $currentMaxOrder + $idx + 1,
+                        'keterangan' => $keterangan,
+                        'visibilitas' => 'internal',
+                        'uploaded_by' => auth()->id(),
+                    ]);
+                }
+            }
+        }
 
         if ($request->filled('next_step')) {
             return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => $request->input('next_step')])
@@ -350,7 +497,8 @@ class LhrController extends Controller implements HasMiddleware
 
         $action->execute($lhr);
 
-        return back()->with('success', '14 Catatan temuan & rekomendasi standar template Rembang 2027 berhasil disinkronkan ke ruang kerja.');
+        return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 5])
+            ->with('success', '14 Catatan temuan & rekomendasi standar template Rembang 2027 berhasil disinkronkan ke ruang kerja.');
     }
 
     /**
@@ -391,7 +539,7 @@ class LhrController extends Controller implements HasMiddleware
 
         $validated = $request->validate([
             'kategori_id' => 'required|exists:lhr_kategori_catatans,id',
-            'referensi_bagian' => 'nullable|string|max:120',
+            'referensi_bagian' => 'nullable|string|max:255',
             'isi' => 'required|string',
             'uraian_rekom' => 'required|string',
             'batas_waktu' => 'nullable|date',
@@ -420,7 +568,8 @@ class LhrController extends Controller implements HasMiddleware
             $this->syncStatistik($lhr);
         });
 
-        return back()->with('success', 'Catatan temuan dan rekomendasi berhasil ditambahkan.');
+        return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 5])
+            ->with('success', 'Catatan temuan dan rekomendasi berhasil ditambahkan.');
     }
 
     /**
@@ -436,7 +585,7 @@ class LhrController extends Controller implements HasMiddleware
 
         $validated = $request->validate([
             'kategori_id' => 'required|exists:lhr_kategori_catatans,id',
-            'referensi_bagian' => 'nullable|string|max:150',
+            'referensi_bagian' => 'nullable|string|max:255',
             'isi' => 'required|string',
             'uraian_rekom' => 'required|string',
             'batas_waktu' => 'nullable|date',
@@ -471,7 +620,8 @@ class LhrController extends Controller implements HasMiddleware
             $this->syncStatistik($lhr);
         });
 
-        return back()->with('success', 'Catatan temuan dan rekomendasi berhasil diperbarui.');
+        return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 5])
+            ->with('success', 'Catatan temuan dan rekomendasi berhasil diperbarui.');
     }
 
     /**
@@ -490,7 +640,8 @@ class LhrController extends Controller implements HasMiddleware
 
         $this->syncStatistik($lhr);
 
-        return back()->with('success', 'Catatan reviu berhasil dihapus.');
+        return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 5])
+            ->with('success', 'Catatan reviu berhasil dihapus.');
     }
 
     /**

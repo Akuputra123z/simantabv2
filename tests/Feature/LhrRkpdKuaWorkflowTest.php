@@ -17,6 +17,8 @@ use Database\Seeders\LhrRkpdKuaSeeder;
 use Database\Seeders\LhrShsdSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class LhrRkpdKuaWorkflowTest extends TestCase
@@ -418,7 +420,7 @@ class LhrRkpdKuaWorkflowTest extends TestCase
             'uraian_rekom' => $updatedRekom,
             'batas_waktu' => now()->addDays(14)->toDateString(),
         ]);
-        $updateResponse->assertRedirect();
+        $updateResponse->assertRedirect(route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 5]));
         $updateResponse->assertSessionHas('success');
 
         $createdCat->refresh();
@@ -504,6 +506,8 @@ class LhrRkpdKuaWorkflowTest extends TestCase
         // 1. Kunjungi Halaman Pembuatan LHR
         $createPageResponse = $this->actingAs($admin)->get(route('lhr.create'));
         $createPageResponse->assertOk();
+        $createPageResponse->assertSee('name="nomor_lhr" value=""', false);
+        $createPageResponse->assertSee('name="permohonan_nomor" value=""', false);
 
         // 2. Submit form untuk membuat LHR
         $storeResponse = $this->actingAs($admin)->post(route('lhr.store'), [
@@ -540,5 +544,333 @@ class LhrRkpdKuaWorkflowTest extends TestCase
         // Tidak boleh 500 error, melainkan validation error
         $duplicateResponse->assertSessionHasErrors(['nomor_lhr']);
     }
+
+    public function test_validates_lhr_form_with_clear_indonesian_messages(): void
+    {
+        $admin = User::where('email', 'admin@inspektorat.go.id')->first()
+            ?? User::factory()->create(['jenis_kelamin' => 'L']);
+        $admin->assignRole(User::ROLE_SUPER_ADMIN);
+
+        // Submit form kosong
+        $response = $this->actingAs($admin)->post(route('lhr.store'), []);
+
+        $response->assertSessionHasErrors([
+            'audit_assignment_id' => 'Surat Perintah Tugas (SPT) Reviu wajib dipilih.',
+            'unit_diperiksa_id' => 'Perangkat Daerah Pengampu (Auditee) wajib dipilih.',
+            'jenis_dokumen_reviu_id' => 'Jenis Dokumen Reviu wajib dipilih.',
+            'tahun_anggaran' => 'Tahun Anggaran Dokumen wajib diisi.',
+        ]);
+
+        // Submit dengan tanggal selesai < tanggal mulai
+        $dateMismatchResponse = $this->actingAs($admin)->post(route('lhr.store'), [
+            'audit_assignment_id' => 9999,
+            'unit_diperiksa_id' => 9999,
+            'jenis_dokumen_reviu_id' => 9999,
+            'tahun_anggaran' => 2026,
+            'tanggal_mulai' => '2026-05-10',
+            'tanggal_selesai' => '2026-05-01',
+        ]);
+
+        $dateMismatchResponse->assertSessionHasErrors([
+            'tanggal_selesai' => 'Tanggal Selesai Reviu tidak boleh lebih awal dari Tanggal Mulai Reviu.',
+            'audit_assignment_id' => 'Surat Perintah Tugas (SPT) yang dipilih tidak valid atau tidak ditemukan.',
+            'unit_diperiksa_id' => 'Perangkat Daerah yang dipilih tidak valid atau tidak ditemukan.',
+            'jenis_dokumen_reviu_id' => 'Jenis Dokumen Reviu yang dipilih tidak valid.',
+        ]);
+    }
+
+    public function test_spt_already_used_does_not_appear_in_create_form_and_prevents_duplicate_store(): void
+    {
+        $admin = User::where('email', 'admin@inspektorat.go.id')->first()
+            ?? User::factory()->create(['jenis_kelamin' => 'L']);
+        $admin->assignRole(User::ROLE_SUPER_ADMIN);
+
+        $bappeda = UnitDiperiksa::firstOrCreate(
+            ['nama_unit' => 'Badan Perencanaan Pembangunan Daerah'],
+            ['kategori' => 'OPD']
+        );
+
+        $program = \App\Models\AuditProgram::create([
+            'nama_program' => 'PKPT Reviu SPT Unik Test',
+            'tahun' => 2026,
+            'kategori' => 'Reviu Dokumen',
+            'status' => 'disetujui',
+        ]);
+        $detail = \App\Models\AuditProgramDetail::create([
+            'audit_program_id' => $program->id,
+            'nama_detail_program' => 'Detail Reviu SPT Unik Test',
+            'jenis_kegiatan' => 'Reviu',
+        ]);
+
+        $assignment1 = AuditAssignment::create([
+            'audit_program_detail_id' => $detail->id,
+            'nama_tim' => 'Tim Reviu No Dup 1',
+            'nomor_surat' => 'SPT/REVIU/001/2026',
+            'jenis_pengawasan' => 'reviu',
+            'ketua_tim_id' => $admin->id,
+            'pengendali_teknis_id' => $admin->id,
+            'tanggal_mulai' => '2026-05-01',
+            'tanggal_selesai' => '2026-05-10',
+            'status' => 'aktif',
+        ]);
+
+        $assignment2 = AuditAssignment::create([
+            'audit_program_detail_id' => $detail->id,
+            'nama_tim' => 'Tim Reviu No Dup 2',
+            'nomor_surat' => 'SPT/REVIU/002/2026',
+            'jenis_pengawasan' => 'reviu',
+            'ketua_tim_id' => $admin->id,
+            'pengendali_teknis_id' => $admin->id,
+            'tanggal_mulai' => '2026-06-01',
+            'tanggal_selesai' => '2026-06-10',
+            'status' => 'aktif',
+        ]);
+
+        $jenisRkpd = JenisDokumenReviu::where('kode', 'RKPD')->firstOrFail();
+
+        // Buat LHR untuk assignment1
+        $this->actingAs($admin)->post(route('lhr.store'), [
+            'audit_assignment_id' => $assignment1->id,
+            'unit_diperiksa_id' => $bappeda->id,
+            'jenis_dokumen_reviu_id' => $jenisRkpd->id,
+            'tahun_anggaran' => 2026,
+            'nomor_lhr' => '700/TEST-NO-DUP/REVIU/INSP/2026',
+        ])->assertRedirect();
+
+        // 1. Cek form /lhr/create: assignment1 TIDAK boleh muncul, assignment2 HARUS muncul
+        $response = $this->actingAs($admin)->get(route('lhr.create'));
+        $response->assertOk();
+        $this->assertFalse($response->viewData('assignments')->contains('id', $assignment1->id));
+        $this->assertTrue($response->viewData('assignments')->contains('id', $assignment2->id));
+        $response->assertDontSee('Nomor SPT: ' . $assignment1->nomor_surat);
+        $response->assertSee('Nomor SPT: ' . $assignment2->nomor_surat);
+
+        // 2. Submit form memakai assignment1 lagi (duplikat SPT) harus gagal validasi
+        $dupResponse = $this->actingAs($admin)->post(route('lhr.store'), [
+            'audit_assignment_id' => $assignment1->id,
+            'unit_diperiksa_id' => $bappeda->id,
+            'jenis_dokumen_reviu_id' => $jenisRkpd->id,
+            'tahun_anggaran' => 2026,
+            'nomor_lhr' => '700/TEST-ANOTHER/REVIU/INSP/2026',
+        ]);
+
+        $dupResponse->assertSessionHasErrors([
+            'audit_assignment_id' => 'Surat Perintah Tugas (SPT) ini sudah memiliki dokumen LHR. Tidak dapat membuat LHR duplikat untuk SPT yang sama.',
+        ]);
+
+        // 3. Jika LHR assignment1 dibatalkan, assignment1 harus muncul kembali di /lhr/create
+        $lhr1 = \App\Models\Lhr\Lhr::where('audit_assignment_id', $assignment1->id)->first();
+        $lhr1->update(['status' => \App\Enums\LhrStatus::Dibatalkan]);
+
+        $responseAfterCancel = $this->actingAs($admin)->get(route('lhr.create'));
+        $responseAfterCancel->assertOk();
+        $this->assertTrue($responseAfterCancel->viewData('assignments')->contains('id', $assignment1->id));
+        $responseAfterCancel->assertSee('Nomor SPT: ' . $assignment1->nomor_surat);
+    }
+
+    public function test_can_upload_attachments_during_lhr_creation_and_synchronize_with_preview_pdf_and_word(): void
+    {
+        Storage::fake('local');
+
+        $admin = User::where('email', 'admin@inspektorat.go.id')->first()
+            ?? User::factory()->create(['jenis_kelamin' => 'L']);
+        $admin->assignRole(User::ROLE_SUPER_ADMIN);
+
+        $bappeda = UnitDiperiksa::create(['nama_unit' => 'BAPPEDA Kabupaten Rembang']);
+        $jenisRkpd = JenisDokumenReviu::where('kode', 'RKPD')->firstOrFail();
+
+        $program = AuditProgram::create([
+            'nama_program' => 'PKPT Reviu Lampiran',
+            'tahun' => 2026,
+            'kategori' => 'Reviu Dokumen',
+            'status' => 'disetujui',
+        ]);
+        $detail = AuditProgramDetail::create([
+            'audit_program_id' => $program->id,
+            'nama_detail_program' => 'Reviu Rankir RKPD 2027 Lampiran',
+            'jenis_kegiatan' => 'Reviu',
+        ]);
+        $assignment = AuditAssignment::create([
+            'audit_program_detail_id' => $detail->id,
+            'nama_tim' => 'Tim Reviu Lampiran RKPD',
+            'jenis_pengawasan' => 'reviu',
+            'status' => 'berjalan',
+            'nomor_surat' => '000.1.2.3/ATT-TEST/INSP/2026',
+            'tanggal_mulai' => '2026-04-20',
+            'tanggal_selesai' => '2026-05-10',
+            'ketua_tim_id' => $admin->id,
+        ]);
+
+        $filePdf = UploadedFile::fake()->create('draft_rancangan_akhir_rkpd_2027.pdf', 1500, 'application/pdf');
+        $fileDocx = UploadedFile::fake()->create('berita_acara_musrenbang_2027.docx', 800, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+        // 1. Submit LHR baru dengan berkas lampiran pendukung & catatan
+        $response = $this->actingAs($admin)->post(route('lhr.store'), [
+            'audit_assignment_id' => $assignment->id,
+            'unit_diperiksa_id' => $bappeda->id,
+            'jenis_dokumen_reviu_id' => $jenisRkpd->id,
+            'tahun_anggaran' => 2027,
+            'nomor_lhr' => '700/088/REVIU/INSP/2026',
+            'tanggal_lhr' => '2026-05-11',
+            'attachments' => [
+                $filePdf,
+                $fileDocx,
+            ],
+            'attachment_notes' => [
+                'Dokumen Draft Rankir RKPD Bappeda',
+                'Berita Acara Kesepakatan Musrenbang',
+            ],
+        ]);
+
+        $lhr = \App\Models\Lhr\Lhr::where('nomor_lhr', '700/088/REVIU/INSP/2026')->firstOrFail();
+        $response->assertRedirect(route('lhr.show', $lhr->uuid));
+        $response->assertSessionHas('success');
+
+        // 2. Verifikasi keterkaitan polymorph Attachment
+        $this->assertCount(2, $lhr->attachments);
+        $att1 = $lhr->attachments->where('file_name', 'draft_rancangan_akhir_rkpd_2027.pdf')->first();
+        $att2 = $lhr->attachments->where('file_name', 'berita_acara_musrenbang_2027.docx')->first();
+
+        $this->assertNotNull($att1);
+        $this->assertEquals('Dokumen Draft Rankir RKPD Bappeda', $att1->keterangan);
+        $this->assertTrue(Storage::disk('local')->exists($att1->file_path));
+
+        $this->assertNotNull($att2);
+        $this->assertEquals('Berita Acara Kesepakatan Musrenbang', $att2->keterangan);
+        $this->assertTrue(Storage::disk('local')->exists($att2->file_path));
+
+        // 3. Verifikasi sinkronisasi di Ruang Kerja (Step 2)
+        $workspaceResponse = $this->actingAs($admin)->get(route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 2]));
+        $workspaceResponse->assertOk();
+        $workspaceResponse->assertSee('Berkas Lampiran Dokumen Pendukung (2)');
+        $workspaceResponse->assertSee('draft_rancangan_akhir_rkpd_2027.pdf');
+        $workspaceResponse->assertSee('Dokumen Draft Rankir RKPD Bappeda');
+        $workspaceResponse->assertSee('berita_acara_musrenbang_2027.docx');
+
+        // 4. Verifikasi sinkronisasi di Pratinjau Dokumen (/preview)
+        $previewResponse = $this->actingAs($admin)->get(route('lhr.preview', $lhr->uuid));
+        $previewResponse->assertOk();
+        $previewResponse->assertSee('DAFTAR LAMPIRAN DOKUMEN PENDUKUNG');
+        $previewResponse->assertSee('draft_rancangan_akhir_rkpd_2027.pdf');
+        $previewResponse->assertSee('Dokumen Draft Rankir RKPD Bappeda');
+        $previewResponse->assertSee('berita_acara_musrenbang_2027.docx');
+
+        // 5. Verifikasi sinkronisasi di Unduh PDF (/pdf)
+        $pdfResponse = $this->actingAs($admin)->get(route('lhr.pdf', $lhr->uuid));
+        $pdfResponse->assertOk();
+        $pdfResponse->assertHeader('Content-Type', 'application/pdf');
+        $this->assertNotEmpty($pdfResponse->getContent());
+
+        // 6. Verifikasi sinkronisasi di Unduh Word (/word)
+        $wordResponse = $this->actingAs($admin)->get(route('lhr.word', $lhr->uuid));
+        $wordResponse->assertOk();
+        $wordResponse->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        $this->assertNotEmpty($wordResponse->getContent());
+
+        // 7. Verifikasi Secure Download & Secure Preview Lampiran
+        $downloadResponse = $this->actingAs($admin)->get(route('attachments.download', $att1));
+        $downloadResponse->assertOk();
+
+        $showResponse = $this->actingAs($admin)->get(route('attachments.show', $att1));
+        $showResponse->assertOk();
+    }
+
+    public function test_can_manage_attachments_during_lhr_edit(): void
+    {
+        Storage::fake('local');
+
+        $admin = User::where('email', 'superadmin_edit_att@rembangkab.go.id')->first()
+            ?? User::factory()->create([
+                'email' => 'superadmin_edit_att@rembangkab.go.id',
+                'name' => 'Superadmin Edit Attachment Test',
+                'jenis_kelamin' => 'L',
+            ]);
+        $admin->syncRoles([User::ROLE_SUPER_ADMIN]);
+
+        $bappeda = UnitDiperiksa::firstOrCreate(
+            ['nama_unit' => 'BAPPEDA Test Edit Attachment'],
+            ['kategori' => 'OPD']
+        );
+
+        $program = \App\Models\AuditProgram::create([
+            'nama_program' => 'PKPT Reviu Edit Attachment',
+            'tahun' => 2026,
+            'kategori' => 'Reviu Dokumen',
+            'status' => 'disetujui',
+        ]);
+        $detail = \App\Models\AuditProgramDetail::create([
+            'audit_program_id' => $program->id,
+            'nama_detail_program' => 'Detail Reviu Edit Attachment',
+            'jenis_kegiatan' => 'Reviu',
+        ]);
+        $assignment = AuditAssignment::create([
+            'audit_program_detail_id' => $detail->id,
+            'nama_tim' => 'Tim Reviu Edit Attachment',
+            'nomor_surat' => 'SPT/REVIU/EDIT-ATT/2026',
+            'jenis_pengawasan' => 'reviu',
+            'ketua_tim_id' => $admin->id,
+            'pengendali_teknis_id' => $admin->id,
+            'tanggal_mulai' => '2026-05-01',
+            'tanggal_selesai' => '2026-05-10',
+            'status' => 'aktif',
+        ]);
+
+        $jenisRkpd = JenisDokumenReviu::where('kode', 'RKPD')->firstOrFail();
+
+        // Buat LHR awal dengan 1 lampiran
+        $file1 = UploadedFile::fake()->create('lampiran_lama.pdf', 300, 'application/pdf');
+        $this->actingAs($admin)->post(route('lhr.store'), [
+            'audit_assignment_id' => $assignment->id,
+            'unit_diperiksa_id' => $bappeda->id,
+            'jenis_dokumen_reviu_id' => $jenisRkpd->id,
+            'tahun_anggaran' => 2026,
+            'nomor_lhr' => '700/EDIT-ATT/REVIU/INSP/2026',
+            'attachments' => [$file1],
+            'attachment_notes' => ['Lampiran Versi Lama'],
+        ])->assertRedirect();
+
+        $lhr = \App\Models\Lhr\Lhr::where('nomor_lhr', '700/EDIT-ATT/REVIU/INSP/2026')->firstOrFail();
+        $this->assertCount(1, $lhr->attachments);
+        $oldAtt = $lhr->attachments->first();
+
+        // 1. Kunjungi halaman /lhr/{uuid}/edit
+        $editResponse = $this->actingAs($admin)->get(route('lhr.edit', $lhr->uuid));
+        $editResponse->assertOk();
+        $editResponse->assertSee('Dokumen Lampiran Pendukung Reviu');
+        $editResponse->assertSee('Sinkron ke PDF, Word & Pratinjau');
+        $editResponse->assertSee('lampiran_lama.pdf');
+        $editResponse->assertSee('Pilih Berkas Lampiran Baru');
+
+        // 2. Lakukan Update: Hapus $oldAtt dan unggah lampiran baru
+        $file2 = UploadedFile::fake()->create('sk_tim_perencanaan_2027.docx', 450, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+        $updateResponse = $this->actingAs($admin)->put(route('lhr.update', $lhr->uuid), [
+            'unit_diperiksa_id' => $bappeda->id,
+            'tahun_anggaran' => 2026,
+            'nomor_lhr' => '700/EDIT-ATT/REVIU/INSP/2026',
+            'delete_attachments' => [$oldAtt->id],
+            'attachments' => [$file2],
+            'attachment_notes' => ['SK Tim Perencanaan Baru'],
+        ]);
+
+        $updateResponse->assertRedirect(route('lhr.show', $lhr->uuid));
+        $updateResponse->assertSessionHas('success');
+
+        // 3. Verifikasi lampiran lama terhapus dan lampiran baru tersimpan
+        $lhr->refresh();
+        $this->assertCount(1, $lhr->attachments);
+        $newAtt = $lhr->attachments->first();
+        $this->assertEquals('sk_tim_perencanaan_2027.docx', $newAtt->file_name);
+        $this->assertEquals('SK Tim Perencanaan Baru', $newAtt->keterangan);
+        $this->assertDatabaseMissing('attachments', ['id' => $oldAtt->id]);
+        $this->assertDatabaseHas('attachments', ['id' => $newAtt->id]);
+
+        // 4. Verifikasi di pratinjau dokumen
+        $previewResponse = $this->actingAs($admin)->get(route('lhr.preview', $lhr->uuid));
+        $previewResponse->assertOk();
+        $previewResponse->assertSee('sk_tim_perencanaan_2027.docx');
+        $previewResponse->assertDontSee('lampiran_lama.pdf');
+    }
 }
+
 

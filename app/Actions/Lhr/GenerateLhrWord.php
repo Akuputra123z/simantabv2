@@ -487,19 +487,18 @@ class GenerateLhrWord
                 'borderSize' => 6,
                 'borderColor' => '000000',
                 'cellMargin' => 60,
-                'width' => 100 * 50,
-                'unit' => TblWidth::PERCENT,
+                'alignment' => Jc::CENTER,
             ]);
-            $tabelCatBab->addRow(300, ['tblHeader' => true]);
-            $tabelCatBab->addCell(800, ['bgColor' => 'F2F2F2', 'alignment' => Jc::CENTER])->addText('NO', ['bold' => true], ['alignment' => Jc::CENTER]);
-            $tabelCatBab->addCell(9200, ['bgColor' => 'F2F2F2'])->addText('CATATAN', ['bold' => true]);
+            $tabelCatBab->addRow(300, ['tblHeader' => true, 'cantSplit' => true]);
+            $tabelCatBab->addCell(800, ['bgColor' => 'F2F2F2', 'alignment' => Jc::CENTER])->addText('NO', ['bold' => true, 'size' => 9.5, 'name' => 'Arial'], ['alignment' => Jc::CENTER]);
+            $tabelCatBab->addCell(8600, ['bgColor' => 'F2F2F2'])->addText('CATATAN', ['bold' => true, 'size' => 9.5, 'name' => 'Arial']);
 
             foreach ($catsS2 as $idx => $cat) {
-                $tabelCatBab->addRow();
-                $tabelCatBab->addCell(800)->addText((string)($idx + 1) . '.', null, ['alignment' => Jc::CENTER]);
-                $cCell = $tabelCatBab->addCell(9200);
+                $tabelCatBab->addRow(null, ['cantSplit' => true]);
+                $tabelCatBab->addCell(800)->addText((string)($idx + 1) . '.', ['size' => 9.5, 'name' => 'Arial'], ['alignment' => Jc::CENTER]);
+                $cCell = $tabelCatBab->addCell(8600);
                 if ($cat->referensi_bagian) {
-                    $cCell->addText($cat->referensi_bagian, ['bold' => true]);
+                    $cCell->addText($cat->referensi_bagian, ['bold' => true, 'size' => 9.5, 'name' => 'Arial'], ['spaceAfter' => 20]);
                 }
                 $this->appendHtmlOrText($cCell, $cat->isi);
             }
@@ -696,6 +695,49 @@ class GenerateLhrWord
         $ttdCell->addText($signerName, ['bold' => true, 'underline' => 'single'], ['alignment' => Jc::CENTER, 'spaceAfter' => 10]);
         $ttdCell->addText('Pembina Utama Muda', null, ['alignment' => Jc::CENTER, 'spaceAfter' => 10]);
         $ttdCell->addText("NIP. {$signerNip}", null, ['alignment' => Jc::CENTER]);
+
+        // ── LAMPIRAN: DAFTAR DOKUMEN PENDUKUNG (JIKA ADA) ─────────────────────────
+        $attachments = $data['attachments'] ?? $lhr->attachments;
+        if ($attachments && $attachments->isNotEmpty()) {
+            $mainSection->addPageBreak();
+            $mainSection->addText('LAMPIRAN: DAFTAR DOKUMEN PENDUKUNG REVIU', ['bold' => true, 'size' => 11], ['alignment' => Jc::CENTER, 'spaceAfter' => 60]);
+            $mainSection->addText(
+                "Daftar berkas dan dokumen pendukung perencanaan yang dihimpun, diverifikasi, dan ditelaah selama pelaksanaan reviu oleh Tim Reviu Inspektorat Daerah Kabupaten Rembang:",
+                null,
+                ['alignment' => Jc::BOTH, 'spaceAfter' => 60, 'lineHeight' => 1.15]
+            );
+
+            $attTable = $mainSection->addTable([
+                'borderSize' => 6,
+                'borderColor' => 'CCCCCC',
+                'cellMargin' => 60,
+                'width' => 100 * 50,
+                'unit' => TblWidth::PERCENT,
+            ]);
+
+            $attTable->addRow(300, ['tblHeader' => true]);
+            $attTable->addCell(600, ['bgColor' => 'F2F2F2', 'alignment' => Jc::CENTER])->addText('No', ['bold' => true, 'size' => 9]);
+            $attTable->addCell(4000, ['bgColor' => 'F2F2F2'])->addText('Nama Berkas Dokumen', ['bold' => true, 'size' => 9]);
+            $attTable->addCell(3000, ['bgColor' => 'F2F2F2'])->addText('Keterangan / Uraian', ['bold' => true, 'size' => 9]);
+            $attTable->addCell(1200, ['bgColor' => 'F2F2F2', 'alignment' => Jc::CENTER])->addText('Format', ['bold' => true, 'size' => 9]);
+            $attTable->addCell(1200, ['bgColor' => 'F2F2F2', 'alignment' => Jc::RIGHT])->addText('Ukuran', ['bold' => true, 'size' => 9]);
+
+            foreach ($attachments as $i => $att) {
+                $ext = strtoupper(pathinfo($att->file_name, PATHINFO_EXTENSION) ?: 'BERKAS');
+                $attTable->addRow();
+                $attTable->addCell(600)->addText((string)($i + 1), null, ['alignment' => Jc::CENTER]);
+                $attTable->addCell(4000)->addText($att->file_name, ['bold' => true]);
+                $attTable->addCell(3000)->addText($att->keterangan ?: '-');
+                $attTable->addCell(1200)->addText($ext, null, ['alignment' => Jc::CENTER]);
+                $attTable->addCell(1200)->addText($att->file_size_formatted, null, ['alignment' => Jc::RIGHT]);
+            }
+
+            $mainSection->addTextBreak(1);
+            $mainSection->addText(
+                "* Seluruh berkas lampiran tersimpan secara aman pada repositori arsip digital SIAPTUNTAS Inspektorat Daerah Kabupaten Rembang.",
+                ['italic' => true, 'size' => 8.5, 'color' => '666666']
+            );
+        }
 
         // ══════════════════════════════════════════════════════════════════════════
         // SIMPAN FILE DOCX
@@ -981,126 +1023,130 @@ class GenerateLhrWord
             'borderSize' => 6,
             'borderColor' => '000000',
             'cellMargin' => 60,
-            'width' => 100 * 50,
-            'unit' => TblWidth::PERCENT,
+            'alignment' => Jc::CENTER,
         ]);
-        $t->addRow(300, ['tblHeader' => true]);
-        $t->addCell(800, ['bgColor' => 'F2F2F2', 'alignment' => Jc::CENTER])->addText('NO', ['bold' => true], ['alignment' => Jc::CENTER]);
-        $t->addCell(4600, ['bgColor' => 'F2F2F2'])->addText('CATATAN', ['bold' => true]);
-        $t->addCell(4600, ['bgColor' => 'F2F2F2'])->addText('REKOMENDASI', ['bold' => true]);
+        $t->addRow(300, ['tblHeader' => true, 'cantSplit' => true]);
+        $t->addCell(700, ['bgColor' => 'F2F2F2', 'alignment' => Jc::CENTER])->addText('NO', ['bold' => true, 'size' => 9.5, 'name' => 'Arial'], ['alignment' => Jc::CENTER]);
+        $t->addCell(4350, ['bgColor' => 'F2F2F2'])->addText('CATATAN', ['bold' => true, 'size' => 9.5, 'name' => 'Arial']);
+        $t->addCell(4350, ['bgColor' => 'F2F2F2'])->addText('REKOMENDASI', ['bold' => true, 'size' => 9.5, 'name' => 'Arial']);
 
         if ($catsS2->isNotEmpty()) {
             foreach ($catsS2 as $idx => $cat) {
-                $t->addRow();
-                $t->addCell(800)->addText((string)($idx + 1) . '.', null, ['alignment' => Jc::CENTER]);
-                $cCat = $t->addCell(4600);
+                $t->addRow(null, ['cantSplit' => true]);
+                $t->addCell(700)->addText((string)($idx + 1) . '.', ['size' => 9.5, 'name' => 'Arial'], ['alignment' => Jc::CENTER]);
+                $cCat = $t->addCell(4350);
                 if ($cat->referensi_bagian) {
-                    $cCat->addText($cat->referensi_bagian, ['bold' => true]);
+                    $cCat->addText($cat->referensi_bagian, ['bold' => true, 'size' => 9.5, 'name' => 'Arial'], ['spaceAfter' => 20]);
                 }
                 $this->appendHtmlOrText($cCat, $cat->isi);
 
-                $cRek = $t->addCell(4600);
+                $cRek = $t->addCell(4350);
                 if ($cat->rekomendasis && $cat->rekomendasis->isNotEmpty()) {
                     foreach ($cat->rekomendasis as $r) {
                         $this->appendHtmlOrText($cRek, $r->uraian_rekom);
                     }
                 } else {
-                    $cRek->addText('Agar segera dilakukan perbaikan dokumen sesuai catatan.');
+                    $cRek->addText('Agar segera dilakukan perbaikan dokumen sesuai catatan.', ['size' => 9.5, 'name' => 'Arial']);
                 }
             }
         } else {
             // Bab II
-            $t->addRow();
-            $t->addCell(10000, ['gridSpan' => 3, 'bgColor' => 'F9FAFB'])->addText('BAB II GAMBARAN UMUM KONDISI DAERAH', ['bold' => true]);
-            $t->addRow();
-            $t->addCell(800)->addText('1.', null, ['alignment' => Jc::CENTER]);
-            $c1 = $t->addCell(4600);
-            $c1->addText('2.1.4 Aspek Pelayanan Umum', ['bold' => true]);
-            $c1->addText('Belum menguraikan SPM per PP 2/2018 dan masih mencantumkan faktor anggaran/SDM sebagai penghambat.');
-            $r1 = $t->addCell(4600);
-            $r1->addText('Menambahkan uraian terkait Indikator SPM per PP 2/2018; dan menghapus faktor penghambat anggaran/SDM.');
+            $t->addRow(null, ['cantSplit' => true]);
+            $t->addCell(9400, ['gridSpan' => 3, 'bgColor' => 'F9FAFB'])->addText('BAB II GAMBARAN UMUM KONDISI DAERAH', ['bold' => true, 'size' => 9.5, 'name' => 'Arial']);
+            $t->addRow(null, ['cantSplit' => true]);
+            $t->addCell(700)->addText('1.', ['size' => 9.5, 'name' => 'Arial'], ['alignment' => Jc::CENTER]);
+            $c1 = $t->addCell(4350);
+            $c1->addText('2.1.4 Aspek Pelayanan Umum', ['bold' => true, 'size' => 9.5, 'name' => 'Arial']);
+            $c1->addText('Belum menguraikan SPM per PP 2/2018 dan masih mencantumkan faktor anggaran/SDM sebagai penghambat.', ['size' => 9.5, 'name' => 'Arial']);
+            $r1 = $t->addCell(4350);
+            $r1->addText('Menambahkan uraian terkait Indikator SPM per PP 2/2018; dan menghapus faktor penghambat anggaran/SDM.', ['size' => 9.5, 'name' => 'Arial']);
 
             // Bab III
-            $t->addRow();
-            $t->addCell(10000, ['gridSpan' => 3, 'bgColor' => 'F9FAFB'])->addText('BAB III. KERANGKA EKONOMI DAERAH DAN KEUANGAN DAERAH', ['bold' => true]);
-            $t->addRow();
-            $t->addCell(800)->addText('1.', null, ['alignment' => Jc::CENTER]);
-            $c2 = $t->addCell(4600);
-            $c2->addText('3.1 Arah Kebijakan Ekonomi Daerah', ['bold' => true]);
-            $c2->addText('Data pendukung pertumbuhan ekonomi belum lengkap disajikan.');
-            $r2 = $t->addCell(4600);
-            $r2->addText('Melengkapi data pendukung pertumbuhan ekonomi (PDRB ADHK, ADHB, ADHK Pengeluaran, dan Inflasi).');
+            $t->addRow(null, ['cantSplit' => true]);
+            $t->addCell(9400, ['gridSpan' => 3, 'bgColor' => 'F9FAFB'])->addText('BAB III. KERANGKA EKONOMI DAERAH DAN KEUANGAN DAERAH', ['bold' => true, 'size' => 9.5, 'name' => 'Arial']);
+            $t->addRow(null, ['cantSplit' => true]);
+            $t->addCell(700)->addText('1.', ['size' => 9.5, 'name' => 'Arial'], ['alignment' => Jc::CENTER]);
+            $c2 = $t->addCell(4350);
+            $c2->addText('3.1 Arah Kebijakan Ekonomi Daerah', ['bold' => true, 'size' => 9.5, 'name' => 'Arial']);
+            $c2->addText('Data pendukung pertumbuhan ekonomi belum lengkap disajikan.', ['size' => 9.5, 'name' => 'Arial']);
+            $r2 = $t->addCell(4350);
+            $r2->addText('Melengkapi data pendukung pertumbuhan ekonomi (PDRB ADHK, ADHB, ADHK Pengeluaran, dan Inflasi).', ['size' => 9.5, 'name' => 'Arial']);
 
-            $t->addRow();
-            $t->addCell(800)->addText('2.', null, ['alignment' => Jc::CENTER]);
-            $c3 = $t->addCell(4600);
-            $c3->addText('3.2 Arah Kebijakan Keuangan Daerah', ['bold' => true]);
-            $c3->addText("Ketidaksesuaian angka proyeksi PAD & belanja dengan SIPD; belum memprioritaskan belanja pelayanan dasar; pembayaran pembiayaan utang Rp 4,5M tidak dijelaskan peruntukannya.");
-            $r3 = $t->addCell(4600);
-            $r3->addText("Menyelaraskan proyeksi Pendapatan, Belanja, dan Pembiayaan dengan SIPD; prioritaskan pelayanan dasar; proyeksikan BTT & transfer; jelaskan peruntukan utang Rp 4,5M.");
+            $t->addRow(null, ['cantSplit' => true]);
+            $t->addCell(700)->addText('2.', ['size' => 9.5, 'name' => 'Arial'], ['alignment' => Jc::CENTER]);
+            $c3 = $t->addCell(4350);
+            $c3->addText('3.2 Arah Kebijakan Keuangan Daerah', ['bold' => true, 'size' => 9.5, 'name' => 'Arial']);
+            $c3->addText("Ketidaksesuaian angka proyeksi PAD & belanja dengan SIPD; belum memprioritaskan belanja pelayanan dasar; pembayaran pembiayaan utang Rp 4,5M tidak dijelaskan peruntukannya.", ['size' => 9.5, 'name' => 'Arial']);
+            $r3 = $t->addCell(4350);
+            $r3->addText("Menyelaraskan proyeksi Pendapatan, Belanja, dan Pembiayaan dengan SIPD; prioritaskan pelayanan dasar; proyeksikan BTT & transfer; jelaskan peruntukan utang Rp 4,5M.", ['size' => 9.5, 'name' => 'Arial']);
 
             // Bab IV
-            $t->addRow();
-            $t->addCell(10000, ['gridSpan' => 3, 'bgColor' => 'F9FAFB'])->addText("BAB IV. SASARAN DAN PRIORITAS PEMBANGUNAN DAERAH TAHUN {$tahun}", ['bold' => true]);
-            $t->addRow();
-            $t->addCell(800)->addText('1.', null, ['alignment' => Jc::CENTER]);
-            $c4 = $t->addCell(4600);
-            $c4->addText('4.2 Arah Kebijakan Pembangunan', ['bold' => true]);
-            $c4->addText("Arah kebijakan pembangunan belum difokuskan mewujudkan tema pembangunan tahun {$tahun}.");
-            $r4 = $t->addCell(4600);
-            $r4->addText("Memfokuskan arah kebijakan pembangunan dalam mewujudkan tema pembangunan tahun {$tahun}.");
+            $t->addRow(null, ['cantSplit' => true]);
+            $t->addCell(9400, ['gridSpan' => 3, 'bgColor' => 'F9FAFB'])->addText("BAB IV. SASARAN DAN PRIORITAS PEMBANGUNAN DAERAH TAHUN {$tahun}", ['bold' => true, 'size' => 9.5, 'name' => 'Arial']);
+            $t->addRow(null, ['cantSplit' => true]);
+            $t->addCell(700)->addText('1.', ['size' => 9.5, 'name' => 'Arial'], ['alignment' => Jc::CENTER]);
+            $c4 = $t->addCell(4350);
+            $c4->addText('4.2 Arah Kebijakan Pembangunan', ['bold' => true, 'size' => 9.5, 'name' => 'Arial']);
+            $c4->addText("Arah kebijakan pembangunan belum difokuskan mewujudkan tema pembangunan tahun {$tahun}.", ['size' => 9.5, 'name' => 'Arial']);
+            $r4 = $t->addCell(4350);
+            $r4->addText("Memfokuskan arah kebijakan pembangunan dalam mewujudkan tema pembangunan tahun {$tahun}.", ['size' => 9.5, 'name' => 'Arial']);
 
-            $t->addRow();
-            $t->addCell(800)->addText('2.', null, ['alignment' => Jc::CENTER]);
-            $c5 = $t->addCell(4600);
-            $c5->addText('4.3 Prioritas Pembangunan', ['bold' => true]);
-            $c5->addText('Inventarisasi permasalahan di Bab II belum sepenuhnya menjadi prioritas yang ditangani.');
-            $r5 = $t->addCell(4600);
-            $r5->addText('Menambahkan prioritas pembangunan sesuai permasalahan yang dituangkan dalam Bab II.');
+            $t->addRow(null, ['cantSplit' => true]);
+            $t->addCell(700)->addText('2.', ['size' => 9.5, 'name' => 'Arial'], ['alignment' => Jc::CENTER]);
+            $c5 = $t->addCell(4350);
+            $c5->addText('4.3 Prioritas Pembangunan', ['bold' => true, 'size' => 9.5, 'name' => 'Arial']);
+            $c5->addText('Inventarisasi permasalahan di Bab II belum sepenuhnya menjadi prioritas yang ditangani.', ['size' => 9.5, 'name' => 'Arial']);
+            $r5 = $t->addCell(4350);
+            $r5->addText('Menambahkan prioritas pembangunan sesuai permasalahan yang dituangkan dalam Bab II.', ['size' => 9.5, 'name' => 'Arial']);
         }
     }
 
-    protected function appendHtmlOrTextToSection(Section $section, ?string $content, int $leftIndent = 0): void
+    protected function appendHtmlOrTextToSection(Section $section, ?string $content, int $leftIndent = 0, float $fontSize = 10): void
     {
         if (empty($content)) return;
-        $plain = strip_tags(str_replace(['</p>', '</li>', '<br>', '<br/>'], ["\n", "\n", "\n", "\n"], $content));
+        $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $content);
+        $sanitized = str_replace(['&nbsp;', '&#160;'], ' ', $sanitized);
+        $sanitized = preg_replace('/<br\s*\/?>/i', "\n", $sanitized);
+        $sanitized = preg_replace('/<\/li>/i', "\n", $sanitized);
+        $sanitized = preg_replace('/<\/p>/i', "\n\n", $sanitized);
+        $plain = strip_tags($sanitized);
         foreach (explode("\n", $plain) as $line) {
-            $line = trim($line);
+            $line = trim(preg_replace('/\s+/', ' ', $line));
             if ($line !== '') {
-                $section->addText($line, null, ['alignment' => Jc::BOTH, 'spaceAfter' => 20, 'leftIndent' => $leftIndent]);
+                $section->addText($line, ['size' => $fontSize, 'name' => 'Arial'], ['alignment' => Jc::BOTH, 'spaceAfter' => 20, 'leftIndent' => $leftIndent]);
             }
         }
     }
 
-    protected function appendHtmlOrText($cell, ?string $content): void
+    protected function appendHtmlOrText($cell, ?string $content, float $fontSize = 9.5): void
     {
         if (empty($content)) {
-            $cell->addText('-');
+            $cell->addText('-', ['size' => $fontSize, 'name' => 'Arial'], ['spaceAfter' => 20]);
             return;
         }
 
         $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $content);
+        $sanitized = str_replace(['&nbsp;', '&#160;'], ' ', $sanitized);
 
-        try {
-            $cleaned = str_replace('&nbsp;', ' ', $sanitized);
-            $cleaned = preg_replace('/<br\s*\/?>/i', '<br/>', $cleaned);
-            $cleaned = preg_replace('/\s+style="[^"]*"/i', '', $cleaned);
-            $cleaned = preg_replace('/<p>\s*<\/p>/i', '', $cleaned);
+        // Normalize HTML breaks and block tags to newlines
+        $sanitized = preg_replace('/<br\s*\/?>/i', "\n", $sanitized);
+        $sanitized = preg_replace('/<\/li>/i', "\n", $sanitized);
+        $sanitized = preg_replace('/<\/p>/i', "\n\n", $sanitized);
+        $sanitized = preg_replace('/<\/div>/i', "\n", $sanitized);
 
-            if (trim(strip_tags($cleaned)) === '') {
-                $cell->addText('-');
-                return;
+        $plain = strip_tags($sanitized);
+        $hasText = false;
+
+        foreach (explode("\n", $plain) as $line) {
+            $text = trim(preg_replace('/\s+/', ' ', $line));
+            if ($text !== '') {
+                $hasText = true;
+                $cell->addText($text, ['size' => $fontSize, 'name' => 'Arial'], ['alignment' => Jc::BOTH, 'spaceAfter' => 20]);
             }
+        }
 
-            Html::addHtml($cell, $cleaned);
-        } catch (\Throwable $e) {
-            $plain = strip_tags(str_replace(['</p>', '</li>', '<br>', '<br/>'], ["\n", "\n", "\n", "\n"], $sanitized));
-            foreach (explode("\n", $plain) as $line) {
-                $line = trim($line);
-                if ($line !== '') {
-                    $cell->addText($line);
-                }
-            }
+        if (!$hasText) {
+            $cell->addText('-', ['size' => $fontSize, 'name' => 'Arial'], ['spaceAfter' => 20]);
         }
     }
 }

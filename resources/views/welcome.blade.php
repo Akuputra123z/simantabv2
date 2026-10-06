@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="SIMANTAB - Sistem Audit Internal Terintegrasi Inspektorat Kabupaten Rembang"/>
-<title>Inspektorat Kabupaten Rembang — SIMANTAB</title>
+<meta name="description" content="SIAPTUNTAS - Sistem Audit Internal Terintegrasi Inspektorat Kabupaten Rembang"/>
+<title>Inspektorat Kabupaten Rembang — SIAPTUNTAS</title>
 
 <!-- Preconnect for performance -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -60,7 +60,7 @@
     <div class="flex justify-between items-center h-16">
 
       <!-- Logo -->
-      <a href="#" class="flex items-center gap-3" aria-label="SIMANTAB — Beranda">
+      <a href="#" class="flex items-center gap-3" aria-label="SIAPTUNTAS — Beranda">
         <div class="px-2 h-8 bg-primary dark:bg-white rounded-lg flex items-center justify-center" aria-hidden="true">
           <span class="text-white dark:text-black font-bold text-[10px] tracking-widest uppercase">E-AUDIT</span>
         </div>
@@ -340,7 +340,7 @@
 <!-- ================================================
      WHATSAPP FLOAT BUTTON
 ================================================ -->
-<a href="https://wa.me/628123456789?text=Halo%20Admin%20Inspektorat%20Rembang%2C%20saya%20ingin%20bertanya%20terkait%20SIMANTAB"
+<a href="https://wa.me/628123456789?text=Halo%20Admin%20Inspektorat%20Rembang%2C%20saya%20ingin%20bertanya%20terkait%20SIAPTUNTAS"
    class="wa-float"
    target="_blank"
    rel="noopener noreferrer"

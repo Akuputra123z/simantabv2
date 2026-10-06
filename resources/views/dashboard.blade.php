@@ -8,7 +8,7 @@
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                    Dashboard E-AUDIT SIMANTAB
+                    Dashboard E-AUDIT SIAPTUNTAS
                 </h1>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
                     Ringkasan real-time aktivitas audit, temuan, rekomendasi, dan pemantauan tindak lanjut

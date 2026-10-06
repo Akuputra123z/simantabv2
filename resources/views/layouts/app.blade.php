@@ -13,7 +13,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="SIMANTAB">
+    <meta name="apple-mobile-web-app-title" content="SIAPTUNTAS">
     <link rel="apple-touch-icon" href="/images/logo.png">
 
     <!-- WPO & CDN Preconnects -->
@@ -29,8 +29,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
         .ts-wrapper {
-            min-width: 0;
-            max-width: 100%;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            width: 100%;
             vertical-align: middle;
         }
         .ts-wrapper .ts-control {
@@ -279,7 +280,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('select:not([data-no-ts])').forEach(function(el) {
                 if (el.tomselect) return;
-                var origW = el.offsetWidth;
                 try {
                     new TomSelect(el, {
                         maxItems: el.multiple ? undefined : 1,
@@ -291,9 +291,6 @@
                             if (el.hasAttribute('data-auto-submit')) {
                                 (el.form || el.closest('form')).submit();
                             }
-                        },
-                        onReady: function() {
-                            if (origW > 0) this.wrapper.style.minWidth = origW + 'px';
                         }
                     });
                 } catch(e) {

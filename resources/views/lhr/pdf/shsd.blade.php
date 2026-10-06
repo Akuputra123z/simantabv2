@@ -352,5 +352,49 @@
         </table>
     </div>
 
+    @php
+        $attList = $attachments ?? $lhr->attachments;
+    @endphp
+    @if($attList && $attList->isNotEmpty())
+        <div class="page-break"></div>
+
+        <div class="section-title" style="text-align: center; margin-top: 15px; margin-bottom: 12px; font-size: 11pt;">
+            LAMPIRAN: DAFTAR DOKUMEN PENDUKUNG REVIU
+        </div>
+
+        <div class="paragraph-no-indent" style="margin-bottom: 10px;">
+            Berikut adalah daftar berkas bukti dan dokumen pendukung yang ditelaah selama pelaksanaan reviu:
+        </div>
+
+        <table class="data-table" style="width: 100%; font-size: 8.5pt;">
+            <thead>
+                <tr>
+                    <th style="width: 6%; text-align: center;">No</th>
+                    <th style="width: 44%;">Nama Dokumen / Berkas</th>
+                    <th style="width: 26%;">Keterangan / Uraian</th>
+                    <th style="width: 12%; text-align: center;">Format</th>
+                    <th style="width: 12%; text-align: right;">Ukuran</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($attList as $idx => $att)
+                    <tr>
+                        <td style="text-align: center;">{{ $idx + 1 }}</td>
+                        <td><strong>{{ $att->file_name }}</strong></td>
+                        <td>{{ $att->keterangan ?: '-' }}</td>
+                        <td style="text-align: center;">
+                            {{ strtoupper(pathinfo($att->file_name, PATHINFO_EXTENSION) ?: 'BERKAS') }}
+                        </td>
+                        <td style="text-align: right;">{{ $att->file_size_formatted }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        <div style="font-size: 8pt; color: #666; font-style: italic; margin-top: 10px;">
+            * Seluruh berkas lampiran tersimpan secara aman pada repositori digital SIAPTUNTAS Inspektorat Daerah Kabupaten Rembang.
+        </div>
+    @endif
+
 </body>
 </html>

@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="SIMANTAB - Sistem Audit Internal Terintegrasi Inspektorat Kabupaten Rembang" />
+  <meta name="description" content="SIAPTUNTAS - Sistem Audit Internal Terintegrasi Inspektorat Kabupaten Rembang" />
 
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>Lacak LHP — SIMANTAB</title>
+  <title>Lacak LHP — SIAPTUNTAS</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -66,7 +66,7 @@
     <div class="flex justify-between items-center h-16">
 
       <!-- Logo -->
-      <a href="#" class="flex items-center gap-3" aria-label="SIMANTAB — Beranda">
+      <a href="#" class="flex items-center gap-3" aria-label="SIAPTUNTAS — Beranda">
         <div class="px-2 h-8 bg-primary dark:bg-white rounded-lg flex items-center justify-center" aria-hidden="true">
           <span class="text-white dark:text-black font-bold text-[10px] tracking-widest uppercase">E-AUDIT</span>
         </div>
@@ -704,7 +704,7 @@
 
         <div class="col-span-2">
           <div class="flex items-center gap-3 mb-5">
-            <img src="{{ asset('images/Simantab.png') }}" alt="Logo SIMANTAB" class="h-14 w-auto object-contain" onerror="this.style.display='none';">
+            <img src="{{ asset('images/Simantab.png') }}" alt="Logo SIAPTUNTAS" class="h-14 w-auto object-contain" onerror="this.style.display='none';">
           </div>
           <p class="text-sm text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">
             Standar profesional untuk audit digital dan manajemen integritas data di lingkungan Pemerintah Kabupaten Rembang.

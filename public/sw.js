@@ -1,4 +1,4 @@
-const CACHE_NAME = 'simantab-pwa-v1';
+const CACHE_NAME = 'siaptuntas-pwa-v1';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',

@@ -116,15 +116,15 @@
         {{-- Pencarian --}}
         <div>
             <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Cari Dokumen</label>
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Nomor LHR / OPD..."
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Nomor LHR, OPD, SPT..."
                    class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
         </div>
 
         {{-- Tahun --}}
         <div>
             <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Tahun Anggaran</label>
-            <select name="tahun" onchange="this.form.submit()"
-                    class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+            <select name="tahun" data-no-ts onchange="this.form.submit()"
+                    class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer">
                 <option value="">Semua Tahun</option>
                 @foreach($tahunList as $th)
                     <option value="{{ $th }}" @selected(request('tahun') == $th)>{{ $th }}</option>
@@ -135,8 +135,8 @@
         {{-- Jenis Dokumen --}}
         <div>
             <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Jenis Dokumen</label>
-            <select name="jenis_dokumen_id" onchange="this.form.submit()"
-                    class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+            <select name="jenis_dokumen_id" data-no-ts onchange="this.form.submit()"
+                    class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer">
                 <option value="">Semua Jenis</option>
                 @foreach($jenisDokumens as $jd)
                     <option value="{{ $jd->id }}" @selected(request('jenis_dokumen_id') == $jd->id)>{{ $jd->kode }} - {{ $jd->nama }}</option>
@@ -147,8 +147,8 @@
         {{-- Status --}}
         <div>
             <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Status LHR</label>
-            <select name="status" onchange="this.form.submit()"
-                    class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+            <select name="status" data-no-ts onchange="this.form.submit()"
+                    class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer">
                 <option value="">Semua Status</option>
                 @foreach(\App\Enums\LhrStatus::cases() as $st)
                     <option value="{{ $st->value }}" @selected(request('status') == $st->value)>{{ $st->label() }}</option>
@@ -175,12 +175,11 @@
             <thead class="border-b border-gray-200 bg-gray-50 text-xs uppercase font-semibold text-gray-700 dark:border-gray-800 dark:bg-gray-800/60 dark:text-gray-300">
                 <tr>
                     <th class="px-5 py-4 w-12 text-center">No</th>
-                    <th class="px-5 py-4">Nomor LHR & Tanggal</th>
+                    <th class="px-5 py-4">Perangkat Daerah, Nomor LHR & SPT</th>
                     <th class="px-5 py-4">Jenis Dokumen</th>
-                    <th class="px-5 py-4">Perangkat Daerah (OPD)</th>
                     <th class="px-5 py-4">Progres Reviu</th>
                     <th class="px-5 py-4 text-center">Status</th>
-                    <th class="px-5 py-4 text-center">Aksi</th>
+                    <th class="px-5 py-4 text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
@@ -190,11 +189,29 @@
                             {{ $lhrs->firstItem() + $idx }}
                         </td>
                         <td class="px-5 py-4">
-                            <div class="font-semibold text-gray-900 dark:text-white">
-                                {{ $lhr->nomor_lhr ?? 'DRAFT (Belum Terbit)' }}
+                            {{-- 1. Perangkat Daerah --}}
+                            <div class="font-bold text-gray-900 dark:text-white text-sm">
+                                {{ $lhr->unitDiperiksa->nama_unit ?? '-' }}
                             </div>
-                            <div class="text-xs text-gray-500 mt-0.5">
-                                TA {{ $lhr->tahun_anggaran }} &bull; {{ $lhr->tanggal_lhr ? $lhr->tanggal_lhr->format('d/m/Y') : 'Dalam Proses' }}
+
+                            {{-- 2. Nomor LHR --}}
+                            <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                                <a href="{{ route('lhr.show', $lhr->uuid) }}"
+                                   class="font-mono text-xs font-semibold px-2 py-0.5 rounded border transition-colors {{ $lhr->nomor_lhr ? 'text-blue-700 bg-blue-50 border-blue-200/80 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-950/50 dark:border-blue-800/40 dark:hover:bg-blue-900/60' : 'text-amber-700 bg-amber-50 border-amber-200 hover:bg-amber-100 dark:text-amber-300 dark:bg-amber-950/40 dark:border-amber-800' }}">
+                                    {{ $lhr->nomor_lhr ?? 'DRAFT (Belum Terbit)' }}
+                                </a>
+                                <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                                    TA {{ $lhr->tahun_anggaran }} &bull; {{ $lhr->tanggal_lhr ? $lhr->tanggal_lhr->format('d/m/Y') : 'Dalam Proses' }}
+                                </span>
+                            </div>
+
+                            {{-- 3. Nomor SPT --}}
+                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                <span class="font-medium text-gray-600 dark:text-gray-300">SPT:</span>
+                                <span class="font-mono text-[11px] text-gray-700 dark:text-gray-300">{{ $lhr->auditAssignment->nomor_surat ?? '-' }}</span>
+                                @if($lhr->auditAssignment?->tanggal_surat)
+                                    <span class="text-gray-400 dark:text-gray-500 text-[10px]">({{ $lhr->auditAssignment->tanggal_surat->format('d/m/Y') }})</span>
+                                @endif
                             </div>
                         </td>
                         <td class="px-5 py-4">
@@ -203,14 +220,6 @@
                             </span>
                             <div class="text-xs text-gray-500 mt-1 line-clamp-1">
                                 {{ $lhr->jenisDokumen->nama ?? '-' }}
-                            </div>
-                        </td>
-                        <td class="px-5 py-4">
-                            <div class="font-medium text-gray-900 dark:text-white">
-                                {{ $lhr->unitDiperiksa->nama_unit ?? '-' }}
-                            </div>
-                            <div class="text-xs text-gray-500 mt-0.5">
-                                SPT: {{ $lhr->auditAssignment->nomor_surat ?? '-' }}
                             </div>
                         </td>
                         <td class="px-5 py-4">
@@ -244,49 +253,48 @@
                                 {{ $lhr->status->label() }}
                             </span>
                         </td>
-                        <td class="px-5 py-4 text-center">
-                            <div class="inline-flex items-center gap-1.5">
+                        <td class="px-5 py-4 text-right whitespace-nowrap">
+                            <div class="inline-flex items-center justify-end gap-1.5">
                                 {{-- Buka Ruang Kerja (Show) --}}
                                 <a href="{{ route('lhr.show', $lhr->uuid) }}"
                                    title="Buka Ruang Kerja LHR (KKP Pengujian & Simpulan)"
-                                   class="inline-flex h-8 items-center gap-1 rounded-md bg-blue-600 px-2.5 text-xs font-semibold text-white hover:bg-blue-700 shadow-sm transition">
+                                   class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 hover:shadow-md hover:scale-102 active:scale-95 transition-all">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                    Buka
+                                    <span>Buka</span>
                                 </a>
 
                                 {{-- Edit Informasi Dokumen --}}
                                 @if($lhr->canEdit())
                                     <a href="{{ route('lhr.edit', $lhr->uuid) }}"
                                        title="Edit Informasi Dokumen (Nomor, Tanggal, Penandatangan)"
-                                       class="inline-flex h-8 items-center gap-1 rounded-md border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 transition">
-                                        <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                        Edit
+                                       class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-amber-700 dark:hover:bg-amber-950/40 dark:hover:text-amber-300 transition-all shadow-2xs hover:scale-105 active:scale-95">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </a>
                                 @endif
 
                                 {{-- Unduh PDF --}}
                                 <a href="{{ route('lhr.pdf', $lhr->uuid) }}" target="_blank"
                                    title="Unduh PDF Resmi"
-                                   class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 transition">
+                                   class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-red-700 dark:hover:bg-red-950/40 dark:hover:text-red-300 transition-all shadow-2xs hover:scale-105 active:scale-95">
                                     <svg class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                 </a>
 
                                 {{-- Unduh Word --}}
                                 <a href="{{ route('lhr.word', $lhr->uuid) }}"
                                    title="Unduh Dokumen Word (.docx)"
-                                   class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 transition">
+                                   class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-blue-700 dark:hover:bg-blue-950/40 dark:hover:text-blue-300 transition-all shadow-2xs hover:scale-105 active:scale-95">
                                     <svg class="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM8.5 17.5l-1.5-6h1.5l.8 3.8.8-3.8h1.5l.8 3.8.8-3.8H15l-1.5 6h-1.5l-.8-3.6-.8 3.6H8.5z"/></svg>
                                 </a>
 
                                 {{-- Hapus Draft --}}
                                 @if($lhr->status === \App\Enums\LhrStatus::Draft)
-                                    <form method="POST" action="{{ route('lhr.destroy', $lhr->uuid) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus draft LHR ini?')">
+                                    <form method="POST" action="{{ route('lhr.destroy', $lhr->uuid) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus draft LHR ini?')" class="inline-flex m-0">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
                                                 title="Hapus Draft LHR"
-                                                class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 transition">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 transition-all shadow-2xs hover:scale-105 active:scale-95">
+                                            <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                     </form>
                                 @endif
@@ -295,7 +303,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-5 py-12 text-center text-gray-500">
+                        <td colspan="6" class="px-5 py-12 text-center text-gray-500">
                             <div class="flex flex-col items-center justify-center">
                                 <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                 <p class="text-base font-semibold text-gray-700 dark:text-gray-300">Belum ada dokumen LHR</p>

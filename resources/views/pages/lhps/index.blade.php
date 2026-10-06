@@ -45,7 +45,7 @@
                 </svg>
             </div>
             <input type="text" name="search" value="{{ request('search') }}"
-                   placeholder="Cari nomor LHP..."
+                   placeholder="Cari nomor LHP, unit, atau program..."
                    class="h-10 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-500">
         </div>
     </div>
@@ -155,45 +155,15 @@
                     </th>
                     <th class="px-4 py-3 w-[25%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">
                         <div class="flex items-center justify-between">
-                            <a href="{{ $sortUrl('nama_program') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                <span>Nama Program & Nomor LHP</span>
-                            </a>
-                            <a href="{{ $sortUrl('nama_program') }}">
-                                {!! $renderSortIcons('nama_program') !!}
-                            </a>
-                        </div>
-                    </th>
-                    <th class="px-4 py-3 w-[18%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">
-                        <div class="flex items-center justify-between">
                             <a href="{{ $sortUrl('unit_diperiksa') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                <span>Unit Diperiksa</span>
+                                <span>Unit Diperiksa, Program & Nomor LHP</span>
                             </a>
                             <a href="{{ $sortUrl('unit_diperiksa') }}">
                                 {!! $renderSortIcons('unit_diperiksa') !!}
                             </a>
                         </div>
                     </th>
-                    <th class="px-4 py-3 w-[13%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">
-                        <div class="flex items-center justify-between">
-                            <a href="{{ $sortUrl('tanggal_lhp') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                <span>Tanggal LHP</span>
-                            </a>
-                            <a href="{{ $sortUrl('tanggal_lhp') }}">
-                                {!! $renderSortIcons('tanggal_lhp') !!}
-                            </a>
-                        </div>
-                    </th>
-                    <th class="px-4 py-3 w-[13%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center border-r border-gray-200/70 dark:border-gray-800/70">
-                        <div class="flex items-center justify-center">
-                            <a href="{{ $sortUrl('progress') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                <span>Progress TL</span>
-                            </a>
-                            <a href="{{ $sortUrl('progress') }}">
-                                {!! $renderSortIcons('progress') !!}
-                            </a>
-                        </div>
-                    </th>
-                    <th class="px-4 py-3 w-[8%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center border-r border-gray-200/70 dark:border-gray-800/70">
+                    <th class="px-4 py-3 w-[10%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center border-r border-gray-200/70 dark:border-gray-800/70">
                         <div class="flex items-center justify-center">
                             <a href="{{ $sortUrl('kategori') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                                 <span>Kategori</span>
@@ -203,7 +173,27 @@
                             </a>
                         </div>
                     </th>
-                    <th class="px-4 py-3 w-[10%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-right">Aksi</th>
+                    <th class="px-4 py-3 w-[14%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200/70 dark:border-gray-800/70">
+                        <div class="flex items-center justify-between">
+                            <a href="{{ $sortUrl('tanggal_lhp') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                <span>Tanggal LHP</span>
+                            </a>
+                            <a href="{{ $sortUrl('tanggal_lhp') }}">
+                                {!! $renderSortIcons('tanggal_lhp') !!}
+                            </a>
+                        </div>
+                    </th>
+                    <th class="px-4 py-3 w-[10%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center border-r border-gray-200/70 dark:border-gray-800/70">
+                        <div class="flex items-center justify-center">
+                            <a href="{{ $sortUrl('progress') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                <span>Progress TL</span>
+                            </a>
+                            <a href="{{ $sortUrl('progress') }}">
+                                {!! $renderSortIcons('progress') !!}
+                            </a>
+                        </div>
+                    </th>
+                    <th class="px-4 py-3 w-[12%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800/60">
@@ -234,69 +224,69 @@
                             class="check-item h-4 w-4 rounded border-gray-300 cursor-pointer mt-0.5">
                     </td>
 
-                    {{-- Nama Program & Nomor LHP --}}
-                    <td class="px-4 py-4 border-r border-gray-100 dark:border-gray-800/60">
-                        <div class="mb-1.5 flex flex-wrap items-center gap-1.5">
-                            <span class="font-mono text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded border border-blue-200/80 dark:border-blue-800/40">
-                                {{ $lhp->nomor_lhp }}
-                            </span>
-                            @if(isset($sharedNomorMap[$lhp->nomor_lhp]))
-                            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800" title="Nomor LHP ini mencakup {{ $sharedNomorMap[$lhp->nomor_lhp] }} unit kerja terpisah">
-                                Kolektif ({{ $sharedNomorMap[$lhp->nomor_lhp] }} unit)
-                            </span>
-                            @endif
-                        </div>
-                        <div class="text-sm font-semibold text-gray-900 dark:text-white leading-snug">
-                            <a href="{{ route('lhps.show', $lhp->id) }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
-                            </a>
-                        </div>
-                        @if($lhp->is_nihil)
-                        <div class="mt-1.5">
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40">
-                                🌿 Bebas Temuan (Nihil)
-                            </span>
-                        </div>
-                        @endif
-                        @if($lhp->auditAssignment?->auditProgramDetail?->nama_detail_program)
-                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                            {{ $lhp->auditAssignment->auditProgramDetail->nama_detail_program }}
-                        </div>
-                        @endif
-                        @php
-                            $irban = $lhp->irban ?? $lhp->auditAssignment?->auditProgramDetail?->tim;
-                        @endphp
-                        @if($irban)
-                        <div class="mt-2 flex items-center">
-                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700 border border-gray-200/80 dark:bg-gray-800/80 dark:text-gray-300 dark:border-gray-700">
-                                <svg class="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                </svg>
-                                <span>{{ Str::startsWith(strtolower($irban), ['irban', 'tim', 'semua']) ? $irban : 'Irban ' . $irban }}</span>
-                            </span>
-                        </div>
-                        @endif
-                    </td>
-
-                    {{-- Unit Diperiksa --}}
+                    {{-- Unit Diperiksa, Program & Nomor LHP --}}
                     <td class="px-4 py-4 border-r border-gray-100 dark:border-gray-800/60">
                         @php
                             $units = $lhp->unitDiperiksas->isNotEmpty() ? $lhp->unitDiperiksas : ($lhp->unitDiperiksa ? collect([$lhp->unitDiperiksa]) : collect());
                         @endphp
-                        @if($units->count() > 1)
-                            <div class="flex flex-col gap-1">
-                                <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                                    {{ $units->first()->nama_unit }}
-                                </span>
-                                <span class="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800" title="{{ $units->pluck('nama_unit')->join(', ') }}">
+                        {{-- 1. Unit Diperiksa --}}
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-sm font-bold text-gray-900 dark:text-white">
+                                {{ $units->first()?->nama_unit ?? ($lhp->unitDiperiksa?->nama_unit ?? '-') }}
+                            </span>
+                            @if($units->count() > 1)
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800" title="{{ $units->pluck('nama_unit')->join(', ') }}">
                                     +{{ $units->count() - 1 }} unit lainnya
                                 </span>
-                            </div>
-                        @else
-                            <div class="text-xs font-medium text-gray-800 dark:text-gray-300 leading-relaxed">
-                                {{ $units->first()?->nama_unit ?? ($lhp->unitDiperiksa?->nama_unit ?? '-') }}
-                            </div>
-                        @endif
+                            @endif
+                        </div>
+
+                        {{-- 2. Nama Program --}}
+                        <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-snug">
+                            <a href="{{ route('lhps.show', $lhp->id) }}" class="font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
+                            </a>
+                            @if($lhp->auditAssignment?->auditProgramDetail?->nama_detail_program)
+                                <div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                                    {{ $lhp->auditAssignment->auditProgramDetail->nama_detail_program }}
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- 3. Nomor LHP & Badges --}}
+                        <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                            <a href="{{ route('lhps.show', $lhp->id) }}" class="font-mono text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded border border-blue-200/80 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors">
+                                {{ $lhp->nomor_lhp }}
+                            </a>
+                            @if(isset($sharedNomorMap[$lhp->nomor_lhp]))
+                                <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800" title="Nomor LHP ini mencakup {{ $sharedNomorMap[$lhp->nomor_lhp] }} unit kerja terpisah">
+                                    Kolektif ({{ $sharedNomorMap[$lhp->nomor_lhp] }} unit)
+                                </span>
+                            @endif
+                            @if($lhp->is_nihil)
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40">
+                                    🌿 Bebas Temuan (Nihil)
+                                </span>
+                            @endif
+                            @php
+                                $irban = $lhp->irban ?? $lhp->auditAssignment?->auditProgramDetail?->tim;
+                            @endphp
+                            @if($irban)
+                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700 border border-gray-200/80 dark:bg-gray-800/80 dark:text-gray-300 dark:border-gray-700">
+                                    <svg class="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                    </svg>
+                                    <span>{{ Str::startsWith(strtolower($irban), ['irban', 'tim', 'semua']) ? $irban : 'Irban ' . $irban }}</span>
+                                </span>
+                            @endif
+                        </div>
+                    </td>
+
+                    {{-- Kategori --}}
+                    <td class="px-4 py-4 text-center border-r border-gray-100 dark:border-gray-800/60">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider {{ $kategoriBadge }}">
+                            {{ $k ?? '-' }}
+                        </span>
                     </td>
 
                     {{-- Tanggal LHP --}}
@@ -316,36 +306,35 @@
                         </div>
                     </td>
 
-                    {{-- Kategori --}}
-                    <td class="px-4 py-4 text-center border-r border-gray-100 dark:border-gray-800/60">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider {{ $kategoriBadge }}">
-                            {{ $k ?? '-' }}
-                        </span>
-                    </td>
-
                     {{-- Aksi --}}
-                    <td class="px-4 py-4 text-right">
-                        <div class="flex justify-end items-center gap-1">
-                            <a href="{{ route('lhps.show', $lhp->id) }}" class="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors" title="Lihat">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"/></svg>
+                    <td class="px-4 py-4 text-right whitespace-nowrap">
+                        <div class="flex justify-end items-center gap-1.5">
+                            <a href="{{ route('lhps.show', $lhp->id) }}"
+                               class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-blue-700 dark:hover:bg-blue-950/40 dark:hover:text-blue-300 transition-all shadow-2xs hover:scale-105 active:scale-95"
+                               title="Lihat Detail LHP">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"/></svg>
                             </a>
-                            <a href="{{ route('lhps.edit', $lhp->id) }}" class="p-1.5 text-gray-400 hover:text-amber-600 rounded-md hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors" title="Edit">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 17H9v-2.828l9.414-9.586z" stroke-width="2"/></svg>
+                            <a href="{{ route('lhps.edit', $lhp->id) }}"
+                               class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-amber-700 dark:hover:bg-amber-950/40 dark:hover:text-amber-300 transition-all shadow-2xs hover:scale-105 active:scale-95"
+                               title="Edit LHP">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 17H9v-2.828l9.414-9.586z" stroke-width="2"/></svg>
                             </a>
                             <a href="{{ route('laporan.preview-pdf-per-lhp', $lhp->id) }}" target="_blank"
-                               class="p-1.5 text-gray-400 hover:text-green-600 rounded-md hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors" title="Unduh PDF">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-width="2"/></svg>
+                               class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-green-700 dark:hover:bg-green-950/40 dark:hover:text-green-300 transition-all shadow-2xs hover:scale-105 active:scale-95"
+                               title="Unduh PDF">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-width="2"/></svg>
                             </a>
                             <button type="button" onclick="openDeleteModal('single', '{{ $lhp->id }}')"
-                                    class="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Hapus">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-red-700 dark:hover:bg-red-950/40 dark:hover:text-red-300 transition-all shadow-2xs hover:scale-105 active:scale-95"
+                                    title="Hapus LHP">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
                             </button>
                         </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-5 py-20 text-center">
+                    <td colspan="6" class="px-5 py-20 text-center">
                         <div class="flex flex-col items-center gap-3">
                             <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-full text-gray-300">
                                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012 2h2a2 2 0 002-2M9 5a2 2 0 012 2h2a2 2 0 012 2" stroke-width="1.5"/></svg>

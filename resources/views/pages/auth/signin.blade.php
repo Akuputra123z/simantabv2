@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SIMANTAB">
+<meta name="apple-mobile-web-app-title" content="SIAPTUNTAS">
 <link rel="apple-touch-icon" href="/images/logo.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1356,7 +1356,7 @@ body.dark .btn-refresh-captcha:hover {
         <div class="brand-header-text">
 
             <strong>
-                SIMANTAB
+                SIAPTUNTAS
             </strong>
 
             <span>
@@ -1374,7 +1374,7 @@ body.dark .btn-refresh-captcha:hover {
 
         <img
             class="logo-character"
-            src="{{ asset('images/icon.webp') }}"
+            src="{{ asset('images/logo/coba.png') }}"
             alt="Karakter Inspektorat Kabupaten Rembang"
         >
 
@@ -1625,7 +1625,7 @@ body.dark .btn-refresh-captcha:hover {
 
             <p>
                 Silakan masuk untuk melanjutkan ke
-                dashboard SIMANTAB Inspektorat Kabupaten Rembang.
+                dashboard SIAPTUNTAS Inspektorat Kabupaten Rembang.
             </p>
 
         </div>

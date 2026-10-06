@@ -6,6 +6,7 @@ use App\Enums\LhrStatus;
 use App\Models\AuditAssignment;
 use App\Models\UnitDiperiksa;
 use App\Models\User;
+use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,7 +17,7 @@ use Illuminate\Support\Str;
 
 class Lhr extends Model
 {
-    use SoftDeletes;
+    use HasAttachments, SoftDeletes;
 
     protected $table = 'lhrs';
 

@@ -126,7 +126,7 @@
         @endphp
         <div class="min-w-0 flex-1" title="Terbayar: Rp {{ number_format($terbayar, 0, ',', '.') }} dari Target: Rp {{ number_format($target, 0, ',', '.') }}">
             <div class="flex items-center justify-between">
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Realisasi Setoran</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Realisasi Tindak Lanjut</p>
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold {{ $persen >= 100 ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : ($persen > 0 ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400') }}">
                     {{ $persen }}%
                 </span>
@@ -282,39 +282,27 @@
                         @endif
                         <th class="px-4 py-3.5 font-semibold">
                             <div class="flex items-center justify-between">
-                                <a href="{{ $sortUrl('nama_program') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                    <span>Nomor LHP & Program</span>
+                                <a href="{{ $sortUrl('sub_program') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                    <span>Nomor LHP & Sub Program</span>
                                 </a>
-                                <a href="{{ $sortUrl('nama_program') }}">
-                                    {!! $renderSortIcons('nama_program') !!}
+                                <a href="{{ $sortUrl('sub_program') }}">
+                                    {!! $renderSortIcons('sub_program') !!}
                                 </a>
                             </div>
                         </th>
                         <th class="px-4 py-3.5 font-semibold">
                             <div class="flex items-center justify-between">
                                 <a href="{{ $sortUrl('unit_diperiksa') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                    <span>Unit OPD</span>
+                                    <span>Obrik & Ketua Tim</span>
                                 </a>
                                 <a href="{{ $sortUrl('unit_diperiksa') }}">
                                     {!! $renderSortIcons('unit_diperiksa') !!}
                                 </a>
                             </div>
                         </th>
-                        <th class="px-4 py-3.5 font-semibold">
-                            <div class="flex items-center justify-between">
-                                <a href="{{ $sortUrl('tanggal_lhp') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                    <span>Tanggal / Kat.</span>
-                                </a>
-                                <a href="{{ $sortUrl('tanggal_lhp') }}">
-                                    {!! $renderSortIcons('tanggal_lhp') !!}
-                                </a>
-                            </div>
-                        </th>
-                        <th class="px-4 py-3.5 font-semibold text-center">Temuan & Rekom</th>
-                        <th class="px-4 py-3.5 font-semibold text-right">Nilai Rekomendasi</th>
-                        <th class="px-4 py-3.5 font-semibold text-right">Realisasi Setor</th>
+                        <th class="px-4 py-3.5 font-semibold">Realisasi Tindak Lanjut</th>
                         <th class="px-4 py-3.5 font-semibold text-center">Progres TL</th>
-                        <th class="px-4 py-3.5 font-semibold text-center">Status OPD</th>
+                        <th class="px-4 py-3.5 font-semibold text-center">Status TL OPD</th>
                         <th class="px-4 py-3.5 font-semibold text-right">Aksi</th>
                     </tr>
                 </thead>
@@ -343,64 +331,119 @@
                         @endphp
 
                         <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                            @if(auth()->user()?->hasRole('super_admin'))
+                            @if(auth()->user()?->hasRole(['super_admin', 'kepala_inspektorat']))
                                 <td class="px-3.5 py-3.5 text-center">
                                     <input type="checkbox" name="lhp_ids[]" value="{{ $lhp->id }}" class="check-item h-4 w-4 rounded border-gray-300 text-blue-600 cursor-pointer">
                                 </td>
                             @endif
 
-                            {{-- Nomor LHP & Program --}}
+                            {{-- Kolom 1: Nomor LHP, Sub Program, Tgl LHP, Irban, Kategori --}}
                             <td class="px-4 py-3.5">
-                                <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
-                                   class="font-bold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 font-mono text-xs sm:text-sm block">
-                                    {{ $lhp->nomor_lhp }}
-                                </a>
-                                <p class="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5 line-clamp-1">
-                                    {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
-                                </p>
-                            </td>
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
+                                           class="font-bold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 font-mono text-xs sm:text-sm block">
+                                            {{ $lhp->nomor_lhp }}
+                                        </a>
+                                        @if($lhp->is_nihil)
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40">
+                                                🌿 Nihil
+                                            </span>
+                                        @endif
+                                    </div>
 
-                            {{-- Unit OPD --}}
-                            <td class="px-4 py-3.5">
-                                <span class="font-semibold text-gray-800 dark:text-gray-200">
-                                    {{ $lhp->unitDiperiksa?->nama_unit ?? '-' }}
-                                </span>
-                                @if($lhp->auditAssignment?->ketuaTim)
-                                    <p class="text-[10px] text-gray-400 mt-0.5">Ketua: {{ $lhp->auditAssignment->ketuaTim->name }}</p>
-                                @endif
-                            </td>
+                                    @php
+                                        $subProgram = $lhp->auditAssignment?->auditProgramDetail?->nama_detail_program
+                                            ?? $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program
+                                            ?? '-';
+                                        $irban = $lhp->irban ?? $lhp->auditAssignment?->auditProgramDetail?->tim;
+                                        $kat = trim($lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori ?? '');
+                                        if (empty($kat)) $kat = 'PKPT';
+                                        $jenis = $lhp->auditAssignment?->jenis_pengawasan 
+                                            ?? $lhp->auditAssignment?->auditProgramDetail?->jenis_kegiatan;
+                                    @endphp
+                                    <p class="font-semibold text-gray-800 dark:text-gray-200 text-xs leading-snug line-clamp-2" title="{{ $subProgram }}">
+                                        {{ $subProgram }}
+                                    </p>
 
-                            {{-- Tanggal / Kategori --}}
-                            <td class="px-4 py-3.5">
-                                <span class="text-gray-700 dark:text-gray-300">
-                                    {{ $lhp->tanggal_lhp ? $lhp->tanggal_lhp->format('d/m/Y') : '-' }}
-                                </span>
-                                <div class="mt-1">
-                                    <span class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                                        {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori ?? 'PKPT' }}
-                                    </span>
+                                    <div class="flex items-center gap-1.5 flex-wrap pt-0.5 text-[10px]">
+                                        @if($irban)
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-semibold bg-gray-100 text-gray-700 border border-gray-200/80 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
+                                                <svg class="w-3 h-3 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                                </svg>
+                                                <span>{{ Str::startsWith(strtolower($irban), ['irban', 'tim', 'semua']) ? $irban : 'Irban ' . $irban }}</span>
+                                            </span>
+                                        @endif
+                                        @if($lhp->tanggal_lhp)
+                                            <span class="inline-flex items-center gap-1 text-gray-600 dark:text-gray-300 font-medium">
+                                                <svg class="w-3 h-3 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                </svg>
+                                                <span>{{ $lhp->tanggal_lhp->format('d/m/Y') }}</span>
+                                            </span>
+                                        @endif
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/80 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+                                            {{ $kat }}
+                                        </span>
+                                        @if($jenis && strtolower($jenis) !== strtolower($kat))
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                                {{ $jenis }}
+                                            </span>
+                                        @endif
+                                    </div>
                                 </div>
                             </td>
 
-                            {{-- Temuan & Rekomendasi --}}
-                            <td class="px-4 py-3.5 text-center">
-                                <span class="font-bold text-gray-900 dark:text-white">{{ $totalTemuan }}</span>
-                                <span class="text-gray-400">/</span>
-                                <span class="font-semibold text-gray-700 dark:text-gray-300">{{ $totalRekom }}</span>
-                                <p class="text-[10px] text-gray-400">Temuan / Rekom</p>
+                            {{-- Kolom 2: Obrik dan Nama Ketua Tim --}}
+                            <td class="px-4 py-3.5">
+                                <div class="space-y-1">
+                                    <span class="font-bold text-gray-900 dark:text-white text-xs sm:text-sm block">
+                                        {{ $lhp->unitDiperiksa?->nama_unit ?? '-' }}
+                                    </span>
+                                    @if(!empty($lhp->unitDiperiksa?->nama_kecamatan))
+                                        <p class="text-[11px] text-gray-400 dark:text-gray-500">
+                                            Kec. {{ $lhp->unitDiperiksa->nama_kecamatan }}
+                                        </p>
+                                    @endif
+                                    @if($lhp->auditAssignment?->ketuaTim)
+                                        <div class="flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300 pt-0.5">
+                                            <svg class="w-3 h-3 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                            </svg>
+                                            <span class="font-medium text-gray-700 dark:text-gray-300">
+                                                {{ $lhp->auditAssignment->ketuaTim->name }}
+                                            </span>
+                                        </div>
+                                    @endif
+                                </div>
                             </td>
 
-                            {{-- Nilai Rekomendasi --}}
-                            <td class="px-4 py-3.5 text-right font-medium font-mono text-gray-900 dark:text-white">
-                                Rp{{ number_format($totalNilaiRekom, 0, ',', '.') }}
+                            {{-- Kolom 3: Realisasi Tindak Lanjut --}}
+                            <td class="px-4 py-3.5">
+                                <div class="space-y-1 text-xs min-w-[190px]">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="text-[11px] font-semibold text-gray-600 dark:text-gray-400">Realisasi TL:</span>
+                                        <span class="font-bold font-mono text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
+                                            Rp{{ number_format($totalSetor, 0, ',', '.') }}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3 text-[11px] text-gray-500 dark:text-gray-400">
+                                        <span>Nilai Rekom:</span>
+                                        <span class="font-medium font-mono text-gray-700 dark:text-gray-300">
+                                            Rp{{ number_format($totalNilaiRekom, 0, ',', '.') }}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3 text-[11px] text-gray-500 dark:text-gray-400">
+                                        <span>Temuan / Rekom:</span>
+                                        <span class="font-semibold text-gray-700 dark:text-gray-300">
+                                            {{ $totalTemuan }} / {{ $totalRekom }}
+                                        </span>
+                                    </div>
+                                </div>
                             </td>
 
-                            {{-- Realisasi Setor --}}
-                            <td class="px-4 py-3.5 text-right font-bold font-mono text-green-600 dark:text-green-400">
-                                Rp{{ number_format($totalSetor, 0, ',', '.') }}
-                            </td>
-
-                            {{-- Progres TL --}}
+                            {{-- Kolom 4: Progres TL --}}
                             <td class="px-4 py-3.5 text-center">
                                 <div class="w-24 mx-auto">
                                     <div class="flex justify-between items-center text-[10px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
@@ -416,28 +459,28 @@
                                 </div>
                             </td>
 
-                            {{-- Status OPD --}}
+                            {{-- Kolom 5: Status TL OPD --}}
                             <td class="px-4 py-3.5 text-center">
                                 @if($hasDitolak)
-                                    <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                    <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200/60 dark:border-red-800/40">
                                         Ditolak (Revisi)
                                     </span>
                                 @elseif($hasDikirim)
-                                    <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                    <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/40">
                                         Ada Kiriman
                                     </span>
                                 @elseif($hasDraft)
-                                    <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                    <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40">
                                         Draft OPD
                                     </span>
                                 @else
-                                    <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                    <span class="rounded px-2 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                                         Belum Upload
                                     </span>
                                 @endif
                             </td>
 
-                            {{-- Aksi --}}
+                            {{-- Kolom 6: Aksi --}}
                             <td class="px-4 py-3.5 text-right whitespace-nowrap">
                                 <div class="flex items-center justify-end gap-1.5">
                                     {{-- Detail LHP Icon --}}
@@ -466,7 +509,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ auth()->user()?->hasRole(['super_admin', 'kepala_inspektorat']) ? 10 : 9 }}" class="py-8 text-center text-gray-400 dark:text-gray-500">
+                            <td colspan="{{ auth()->user()?->hasRole(['super_admin', 'kepala_inspektorat']) ? 7 : 6 }}" class="py-8 text-center text-gray-400 dark:text-gray-500">
                                 Tidak ada data LHP tindak lanjut yang sesuai filter.
                             </td>
                         </tr>

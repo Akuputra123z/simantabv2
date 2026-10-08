@@ -2,7 +2,6 @@
 
 namespace App\Services\Lhr;
 
-use App\Models\NomorFormat;
 use App\Models\NomorSequence;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -37,10 +36,7 @@ class LhrNumberingService
         $tahun = $tahun ?? (int) date('Y');
 
         return DB::transaction(function () use ($jenis, $tahun, $sufiks) {
-            // Ambil pola format yang aktif
-            $format = NomorFormat::where('jenis', $jenis)
-                ->where('aktif', true)
-                ->value('pola') ?? (self::DEFAULT_FORMATS[$jenis] ?? null);
+            $format = self::DEFAULT_FORMATS[$jenis] ?? null;
 
             if (! $format) {
                 throw new InvalidArgumentException("Format penomoran untuk jenis '{$jenis}' tidak ditemukan.");
@@ -103,9 +99,7 @@ class LhrNumberingService
     public function getNextSuggestedNomor(string $jenis = self::JENIS_LHR, ?int $tahun = null, string $sufiks = ''): string
     {
         $tahun = $tahun ?? (int) date('Y');
-        $format = NomorFormat::where('jenis', $jenis)
-            ->where('aktif', true)
-            ->value('pola') ?? (self::DEFAULT_FORMATS[$jenis] ?? '700/{urut:3}{.sufiks}/REVIU/INSP/{tahun}');
+        $format = self::DEFAULT_FORMATS[$jenis] ?? '700/{urut:3}{.sufiks}/REVIU/INSP/{tahun}';
 
         $seq = NomorSequence::where('jenis', $jenis)->where('tahun', $tahun)->value('nomor_terakhir') ?? 0;
 

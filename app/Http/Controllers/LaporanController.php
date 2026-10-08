@@ -23,7 +23,7 @@ class LaporanController extends Controller
     {
         $user = auth()->user();
 
-        $query = Lhp::with(['statistik', 'auditAssignment.auditProgram', 'unitDiperiksa', 'auditAssignment.auditProgramDetail'])
+        $query = Lhp::with(['statistik', 'auditAssignment.auditProgram', 'unitDiperiksa', 'auditAssignment.auditProgramDetail', 'auditAssignment.lhrs'])
             ->forUser($user);
 
         $this->applyFilters($query, $request);
@@ -398,7 +398,10 @@ class LaporanController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('nomor_lhp', 'like', "%{$search}%")
                     ->orWhereHas('auditAssignment.auditProgram', fn ($sq) => $sq->where('nama_program', 'like', "%{$search}%"))
-                    ->orWhereHas('auditAssignment', fn ($sq) => $sq->where('nomor_surat', 'like', "%{$search}%"));
+                    ->orWhereHas('auditAssignment.auditProgramDetail', fn ($sq) => $sq->where('nama_detail_program', 'like', "%{$search}%")->orWhere('tim', 'like', "%{$search}%"))
+                    ->orWhereHas('auditAssignment', fn ($sq) => $sq->where('nomor_surat', 'like', "%{$search}%"))
+                    ->orWhereHas('auditAssignment.lhrs', fn ($sq) => $sq->where('nomor_lhr', 'like', "%{$search}%"))
+                    ->orWhereHas('unitDiperiksa', fn ($sq) => $sq->where('nama_unit', 'like', "%{$search}%"));
             });
         }
         if ($request->filled('irban')) {

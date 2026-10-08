@@ -24,6 +24,8 @@
         {{-- 1. GLOBAL DATE FILTER & PROGRAM CATEGORY FILTER --}}
         <x-dashboard.date-filter
             :preset="$preset"
+            :tahun="$tahun ?? date('Y')"
+            :listTahun="$listTahun ?? []"
             :startDate="$startDate"
             :endDate="$endDate"
             :startDateFormatted="$startDateFormatted"
@@ -44,19 +46,25 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v11a2 2 0 01-2 2z"/>
                         </svg>
                     </div>
-                    <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                        @if($lhpTrendPct >= 0)
-                            &uarr; {{ $lhpTrendPct }}%
-                        @else
-                            &darr; {{ abs($lhpTrendPct) }}%
-                        @endif
-                    </span>
+                    @if($preset === 'all')
+                        <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                            Semua Periode
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                            @if($lhpTrendPct >= 0)
+                                &uarr; {{ $lhpTrendPct }}%
+                            @else
+                                &darr; {{ abs($lhpTrendPct) }}%
+                            @endif
+                        </span>
+                    @endif
                 </div>
                 <div class="mt-4">
                     <h4 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">{{ $totalLhp }}</h4>
                     <div class="flex items-center justify-between mt-1">
                         <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Audit (LHP)</p>
-                        <span class="text-[10px] text-slate-400">vs periode sebelumnya</span>
+                        <span class="text-[10px] text-slate-400">{{ $preset === 'all' ? 'Akumulasi Semua Tahun' : 'vs periode sebelumnya' }}</span>
                     </div>
                 </div>
             </div>
@@ -69,19 +77,25 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
                     </div>
-                    <span class="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-orange-600 dark:bg-orange-900/40 dark:text-orange-300">
-                        @if($temuanTrendPct >= 0)
-                            &uarr; {{ $temuanTrendPct }}%
-                        @else
-                            &darr; {{ abs($temuanTrendPct) }}%
-                        @endif
-                    </span>
+                    @if($preset === 'all')
+                        <span class="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-orange-600 dark:bg-orange-900/40 dark:text-orange-300">
+                            Semua Periode
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-orange-600 dark:bg-orange-900/40 dark:text-orange-300">
+                            @if($temuanTrendPct >= 0)
+                                &uarr; {{ $temuanTrendPct }}%
+                            @else
+                                &darr; {{ abs($temuanTrendPct) }}%
+                            @endif
+                        </span>
+                    @endif
                 </div>
                 <div class="mt-4">
                     <h4 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">{{ $totalTemuan }}</h4>
                     <div class="flex items-center justify-between mt-1">
                         <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Temuan</p>
-                        <span class="text-[10px] text-slate-400">vs periode sebelumnya</span>
+                        <span class="text-[10px] text-slate-400">{{ $preset === 'all' ? 'Akumulasi Semua Tahun' : 'vs periode sebelumnya' }}</span>
                     </div>
                 </div>
             </div>
@@ -100,7 +114,10 @@
                 </div>
                 <div class="mt-4">
                     <h4 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">{{ $totalRekom }}</h4>
-                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Total Rekomendasi</p>
+                    <div class="flex items-center justify-between mt-1">
+                        <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Rekomendasi</p>
+                        <span class="text-[10px] text-slate-400">{{ $preset === 'all' ? 'Akumulasi Semua Tahun' : 'Rekomendasi Aktif' }}</span>
+                    </div>
                 </div>
             </div>
 
@@ -138,7 +155,13 @@
                 <div class="flex items-center justify-between mb-4">
                     <div>
                         <h3 class="text-base font-bold text-slate-900 dark:text-white">Trend Audit & Temuan</h3>
-                        <p class="text-xs text-slate-500">Grafik perkembangan volume audit, temuan, dan rekomendasi per bulan</p>
+                        <p class="text-xs text-slate-500">
+                            @if($isMultiYear ?? false)
+                                Grafik perkembangan volume audit, temuan, dan rekomendasi tahun ke tahun (per tahun)
+                            @else
+                                Grafik perkembangan volume audit, temuan, dan rekomendasi per bulan ({{ $startDateCarbon->year ?? date('Y') }})
+                            @endif
+                        </p>
                     </div>
                     <div class="flex items-center gap-3 text-xs font-semibold">
                         <span class="flex items-center gap-1 text-blue-600"><span class="h-2.5 w-2.5 rounded-full bg-blue-600"></span> Audit</span>
@@ -153,7 +176,9 @@
             <div class="col-span-12 lg:col-span-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md flex flex-col justify-between">
                 <div>
                     <h3 class="text-base font-bold text-slate-900 dark:text-white mb-1">Status Tindak Lanjut</h3>
-                    <p class="text-xs text-slate-500 mb-4">Proporsi status penyelesaian seluruh rekomendasi</p>
+                    <p class="text-xs text-slate-500 mb-4">
+                        {{ ($preset === 'all') ? 'Proporsi status penyelesaian rekomendasi seluruh tahun' : 'Proporsi status penyelesaian seluruh rekomendasi' }}
+                    </p>
                     <div id="chartDonutStatus" class="flex justify-center my-2"></div>
                 </div>
                 <div class="space-y-2 pt-4 border-t border-slate-100 dark:border-gray-800">
@@ -188,7 +213,13 @@
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
                     <div>
                         <h3 class="text-base font-bold text-slate-900 dark:text-white">Perbandingan Kerugian & Penyelamatan Aset</h3>
-                        <p class="text-xs text-slate-500">Grafik perbandingan total kerugian finansial vs realisasi penyelamatan aset per bulan</p>
+                        <p class="text-xs text-slate-500">
+                            @if($isMultiYear ?? false)
+                                Grafik perbandingan total kerugian finansial vs realisasi penyelamatan aset per tahun
+                            @else
+                                Grafik perbandingan total kerugian finansial vs realisasi penyelamatan aset per bulan ({{ $startDateCarbon->year ?? date('Y') }})
+                            @endif
+                        </p>
                     </div>
                     <div class="flex items-center gap-4 text-xs font-semibold shrink-0">
                         <span class="flex items-center gap-1.5 text-rose-600 dark:text-rose-400"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span> Total Kerugian</span>
@@ -202,7 +233,9 @@
             <div class="col-span-12 lg:col-span-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/60 backdrop-blur-md flex flex-col justify-between">
                 <div>
                     <h3 class="text-base font-bold text-slate-900 dark:text-white mb-1">Analisis Penyelamatan Aset</h3>
-                    <p class="text-xs text-slate-500 mb-4">Ringkasan status pengembalian & pemulihan keuangan daerah</p>
+                    <p class="text-xs text-slate-500 mb-4">
+                        {{ ($preset === 'all') ? 'Akumulasi status pemulihan keuangan daerah seluruh tahun' : 'Ringkasan status pengembalian & pemulihan keuangan daerah' }}
+                    </p>
 
                     @php
                         $sisaKerugian = max(0, ($totalKerugian ?? 0) - ($totalPenyelamatan ?? 0));

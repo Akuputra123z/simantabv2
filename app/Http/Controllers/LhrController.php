@@ -311,7 +311,8 @@ class LhrController extends Controller implements HasMiddleware
 
         $lintResult = $linter->lint($lhr);
         $kategoris = LhrKategoriCatatan::where('aktif', true)->orderBy('nama')->get();
-        $currentStep = (int) $request->get('step', 1);
+        $rawStep = (int) $request->get('step', 1);
+        $currentStep = min(3, max(1, $rawStep));
 
         $units = UnitDiperiksa::where('kategori', 'OPD')
             ->orderByRaw("CASE WHEN nama_unit LIKE '%Perencanaan Pembangunan%' THEN 1 WHEN nama_unit LIKE '%Pendapatan%' THEN 2 ELSE 3 END, nama_unit ASC")
@@ -366,7 +367,7 @@ class LhrController extends Controller implements HasMiddleware
             'permohonan_tanggal' => 'nullable|date',
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
-            'next_step' => 'nullable|integer|min:1|max:6',
+            'next_step' => 'nullable|integer|min:1|max:3',
             'attachments' => 'nullable|array',
             'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png,xlsx,xls,docx,doc|max:10240',
             'attachment_notes' => 'nullable|array',
@@ -497,7 +498,7 @@ class LhrController extends Controller implements HasMiddleware
 
         $action->execute($lhr);
 
-        return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 5])
+        return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 3])
             ->with('success', '14 Catatan temuan & rekomendasi standar template Rembang 2027 berhasil disinkronkan ke ruang kerja.');
     }
 
@@ -568,7 +569,7 @@ class LhrController extends Controller implements HasMiddleware
             $this->syncStatistik($lhr);
         });
 
-        return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 5])
+        return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 3])
             ->with('success', 'Catatan temuan dan rekomendasi berhasil ditambahkan.');
     }
 
@@ -620,7 +621,7 @@ class LhrController extends Controller implements HasMiddleware
             $this->syncStatistik($lhr);
         });
 
-        return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 5])
+        return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 3])
             ->with('success', 'Catatan temuan dan rekomendasi berhasil diperbarui.');
     }
 
@@ -640,7 +641,7 @@ class LhrController extends Controller implements HasMiddleware
 
         $this->syncStatistik($lhr);
 
-        return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 5])
+        return redirect()->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 3])
             ->with('success', 'Catatan reviu berhasil dihapus.');
     }
 

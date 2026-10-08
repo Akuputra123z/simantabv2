@@ -17,6 +17,10 @@
             color: #000;
         }
 
+        table, td, th {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
         .page-margin {
             margin: 0;
             padding: 0;
@@ -29,8 +33,40 @@
         /* ===== Kop Surat ===== */
         .kop-surat {
             border-bottom: 4px double black;
-            padding-bottom: 10px;
+            padding-bottom: 8px;
             margin-bottom: 20px;
+        }
+
+        .table-kop {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .table-kop td {
+            border: none !important;
+            padding: 0;
+            vertical-align: middle;
+        }
+
+        .kop-logo-cell {
+            width: 75px;
+            text-align: center;
+        }
+
+        .kop-spacer-cell {
+            width: 75px;
+        }
+
+        .kop-logo {
+            width: 65px;
+            height: auto;
+            max-height: 85px;
+        }
+
+        .kop-text-cell {
             text-align: center;
         }
 
@@ -39,19 +75,22 @@
             margin: 0;
             text-transform: uppercase;
             font-weight: bold;
+            letter-spacing: 0.5px;
         }
 
         .kop-text h2 {
             font-size: 16pt;
-            margin: 0;
+            margin: 2px 0;
             text-transform: uppercase;
             font-weight: bold;
             line-height: 1.2;
+            letter-spacing: 1px;
         }
 
         .kop-text p {
             font-size: 9pt;
             margin: 2px 0 0 0;
+            line-height: 1.3;
         }
 
         .kop-text .sub-p {
@@ -83,6 +122,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 18px;
+            font-size: 11pt;
         }
 
         .section-table td {
@@ -107,6 +147,7 @@
         ol.list-dinas {
             margin: 0;
             padding-left: 32px;
+            font-size: 11pt;
         }
 
         ol.list-dinas li {
@@ -129,11 +170,13 @@
             float: left;
             width: 95px;
             font-weight: bold;
+            font-size: 11pt;
         }
 
         .content {
             margin-left: 100px;
             text-align: left;
+            font-size: 11pt;
         }
 
         .memerintahkan {
@@ -141,7 +184,7 @@
             font-weight: bold;
             letter-spacing: 4px;
             margin: 20px 0;
-            font-size: 12pt;
+            font-size: 11pt;
             page-break-inside: avoid;
         }
 
@@ -151,6 +194,7 @@
             border-collapse: collapse;
             margin-top: 5px;
             margin-bottom: 10px;
+            font-size: 11pt;
         }
 
         table.tim th {
@@ -158,7 +202,7 @@
             border-bottom: 1px solid black;
             text-align: left;
             padding: 5px 8px;
-            font-size: 10pt;
+            font-size: 11pt;
             text-transform: uppercase;
             font-weight: bold;
         }
@@ -167,6 +211,7 @@
             padding: 5px 8px;
             vertical-align: top;
             border-bottom: 1px solid #ccc;
+            font-size: 11pt;
         }
 
         table.tim tr:last-child td {
@@ -177,6 +222,7 @@
         .list-isi {
             margin: 0;
             padding: 0;
+            font-size: 11pt;
         }
 
         .item {
@@ -184,6 +230,7 @@
             width: 100%;
             margin-bottom: 8px;
             text-align: justify;
+            font-size: 11pt;
         }
 
         .item-num {
@@ -212,9 +259,22 @@
             break-inside: avoid;
         }
 
+        .table-ttd-layout {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+            margin-top: 25px;
+            page-break-inside: avoid !important;
+        }
+        .table-ttd-layout td {
+            border: none !important;
+            padding: 0;
+            vertical-align: top;
+        }
+
         .ttd-wrapper {
             width: 100%;
-            margin-top: 30px;
+            margin-top: 40px;
             text-align: right;
             page-break-inside: avoid !important;
             break-inside: avoid;
@@ -230,8 +290,8 @@
 
         .table-ttd-meta {
             width: 100%;
-            font-size: 10pt;
-            margin-bottom: 10px;
+            font-size: 11pt;
+            margin-bottom: 12px;
             page-break-inside: avoid !important;
         }
 
@@ -244,16 +304,24 @@
             text-align: center;
             font-weight: bold;
             line-height: 1.3;
-            margin-bottom: 50px;
+            margin-bottom: 15px;
             text-transform: uppercase;
+            font-size: 11pt;
+        }
+
+        .ttd-space {
+            height: 75px;
         }
 
         .ttd-signature {
             text-align: center;
+            margin: 6px 0;
         }
 
         .ttd-signature img {
-            height: 70px;
+            height: 85px;
+            max-height: 95px;
+            width: auto;
             margin-bottom: 5px;
         }
 
@@ -262,15 +330,15 @@
             font-weight: bold;
             text-decoration: underline;
             margin: 0;
-            font-size: 10.5pt;
+            font-size: 11pt;
             white-space: nowrap;
         }
 
         .ttd-nip {
             text-align: center;
             margin: 0;
-            font-size: 10pt;
-            line-height: 1.2;
+            font-size: 11pt;
+            line-height: 1.3;
         }
 
         .signature-placeholder {
@@ -297,16 +365,38 @@
     </style>
 </head>
 <body>
+    @php
+        if (empty($logoBase64)) {
+            $logoPath = public_path('images/logo/image.png');
+            if (!file_exists($logoPath)) {
+                $logoPath = public_path('images/logos/rembang.png');
+            }
+            $logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : '';
+        }
+    @endphp
+
     <div class="page-margin">
         <div class="container">
 
             <div class="kop-surat">
-                <div class="kop-text">
-                    <h1>Pemerintah Kabupaten Rembang</h1>
-                    <h2>Inspektorat Daerah</h2>
-                    <p>Jl. Raya Rembang – Lasem Km 1.1 Telp. ( 0295 ) 691320 Fax. (0295) 693525</p>
-                    <p class="sub-p">Rembang 59219 Email : inspektorat@rembangkab.go.id</p>
-                </div>
+                <table class="table-kop">
+                    <tr>
+                        <td class="kop-logo-cell">
+                            @if(!empty($logoBase64))
+                                <img src="data:image/png;base64,{{ $logoBase64 }}" class="kop-logo" alt="Lambang Kabupaten Rembang">
+                            @endif
+                        </td>
+                        <td class="kop-text-cell">
+                            <div class="kop-text">
+                                <h1>Pemerintah Kabupaten Rembang</h1>
+                                <h2>Inspektorat Daerah</h2>
+                                <p>Jl. Raya Rembang – Lasem Km 1.1 Telp. ( 0295 ) 691320 Fax. (0295) 693525</p>
+                                <p class="sub-p">Rembang 59219 Email : inspektorat@rembangkab.go.id</p>
+                            </div>
+                        </td>
+                        <td class="kop-spacer-cell"></td>
+                    </tr>
+                </table>
             </div>
 
             <div class="judul-surat">
@@ -321,11 +411,20 @@
                     <td class="section-colon">:</td>
                     <td class="section-content">
                         <ol class="list-dinas">
-                            <li>Peraturan Daerah Kabupaten Rembang Nomor 6 Tahun 2021 tentang Perubahan Kedua atas Peraturan Daerah Nomor 5 Tahun 2016 tentang Pembentukan dan Susunan Perangkat Daerah Kabupaten Rembang.</li>
-                            <li>Peraturan Daerah Kabupaten Rembang Nomor 2 Tahun 2024 tentang Anggaran Pendapatan dan Belanja Daerah Kabupaten Rembang Tahun Anggaran 2025.</li>
-                            <li>Peraturan Bupati Rembang Nomor 54 Tahun 2021 tentang Kedudukan Susunan Organisasi, Tugas dan Fungsi serta Tata Kerja Inspektorat Kabupaten Rembang.</li>
-                            <li>Peraturan Bupati Rembang Nomor 2 Tahun 2024 tentang Pembinaan dan Pengawasan Perangkat Daerah dan Desa.</li>
-                            <li>Keputusan Bupati Rembang Nomor 100.3.3.2/0132/2025 tanggal 9 Januari 2025 tentang Program Kerja Pengawasan Tahunan Berbasis Resiko Inspektorat Kabupaten Rembang Tahun 2025.</li>
+                            @php
+                                $dasarList = ($assignment->dasarPeraturans && $assignment->dasarPeraturans->isNotEmpty())
+                                    ? $assignment->dasarPeraturans
+                                    : $assignment->effective_dasar_peraturans;
+                            @endphp
+                            @forelse($dasarList as $dasar)
+                                <li>{{ $dasar->nama }}</li>
+                            @empty
+                                <li>Peraturan Daerah Kabupaten Rembang Nomor 6 Tahun 2021 tentang Perubahan Kedua atas Peraturan Daerah Nomor 5 Tahun 2016 tentang Pembentukan dan Susunan Perangkat Daerah Kabupaten Rembang.</li>
+                                <li>Peraturan Daerah Kabupaten Rembang Nomor 2 Tahun 2024 tentang Anggaran Pendapatan dan Belanja Daerah Kabupaten Rembang Tahun Anggaran 2025.</li>
+                                <li>Peraturan Bupati Rembang Nomor 54 Tahun 2021 tentang Kedudukan Susunan Organisasi, Tugas dan Fungsi serta Tata Kerja Inspektorat Kabupaten Rembang.</li>
+                                <li>Peraturan Bupati Rembang Nomor 2 Tahun 2024 tentang Pembinaan dan Pengawasan Perangkat Daerah dan Desa.</li>
+                                <li>Keputusan Bupati Rembang Nomor 100.3.3.2/0132/2025 tanggal 9 Januari 2025 tentang Program Kerja Pengawasan Tahunan Berbasis Resiko Inspektorat Kabupaten Rembang Tahun 2025.</li>
+                            @endforelse
                         </ol>
                     </td>
                 </tr>
@@ -398,13 +497,35 @@
                         <div class="item">
                             <div class="item-num">1.</div>
                             <div class="item-text">
-                                Melaksanakan {{ $assignment->jenis_pengawasan }} pada :
+                                @php
+                                    $subProgram = trim($assignment->auditProgramDetail->nama_detail_program ?? '');
+                                    $jenis = trim($assignment->jenis_pengawasan ?: ($assignment->auditProgramDetail->jenis_kegiatan ?? ''));
+
+                                    if (!empty($subProgram)) {
+                                        if (preg_match('/^(audit|reviu|review|evaluasi|monitoring|pengawasan|pemeriksaan)\b/i', $subProgram)) {
+                                            $uraianTugas = $subProgram;
+                                        } elseif (!empty($jenis) && stripos($subProgram, $jenis) !== false) {
+                                            $uraianTugas = $subProgram;
+                                        } elseif (!empty($jenis)) {
+                                            $uraianTugas = $jenis . ' ' . $subProgram;
+                                        } else {
+                                            $uraianTugas = $subProgram;
+                                        }
+                                    } else {
+                                        $uraianTugas = !empty($jenis) ? $jenis : 'Pengawasan';
+                                    }
+                                @endphp
+                                Melaksanakan {{ $uraianTugas }} pada :
 
                                 @if($assignment->unitDiperiksas && $assignment->unitDiperiksas->isNotEmpty())
                                     @foreach($assignment->unitDiperiksas as $unit)
                                         <div class="sub-item">- {{ $unit->nama_unit }}</div>
-                                        <div class="sub-kecamatan">{{ $unit->nama_kecamatan }}</div>
+                                        @if(!empty($unit->nama_kecamatan))
+                                            <div class="sub-kecamatan">{{ $unit->nama_kecamatan }}</div>
+                                        @endif
                                     @endforeach
+                                @elseif($assignment->auditProgramDetail && !empty($assignment->auditProgramDetail->objek_pengawasan))
+                                    <div class="sub-item">- {{ $assignment->auditProgramDetail->objek_pengawasan }}</div>
                                 @else
                                     <div class="sub-item">-</div>
                                 @endif
@@ -417,9 +538,9 @@
                                 Waktu pelaksanaan selama
                                 {{ \Carbon\Carbon::parse($assignment->tanggal_mulai)->diffInDays(\Carbon\Carbon::parse($assignment->tanggal_selesai)) + 1 }}
                                 hari kerja, mulai tanggal
-                                {{ \Carbon\Carbon::parse($assignment->tanggal_mulai)->translatedFormat('d F') }}
+                                {{ \Carbon\Carbon::parse($assignment->tanggal_mulai)->locale('id')->translatedFormat('d F') }}
                                 s.d
-                                {{ \Carbon\Carbon::parse($assignment->tanggal_selesai)->translatedFormat('d F Y') }}.
+                                {{ \Carbon\Carbon::parse($assignment->tanggal_selesai)->locale('id')->translatedFormat('d F Y') }}.
                             </div>
                         </div>
 
@@ -440,52 +561,80 @@
                 </div>
             </div>
 
-            {{-- TANDA TANGAN --}}
+            {{-- TANDA TANGAN & QR CODE --}}
             <div class="signature-group">
-                <div class="ttd-wrapper">
-                    <div class="ttd-container">
-                        <table class="table-ttd-meta">
-                            <tr>
-                                <td style="width: 40%;">Ditetapkan di</td>
-                                <td style="width: 5%;">:</td>
-                                <td style="width: 55%;">Rembang</td>
-                            </tr>
-                            <tr>
-                                <td>Pada tanggal</td>
-                                <td>:</td>
-                                <td>{{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</td>
-                            </tr>
-                        </table>
-
-                        <div class="ttd-jabatan">
-                            INSPEKTUR DAERAH<br>
-                            KABUPATEN REMBANG
-                        </div>
-
-                        @if($assignment->isSigned() && $assignment->signer)
-                            @if($signatureBase64)
-                                <div class="ttd-signature">
-                                    <img src="{{ $signatureBase64 }}" alt="Tanda Tangan">
+                <table class="table-ttd-layout">
+                    <tr>
+                        {{-- QR Code di sebelah kiri bawah tabel --}}
+                        <td style="width: 50%; vertical-align: top; text-align: left;">
+                            @if($assignment->isSigned() && !empty($qrBase64))
+                                <div style="display: inline-block; border: 1px solid #d1d5db; background: #fafafa; padding: 6px 12px; border-radius: 4px; margin-top: 10px;">
+                                    <table style="border-collapse: collapse; border: none; margin: 0; padding: 0;">
+                                        <tr>
+                                            <td style="width: 74px; vertical-align: middle; padding: 0 10px 0 0; border: none !important;">
+                                                <img src="{{ $qrBase64 }}" width="70" height="70" style="width: 70px; height: 70px; display: block;" alt="QR Code Verifikasi">
+                                            </td>
+                                            <td style="vertical-align: middle; border: none !important; font-size: 7.5pt; line-height: 1.4; color: #333;">
+                                                <strong style="color: #000; font-size: 8pt;">DITANDATANGANI SECARA ELEKTRONIK</strong><br>
+                                                Inspektorat Daerah Kabupaten Rembang<br>
+                                                <span style="color: #666; font-size: 7pt;">Pindai QR untuk verifikasi keaslian dokumen</span>
+                                            </td>
+                                        </tr>
+                                    </table>
                                 </div>
                             @endif
-                            <p class="ttd-nama">{{ $assignment->signer->name }}</p>
-                            <p class="ttd-nip">
-                                {{ $assignment->signer->jabatan ?? '-' }}<br>
-                                NIP. {{ $assignment->signer->nip ?? '-' }}
-                            </p>
-                        @else
-                            <p class="ttd-nama">
-                                IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE
-                            </p>
-                            <p class="ttd-nip">
-                                Pembina<br>
-                                NIP. 197411281999032003
-                            </p>
-                        @endif
-                    </div>
-                </div>
+                        </td>
 
-                <div class="footer-note">
+                        {{-- Tanda Tangan di sebelah kanan --}}
+                        <td style="width: 50%; vertical-align: top; text-align: right;">
+                            <div class="ttd-container" style="display: inline-block; text-align: center; width: 330px;">
+                                <table class="table-ttd-meta" style="margin-left: auto; margin-right: auto; width: 260px;">
+                                    <tr>
+                                        <td style="width: 40%;">Ditetapkan di</td>
+                                        <td style="width: 5%;">:</td>
+                                        <td style="width: 55%;">Rembang</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Pada tanggal</td>
+                                        <td>:</td>
+                                        <td>{{ ($assignment->created_at ?? now())->locale('id')->translatedFormat('d F Y') }}</td>
+                                    </tr>
+                                </table>
+
+                                <div class="ttd-jabatan">
+                                    INSPEKTUR DAERAH<br>
+                                    KABUPATEN REMBANG
+                                </div>
+
+                                @if($assignment->isSigned() && !empty($signatureBase64))
+                                    <div class="ttd-signature">
+                                        <img src="{{ $signatureBase64 }}" alt="Tanda Tangan">
+                                    </div>
+                                @else
+                                    <div class="ttd-space"></div>
+                                @endif
+
+                                @if($assignment->isSigned() && $assignment->signer)
+                                    <p class="ttd-nama">{{ $assignment->signer->name }}</p>
+                                    <p class="ttd-nip">
+                                        {{ $assignment->signer->jabatan ?? 'Pembina' }}<br>
+                                        NIP. {{ $assignment->signer->nip ?? '-' }}
+                                    </p>
+                                @else
+                                    <p class="ttd-nama">
+                                        IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE
+                                    </p>
+                                    <p class="ttd-nip">
+                                        Pembina<br>
+                                        NIP. 197411281999032003
+                                    </p>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="footer-note" style="margin-top: 25px;">
                     Dilarang meminta dan atau menerima pemberian dalam bentuk apapun dari siapapun.
                 </div>
             </div>

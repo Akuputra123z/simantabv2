@@ -28,51 +28,78 @@ class DashboardController extends Controller
         $startDateInput = $request->input('start_date');
         $endDateInput = $request->input('end_date');
         $kategoriProgram = $request->input('kategori_program', 'semua');
+        $tahunInput = $request->input('tahun');
 
         $now = Carbon::now();
 
-        switch ($preset) {
-            case 'today':
-                $startDate = $now->copy()->startOfDay();
-                $endDate = $now->copy()->endOfDay();
-                break;
-            case '7days':
-                $startDate = $now->copy()->subDays(6)->startOfDay();
-                $endDate = $now->copy()->endOfDay();
-                break;
-            case '30days':
-                $startDate = $now->copy()->subDays(29)->startOfDay();
-                $endDate = $now->copy()->endOfDay();
-                break;
-            case 'this_month':
-                $startDate = $now->copy()->startOfMonth();
-                $endDate = $now->copy()->endOfMonth();
-                break;
-            case 'all':
-                $preset = 'all';
-                $startDate = Carbon::create(2000, 1, 1)->startOfDay();
-                $endDate = Carbon::create(2099, 12, 31)->endOfDay();
-                break;
-            case 'custom':
-                $startDate = $startDateInput ? Carbon::parse($startDateInput)->startOfDay() : $now->copy()->startOfYear();
-                $endDate = $endDateInput ? Carbon::parse($endDateInput)->endOfDay() : $now->copy()->endOfYear();
-                break;
-            case 'this_year':
-            default:
-                $preset = 'this_year';
-                $startDate = $now->copy()->startOfYear();
-                $endDate = $now->copy()->endOfYear();
-                break;
+        if ($request->filled('tahun') && $tahunInput === 'semua') {
+            $preset = 'all';
+            $startDate = Carbon::create(2000, 1, 1)->startOfDay();
+            $endDate = Carbon::create(2099, 12, 31)->endOfDay();
+            $tahun = 'semua';
+        } elseif ($request->filled('tahun') && is_numeric($tahunInput) && ! in_array($preset, ['today', '7days', '30days', 'this_month', 'custom'])) {
+            $tahun = (int) $tahunInput;
+            $preset = ($tahun === $now->year) ? 'this_year' : 'year';
+            $startDate = Carbon::create($tahun, 1, 1)->startOfDay();
+            $endDate = Carbon::create($tahun, 12, 31)->endOfDay();
+        } else {
+            switch ($preset) {
+                case 'today':
+                    $startDate = $now->copy()->startOfDay();
+                    $endDate = $now->copy()->endOfDay();
+                    $tahun = $now->year;
+                    break;
+                case '7days':
+                    $startDate = $now->copy()->subDays(6)->startOfDay();
+                    $endDate = $now->copy()->endOfDay();
+                    $tahun = $now->year;
+                    break;
+                case '30days':
+                    $startDate = $now->copy()->subDays(29)->startOfDay();
+                    $endDate = $now->copy()->endOfDay();
+                    $tahun = $now->year;
+                    break;
+                case 'this_month':
+                    $startDate = $now->copy()->startOfMonth();
+                    $endDate = $now->copy()->endOfMonth();
+                    $tahun = $now->year;
+                    break;
+                case 'all':
+                    $preset = 'all';
+                    $startDate = Carbon::create(2000, 1, 1)->startOfDay();
+                    $endDate = Carbon::create(2099, 12, 31)->endOfDay();
+                    $tahun = 'semua';
+                    break;
+                case 'custom':
+                    $startDate = $startDateInput ? Carbon::parse($startDateInput)->startOfDay() : $now->copy()->startOfYear();
+                    $endDate = $endDateInput ? Carbon::parse($endDateInput)->endOfDay() : $now->copy()->endOfYear();
+                    $tahun = ($startDate->year === $endDate->year) ? $startDate->year : 'custom';
+                    break;
+                case 'year':
+                    $selectedYear = (int) ($tahunInput ?? $now->year);
+                    $startDate = Carbon::create($selectedYear, 1, 1)->startOfDay();
+                    $endDate = Carbon::create($selectedYear, 12, 31)->endOfDay();
+                    $tahun = $selectedYear;
+                    break;
+                case 'this_year':
+                default:
+                    $preset = 'this_year';
+                    $startDate = $now->copy()->startOfYear();
+                    $endDate = $now->copy()->endOfYear();
+                    $tahun = $now->year;
+                    break;
+            }
         }
 
         // Periode pembanding (Previous Period)
         $diffDays = $startDate->diffInDays($endDate) + 1;
         $prevStartDate = $startDate->copy()->subDays($diffDays);
         $prevEndDate = $startDate->copy()->subDay()->endOfDay();
+        $isMultiYear = ($preset === 'all') || ($startDate->year !== $endDate->year);
 
-        $cacheKey = 'dashboard_v3:user:'.$user->id.':'.$preset.':'.$kategoriProgram.':'.$startDate->format('Y-m-d').':'.$endDate->format('Y-m-d').':'.$user->updated_at->timestamp;
+        $cacheKey = 'dashboard_v4:user:'.$user->id.':'.$preset.':'.$kategoriProgram.':'.$startDate->format('Y-m-d').':'.$endDate->format('Y-m-d').':'.$user->updated_at->timestamp;
 
-        $data = Cache::remember($cacheKey, 300, function () use ($user, $startDate, $endDate, $prevStartDate, $prevEndDate, $kategoriProgram) {
+        $data = Cache::remember($cacheKey, 300, function () use ($user, $startDate, $endDate, $prevStartDate, $prevEndDate, $kategoriProgram, $preset, $now, $isMultiYear) {
             // ── Base query LHP ──────────────────────────────────────────────────
             $baseLhpQuery = Lhp::forUser($user);
 
@@ -116,7 +143,7 @@ class DashboardController extends Controller
                 ->selectRaw("
                     COUNT(*) as total,
                     SUM(CASE WHEN status = 'belum_ditindaklanjuti' OR status IS NULL THEN 1 ELSE 0 END) as belum,
-                    SUM(CASE WHEN status = 'proses' THEN 1 ELSE 0 END) as proses,
+                    SUM(CASE WHEN status IN ('proses', 'dalam_proses') THEN 1 ELSE 0 END) as proses,
                     SUM(CASE WHEN status = 'selesai' THEN 1 ELSE 0 END) as selesai
                 ")->first();
 
@@ -139,35 +166,86 @@ class DashboardController extends Controller
             $tlSelesai = $tlStats->lunas ?? 0;
             $tlPct = $totalRekom > 0 ? round(($rekomSelesai / $totalRekom) * 100, 1) : 0;
 
-            // ── Trend Monthly Chart (Audit, Temuan, Rekomendasi) ────────────────
-            $currentYear = $startDate->year;
+            // ── Trend Chart (Audit, Temuan, Rekomendasi) ────────────────
+            $yearExpr = DB::getDriverName() === 'sqlite' ? "CAST(strftime('%Y', lhps.tanggal_lhp) AS INTEGER)" : 'YEAR(lhps.tanggal_lhp)';
             $monthExpr = DB::getDriverName() === 'sqlite' ? "CAST(strftime('%m', lhps.tanggal_lhp) AS INTEGER)" : 'MONTH(lhps.tanggal_lhp)';
-            $bulanData = DB::table('lhps')
-                ->whereIn('lhps.id', $lhpIds)
-                ->leftJoin('temuans', 'temuans.lhp_id', '=', 'lhps.id')
-                ->leftJoin('recommendations', 'recommendations.temuan_id', '=', 'temuans.id')
-                ->selectRaw("
-                    {$monthExpr} as bulan,
-                    COUNT(DISTINCT lhps.id) as total_audit,
-                    COUNT(DISTINCT temuans.id) as total_temuan,
-                    COUNT(DISTINCT recommendations.id) as total_rekom
-                ")
-                ->groupBy('bulan')
-                ->orderBy('bulan')
-                ->get()
-                ->keyBy('bulan');
+            $isMultiYear = ($preset === 'all') || ($startDate->year !== $endDate->year);
 
             $chartMonths = [];
             $chartAudit = [];
             $chartTemuan = [];
             $chartRekom = [];
+            $yearsRange = [];
 
-            for ($m = 1; $m <= 12; $m++) {
-                $chartMonths[] = Carbon::create($currentYear, $m, 1)->translatedFormat('M');
-                $item = $bulanData->get($m);
-                $chartAudit[] = $item ? (int) $item->total_audit : 0;
-                $chartTemuan[] = $item ? (int) $item->total_temuan : 0;
-                $chartRekom[] = $item ? (int) $item->total_rekom : 0;
+            if ($isMultiYear) {
+                // Ambil daftar tahun dari data LHP yang relevan
+                $dbYears = DB::table('lhps')
+                    ->whereIn('lhps.id', count($lhpIds) > 0 ? $lhpIds : [0])
+                    ->whereNotNull('lhps.tanggal_lhp')
+                    ->selectRaw("{$yearExpr} as y")
+                    ->distinct()
+                    ->orderBy('y')
+                    ->pluck('y')
+                    ->filter()
+                    ->map(fn ($val) => (int) $val)
+                    ->values()
+                    ->all();
+
+                $currentYear = (int) $now->year;
+                if (empty($dbYears)) {
+                    $yearsRange = [$currentYear];
+                } else {
+                    $minYear = min($dbYears);
+                    $maxYear = max(max($dbYears), $currentYear);
+                    $yearsRange = (($maxYear - $minYear) <= 10) ? range($minYear, $maxYear) : $dbYears;
+                }
+
+                $trendData = DB::table('lhps')
+                    ->whereIn('lhps.id', count($lhpIds) > 0 ? $lhpIds : [0])
+                    ->leftJoin('temuans', 'temuans.lhp_id', '=', 'lhps.id')
+                    ->leftJoin('recommendations', 'recommendations.temuan_id', '=', 'temuans.id')
+                    ->selectRaw("
+                        {$yearExpr} as periode,
+                        COUNT(DISTINCT lhps.id) as total_audit,
+                        COUNT(DISTINCT temuans.id) as total_temuan,
+                        COUNT(DISTINCT recommendations.id) as total_rekom
+                    ")
+                    ->groupBy('periode')
+                    ->orderBy('periode')
+                    ->get()
+                    ->keyBy('periode');
+
+                foreach ($yearsRange as $y) {
+                    $chartMonths[] = (string) $y;
+                    $item = $trendData->get($y);
+                    $chartAudit[] = $item ? (int) $item->total_audit : 0;
+                    $chartTemuan[] = $item ? (int) $item->total_temuan : 0;
+                    $chartRekom[] = $item ? (int) $item->total_rekom : 0;
+                }
+            } else {
+                $currentYear = $startDate->year;
+                $bulanData = DB::table('lhps')
+                    ->whereIn('lhps.id', count($lhpIds) > 0 ? $lhpIds : [0])
+                    ->leftJoin('temuans', 'temuans.lhp_id', '=', 'lhps.id')
+                    ->leftJoin('recommendations', 'recommendations.temuan_id', '=', 'temuans.id')
+                    ->selectRaw("
+                        {$monthExpr} as bulan,
+                        COUNT(DISTINCT lhps.id) as total_audit,
+                        COUNT(DISTINCT temuans.id) as total_temuan,
+                        COUNT(DISTINCT recommendations.id) as total_rekom
+                    ")
+                    ->groupBy('bulan')
+                    ->orderBy('bulan')
+                    ->get()
+                    ->keyBy('bulan');
+
+                for ($m = 1; $m <= 12; $m++) {
+                    $chartMonths[] = Carbon::create($currentYear, $m, 1)->translatedFormat('M');
+                    $item = $bulanData->get($m);
+                    $chartAudit[] = $item ? (int) $item->total_audit : 0;
+                    $chartTemuan[] = $item ? (int) $item->total_temuan : 0;
+                    $chartRekom[] = $item ? (int) $item->total_rekom : 0;
+                }
             }
 
             // ── 10 Unit Periksa Temuan Terbanyak (Single Grouped Query - Optimized) ──
@@ -291,36 +369,66 @@ class DashboardController extends Controller
                 }
             }
 
-            // ── Monthly Financial Bar Chart Data (Kerugian vs Penyelamatan Aset) ──────────
-            $kerugianBulan = DB::table('temuans')
-                ->join('lhps', 'temuans.lhp_id', '=', 'lhps.id')
-                ->whereIn('lhps.id', count($lhpIds) > 0 ? $lhpIds : [0])
-                ->whereNull('temuans.deleted_at')
-                ->whereNull('lhps.deleted_at')
-                ->selectRaw("
-                    {$monthExpr} as bulan,
-                    SUM(CASE WHEN temuans.nilai_temuan > 0 THEN temuans.nilai_temuan ELSE (COALESCE(temuans.nilai_kerugian_negara, 0) + COALESCE(temuans.nilai_kerugian_daerah, 0) + COALESCE(temuans.nilai_kerugian_desa, 0) + COALESCE(temuans.nilai_kerugian_bos_blud, 0)) END) as total
-                ")
-                ->groupBy('bulan')
-                ->pluck('total', 'bulan');
-
-            $penyelamatanBulan = DB::table('lhp_statistik')
-                ->join('lhps', 'lhp_statistik.lhp_id', '=', 'lhps.id')
-                ->whereIn('lhps.id', count($lhpIds) > 0 ? $lhpIds : [0])
-                ->whereNull('lhps.deleted_at')
-                ->selectRaw("
-                    {$monthExpr} as bulan,
-                    SUM(COALESCE(lhp_statistik.total_nilai_tl_selesai, 0)) as total
-                ")
-                ->groupBy('bulan')
-                ->pluck('total', 'bulan');
-
+            // ── Financial Bar Chart Data (Kerugian vs Penyelamatan Aset: Tahunan / Bulanan) ──
             $chartKerugian = [];
             $chartPenyelamatan = [];
 
-            for ($m = 1; $m <= 12; $m++) {
-                $chartKerugian[] = (float) ($kerugianBulan->get($m) ?? 0);
-                $chartPenyelamatan[] = (float) ($penyelamatanBulan->get($m) ?? 0);
+            if ($isMultiYear) {
+                $kerugianTahun = DB::table('temuans')
+                    ->join('lhps', 'temuans.lhp_id', '=', 'lhps.id')
+                    ->whereIn('lhps.id', count($lhpIds) > 0 ? $lhpIds : [0])
+                    ->whereNull('temuans.deleted_at')
+                    ->whereNull('lhps.deleted_at')
+                    ->selectRaw("
+                        {$yearExpr} as periode,
+                        SUM(CASE WHEN temuans.nilai_temuan > 0 THEN temuans.nilai_temuan ELSE (COALESCE(temuans.nilai_kerugian_negara, 0) + COALESCE(temuans.nilai_kerugian_daerah, 0) + COALESCE(temuans.nilai_kerugian_desa, 0) + COALESCE(temuans.nilai_kerugian_bos_blud, 0)) END) as total
+                    ")
+                    ->groupBy('periode')
+                    ->pluck('total', 'periode');
+
+                $penyelamatanTahun = DB::table('lhp_statistik')
+                    ->join('lhps', 'lhp_statistik.lhp_id', '=', 'lhps.id')
+                    ->whereIn('lhps.id', count($lhpIds) > 0 ? $lhpIds : [0])
+                    ->whereNull('lhps.deleted_at')
+                    ->selectRaw("
+                        {$yearExpr} as periode,
+                        SUM(COALESCE(lhp_statistik.total_nilai_tl_selesai, 0)) as total
+                    ")
+                    ->groupBy('periode')
+                    ->pluck('total', 'periode');
+
+                foreach ($yearsRange as $y) {
+                    $chartKerugian[] = (float) ($kerugianTahun->get($y) ?? 0);
+                    $chartPenyelamatan[] = (float) ($penyelamatanTahun->get($y) ?? 0);
+                }
+            } else {
+                $kerugianBulan = DB::table('temuans')
+                    ->join('lhps', 'temuans.lhp_id', '=', 'lhps.id')
+                    ->whereIn('lhps.id', count($lhpIds) > 0 ? $lhpIds : [0])
+                    ->whereNull('temuans.deleted_at')
+                    ->whereNull('lhps.deleted_at')
+                    ->selectRaw("
+                        {$monthExpr} as bulan,
+                        SUM(CASE WHEN temuans.nilai_temuan > 0 THEN temuans.nilai_temuan ELSE (COALESCE(temuans.nilai_kerugian_negara, 0) + COALESCE(temuans.nilai_kerugian_daerah, 0) + COALESCE(temuans.nilai_kerugian_desa, 0) + COALESCE(temuans.nilai_kerugian_bos_blud, 0)) END) as total
+                    ")
+                    ->groupBy('bulan')
+                    ->pluck('total', 'bulan');
+
+                $penyelamatanBulan = DB::table('lhp_statistik')
+                    ->join('lhps', 'lhp_statistik.lhp_id', '=', 'lhps.id')
+                    ->whereIn('lhps.id', count($lhpIds) > 0 ? $lhpIds : [0])
+                    ->whereNull('lhps.deleted_at')
+                    ->selectRaw("
+                        {$monthExpr} as bulan,
+                        SUM(COALESCE(lhp_statistik.total_nilai_tl_selesai, 0)) as total
+                    ")
+                    ->groupBy('bulan')
+                    ->pluck('total', 'bulan');
+
+                for ($m = 1; $m <= 12; $m++) {
+                    $chartKerugian[] = (float) ($kerugianBulan->get($m) ?? 0);
+                    $chartPenyelamatan[] = (float) ($penyelamatanBulan->get($m) ?? 0);
+                }
             }
 
             // ── Dynamic Matriks Rekapitulasi Kode Temuan & Nilai (Database Powered) ───────
@@ -653,21 +761,41 @@ class DashboardController extends Controller
                 'overdueCount', 'temuanBelumTlCount', 'unitLowProgressCount',
                 'overdueItems', 'temuanBelumTlItems', 'unitLowProgressItems',
                 'matriksKodeTemuan',
-                'rekomendasiTerbaru', 'recentActivities'
+                'rekomendasiTerbaru', 'recentActivities',
+                'isMultiYear'
             );
         });
 
         $listKategori = AuditProgram::KATEGORI;
 
+        $yearsLhp = Lhp::whereNotNull('tanggal_lhp')
+            ->pluck('tanggal_lhp')
+            ->map(fn ($d) => Carbon::parse($d)->year)
+            ->unique()
+            ->toArray();
+        $yearsProg = AuditProgram::whereNotNull('tahun')
+            ->distinct()
+            ->pluck('tahun')
+            ->map(fn ($v) => (int) $v)
+            ->toArray();
+        $defaultYears = range($now->year - 4, $now->year + 1);
+        $listTahun = array_values(array_unique(array_merge($yearsLhp, $yearsProg, $defaultYears)));
+        rsort($listTahun);
+
         return view('dashboard', array_merge($data, [
             'user' => $user,
             'preset' => $preset,
+            'tahun' => $tahun,
+            'listTahun' => $listTahun,
             'kategoriProgram' => $kategoriProgram,
             'listKategori' => $listKategori,
             'startDate' => $startDate->format('Y-m-d'),
             'endDate' => $endDate->format('Y-m-d'),
             'startDateFormatted' => $startDate->translatedFormat('d M Y'),
             'endDateFormatted' => $endDate->translatedFormat('d M Y'),
+            'startDateCarbon' => $startDate,
+            'endDateCarbon' => $endDate,
+            'isMultiYear' => $isMultiYear,
         ]));
     }
 }

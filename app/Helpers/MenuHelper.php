@@ -140,8 +140,8 @@ class MenuHelper
                     'path' => route('lhr-kategori-catatans.index', absolute: false),
                 ],
                 [
-                    'name' => 'Format Penomoran Surat',
-                    'path' => route('nomor-formats.index', absolute: false),
+                    'name' => 'Dasar Peraturan',
+                    'path' => route('dasar-peraturan.index', absolute: false),
                 ],
             ];
 

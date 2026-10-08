@@ -788,44 +788,6 @@
                     {!! $catatanHtml($u['kode'], $u['catatan'] ?? '') !!}
                 @endif
 
-                {{-- Tabel konsistensi RPJMD vs RKPD tepat di bawah catatan S8 --}}
-                @if($u['kode'] === 'RKPD.S8')
-                    <table class="bordered" style="font-size:8pt">
-                        <thead>
-                            <tr>
-                                <th rowspan="3" style="width:20%">Misi/Tujuan/Sasaran</th>
-                                <th colspan="3">Rankir RPJMD tahun 2025-2029</th>
-                                <th colspan="3">Rankir RKPD tahun {{ $tahun }}</th>
-                            </tr>
-                            <tr>
-                                <th colspan="3">Tabel 3.6</th>
-                                <th colspan="3">Tabel 3.9 — Teknik Perumusan Program Prioritas Pembangunan Daerah</th>
-                            </tr>
-                            <tr>
-                                <th>Indikator Tujuan/Sasaran</th><th>Satuan</th><th>Target {{ $tahun }}</th>
-                                <th>Indikator Tujuan/Sasaran</th><th>Satuan</th><th>Target {{ $tahun }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        @foreach($konsistensiRows as $row)
-                            @if($row[0] === 'misi')
-                                <tr><td colspan="7" class="misi">{{ $row[1] }}</td></tr>
-                            @else
-                                @php $beda = trim(strip_tags($row[3])) !== trim(strip_tags($row[6])); @endphp
-                                <tr>
-                                    <td class="{{ $row[0] === null ? 'cont' : '' }}">{{ $row[0] }}</td>
-                                    <td>{!! $row[1] !!}</td>
-                                    <td class="c">{!! $row[2] !!}</td>
-                                    <td class="c">{!! $row[3] !!}</td>
-                                    <td>{!! $row[4] !!}</td>
-                                    <td class="c">{!! $row[5] !!}</td>
-                                    <td class="c {{ $beda ? 'diff' : '' }}">{!! $row[6] !!}</td>
-                                </tr>
-                            @endif
-                        @endforeach
-                        </tbody>
-                    </table>
-                @endif
             </div>
         @endforeach
     </div>
@@ -918,7 +880,7 @@
                     </td>
                 </tr>
             </table>
-            <h3 class="text-center" style="font-size:11pt;text-transform:uppercase">Daftar Lampiran Dokumen Pendukung</h3>
+            <h3 class="text-center" style="font-size:11pt;text-transform:uppercase">DAFTAR LAMPIRAN DOKUMEN PENDUKUNG</h3>
             <p class="text-justify">Berikut adalah daftar berkas dan dokumen pendukung perencanaan yang dihimpun, diverifikasi, dan ditelaah oleh Tim Reviu Inspektorat Daerah Kabupaten Rembang selama pelaksanaan reviu atas Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }}:</p>
             <table class="data-table">
                 <thead>
@@ -942,7 +904,51 @@
                 @endforeach
                 </tbody>
             </table>
-            <p style="font-size:8pt;color:#64748b;font-style:italic">* Seluruh berkas lampiran di atas tersimpan secara aman dan terenkripsi pada repositori arsip digital Sistem Informasi Pengawasan Terpadu dan Akuntabel (SIAPTUNTAS) Inspektorat Daerah Kabupaten Rembang.</p>
+
+            @php
+                $imageAttachments = $attList->filter(fn($a) => $a->isImage());
+            @endphp
+
+            @if($imageAttachments->isNotEmpty())
+                <div style="margin-top:25px">
+                    <h4 style="font-size:10.5pt;font-weight:bold;text-transform:uppercase;border-bottom:2px solid #1e3a8a;padding-bottom:5px;margin-bottom:15px;color:#1e3a8a">
+                        DOKUMENTASI FOTO / BUKTI GAMBAR DOKUMEN PENDUKUNG
+                    </h4>
+                    <p class="text-justify" style="font-size:9pt;margin-bottom:15px">
+                        Berikut adalah dokumentasi visual berkas lampiran pendukung yang disertakan dalam pelaksanaan reviu perencanaan daerah:
+                    </p>
+                    
+                    @foreach($imageAttachments as $idx => $imgAtt)
+                        @php
+                            $base64 = $imgAtt->base64_data;
+                        @endphp
+                        @if($base64)
+                            <div class="nobreak" style="margin-bottom:25px;padding:12px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:6px;text-align:center">
+                                <div style="margin-bottom:10px">
+                                    <img src="{{ $base64 }}" alt="{{ $imgAtt->file_name }}" style="max-width:95%;max-height:380px;display:inline-block;border:1px solid #94a3b8;border-radius:4px">
+                                </div>
+                                <table class="plain" style="width:100%;font-size:8.5pt;margin-top:8px;border-top:1px dashed #94a3b8;padding-top:6px;text-align:left">
+                                    <tr>
+                                        <td style="width:20%;font-weight:bold;color:#334155">Gambar {{ $idx + 1 }}</td>
+                                        <td style="width:2%">:</td>
+                                        <td style="font-weight:bold;color:#0f172a">{{ $imgAtt->file_name }}</td>
+                                        <td style="width:20%;text-align:right;color:#64748b;font-family:monospace">{{ $imgAtt->file_size_formatted }}</td>
+                                    </tr>
+                                    @if($imgAtt->keterangan)
+                                        <tr>
+                                            <td style="font-weight:bold;color:#334155">Keterangan</td>
+                                            <td>:</td>
+                                            <td colspan="2" style="color:#1e293b">{{ $imgAtt->keterangan }}</td>
+                                        </tr>
+                                    @endif
+                                </table>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+            @endif
+
+            <p style="font-size:8pt;color:#64748b;font-style:italic;margin-top:15px">* Seluruh berkas lampiran di atas tersimpan secara aman dan terenkripsi pada repositori arsip digital Sistem Informasi Pengawasan Terpadu dan Akuntabel (SIAPTUNTAS) Inspektorat Daerah Kabupaten Rembang.</p>
         </div>
     @endif
 </main>

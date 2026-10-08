@@ -109,15 +109,53 @@ class Attachment extends Model
         return route('attachments.show', $this->id);
     }
 
+    public function getDiskPathAttribute(): ?string
+    {
+        if (! $this->file_path) {
+            return null;
+        }
+
+        if (Storage::disk('local')->exists($this->file_path)) {
+            return Storage::disk('local')->path($this->file_path);
+        }
+
+        if (Storage::disk('public')->exists($this->file_path)) {
+            return Storage::disk('public')->path($this->file_path);
+        }
+
+        return null;
+    }
+
+    public function getBase64DataAttribute(): ?string
+    {
+        $path = $this->disk_path;
+        if (! $path || ! file_exists($path)) {
+            return null;
+        }
+
+        $mime = @mime_content_type($path) ?: ($this->file_type ?: 'image/jpeg');
+        $content = @file_get_contents($path);
+        if ($content === false) {
+            return null;
+        }
+
+        return 'data:' . $mime . ';base64,' . base64_encode($content);
+    }
+
     // ================= HELPER =================
 
     public function isImage(): bool
     {
-        return str_starts_with((string) $this->file_type, 'image/');
+        if (str_starts_with((string) $this->file_type, 'image/')) {
+            return true;
+        }
+
+        $ext = strtolower(pathinfo((string) $this->file_name, PATHINFO_EXTENSION));
+        return in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg']);
     }
 
     public function isPdf(): bool
     {
-        return $this->file_type === 'application/pdf';
+        return $this->file_type === 'application/pdf' || strtolower(pathinfo((string) $this->file_name, PATHINFO_EXTENSION)) === 'pdf';
     }
 }

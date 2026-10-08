@@ -209,6 +209,71 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Dasar Peraturan / Dasar Hukum --}}
+                <div class="rounded-xl border border-gray-200/90 bg-gray-50/40 p-4 space-y-3 dark:border-gray-800 dark:bg-white/[0.02]"
+                     x-data="dasarHukumSelector(@js($availableDasarPeraturans), @js(old('dasar_peraturan_ids', !empty($selectedDasarIds) ? $selectedDasarIds : $availableDasarPeraturans->where('is_active', true)->pluck('id')->values()->all())))">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2.5 border-b border-gray-100 dark:border-gray-800">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                Dasar Hukum Surat Tugas (SPT)
+                            </span>
+                            <span class="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                                  x-text="selectedIds.length + ' dipilih'"></span>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs">
+                            <button type="button" @click="selectAll()"
+                                    class="text-[11px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                Pilih Semua
+                            </button>
+                            <span class="text-gray-300 dark:text-gray-700">&bull;</span>
+                            <button type="button" @click="deselectAll()"
+                                    class="text-[11px] font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">
+                                Batal Semua
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="custom-scroll max-h-52 overflow-y-auto space-y-1.5 pr-1">
+                        <template x-for="(item, idx) in items" :key="item.id">
+                            <label class="flex items-start gap-2.5 px-3 py-2 rounded-lg border text-xs transition-colors cursor-pointer select-none"
+                                   :class="selectedIds.includes(Number(item.id)) 
+                                        ? 'border-blue-200 bg-blue-50/50 text-gray-900 dark:border-blue-900/60 dark:bg-blue-950/20 dark:text-white' 
+                                        : 'border-gray-200/60 bg-white hover:bg-gray-50 text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800/60 dark:text-gray-300'">
+                                <input type="checkbox" name="dasar_peraturan_ids[]" :value="item.id"
+                                       :checked="selectedIds.includes(Number(item.id))"
+                                       @change="toggle(item.id)"
+                                       class="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-[11px] leading-relaxed">
+                                        <span class="font-bold text-gray-400 mr-1" x-text="(idx + 1) + '.'"></span>
+                                        <span x-text="item.nama"></span>
+                                    </div>
+                                    <template x-if="item.nomor || !item.is_active">
+                                        <div class="mt-1 flex items-center gap-1.5">
+                                            <template x-if="item.nomor">
+                                                <span class="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-[9px] font-mono text-gray-500 dark:text-gray-400"
+                                                      x-text="item.nomor"></span>
+                                            </template>
+                                            <template x-if="!item.is_active">
+                                                <span class="rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 px-1 py-0.5 text-[9px] font-semibold">
+                                                    Nonaktif di Master
+                                                </span>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </label>
+                        </template>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[10px] text-gray-400 pt-1">
+                        <span>Peraturan yang dicentang akan otomatis dicetak pada kolom DASAR SPT.</span>
+                        <a href="{{ route('dasar-peraturan.index') }}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                            Kelola Master &rarr;
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -453,6 +518,25 @@ document.addEventListener('alpine:init', () => {
             this.selectedId = id;
             this.search = '';
             this.open = false;
+        }
+    }));
+
+    Alpine.data('dasarHukumSelector', (items, initialSelected) => ({
+        items: items,
+        selectedIds: Array.isArray(initialSelected) ? initialSelected.map(Number) : [],
+        toggle(id) {
+            id = Number(id);
+            if (this.selectedIds.includes(id)) {
+                this.selectedIds = this.selectedIds.filter(x => x !== id);
+            } else {
+                this.selectedIds.push(id);
+            }
+        },
+        selectAll() {
+            this.selectedIds = this.items.map(i => Number(i.id));
+        },
+        deselectAll() {
+            this.selectedIds = [];
         }
     }));
 });

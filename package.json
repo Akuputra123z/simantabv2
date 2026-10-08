@@ -33,6 +33,7 @@
         "flatpickr": "^4.6.13",
         "jsvectormap": "^1.7.0",
         "prismjs": "^1.30.0",
+        "qrcode": "^1.5.4",
         "swiper": "^12.0.3",
         "tinymce": "^6.8.6"
     }

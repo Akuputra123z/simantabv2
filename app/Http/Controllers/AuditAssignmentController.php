@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\QrCodeHelper;
 use App\Models\AuditAssignment;
 use App\Models\AuditProgram;
 use App\Models\AuditProgramDetail;
+use App\Models\DasarPeraturan;
 use App\Models\UnitDiperiksa;
 use App\Models\User;
 use App\Services\LhpStatistikService;
@@ -37,6 +39,7 @@ class AuditAssignmentController extends Controller
                     'kategori' => $u->kategori,
                     'kecamatan_nama' => $u->nama_kecamatan,
                 ]),
+            'availableDasarPeraturans' => DasarPeraturan::ordered()->get(),
         ];
     }
 
@@ -153,6 +156,8 @@ class AuditAssignmentController extends Controller
             'status' => 'required|in:draft,berjalan,selesai',
             'members' => 'nullable|array',
             'members.*' => 'exists:users,id',
+            'dasar_peraturan_ids' => 'nullable|array',
+            'dasar_peraturan_ids.*' => 'exists:dasar_peraturans,id',
         ];
 
         $validated = $request->validate($rules, [
@@ -170,7 +175,8 @@ class AuditAssignmentController extends Controller
         DB::transaction(function () use ($validated, &$detailId) {
             $unitIds = $validated['unit_diperiksa_ids'];
             $members = $validated['members'] ?? [];
-            unset($validated['unit_diperiksa_ids'], $validated['members']);
+            $dasarIds = $validated['dasar_peraturan_ids'] ?? [];
+            unset($validated['unit_diperiksa_ids'], $validated['members'], $validated['dasar_peraturan_ids']);
 
             $assignment = AuditAssignment::create([
                 ...$validated,
@@ -180,6 +186,7 @@ class AuditAssignmentController extends Controller
 
             $assignment->unitDiperiksas()->sync($unitIds);
             $assignment->members()->sync($members);
+            $assignment->dasarPeraturans()->sync($dasarIds);
 
             $detailId = $assignment->audit_program_detail_id;
         });
@@ -204,6 +211,7 @@ class AuditAssignmentController extends Controller
             'members',
             'auditProgramDetail.auditProgram',
             'unitDiperiksas',
+            'dasarPeraturans',
         ]);
 
         $viewData = $this->sharedViewData($auditAssignment->id);
@@ -213,6 +221,7 @@ class AuditAssignmentController extends Controller
             'preselectedUnits' => $data->unitDiperiksas,
             'currentProgId' => $data->auditProgramDetail->audit_program_id ?? '',
             'currentDetId' => $data->audit_program_detail_id ?? '',
+            'selectedDasarIds' => $data->dasarPeraturans->pluck('id')->toArray(),
         ]));
     }
 
@@ -262,6 +271,8 @@ class AuditAssignmentController extends Controller
             'status' => 'required|in:draft,berjalan,selesai',
             'members' => 'nullable|array',
             'members.*' => 'exists:users,id',
+            'dasar_peraturan_ids' => 'nullable|array',
+            'dasar_peraturan_ids.*' => 'exists:dasar_peraturans,id',
         ];
 
         $validated = $request->validate($rules, [
@@ -271,7 +282,8 @@ class AuditAssignmentController extends Controller
         DB::transaction(function () use ($validated, $auditAssignment) {
             $unitIds = $validated['unit_diperiksa_ids'];
             $members = $validated['members'] ?? [];
-            unset($validated['unit_diperiksa_ids'], $validated['members']);
+            $dasarIds = $validated['dasar_peraturan_ids'] ?? [];
+            unset($validated['unit_diperiksa_ids'], $validated['members'], $validated['dasar_peraturan_ids']);
 
             $auditAssignment->update([
                 ...$validated,
@@ -280,6 +292,7 @@ class AuditAssignmentController extends Controller
 
             $auditAssignment->unitDiperiksas()->sync($unitIds);
             $auditAssignment->members()->sync($members);
+            $auditAssignment->dasarPeraturans()->sync($dasarIds);
         });
 
         // Sinkron status program setelah assignment diupdate
@@ -360,6 +373,43 @@ class AuditAssignmentController extends Controller
         return response()->json($units);
     }
 
+    private function getSignatureAndQr(AuditAssignment $assignment): array
+    {
+        $signatureBase64 = null;
+        $qrBase64 = null;
+
+        if ($assignment->isSigned()) {
+            $sigPath = null;
+            if ($assignment->signer && $assignment->signer->signature) {
+                $sigPath = $assignment->signer->signature;
+            }
+            if (! $sigPath || ! Storage::disk('public')->exists($sigPath)) {
+                $kepala = User::where(function ($q) {
+                    $q->where('name', 'like', '%Imung%')
+                        ->orWhere('nip', 'like', '%19741128%');
+                })->whereNotNull('signature')->first();
+                $sigPath = $kepala?->signature;
+            }
+            if (! $sigPath || ! Storage::disk('public')->exists($sigPath)) {
+                $sigPath = 'signatures/4OYa9msXrqsot6MkvjKPRfD773BnAVYqaiDiqnUM.png';
+            }
+            if ($sigPath && Storage::disk('public')->exists($sigPath)) {
+                $fullPath = Storage::disk('public')->path($sigPath);
+                $ext = pathinfo($fullPath, PATHINFO_EXTENSION) ?: 'png';
+                $signatureBase64 = 'data:image/'.$ext.';base64,'.base64_encode(file_get_contents($fullPath));
+            }
+
+            try {
+                $qrPayload = route('audit-assignment.preview', $assignment->id);
+                $qrBase64 = QrCodeHelper::generateDataUrl($qrPayload, 260, 2);
+            } catch (\Throwable $e) {
+                // fallback
+            }
+        }
+
+        return [$signatureBase64, $qrBase64];
+    }
+
     public function print($id)
     {
         $assignment = AuditAssignment::with([
@@ -369,9 +419,18 @@ class AuditAssignmentController extends Controller
             'pengendaliTeknis',
             'signer',
             'members',
+            'dasarPeraturans',
         ])->findOrFail($id);
 
-        return view('pages.audit-assignment.print', compact('assignment'));
+        $logoPath = public_path('images/logo/image.png');
+        if (! file_exists($logoPath)) {
+            $logoPath = public_path('images/logos/rembang.png');
+        }
+        $logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : '';
+
+        [$signatureBase64, $qrBase64] = $this->getSignatureAndQr($assignment);
+
+        return view('pages.audit-assignment.print', compact('assignment', 'logoBase64', 'signatureBase64', 'qrBase64'));
     }
 
     // ── Print PDF (stream) ────────────────────────────────────────────────
@@ -385,23 +444,23 @@ class AuditAssignmentController extends Controller
             'pengendaliTeknis',
             'signer',
             'members',
+            'dasarPeraturans',
         ])->findOrFail($id);
 
-        $signatureBase64 = null;
-        if ($assignment->isSigned() && $assignment->signer && $assignment->signer->signature) {
-            $path = Storage::disk('public')->path($assignment->signer->signature);
-            if (file_exists($path)) {
-                $ext = pathinfo($path, PATHINFO_EXTENSION);
-                $signatureBase64 = 'data:image/'.$ext.';base64,'.base64_encode(file_get_contents($path));
-            }
+        $logoPath = public_path('images/logo/image.png');
+        if (! file_exists($logoPath)) {
+            $logoPath = public_path('images/logos/rembang.png');
         }
+        $logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : '';
 
-        $pdf = Pdf::loadView('pages.audit-assignment.print-pdf', compact('assignment', 'signatureBase64'))
+        [$signatureBase64, $qrBase64] = $this->getSignatureAndQr($assignment);
+
+        $pdf = Pdf::loadView('pages.audit-assignment.print-pdf', compact('assignment', 'signatureBase64', 'logoBase64', 'qrBase64'))
             ->setPaper('a4', 'portrait')
             ->setOptions([
                 'defaultFont' => 'sans-serif',
                 'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled' => false,
+                'isRemoteEnabled' => true,
             ]);
 
         $filename = 'surat-tugas-'.$assignment->nomor_surat.'-'.now()->format('Ymd').'.pdf';
@@ -421,6 +480,7 @@ class AuditAssignmentController extends Controller
             'attachments',
             'lhps',
             'signer',
+            'dasarPeraturans',
         ]);
 
         return view('pages.audit-assignment.show', compact('data'));
@@ -446,6 +506,28 @@ class AuditAssignmentController extends Controller
             : route('audit-assignment.show', $auditAssignment->id);
 
         return redirect($redirectTo)->with('success', 'Surat Tugas berhasil ditandatangani.');
+    }
+
+    public function batalSign(AuditAssignment $auditAssignment)
+    {
+        if (! auth()->user()->hasRole('super_admin') && ! auth()->user()->hasRole('kepala_inspektorat')) {
+            return back()->with('error', 'Hanya Super Admin dan Kepala Inspektorat yang dapat membatalkan tanda tangan Surat Tugas.');
+        }
+
+        if (! $auditAssignment->isSigned()) {
+            return back()->with('error', 'Surat Tugas ini belum ditandatangani.');
+        }
+
+        $auditAssignment->update([
+            'approved_by' => null,
+            'approved_at' => null,
+        ]);
+
+        $redirectTo = request('from') === 'preview'
+            ? route('audit-assignment.preview', $auditAssignment->id)
+            : route('audit-assignment.show', $auditAssignment->id);
+
+        return redirect($redirectTo)->with('success', 'Tanda tangan Surat Tugas berhasil dibatalkan.');
     }
 
     // ── destroy ───────────────────────────────────────────────────────

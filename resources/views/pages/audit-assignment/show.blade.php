@@ -63,7 +63,13 @@
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 Ditandatangani
             </span>
-            <span class="text-xs text-gray-400">oleh {{ $data->signer->name }}, {{ $data->approved_at->translatedFormat('d F Y H:i') }}</span>
+            <span class="text-xs text-gray-400">oleh {{ $data->signer->name ?? 'Kepala Inspektorat' }}, {{ $data->approved_at?->translatedFormat('d F Y H:i') }}</span>
+            @if($canSign)
+            <form action="{{ route('audit-assignment.batal-sign', $data->id) }}" method="POST" class="inline ml-1" onsubmit="return confirm('Batalkan tanda tangan Surat Tugas ini?')">
+                @csrf
+                <button type="submit" class="text-xs text-amber-600 hover:text-amber-800 underline font-medium">Batal TTD</button>
+            </form>
+            @endif
         @endif
     </div>
 
@@ -177,6 +183,31 @@
             </dd>
         </div>
     </dl>
+</div>
+
+{{-- CARD: Dasar Hukum SPT --}}
+<div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] space-y-3">
+    <div class="flex items-center justify-between border-b border-gray-100 pb-2.5 dark:border-gray-800">
+        <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-800 dark:text-gray-100">Dasar Hukum Penugasan (SPT)</h3>
+            <p class="text-xs text-gray-400">Dasar peraturan yang dicantumkan pada naskah Surat Perintah Tugas</p>
+        </div>
+        <span class="rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 text-[11px] font-bold">
+            {{ $data->effective_dasar_peraturans->count() }} Peraturan
+        </span>
+    </div>
+    <ol class="list-decimal pl-4 space-y-1.5 text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+        @forelse($data->effective_dasar_peraturans as $dp)
+            <li class="pl-0.5">
+                {{ $dp->nama }}
+                @if($dp->nomor)
+                    <span class="ml-1 inline-block font-mono text-[10px] text-gray-400">({{ $dp->nomor }})</span>
+                @endif
+            </li>
+        @empty
+            <li class="text-gray-400 italic">Tidak ada dasar hukum yang dipilih</li>
+        @endforelse
+    </ol>
 </div>
 
 @php

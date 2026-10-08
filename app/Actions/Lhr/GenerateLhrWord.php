@@ -591,9 +591,6 @@ class GenerateLhrWord
             ['alignment' => Jc::BOTH, 'spaceAfter' => 40, 'leftIndent' => 200]
         );
 
-        // Tabel Konsistensi Misi 1 - 5 RPJMD vs RKPD
-        $this->addTableKonsistensiRpjmdRkpd($mainSection, $tahunAnggaran);
-
         $mainSection->addPageBreak();
 
         // ── HALAMAN 12-15: 3. REKOMENDASI PERBAIKAN ───────────────────────────────
@@ -730,6 +727,53 @@ class GenerateLhrWord
                 $attTable->addCell(3000)->addText($att->keterangan ?: '-');
                 $attTable->addCell(1200)->addText($ext, null, ['alignment' => Jc::CENTER]);
                 $attTable->addCell(1200)->addText($att->file_size_formatted, null, ['alignment' => Jc::RIGHT]);
+            }
+
+            // Dokumentasi Foto / Bukti Gambar Dokumen Pendukung
+            $imageAttachments = $attachments->filter(fn($att) => $att->isImage());
+            if ($imageAttachments->isNotEmpty()) {
+                $mainSection->addTextBreak(1);
+                $mainSection->addText(
+                    'DOKUMENTASI FOTO / BUKTI GAMBAR DOKUMEN PENDUKUNG',
+                    ['bold' => true, 'size' => 10, 'color' => '1E3A8A'],
+                    ['spaceAfter' => 40]
+                );
+                $mainSection->addText(
+                    'Berikut adalah dokumentasi visual berkas lampiran pendukung yang disertakan dalam pelaksanaan reviu perencanaan daerah:',
+                    null,
+                    ['spaceAfter' => 60, 'alignment' => Jc::BOTH]
+                );
+
+                foreach ($imageAttachments as $idx => $imgAtt) {
+                    $imgPath = $imgAtt->disk_path;
+                    if ($imgPath && file_exists($imgPath)) {
+                        $imgInfo = @getimagesize($imgPath);
+                        $w = 420;
+                        $h = 240;
+                        if ($imgInfo && $imgInfo[0] > 0 && $imgInfo[1] > 0) {
+                            $ratio = $imgInfo[1] / $imgInfo[0];
+                            $h = min(360, (int) round($w * $ratio));
+                        }
+
+                        try {
+                            $mainSection->addImage($imgPath, [
+                                'width' => $w,
+                                'height' => $h,
+                                'alignment' => Jc::CENTER,
+                                'spaceAfter' => 20,
+                            ]);
+
+                            $caption = 'Gambar ' . ($idx + 1) . ': ' . $imgAtt->file_name;
+                            if ($imgAtt->keterangan) {
+                                $caption .= ' - ' . $imgAtt->keterangan;
+                            }
+                            $caption .= ' (' . $imgAtt->file_size_formatted . ')';
+                            $mainSection->addText($caption, ['italic' => true, 'size' => 8.5, 'color' => '555555'], ['alignment' => Jc::CENTER, 'spaceAfter' => 60]);
+                        } catch (\Throwable $e) {
+                            // Abaikan jika format gambar tidak dikenali parser Word
+                        }
+                    }
+                }
             }
 
             $mainSection->addTextBreak(1);

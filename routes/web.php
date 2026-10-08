@@ -5,6 +5,7 @@ use App\Http\Controllers\AuditAssignmentController;
 use App\Http\Controllers\AuditProgramController;
 use App\Http\Controllers\AuditProgramDetailController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DasarPeraturanController;
 use App\Http\Controllers\JenisDokumenReviuController;
 use App\Http\Controllers\KodeRekomendasiController;
 use App\Http\Controllers\KodeTemuanController;
@@ -12,7 +13,6 @@ use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LhpController;
 use App\Http\Controllers\LhrController;
 use App\Http\Controllers\LhrKategoriCatatanController;
-use App\Http\Controllers\NomorFormatController;
 use App\Http\Controllers\OpdDashboardController;
 use App\Http\Controllers\OpdProfileController;
 use App\Http\Controllers\OpdTindakLanjutController;
@@ -119,6 +119,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/audit-assignment/{id}/preview', [AuditAssignmentController::class, 'print'])->name('audit-assignment.preview');
     Route::get('/audit-assignment/{id}/print', [AuditAssignmentController::class, 'printPdf'])->name('audit-assignment.print');
     Route::post('/audit-assignment/{auditAssignment}/sign', [AuditAssignmentController::class, 'sign'])->name('audit-assignment.sign');
+    Route::post('/audit-assignment/{auditAssignment}/batal-sign', [AuditAssignmentController::class, 'batalSign'])->name('audit-assignment.batal-sign');
 
     // Master Data & Audit Program Utama
     Route::resource('kode-temuan', KodeTemuanController::class);
@@ -130,6 +131,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::resource('audit-program', AuditProgramController::class);
     Route::get('/audit-program/{auditProgram}/preview', [AuditProgramController::class, 'preview'])->name('audit-program.preview');
     Route::get('/audit-program/{auditProgram}/preview-pdf', [AuditProgramController::class, 'previewPdf'])->name('audit-program.preview-pdf');
+    Route::get('/audit-program/{auditProgram}/download-approved-pdf', [AuditProgramController::class, 'downloadApprovedPdf'])->name('audit-program.download-approved-pdf');
     Route::match(['GET', 'POST'], '/audit-program/{auditProgram}/export-pdf', [AuditProgramController::class, 'exportPdf'])->name('audit-program.export-pdf');
     Route::match(['GET', 'POST'], '/audit-program/{auditProgram}/export-excel', [AuditProgramController::class, 'exportExcel'])->name('audit-program.export-excel');
     Route::post('/audit-program/{auditProgram}/approve', [AuditProgramController::class, 'approve'])->name('audit-program.approve');
@@ -160,10 +162,13 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('/{uuid}/apply-standard-template', [LhrController::class, 'applyStandardTemplate'])->name('apply-standard-template');
     });
 
-    // ── Master Data Reviu & Penomoran ──
+    // ── Master Data Reviu & Dasar Peraturan ──
     Route::resource('jenis-dokumen-reviu', JenisDokumenReviuController::class)->except(['create', 'show', 'edit']);
     Route::resource('lhr-kategori-catatans', LhrKategoriCatatanController::class)->except(['create', 'show', 'edit']);
-    Route::resource('nomor-formats', NomorFormatController::class)->only(['index', 'update']);
+    Route::patch('dasar-peraturan/{dasarPeraturan}/toggle', [DasarPeraturanController::class, 'toggle'])->name('dasar-peraturan.toggle');
+    Route::resource('dasar-peraturan', DasarPeraturanController::class)
+        ->parameters(['dasar-peraturan' => 'dasarPeraturan'])
+        ->except(['create', 'show', 'edit']);
 });
 
 // --- GRUP 2: Khusus Super Admin (Manajemen User) ---

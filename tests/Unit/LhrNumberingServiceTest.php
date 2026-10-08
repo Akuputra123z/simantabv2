@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use App\Models\NomorFormat;
 use App\Models\NomorSequence;
 use App\Services\Lhr\LhrNumberingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -46,14 +45,8 @@ class LhrNumberingServiceTest extends TestCase
         $this->assertEquals('700/093.a/REVIU/INSP/2025', $res['nomor']);
     }
 
-    public function test_can_use_custom_configured_format(): void
+    public function test_can_allocate_spt_reviu_format(): void
     {
-        NomorFormat::create([
-            'jenis' => 'spt_reviu',
-            'pola' => '000.1.2.3/{urut:3}/REVIU/INSP/{tahun}',
-            'aktif' => true,
-        ]);
-
         $service = new LhrNumberingService;
         $res = $service->allocate('spt_reviu', 2026);
 

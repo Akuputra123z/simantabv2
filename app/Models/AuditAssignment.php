@@ -149,4 +149,31 @@ class AuditAssignment extends Model
     {
         return $this->approved_by !== null;
     }
+
+    public function dasarPeraturans(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            DasarPeraturan::class,
+            'audit_assignment_dasar_peraturan',
+            'audit_assignment_id',
+            'dasar_peraturan_id'
+        )
+            ->withPivot('urutan')
+            ->orderByPivot('urutan', 'asc')
+            ->orderBy('dasar_peraturans.urutan', 'asc');
+    }
+
+    public function getEffectiveDasarPeraturansAttribute()
+    {
+        if ($this->relationLoaded('dasarPeraturans') && $this->dasarPeraturans->isNotEmpty()) {
+            return $this->dasarPeraturans;
+        }
+
+        $assigned = $this->dasarPeraturans()->get();
+        if ($assigned->isNotEmpty()) {
+            return $assigned;
+        }
+
+        return DasarPeraturan::where('is_active', true)->orderBy('urutan')->get();
+    }
 }

@@ -11,15 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('nomor_formats', function (Blueprint $table) {
-            $table->id();
-            $table->string('jenis', 30)->unique();
-            $table->string('pola', 100);
-            $table->string('keterangan', 255)->nullable();
-            $table->boolean('aktif')->default(true);
-            $table->timestamps();
-        });
-
         Schema::create('nomor_sequences', function (Blueprint $table) {
             $table->id();
             $table->string('jenis', 30);
@@ -37,6 +28,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('nomor_sequences');
-        Schema::dropIfExists('nomor_formats');
     }
 };

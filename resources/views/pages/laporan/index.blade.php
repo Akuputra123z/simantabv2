@@ -157,7 +157,7 @@
             <table class="w-full text-left text-sm">
                 <thead class="bg-gray-50/70 dark:bg-gray-900/40">
                     <tr>
-                        <th class="px-5 py-3.5 w-[31%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nomor LHP</th>
+                        <th class="px-5 py-3.5 w-[31%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Nomor LHP/ LHR</th>
                         <th class="px-5 py-3.5 w-[14%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Unit</th>
                         <th class="px-5 py-3.5 w-[10%] text-[10px] font-bold uppercase tracking-wide text-gray-400">Tanggal</th>
                         <th class="px-5 py-3.5 w-[8%] text-[10px] font-bold uppercase tracking-wide text-gray-400 text-center">Kategori</th>
@@ -189,37 +189,70 @@
                         };
                     @endphp
                     <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                        {{-- Nomor LHP --}}
+                        {{-- Nomor LHP/ LHR & Detail Penugasan --}}
                         <td class="px-5 py-4">
-                            <div class="text-sm font-bold">
-                                <a href="{{ route('laporan.rekap-per-lhp', $lhp->id) }}" class="hover:underline">
-                                    {{ $lhp->nomor_lhp }}
-                                </a>
-                            </div>
-                            @if($lhp->auditAssignment?->nomor_surat)
-                            <p class="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500 leading-tight">
-                                ST: {{ $lhp->auditAssignment->nomor_surat }}
-                            </p>
-                            @endif
-                            @if($lhp->auditAssignment?->auditProgram?->nama_program)
-                            <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
-                                {{ $lhp->auditAssignment->auditProgram->nama_program }}
-                            </p>
-                            @endif
-                            @if($lhp->auditAssignment?->auditProgramDetail?->jenis_kegiatan)
-                            <p class="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500 leading-tight">
-                                {{ $lhp->auditAssignment->auditProgramDetail->jenis_kegiatan }}
-                            </p>
-                            @endif
-                            <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-                                <span class="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-[9px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30">
-                                    {{ $lhp->auditAssignment?->auditProgramDetail?->tim ?? '-' }}
-                                </span>
-                                @if($lhp->auditAssignment?->jenis_pengawasan)
-                                <span class="px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-900/20 text-[9px] font-semibold text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30">
-                                    {{ ucfirst($lhp->auditAssignment->jenis_pengawasan) }}
-                                </span>
+                            <div class="space-y-1">
+                                {{-- 1. Nama Sub Penugasan (Tebal) --}}
+                                @php
+                                    $subPenugasan = $lhp->auditAssignment?->auditProgramDetail?->nama_detail_program
+                                        ?? $lhp->auditAssignment?->auditProgram?->nama_program
+                                        ?? '-';
+                                    $nomorLhr = $lhp->auditAssignment?->lhrs?->first()?->nomor_lhr;
+                                @endphp
+                                <p class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white leading-snug line-clamp-2" title="{{ $subPenugasan }}">
+                                    {{ $subPenugasan }}
+                                </p>
+
+                                {{-- 2. No LHP & LHR --}}
+                                <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                    <a href="{{ route('laporan.rekap-per-lhp', $lhp->id) }}"
+                                       class="font-mono text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                        No. LHP: {{ $lhp->nomor_lhp }}
+                                    </a>
+                                    @if($nomorLhr)
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40">
+                                            LHR: {{ $nomorLhr }}
+                                        </span>
+                                    @endif
+                                </div>
+
+                                {{-- 3. No. ST --}}
+                                @if($lhp->auditAssignment?->nomor_surat)
+                                    <div class="flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-400">
+                                        <span class="font-medium text-gray-400 dark:text-gray-500">No. ST:</span>
+                                        <span class="font-mono text-gray-700 dark:text-gray-300">{{ $lhp->auditAssignment->nomor_surat }}</span>
+                                    </div>
                                 @endif
+
+                                {{-- 4. Nomor Program / Nama Program --}}
+                                @if($lhp->auditAssignment?->auditProgram?->nama_program)
+                                    <div class="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1" title="{{ $lhp->auditAssignment->auditProgram->nama_program }}">
+                                        <span class="font-medium text-gray-400 dark:text-gray-500">Program:</span>
+                                        <span>{{ $lhp->auditAssignment->auditProgram->nama_program }}</span>
+                                    </div>
+                                @endif
+
+                                {{-- 5. Jenis Kegiatan & Nama Irban --}}
+                                <div class="mt-1 flex flex-wrap items-center gap-1.5 pt-0.5">
+                                    @php
+                                        $irban = $lhp->irban ?? $lhp->auditAssignment?->auditProgramDetail?->tim;
+                                        $jenisKegiatan = $lhp->auditAssignment?->auditProgramDetail?->jenis_kegiatan 
+                                            ?? $lhp->auditAssignment?->jenis_pengawasan;
+                                    @endphp
+                                    @if($irban)
+                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-[10px] font-semibold text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/30">
+                                            <svg class="w-3 h-3 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                            </svg>
+                                            <span>{{ Str::startsWith(strtolower($irban), ['irban', 'tim', 'semua']) ? $irban : 'Irban ' . $irban }}</span>
+                                        </span>
+                                    @endif
+                                    @if($jenisKegiatan)
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-900/20 text-[10px] font-semibold text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/30">
+                                            {{ ucfirst($jenisKegiatan) }}
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                         </td>
                         {{-- Unit --}}

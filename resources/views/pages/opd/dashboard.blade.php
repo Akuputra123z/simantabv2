@@ -35,6 +35,8 @@
     {{-- 1. GLOBAL DATE FILTER --}}
     <x-dashboard.date-filter
         :preset="$preset"
+        :tahun="$tahun ?? date('Y')"
+        :listTahun="$listTahun ?? []"
         :kategoriProgram="$kategoriProgram"
         :listKategori="$listKategori"
         :startDate="$startDate"
@@ -265,7 +267,13 @@
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
                 <div>
                     <h3 class="text-base font-bold text-gray-900 dark:text-white">Perbandingan Kerugian & Penyelamatan Aset Unit</h3>
-                    <p class="text-xs text-gray-500">Grafik real-time perbandingan total kerugian finansial vs realisasi setoran penyelamatan aset per bulan</p>
+                    <p class="text-xs text-gray-500">
+                        @if($isMultiYear ?? false)
+                            Grafik real-time perbandingan total kerugian finansial vs realisasi setoran penyelamatan aset per tahun
+                        @else
+                            Grafik real-time perbandingan total kerugian finansial vs realisasi setoran penyelamatan aset per bulan ({{ $startDateCarbon->year ?? date('Y') }})
+                        @endif
+                    </p>
                 </div>
                 <div class="flex items-center gap-4 text-xs font-semibold shrink-0">
                     <span class="flex items-center gap-1.5 text-rose-600 dark:text-rose-400"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span> Total Kerugian</span>

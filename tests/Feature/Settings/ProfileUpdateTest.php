@@ -72,4 +72,28 @@ class ProfileUpdateTest extends TestCase
         $this->assertGuest();
         $this->assertNull($user->fresh());
     }
+
+    public function test_signature_can_be_uploaded_with_allowed_image_formats(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $user = User::factory()->create();
+
+        foreach (['png', 'jpg', 'jpeg', 'webp'] as $extension) {
+            $file = \Illuminate\Http\UploadedFile::fake()->image("signature.{$extension}", 150, 80);
+
+            $response = $this
+                ->actingAs($user)
+                ->put('/settings/profile', [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'signature' => $file,
+                ]);
+
+            $response->assertSessionHasNoErrors()->assertRedirect('/settings/profile');
+            $user->refresh();
+            $this->assertNotNull($user->signature);
+            \Illuminate\Support\Facades\Storage::disk('public')->assertExists($user->signature);
+        }
+    }
 }

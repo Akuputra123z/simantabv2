@@ -32,6 +32,11 @@
     $allAttachments = $tindakLanjut->attachments;
     $hasOpdData = !empty($tindakLanjut->keterangan_pendukung_opd) || $allAttachments->isNotEmpty() || !empty($tindakLanjut->upload_opd_oleh);
 
+    // Evaluasi status verifikasi & rekomendasi
+    $isLunas = ($tindakLanjut->status_verifikasi === 'lunas' || $rekom?->status === \App\Models\Recommendation::STATUS_SELESAI);
+    $isBerjalan = ($tindakLanjut->status_verifikasi === 'berjalan');
+    $isMenunggu = ($tindakLanjut->status_verifikasi === 'menunggu_verifikasi');
+
     // Parse nomor bukti jika ada
     $nomorBukti = null;
     if (preg_match('/(?:No\.?\s*Bukti\s*\/?\s*STS|No\.?\s*STS|STS|No\.?\s*Dokumen|No\.?\s*BAST)\s*[:#]?\s*([A-Za-z0-9\/\-_.]+)/i', $tindakLanjut->keterangan_pendukung_opd ?? '', $matches)) {
@@ -44,12 +49,12 @@
         'pengembalian_barang' => 'Pengembalian Barang / Aset',
         'perbaikan_administrasi' => 'Perbaikan Administrasi',
     ];
-    $jenisLabel = $jenisMap[$tindakLanjut->jenis_penyelesaian] ?? ucfirst(str_replace('_', ' ', $tindakLanjut->jenis_penyelesaian ?? '-'));
+    $jenisLabel = $jenisMap[$tindakLanjut->jenis_penyelesaian] ?? ($tindakLanjut->jenis_penyelesaian ? ucfirst(str_replace('_', ' ', $tindakLanjut->jenis_penyelesaian)) : 'Setor Kas / Langsung');
 
     $statusVerifBadge = match($tindakLanjut->status_verifikasi) {
         'lunas' => 'bg-green-50 text-green-700 ring-1 ring-green-600/20 dark:bg-green-900/20 dark:text-green-400',
         'berjalan' => 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20 dark:bg-blue-900/20 dark:text-blue-400',
-        default => 'bg-gray-100 text-gray-700 ring-1 ring-gray-600/20 dark:bg-gray-800 dark:text-gray-300'
+        default => 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-300'
     };
 
     $statusOpdBadge = match($tindakLanjut->status_opd) {
@@ -133,6 +138,12 @@
         </div>
     @endif
 
+    @if(session('info'))
+        <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm font-medium text-blue-800 dark:border-blue-800/40 dark:bg-blue-900/20 dark:text-blue-300">
+            {{ session('info') }}
+        </div>
+    @endif
+
     @if(session('error'))
         <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300">
             {{ session('error') }}
@@ -140,26 +151,54 @@
     @endif
 
     {{-- STATUS SINKRONISASI INFO --}}
-    @if($tindakLanjut->status_verifikasi === 'lunas')
-        <div class="rounded-xl border border-green-200 bg-green-50/60 p-4 dark:border-green-800/40 dark:bg-green-900/10">
+    @if($isLunas)
+        <div class="rounded-xl border border-green-200 bg-green-50/70 p-4 dark:border-green-800/40 dark:bg-green-900/10">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                     </div>
                     <div>
-                        <p class="text-sm font-bold text-green-900 dark:text-green-200">Tindak Lanjut Telah Terverifikasi Lunas</p>
+                        <p class="text-sm font-bold text-green-900 dark:text-green-200">Tindak Lanjut Telah Terverifikasi Lunas / Selesai</p>
                         <p class="text-xs text-green-700 dark:text-green-400">
-                            Diverifikasi oleh {{ $tindakLanjut->verifikator->name ?? 'Verifikator' }}
+                            Diverifikasi oleh <strong>{{ $tindakLanjut->verifikator->name ?? 'Verifikator' }}</strong>
                             @if($tindakLanjut->diverifikasi_pada)
                                 pada {{ $tindakLanjut->diverifikasi_pada->format('d/m/Y H:i') }}
                             @endif
-                            . Realisasi setoran Rp{{ number_format($totalTerbayar, 0, ',', '.') }} telah disinkronkan ke rekomendasi.
+                            @if($isUang)
+                                . Realisasi setoran Rp{{ number_format($totalTerbayar, 0, ',', '.') }} telah disinkronkan ke rekomendasi.
+                            @else
+                                . Status rekomendasi telah disinkronkan menjadi Selesai.
+                            @endif
                         </p>
                     </div>
                 </div>
-                <span class="inline-flex items-center rounded-md bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800 dark:bg-green-900/40 dark:text-green-300">
-                    LUNAS 100%
+                <span class="inline-flex items-center gap-1 rounded-md bg-green-100 px-3 py-1 text-xs font-semibold text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    LUNAS / SELESAI
+                </span>
+            </div>
+        </div>
+    @elseif($isBerjalan)
+        <div class="rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-800/40 dark:bg-blue-900/10">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-blue-900 dark:text-blue-200">Tindak Lanjut Dalam Proses (Berjalan)</p>
+                        <p class="text-xs text-blue-700 dark:text-blue-400">
+                            @if($isUang && $sisaBayar > 0)
+                                Sisa setoran yang belum lunas: <strong>Rp{{ number_format($sisaBayar, 0, ',', '.') }}</strong> dari target Rp{{ number_format($targetNilai, 0, ',', '.') }}.
+                            @else
+                                Sedang dalam penanganan dan verifikasi berkala.
+                            @endif
+                        </p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center rounded-md bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                    BERJALAN / PROSES
                 </span>
             </div>
         </div>
@@ -167,7 +206,7 @@
         <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-800/40 dark:bg-amber-900/10">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
                     <div>
@@ -314,44 +353,78 @@
                     {{-- TOMBOL AKSI VERIFIKASI SUPERADMIN / VERIFIKATOR --}}
                     @can('verifikasi', $tindakLanjut)
                     <div class="pt-4 border-t border-gray-100 dark:border-gray-800">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
-                            Aksi Verifikasi Tindak Lanjut
-                        </p>
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                Aksi Verifikasi Tindak Lanjut
+                            </p>
+                            @if($isLunas)
+                                <span class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold text-green-700 bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800/40 dark:text-green-300">
+                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    Terverifikasi Lunas
+                                </span>
+                            @endif
+                        </div>
 
                         <div class="flex flex-wrap items-center gap-2.5">
-                            {{-- VERIFIKASI LUNAS --}}
-                            <form action="{{ route('tindak-lanjuts.verifikasi-opd', $tindakLanjut) }}" method="POST"
-                                  onsubmit="return confirm('Verifikasi tindak lanjut ini sebagai LUNAS? Realisasi Rp{{ number_format($targetNilai, 0, ',', '.') }} akan disinkronkan ke rekomendasi.')">
-                                @csrf
-                                <input type="hidden" name="status_verifikasi" value="lunas">
-                                <button type="submit"
-                                        class="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-xs font-semibold text-white hover:bg-green-700 transition-colors shadow-sm">
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                    Verifikasi Lunas (Rp{{ number_format($targetNilai, 0, ',', '.') }})
-                                </button>
-                            </form>
+                            @if($isLunas)
+                                {{-- KETIKA SUDAH LUNAS: TIDAK TAMPILKAN TOMBOL VERIFIKASI LUNAS LAGI --}}
+                                <div class="inline-flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3.5 py-2 text-xs font-medium text-green-800 dark:bg-green-900/20 dark:border-green-800/60 dark:text-green-300">
+                                    <svg class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span>Tindak lanjut telah diverifikasi lunas & selesai disinkronkan</span>
+                                </div>
 
-                            {{-- VERIFIKASI BERJALAN --}}
-                            <form action="{{ route('tindak-lanjuts.verifikasi-opd', $tindakLanjut) }}" method="POST"
-                                  onsubmit="return confirm('Verifikasi tindak lanjut ini sebagai BERJALAN / Proses?')">
-                                @csrf
-                                <input type="hidden" name="status_verifikasi" value="berjalan">
-                                <button type="submit"
-                                        class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shadow-sm">
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    Verifikasi Berjalan
-                                </button>
-                            </form>
+                                {{-- OPSI KOREKSI KE STATUS BERJALAN JIKA DIBUTUHKAN --}}
+                                <form action="{{ route('tindak-lanjuts.verifikasi-opd', $tindakLanjut) }}" method="POST"
+                                      onsubmit="return confirm('Apakah Anda yakin ingin membatalkan status Lunas dan mengembalikan ke status BERJALAN? Status rekomendasi akan disinkronkan kembali.')">
+                                    @csrf
+                                    <input type="hidden" name="status_verifikasi" value="berjalan">
+                                    <button type="submit"
+                                            class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3.5 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 transition-colors shadow-xs dark:border-amber-700 dark:bg-gray-800 dark:text-amber-300 dark:hover:bg-gray-700 cursor-pointer">
+                                        <svg class="h-4 w-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                        Kembalikan ke Status Berjalan
+                                    </button>
+                                </form>
+                            @else
+                                {{-- VERIFIKASI LUNAS (HANYA MUNCUL JIKA BELUM LUNAS) --}}
+                                <form action="{{ route('tindak-lanjuts.verifikasi-opd', $tindakLanjut) }}" method="POST"
+                                      onsubmit="return confirm('Verifikasi tindak lanjut ini sebagai LUNAS? Realisasi Rp{{ number_format($targetNilai, 0, ',', '.') }} akan disinkronkan ke rekomendasi.')">
+                                    @csrf
+                                    <input type="hidden" name="status_verifikasi" value="lunas">
+                                    <button type="submit"
+                                            class="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-xs font-semibold text-white hover:bg-green-700 transition-colors shadow-sm cursor-pointer">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        Verifikasi Lunas (Rp{{ number_format($targetNilai, 0, ',', '.') }})
+                                    </button>
+                                </form>
 
-                            {{-- TOLAK BUKTI --}}
-                            @can('tolakOpd', $tindakLanjut)
-                            <button type="button"
-                                    x-on:click="$store.tolakModal.open()"
-                                    class="inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors dark:border-red-800 dark:bg-gray-800 dark:text-red-400">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                Tolak Bukti
-                            </button>
-                            @endcan
+                                {{-- VERIFIKASI BERJALAN (HANYA TAMPIL JIKA BUKAN BERJALAN) --}}
+                                @if(! $isBerjalan)
+                                <form action="{{ route('tindak-lanjuts.verifikasi-opd', $tindakLanjut) }}" method="POST"
+                                      onsubmit="return confirm('Verifikasi tindak lanjut ini sebagai BERJALAN / Proses?')">
+                                    @csrf
+                                    <input type="hidden" name="status_verifikasi" value="berjalan">
+                                    <button type="submit"
+                                            class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shadow-sm cursor-pointer">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        Verifikasi Berjalan
+                                    </button>
+                                </form>
+                                @endif
+
+                                {{-- TOLAK BUKTI --}}
+                                @can('tolakOpd', $tindakLanjut)
+                                @if($hasOpdData && ! $tindakLanjut->alasan_tolak_opd)
+                                <button type="button"
+                                        x-on:click="$store.tolakModal.open()"
+                                        class="inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors dark:border-red-800 dark:bg-gray-800 dark:text-red-400 cursor-pointer">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    Tolak Bukti
+                                </button>
+                                @endif
+                                @endcan
+                            @endif
 
                             {{-- BUKA KUNCI OPD --}}
                             @can('bukaKunciOpd', $tindakLanjut)
@@ -360,7 +433,7 @@
                                   onsubmit="return confirm('Buka kunci OPD agar OPD dapat mengunggah ulang?')">
                                 @csrf @method('PATCH')
                                 <button type="submit"
-                                        class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                        class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 cursor-pointer">
                                     <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
                                     Buka Kunci OPD
                                 </button>
@@ -459,7 +532,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                            @forelse($tindakLanjut->cicilans()->latest()->get() as $cicilan)
+                            @forelse($tindakLanjut->cicilans as $cicilan)
                             <tr>
                                 <td class="px-4 py-2.5 font-semibold text-gray-900 dark:text-white">#{{ $cicilan->ke }}</td>
                                 <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400">{{ $cicilan->tanggal_bayar ? $cicilan->tanggal_bayar->format('d/m/Y') : '-' }}</td>

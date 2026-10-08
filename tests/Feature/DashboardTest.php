@@ -32,6 +32,21 @@ class DashboardTest extends TestCase
         $this->get('/dashboard')->assertStatus(200);
     }
 
+    public function test_dashboard_with_all_preset_shows_yearly_categories_and_multi_year_labels(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $response = $this->get('/dashboard?preset=all');
+        $response->assertStatus(200);
+        $response->assertViewHas('preset', 'all');
+        $response->assertViewHas('isMultiYear', true);
+        $response->assertSee('Semua Tahun (Seluruh Periode)');
+        $response->assertSee('Semua Periode');
+        $response->assertSee('Akumulasi Semua Tahun');
+        $response->assertSee('Grafik perkembangan volume audit, temuan, dan rekomendasi tahun ke tahun (per tahun)');
+    }
+
     public function test_opd_users_can_visit_opd_dashboard(): void
     {
         Role::create(['name' => 'opd']);
@@ -465,7 +480,14 @@ class DashboardTest extends TestCase
         $indexRes = $this->get(route('tindak-lanjuts.index'));
         $indexRes->assertStatus(200);
         $indexRes->assertSee('LHP/2026/088');
+        $indexRes->assertSee('Pemeriksaan Aspal Hotmix');
         $indexRes->assertSee('Dinas Pekerjaan Umum');
+        $indexRes->assertSee('Nomor LHP & Sub Program', false);
+        $indexRes->assertSee('Obrik & Ketua Tim', false);
+        $indexRes->assertDontSee('Tanggal LHP & Kategori', false);
+        $indexRes->assertDontSee('Temuan & Rekom / Nilai TL', false);
+        $indexRes->assertSee('Realisasi Tindak Lanjut');
+        $indexRes->assertSee('Status TL OPD');
         $indexRes->assertSee(route('tindak-lanjuts.lhp', $lhp->id));
 
         // 2. Visit /tindak-lanjuts/lhp/{lhp} (Cumulative LHP detail with dropdowns)
@@ -683,4 +705,75 @@ class DashboardTest extends TestCase
         $opdDetailRes->assertStatus(200);
         $opdDetailRes->assertSee('Setorkan kelebihan kas ke kas daerah');
     }
+
+    public function test_dashboard_with_specific_year_filter(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $response = $this->get('/dashboard?tahun=2025');
+        $response->assertStatus(200);
+        $response->assertViewHas('tahun', 2025);
+        $response->assertViewHas('preset', 'year');
+        $response->assertSee('Tahun 2025');
+    }
+
+    public function test_admin_can_visit_laporan_index_and_see_enriched_columns(): void
+    {
+        Role::firstOrCreate(['name' => 'super_admin']);
+        $adminUser = User::factory()->create();
+        $adminUser->assignRole('super_admin');
+
+        $unit = UnitDiperiksa::create([
+            'nama_unit' => 'Dinas Pendidikan Pemuda dan Olahraga',
+            'jenis' => 'opd',
+        ]);
+
+        $program = AuditProgram::create([
+            'nama_program' => 'Program Audit Keuangan Daerah 2026',
+            'kategori' => 'PKPT',
+            'tahun' => 2026,
+            'status' => 'draft',
+        ]);
+
+        $detail = AuditProgramDetail::create([
+            'audit_program_id' => $program->id,
+            'nama_detail_program' => 'Sub Penugasan Audit Dana BOS',
+            'jenis_kegiatan' => 'Pemeriksaan',
+            'tim' => 'Irban I',
+            'nomor_lhp' => 'LHP/BOS/2026/001',
+            'ruang_lingkup' => 'Pendidikan',
+        ]);
+
+        $assignment = AuditAssignment::create([
+            'audit_program_detail_id' => $detail->id,
+            'ketua_tim_id' => $adminUser->id,
+            'nomor_surat' => 'ST/BOS/2026/099',
+            'tanggal_mulai' => now(),
+            'tanggal_selesai' => now()->addDays(7),
+            'status' => 'berjalan',
+            'jenis_pengawasan' => 'Audit',
+        ]);
+
+        $lhp = Lhp::create([
+            'audit_assignment_id' => $assignment->id,
+            'nomor_lhp' => 'LHP/BOS/2026/001',
+            'tanggal_lhp' => now(),
+            'unit_diperiksa_id' => $unit->id,
+            'status' => 'final',
+        ]);
+
+        $this->actingAs($adminUser);
+        $res = $this->get(route('laporan.index'));
+        $res->assertStatus(200);
+        $res->assertSee('Nomor LHP/ LHR');
+        $res->assertSee('Sub Penugasan Audit Dana BOS');
+        $res->assertSee('No. LHP: LHP/BOS/2026/001');
+        $res->assertSee('No. ST:');
+        $res->assertSee('ST/BOS/2026/099');
+        $res->assertSee('Program Audit Keuangan Daerah 2026');
+        $res->assertSee('Irban I');
+        $res->assertSee('Pemeriksaan');
+    }
 }
+

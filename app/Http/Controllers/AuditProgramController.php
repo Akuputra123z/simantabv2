@@ -281,6 +281,39 @@ class AuditProgramController extends Controller
         return Excel::download(new DetailProgramExport($auditProgram, $details), $filename);
     }
 
+    public function downloadApprovedPdf(AuditProgram $auditProgram)
+    {
+        if (! $auditProgram->isApproved()) {
+            return back()->with('error', 'PKPT ini belum disetujui.');
+        }
+
+        $auditProgram->load('approver');
+
+        if ($auditProgram->approved_pdf && Storage::disk('public')->exists($auditProgram->approved_pdf)) {
+            $path = Storage::disk('public')->path($auditProgram->approved_pdf);
+            $filename = basename($auditProgram->approved_pdf);
+
+            return response()->file($path, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="'.str_replace(' ', '-', $filename).'"',
+            ]);
+        }
+
+        $details = $this->getFilteredDetails($auditProgram);
+
+        $pdf = Pdf::loadView('pages.audit-program.pdf.detail', compact('auditProgram', 'details'))
+            ->setPaper('a4', 'landscape')
+            ->setOptions([
+                'defaultFont' => 'sans-serif',
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => false,
+            ]);
+
+        $filename = 'approved-'.str_replace('/', '-', $auditProgram->nama_program).'-'.now()->format('Ymd').'.pdf';
+
+        return $pdf->stream(str_replace(' ', '-', $filename));
+    }
+
     public function approve(AuditProgram $auditProgram)
     {
         if (! auth()->user()->hasRole('kepala_inspektorat') && ! auth()->user()->hasRole('super_admin')) {

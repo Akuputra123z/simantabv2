@@ -132,11 +132,10 @@ class LhrRkpdKuaWorkflowTest extends TestCase
         $resPreview = $this->actingAs($admin)->get(route('lhr.preview', $lhr->uuid));
         $resPreview->assertStatus(200);
         $resPreview->assertSee('LAPORAN HASIL REVIU');
-        $resPreview->assertSee('INSPEKTORAT DAERAH KABUPATEN REMBANG');
-        $resPreview->assertSee('HALAMAN 26: HALAMAN SAMPUL BELAKANG');
+        $resPreview->assertSee('INSPEKTORAT DAERAH');
+        $resPreview->assertSee('KABUPATEN REMBANG');
         $resPreview->assertSee('IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.');
-        $resPreview->assertSee('Lampiran Permendagri No. 86 tahun 2017');
-        $resPreview->assertSee('Misi 1: Meningkatkan Kualitas Sumber Daya Manusia');
+        $resPreview->assertSee('I. Uraian Hasil Reviu');
     }
 
     public function test_can_create_kua_ppas_lhr_with_planning_categories(): void
@@ -249,11 +248,10 @@ class LhrRkpdKuaWorkflowTest extends TestCase
         // 1. Kunjungi Halaman Ruang Kerja LHR
         $response = $this->actingAs($admin)->get(route('lhr.show', $lhr->uuid));
         $response->assertOk();
-        $response->assertSee('a. Format Penyusunan Dokumen');
-        $response->assertSee('b. Substansi Rancangan Akhir (1 s/d 8)');
         $response->assertSee('RKPD.S2');
         $response->assertSee('Struktur Evaluasi Bab Sesuai Template Resmi');
         $response->assertSee('Sinkronisasi Template Rembang');
+        $response->assertSee('Langkah 3: Catatan Temuan & Rekomendasi Perbaikan', false);
 
         // 2. Terapkan 14 Catatan & Simpulan Standar Rembang 2027
         $applyResponse = $this->actingAs($admin)->post(route('lhr.apply-standard-template', $lhr->uuid));
@@ -420,7 +418,7 @@ class LhrRkpdKuaWorkflowTest extends TestCase
             'uraian_rekom' => $updatedRekom,
             'batas_waktu' => now()->addDays(14)->toDateString(),
         ]);
-        $updateResponse->assertRedirect(route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 5]));
+        $updateResponse->assertRedirect(route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 3]));
         $updateResponse->assertSessionHas('success');
 
         $createdCat->refresh();
@@ -703,6 +701,7 @@ class LhrRkpdKuaWorkflowTest extends TestCase
 
         $filePdf = UploadedFile::fake()->create('draft_rancangan_akhir_rkpd_2027.pdf', 1500, 'application/pdf');
         $fileDocx = UploadedFile::fake()->create('berita_acara_musrenbang_2027.docx', 800, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        $fileImg = UploadedFile::fake()->image('foto_bukti_musrenbang.jpg', 640, 480);
 
         // 1. Submit LHR baru dengan berkas lampiran pendukung & catatan
         $response = $this->actingAs($admin)->post(route('lhr.store'), [
@@ -715,10 +714,12 @@ class LhrRkpdKuaWorkflowTest extends TestCase
             'attachments' => [
                 $filePdf,
                 $fileDocx,
+                $fileImg,
             ],
             'attachment_notes' => [
                 'Dokumen Draft Rankir RKPD Bappeda',
                 'Berita Acara Kesepakatan Musrenbang',
+                'Foto Dokumentasi Kesepakatan Musrenbang',
             ],
         ]);
 
@@ -727,9 +728,10 @@ class LhrRkpdKuaWorkflowTest extends TestCase
         $response->assertSessionHas('success');
 
         // 2. Verifikasi keterkaitan polymorph Attachment
-        $this->assertCount(2, $lhr->attachments);
+        $this->assertCount(3, $lhr->attachments);
         $att1 = $lhr->attachments->where('file_name', 'draft_rancangan_akhir_rkpd_2027.pdf')->first();
         $att2 = $lhr->attachments->where('file_name', 'berita_acara_musrenbang_2027.docx')->first();
+        $att3 = $lhr->attachments->where('file_name', 'foto_bukti_musrenbang.jpg')->first();
 
         $this->assertNotNull($att1);
         $this->assertEquals('Dokumen Draft Rankir RKPD Bappeda', $att1->keterangan);
@@ -739,13 +741,21 @@ class LhrRkpdKuaWorkflowTest extends TestCase
         $this->assertEquals('Berita Acara Kesepakatan Musrenbang', $att2->keterangan);
         $this->assertTrue(Storage::disk('local')->exists($att2->file_path));
 
+        $this->assertNotNull($att3);
+        $this->assertTrue($att3->isImage());
+        $this->assertNotNull($att3->base64_data);
+        $this->assertEquals('Foto Dokumentasi Kesepakatan Musrenbang', $att3->keterangan);
+        $this->assertTrue(Storage::disk('local')->exists($att3->file_path));
+
         // 3. Verifikasi sinkronisasi di Ruang Kerja (Step 2)
         $workspaceResponse = $this->actingAs($admin)->get(route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 2]));
         $workspaceResponse->assertOk();
-        $workspaceResponse->assertSee('Berkas Lampiran Dokumen Pendukung (2)');
+        $workspaceResponse->assertSee('Berkas Lampiran Dokumen Pendukung (3)');
         $workspaceResponse->assertSee('draft_rancangan_akhir_rkpd_2027.pdf');
         $workspaceResponse->assertSee('Dokumen Draft Rankir RKPD Bappeda');
         $workspaceResponse->assertSee('berita_acara_musrenbang_2027.docx');
+        $workspaceResponse->assertSee('foto_bukti_musrenbang.jpg');
+        $workspaceResponse->assertSee('Foto Dokumentasi Kesepakatan Musrenbang');
 
         // 4. Verifikasi sinkronisasi di Pratinjau Dokumen (/preview)
         $previewResponse = $this->actingAs($admin)->get(route('lhr.preview', $lhr->uuid));
@@ -754,6 +764,9 @@ class LhrRkpdKuaWorkflowTest extends TestCase
         $previewResponse->assertSee('draft_rancangan_akhir_rkpd_2027.pdf');
         $previewResponse->assertSee('Dokumen Draft Rankir RKPD Bappeda');
         $previewResponse->assertSee('berita_acara_musrenbang_2027.docx');
+        $previewResponse->assertSee('DOKUMENTASI FOTO / BUKTI GAMBAR DOKUMEN PENDUKUNG');
+        $previewResponse->assertSee('foto_bukti_musrenbang.jpg');
+        $previewResponse->assertSee('Foto Dokumentasi Kesepakatan Musrenbang');
 
         // 5. Verifikasi sinkronisasi di Unduh PDF (/pdf)
         $pdfResponse = $this->actingAs($admin)->get(route('lhr.pdf', $lhr->uuid));

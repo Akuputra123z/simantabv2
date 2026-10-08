@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Attachment;
 use App\Models\AuditProgram;
+use App\Models\AuditProgramDetail;
 use App\Models\Lhp;
 use App\Models\Recommendation;
 use App\Models\Temuan;
@@ -79,7 +80,9 @@ class TindakLanjutController extends Controller
                 $q->where('nomor_lhp', 'like', "%{$search}%")
                     ->orWhere('catatan_umum', 'like', "%{$search}%")
                     ->orWhereHas('unitDiperiksa', fn ($u) => $u->where('nama_unit', 'like', "%{$search}%"))
-                    ->orWhereHas('auditAssignment.auditProgramDetail.auditProgram', fn ($ap) => $ap->where('nama_program', 'like', "%{$search}%"));
+                    ->orWhereHas('auditAssignment.auditProgramDetail.auditProgram', fn ($ap) => $ap->where('nama_program', 'like', "%{$search}%"))
+                    ->orWhereHas('auditAssignment.auditProgramDetail', fn ($apd) => $apd->where('nama_detail_program', 'like', "%{$search}%")->orWhere('tim', 'like', "%{$search}%"))
+                    ->orWhereHas('auditAssignment.ketuaTim', fn ($kt) => $kt->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -131,6 +134,15 @@ class TindakLanjutController extends Controller
             switch ($sort) {
                 case 'nomor_lhp':
                     $query->orderBy('lhps.nomor_lhp', $direction);
+                    break;
+                case 'sub_program':
+                    $query->orderBy(
+                        AuditProgramDetail::select('nama_detail_program')
+                            ->join('audit_assignments', 'audit_assignments.audit_program_detail_id', '=', 'audit_program_details.id')
+                            ->whereColumn('audit_assignments.id', 'lhps.audit_assignment_id')
+                            ->limit(1),
+                        $direction
+                    )->orderBy('lhps.nomor_lhp', $direction);
                     break;
                 case 'nama_program':
                     $query->orderBy(
@@ -550,6 +562,7 @@ class TindakLanjutController extends Controller
             'recommendation.kodeRekomendasi',
             'verifikator',
             'creator',
+            'cicilans' => fn ($q) => $q->latest(),
             'cicilans.attachments',
             'cicilans.creator',
             'attachments',
@@ -872,18 +885,33 @@ class TindakLanjutController extends Controller
             'catatan_verifikasi' => 'nullable|string|max:1000',
         ]);
 
+        $newStatus = $validated['status_verifikasi'];
+
+        // Cegah eksekusi redundan jika status sudah sesuai
+        if ($tindakLanjut->status_verifikasi === $newStatus) {
+            $label = $newStatus === 'lunas' ? 'Lunas / Selesai' : 'Berjalan (Proses)';
+
+            return redirect()
+                ->route('tindak-lanjuts.show', $tindakLanjut)
+                ->with('info', "Tindak lanjut sudah berstatus {$label}.");
+        }
+
         DB::beginTransaction();
         try {
             $rekom = $tindakLanjut->recommendation;
             $isNonUang = $rekom?->isNonUang() ?? false;
-            $newStatus = $validated['status_verifikasi'];
+            $target = (float) ($tindakLanjut->nilai_tindak_lanjut > 0
+                ? $tindakLanjut->nilai_tindak_lanjut
+                : ($rekom?->nilai_rekom ?? 0));
 
             $tindakLanjut->status_verifikasi = $newStatus;
-            $tindakLanjut->catatan_verifikasi = $validated['catatan_verifikasi'] ?? null;
+            if (! empty($validated['catatan_verifikasi'])) {
+                $tindakLanjut->catatan_verifikasi = $validated['catatan_verifikasi'];
+            }
             $tindakLanjut->diverifikasi_oleh = auth()->id();
             $tindakLanjut->diverifikasi_pada = now();
 
-            // SINKRONISASI LENGKAP DENGAN OPD:
+            // SINKRONISASI DENGAN OPD
             $tindakLanjut->status_opd = 'dikirim';
             if (! $tindakLanjut->dikirim_pada) {
                 $tindakLanjut->dikirim_pada = now();
@@ -895,9 +923,6 @@ class TindakLanjutController extends Controller
                     $tindakLanjut->total_terbayar = 1;
                     $tindakLanjut->sisa_belum_bayar = 0;
                 } else {
-                    $target = (float) ($tindakLanjut->nilai_tindak_lanjut > 0
-                        ? $tindakLanjut->nilai_tindak_lanjut
-                        : ($rekom?->nilai_rekom ?? 0));
                     $tindakLanjut->total_terbayar = $target;
                     $tindakLanjut->sisa_belum_bayar = 0;
 
@@ -914,7 +939,22 @@ class TindakLanjutController extends Controller
                         ->count();
                 }
             } elseif ($newStatus === 'berjalan') {
-                $tindakLanjut->syncCalculations(fromCascade: true);
+                if ($isNonUang) {
+                    $tindakLanjut->total_terbayar = 0;
+                    $tindakLanjut->sisa_belum_bayar = 1;
+                } else {
+                    if ($tindakLanjut->jenis_penyelesaian === 'cicilan') {
+                        $terbayar = (float) $tindakLanjut->cicilanDiterima()->sum('nilai_bayar');
+                        $tindakLanjut->total_terbayar = min($terbayar, $target);
+                        $tindakLanjut->sisa_belum_bayar = max(0, $target - $tindakLanjut->total_terbayar);
+                        $tindakLanjut->jumlah_cicilan_realisasi = $tindakLanjut->cicilanDiterima()->count();
+                    } else {
+                        // Jika jenis pembayaran bukan cicilan dan diubah ke berjalan:
+                        $tindakLanjut->total_terbayar = 0;
+                        $tindakLanjut->sisa_belum_bayar = $target;
+                        $tindakLanjut->jumlah_cicilan_realisasi = 0;
+                    }
+                }
             }
 
             $tindakLanjut->saveQuietly();
@@ -935,7 +975,7 @@ class TindakLanjutController extends Controller
 
             return redirect()
                 ->route('tindak-lanjuts.show', $tindakLanjut)
-                ->with('success', "Tindak lanjut berhasil diverifikasi sebagai {$label}.");
+                ->with('success', "Tindak lanjut berhasil diperbarui menjadi {$label}.");
 
         } catch (\Throwable $e) {
             DB::rollBack();

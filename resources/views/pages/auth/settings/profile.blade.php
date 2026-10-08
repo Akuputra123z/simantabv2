@@ -57,10 +57,10 @@
                     @endif
                 </div>
                 <div class="flex-1">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanda Tangan (PNG, transparan)</label>
-                    <input type="file" name="signature" accept="image/png"
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanda Tangan</label>
+                    <input type="file" name="signature" accept="image/png,image/jpeg,image/jpg,image/webp"
                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-gray-800 dark:file:text-gray-300">
-                    <p class="mt-1 text-xs text-gray-400">Format PNG, background transparan, maks 1MB.</p>
+                    <p class="mt-1 text-xs text-gray-400">Format PNG, JPG, JPEG, atau WEBP (disarankan background transparan), maks 2MB.</p>
                 </div>
             </div>
 

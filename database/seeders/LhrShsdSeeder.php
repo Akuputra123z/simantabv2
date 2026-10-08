@@ -8,7 +8,6 @@ use App\Models\Lhr\LhrTemplate;
 use App\Models\Lhr\LhrTemplateDasarHukum;
 use App\Models\Lhr\LhrTemplatePengujian;
 use App\Models\Lhr\LhrTemplateSection;
-use App\Models\NomorFormat;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -16,39 +15,7 @@ class LhrShsdSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Format Penomoran
-        $formats = [
-            [
-                'jenis' => 'lhr',
-                'pola' => '700/{urut:3}{.sufiks}/REVIU/INSP/{tahun}',
-                'keterangan' => 'Format penomoran Laporan Hasil Reviu (LHR)',
-                'aktif' => true,
-            ],
-            [
-                'jenis' => 'lhtl',
-                'pola' => '700/{urut:3}/REVIU/INSP/{tahun}',
-                'keterangan' => 'Format penomoran Laporan Hasil Tindak Lanjut (LHTL)',
-                'aktif' => true,
-            ],
-            [
-                'jenis' => 'spt_reviu',
-                'pola' => '000.1.2.3/{urut:3}/REVIU/INSP/{tahun}',
-                'keterangan' => 'Format penomoran Surat Perintah Tugas Reviu',
-                'aktif' => true,
-            ],
-            [
-                'jenis' => 'spt_tl',
-                'pola' => '000.1.2.3/{urut:3}/REVIU/INSP/{tahun}',
-                'keterangan' => 'Format penomoran Surat Perintah Tugas Tindak Lanjut Reviu',
-                'aktif' => true,
-            ],
-        ];
-
-        foreach ($formats as $fmt) {
-            NomorFormat::updateOrCreate(['jenis' => $fmt['jenis']], $fmt);
-        }
-
-        // 2. Kategori Catatan
+        // 1. Kategori Catatan
         $kategoris = [
             ['kode' => 'KEWAJARAN_HARGA',    'nama' => 'Kewajaran & Kepatutan Harga'],
             ['kode' => 'STANDAR_REGIONAL',   'nama' => 'Kesesuaian Standar Harga Satuan Regional'],

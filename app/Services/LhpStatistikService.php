@@ -130,7 +130,7 @@ class LhpStatistikService
                 $rekomSelesai = $rekomUangSelesai + $rekomNonuangSelesai;
 
                 $rekomProses = $allRekom->filter(function ($r) {
-                    return $r->status === \App\Models\Recommendation::STATUS_PROSES;
+                    return in_array($r->status, [\App\Models\Recommendation::STATUS_PROSES, 'dalam_proses']);
                 })->count();
 
                 $rekomBelum = max(0, $totalRekom - $rekomSelesai - $rekomProses);

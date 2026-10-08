@@ -51,10 +51,10 @@ class LhrWebNavigationTest extends TestCase
         $resKat->assertStatus(200);
         $resKat->assertSee('KEWAJARAN_HARGA');
 
-        // 5. Master Data Format Penomoran
-        $resNomor = $this->get(route('nomor-formats.index'));
-        $resNomor->assertStatus(200);
-        $resNomor->assertSee('700/{urut:3}{.sufiks}/REVIU/INSP/{tahun}');
+        // 5. Master Data Dasar Peraturan
+        $resDasar = $this->get(route('dasar-peraturan.index'));
+        $resDasar->assertStatus(200);
+        $resDasar->assertSee('Master Dasar Peraturan');
     }
 
     public function test_opd_user_cannot_access_lhr_module(): void

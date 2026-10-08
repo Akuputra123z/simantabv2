@@ -41,7 +41,7 @@
 
     {{-- PDF Viewer --}}
     <div class="rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03] overflow-hidden">
-        <iframe src="{{ route('audit-program.preview-pdf', $auditProgram->id) }}"
+        <iframe src="{{ route('audit-program.preview-pdf', $auditProgram->id) }}?v={{ $auditProgram->updated_at?->timestamp ?? time() }}"
                 class="w-full"
                 style="height: 80vh; border: none;">
         </iframe>
@@ -49,11 +49,10 @@
 
     {{-- Approval Actions --}}
     @php
-        $canApprove = auth()->user()->hasRole('kepala_inspektorat') || auth()->user()->hasRole('super_admin');
+        $canApprove = auth()->check() && (auth()->user()->hasRole('kepala_inspektorat') || auth()->user()->hasRole('super_admin'));
     @endphp
     @if($canApprove && !$auditProgram->isApproved())
     <div class="flex flex-wrap items-center justify-end gap-3 p-6 bg-white rounded-3xl border border-gray-200 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
-        @if($auditProgram->approval_status !== \App\Models\AuditProgram::APPROVAL_MENUNGGU)
         <form action="{{ route('audit-program.approve', $auditProgram->id) }}" method="POST" onsubmit="return confirm('Setujui PKPT ini?')">
             @csrf
             <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 shadow-sm">
@@ -68,9 +67,6 @@
                 Tolak
             </button>
         </form>
-        @else
-        <p class="text-sm text-amber-600 font-semibold">Menunggu persetujuan...</p>
-        @endif
     </div>
     @elseif($auditProgram->isApproved())
     <div class="flex flex-wrap items-center justify-between gap-3 p-6 bg-emerald-50/50 rounded-3xl border border-emerald-200 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/5">
@@ -79,17 +75,19 @@
             <span class="text-sm font-semibold">PKPT telah disetujui</span>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ Storage::url($auditProgram->approved_pdf) }}" target="_blank"
+            <a href="{{ route('audit-program.download-approved-pdf', $auditProgram->id) }}" target="_blank"
                class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 shadow-sm">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Unduh PDF Disetujui
             </a>
+            @if($canApprove)
             <form action="{{ route('audit-program.batal-setujui', $auditProgram->id) }}" method="POST" onsubmit="return confirm('Batalkan persetujuan PKPT ini?')">
                 @csrf
                 <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-white px-5 py-2.5 text-sm font-semibold text-amber-600 transition hover:bg-amber-50 dark:border-amber-500/20 dark:bg-gray-800">
                     Batal Setujui
                 </button>
             </form>
+            @endif
         </div>
     </div>
     @endif

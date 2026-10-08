@@ -5,7 +5,8 @@
     <title>Surat Tugas - {{ $assignment->nomor_surat }}</title>
     <style>
         @page { size: A4; margin: 2cm 1.5cm 1.5cm 2cm; }
-        body { font-family: "Times New Roman", Times, serif; font-size: 12pt; line-height: 1.5; margin: 0; padding: 0; color: #000; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; line-height: 1.5; margin: 0; padding: 0; color: #000; }
+        table, td, th { font-family: Arial, Helvetica, sans-serif; }
         .page-margin { padding: 0; margin: 0; }
         .container { width: 100%; }
         .list-isi {
@@ -27,11 +28,64 @@
     font-style: italic;
 }
         
-        .kop-surat { border-bottom: 4px double black; padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
-        .kop-text h1 { font-size: 14pt; margin: 0; text-transform: uppercase; font-weight: bold; }
-        .kop-text h2 { font-size: 18pt; margin: 0; text-transform: uppercase; font-weight: bold; line-height: 1.2; }
-        .kop-text p { font-size: 10pt; margin: 2px 0 0 0; font-style: normal; }
-        .kop-text .sub-p { font-size: 9pt; font-style: italic; }
+        .kop-surat {
+            border-bottom: 4px double black;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+        }
+        .table-kop {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+            margin: 0;
+            padding: 0;
+        }
+        .table-kop td {
+            border: none !important;
+            padding: 0;
+            vertical-align: middle;
+        }
+        .kop-logo-cell {
+            width: 80px;
+            text-align: center;
+        }
+        .kop-spacer-cell {
+            width: 80px;
+        }
+        .kop-logo {
+            width: 70px;
+            height: auto;
+            max-height: 90px;
+            display: inline-block;
+        }
+        .kop-text-cell {
+            text-align: center;
+        }
+        .kop-text h1 {
+            font-size: 14pt;
+            margin: 0;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .kop-text h2 {
+            font-size: 18pt;
+            margin: 2px 0;
+            text-transform: uppercase;
+            font-weight: bold;
+            line-height: 1.2;
+            letter-spacing: 1px;
+        }
+        .kop-text p {
+            font-size: 10pt;
+            margin: 2px 0 0 0;
+            font-style: normal;
+            line-height: 1.3;
+        }
+        .kop-text .sub-p {
+            font-size: 9pt;
+            font-style: italic;
+        }
         
         .judul-surat { text-align: center; margin-bottom: 25px; }
         .judul-surat h3 { text-decoration: underline; text-transform: uppercase; margin: 0; font-size: 14pt; font-weight: bold; letter-spacing: 0.5px; }
@@ -43,25 +97,26 @@
         .content { margin-left: 100px; text-align: left; }
         ol.list-dinas { margin: 0; padding-left: 32px; }
         ol.list-dinas li { margin-bottom: 4px; }
-        .memerintahkan { text-align: center; font-weight: bold; letter-spacing: 4px; margin: 20px 0; font-size: 12pt; page-break-inside: avoid; }
-        table.tim { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 10px; }
-        table.tim th { border-top: 1px solid black; border-bottom: 1px solid black; text-align: left; padding: 5px 8px; font-size: 10pt; text-transform: uppercase; font-weight: bold; }
-        table.tim td { padding: 5px 8px; vertical-align: top; border-bottom: 1px solid #ccc; }
+        .memerintahkan { text-align: center; font-weight: bold; letter-spacing: 4px; margin: 20px 0; font-size: 11pt; page-break-inside: avoid; }
+        table.tim { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 10px; font-size: 11pt; }
+        table.tim th { border-top: 1px solid black; border-bottom: 1px solid black; text-align: left; padding: 5px 8px; font-size: 11pt; text-transform: uppercase; font-weight: bold; }
+        table.tim td { padding: 5px 8px; vertical-align: top; border-bottom: 1px solid #ccc; font-size: 11pt; }
         table.tim tr:last-child td { border-bottom: 1px solid black; }
-        .list-isi { margin: 0; padding: 0; }
-        .item { margin-bottom: 4px; }
-        .ttd-wrapper { width: 100%; margin-top: 30px; text-align: right; }
+        .list-isi { margin: 0; padding: 0; font-size: 11pt; }
+        .item { margin-bottom: 4px; font-size: 11pt; }
+        .ttd-wrapper { width: 100%; margin-top: 40px; text-align: right; }
         .ttd-container { display: inline-block; text-align: center; width: 400px; }
-        .table-ttd-meta { width: 100%; font-size: 11pt; margin-bottom: 10px; text-align: left; }
+        .table-ttd-meta { width: 100%; font-size: 11pt; margin-bottom: 12px; text-align: left; }
         .table-ttd-meta td { padding: 1px 0; vertical-align: top; }
-        .ttd-jabatan { text-align: center; font-weight: bold; line-height: 1.3; margin-bottom: 10px; text-transform: uppercase; }
-        .ttd-nama { text-align: center; font-weight: bold; text-decoration: underline; margin: 0; font-size: 12pt; }
-        .ttd-nip { text-align: center; margin: 0; font-size: 11pt; line-height: 1.2; }
+        .ttd-jabatan { text-align: center; font-weight: bold; line-height: 1.3; margin-bottom: 15px; text-transform: uppercase; font-size: 11pt; }
+        .ttd-space { height: 75px; }
+        .ttd-nama { text-align: center; font-weight: bold; text-decoration: underline; margin: 0; font-size: 11pt; }
+        .ttd-nip { text-align: center; margin: 0; font-size: 11pt; line-height: 1.3; }
         .footer-note { border: 1px dashed black; padding: 8px; text-align: center; font-style: italic; font-size: 9.5pt; margin-top: 40px; font-weight: bold; page-break-inside: avoid; }
         .btn-print {
-            display: inline-block; margin-top: 20px;
+            display: inline-block;
             background: #2563eb; color: #fff; border: none;
-            padding: 10px 30px; font-size: 11pt; font-weight: bold;
+            padding: 12px 28px; font-size: 11pt; font-weight: bold;
             border-radius: 8px; cursor: pointer;
         }
         .btn-print:hover { background: #1d4ed8; }
@@ -77,15 +132,37 @@
 </head>
 <body>
 
+    @php
+        if (empty($logoBase64)) {
+            $logoPath = public_path('images/logo/image.png');
+            if (!file_exists($logoPath)) {
+                $logoPath = public_path('images/logos/rembang.png');
+            }
+            $logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : '';
+        }
+    @endphp
+
     <div class="page-margin">
     <div class="container">
         <div class="kop-surat">
-            <div class="kop-text">
-                <h1>Pemerintah Kabupaten Rembang</h1>
-                <h2>Inspektorat Daerah</h2>
-                <p>Jl. Raya Rembang – Lasem Km 1.1 Telp. ( 0295 ) 691320 Fax. (0295) 693525</p>
-                <p class="sub-p">Rembang 59219 Email : inspektorat@rembangkab.go.id</p>
-            </div>
+            <table class="table-kop">
+                <tr>
+                    <td class="kop-logo-cell">
+                        @if(!empty($logoBase64))
+                            <img src="data:image/png;base64,{{ $logoBase64 }}" alt="Lambang Kabupaten Rembang" class="kop-logo">
+                        @endif
+                    </td>
+                    <td class="kop-text-cell">
+                        <div class="kop-text">
+                            <h1>Pemerintah Kabupaten Rembang</h1>
+                            <h2>Inspektorat Daerah</h2>
+                            <p>Jl. Raya Rembang – Lasem Km 1.1 Telp. ( 0295 ) 691320 Fax. (0295) 693525</p>
+                            <p class="sub-p">Rembang 59219 Email : inspektorat@rembangkab.go.id</p>
+                        </div>
+                    </td>
+                    <td class="kop-spacer-cell"></td>
+                </tr>
+            </table>
         </div>
 
         <div class="judul-surat">
@@ -97,11 +174,20 @@
             <div class="label">DASAR :</div>
             <div class="content">
                 <ol class="list-dinas">
-                    <li>Peraturan Daerah Kabupaten Rembang Nomor 6 Tahun 2021 tentang Perubahan Kedua atas Peraturan Daerah Nomor 5 Tahun 2016 tentang Pembentukan dan Susunan Perangkat Daerah Kabupaten Rembang.</li>
-                    <li>Peraturan Daerah Kabupaten Rembang Nomor 2 Tahun 2024 tentang Anggaran Pendapatan dan Belanja Daerah Kabupaten Rembang Tahun Anggaran 2025.</li>
-                    <li>Peraturan Bupati Rembang Nomor 54 Tahun 2021 tentang Kedudukan Susunan Organisasi, Tugas dan Fungsi serta Tata Kerja Inspektorat Kabupaten Rembang.</li>
-                    <li>Peraturan Bupati Rembang Nomor 2 Tahun 2024 tentang Pembinaan dan Pengawasan Perangkat Daerah dan Desa.</li>
-                    <li>Keputusan Bupati Rembang Nomor 100.3.3.2/0132/2025 tanggal 9 Januari 2025 tentang Program Kerja Pengawasan Tahunan Berbasis Resiko Inspektorat Kabupaten Rembang Tahun 2025.</li>
+                    @php
+                        $dasarList = ($assignment->dasarPeraturans && $assignment->dasarPeraturans->isNotEmpty())
+                            ? $assignment->dasarPeraturans
+                            : $assignment->effective_dasar_peraturans;
+                    @endphp
+                    @forelse($dasarList as $dasar)
+                        <li>{{ $dasar->nama }}</li>
+                    @empty
+                        <li>Peraturan Daerah Kabupaten Rembang Nomor 6 Tahun 2021 tentang Perubahan Kedua atas Peraturan Daerah Nomor 5 Tahun 2016 tentang Pembentukan dan Susunan Perangkat Daerah Kabupaten Rembang.</li>
+                        <li>Peraturan Daerah Kabupaten Rembang Nomor 2 Tahun 2024 tentang Anggaran Pendapatan dan Belanja Daerah Kabupaten Rembang Tahun Anggaran 2025.</li>
+                        <li>Peraturan Bupati Rembang Nomor 54 Tahun 2021 tentang Kedudukan Susunan Organisasi, Tugas dan Fungsi serta Tata Kerja Inspektorat Kabupaten Rembang.</li>
+                        <li>Peraturan Bupati Rembang Nomor 2 Tahun 2024 tentang Pembinaan dan Pengawasan Perangkat Daerah dan Desa.</li>
+                        <li>Keputusan Bupati Rembang Nomor 100.3.3.2/0132/2025 tanggal 9 Januari 2025 tentang Program Kerja Pengawasan Tahunan Berbasis Resiko Inspektorat Kabupaten Rembang Tahun 2025.</li>
+                    @endforelse
                 </ol>
             </div>
         </div>
@@ -167,17 +253,41 @@
 
     <div class="item">
         <span style="display:inline-block; width:18px;">1.</span>
-        Melaksanakan {{ $assignment->jenis_pengawasan }} pada :
+        @php
+            $subProgram = trim($assignment->auditProgramDetail->nama_detail_program ?? '');
+            $jenis = trim($assignment->jenis_pengawasan ?: ($assignment->auditProgramDetail->jenis_kegiatan ?? ''));
+
+            if (!empty($subProgram)) {
+                if (preg_match('/^(audit|reviu|review|evaluasi|monitoring|pengawasan|pemeriksaan)\b/i', $subProgram)) {
+                    $uraianTugas = $subProgram;
+                } elseif (!empty($jenis) && stripos($subProgram, $jenis) !== false) {
+                    $uraianTugas = $subProgram;
+                } elseif (!empty($jenis)) {
+                    $uraianTugas = $jenis . ' ' . $subProgram;
+                } else {
+                    $uraianTugas = $subProgram;
+                }
+            } else {
+                $uraianTugas = !empty($jenis) ? $jenis : 'Pengawasan';
+            }
+        @endphp
+        Melaksanakan {{ $uraianTugas }} pada :
 
         @if($assignment->unitDiperiksas && $assignment->unitDiperiksas->isNotEmpty())
             @foreach($assignment->unitDiperiksas as $unit)
                 <div style="margin-left:18px;">
                     - {{ $unit->nama_unit }}
                 </div>
+                @if(!empty($unit->nama_kecamatan))
                 <div style="margin-left:35px; font-style:italic;">
                     {{ $unit->nama_kecamatan }}
                 </div>
+                @endif
             @endforeach
+        @elseif($assignment->auditProgramDetail && !empty($assignment->auditProgramDetail->objek_pengawasan))
+            <div style="margin-left:18px;">
+                - {{ $assignment->auditProgramDetail->objek_pengawasan }}
+            </div>
         @else
             <div style="margin-left:18px;">
                 -
@@ -187,7 +297,7 @@
 
     <div class="item">
         <span style="display:inline-block; width:18px;">2.</span>
-        Waktu pelaksanaan selama {{ \Carbon\Carbon::parse($assignment->tanggal_mulai)->diffInDays(\Carbon\Carbon::parse($assignment->tanggal_selesai)) + 1 }} hari kerja, mulai tanggal {{ \Carbon\Carbon::parse($assignment->tanggal_mulai)->translatedFormat('d F') }} s.d {{ \Carbon\Carbon::parse($assignment->tanggal_selesai)->translatedFormat('d F Y') }}.
+        Waktu pelaksanaan selama {{ \Carbon\Carbon::parse($assignment->tanggal_mulai)->diffInDays(\Carbon\Carbon::parse($assignment->tanggal_selesai)) + 1 }} hari kerja, mulai tanggal {{ \Carbon\Carbon::parse($assignment->tanggal_mulai)->locale('id')->translatedFormat('d F') }} s.d {{ \Carbon\Carbon::parse($assignment->tanggal_selesai)->locale('id')->translatedFormat('d F Y') }}.
     </div>
 
     <div class="item">
@@ -205,40 +315,74 @@
         </div>
 
         <div class="ttd-wrapper">
-            <div class="ttd-container">
-                <table class="table-ttd-meta">
-                    <tr>
-                        <td style="width: 40%;">Ditetapkan di</td>
-                        <td style="width: 5%;">:</td>
-                        <td style="width: 55%;">Rembang</td>
-                    </tr>
-                    <tr>
-                        <td>Pada tanggal</td>
-                        <td>:</td>
-                        <td>{{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</td>
-                    </tr>
-                </table>
+            <table style="width: 100%; border-collapse: collapse; border: none; margin-top: 25px;">
+                <tr>
+                    {{-- QR Code di sebelah kiri bawah tabel --}}
+                    <td style="width: 48%; vertical-align: top; text-align: left; border: none; padding: 0;">
+                        @if($assignment->isSigned() && !empty($qrBase64))
+                            <div style="display: inline-block; border: 1px solid #d1d5db; background: #fafafa; padding: 8px 12px; border-radius: 6px; margin-top: 5px;">
+                                <table style="border-collapse: collapse; border: none; margin: 0; padding: 0;">
+                                    <tr>
+                                        <td style="width: 74px; vertical-align: middle; padding: 0 10px 0 0; border: none !important;">
+                                            <img src="{{ $qrBase64 }}" width="70" height="70" style="width: 70px; height: 70px; display: block;" alt="QR Code Verifikasi">
+                                        </td>
+                                        <td style="vertical-align: middle; border: none !important; font-size: 8pt; line-height: 1.4; color: #333;">
+                                            <strong style="color: #000; font-size: 8.5pt;">DITANDATANGANI SECARA ELEKTRONIK</strong><br>
+                                            Inspektorat Daerah Kabupaten Rembang<br>
+                                            <span style="color: #666; font-size: 7.5pt;">Pindai QR untuk verifikasi keaslian dokumen</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        @endif
+                    </td>
 
-                <div class="ttd-jabatan">
-                    INSPEKTUR DAERAH<br>KABUPATEN REMBANG
-                </div>
+                    {{-- Tanda Tangan di sebelah kanan --}}
+                    <td style="width: 52%; vertical-align: top; text-align: right; border: none; padding: 0;">
+                        <div class="ttd-container" style="display: inline-block; text-align: center; width: 340px;">
+                            <table class="table-ttd-meta" style="margin-left: auto; margin-right: auto; width: 260px;">
+                                <tr>
+                                    <td style="width: 40%;">Ditetapkan di</td>
+                                    <td style="width: 5%;">:</td>
+                                    <td style="width: 55%;">Rembang</td>
+                                </tr>
+                                <tr>
+                                    <td>Pada tanggal</td>
+                                    <td>:</td>
+                                    <td>{{ ($assignment->created_at ?? now())->locale('id')->translatedFormat('d F Y') }}</td>
+                                </tr>
+                            </table>
 
-                @if($assignment->isSigned() && $assignment->signer)
-                    @if($assignment->signer->signature)
-                        <div style="margin-bottom:5px;">
-                            <img src="{{ Storage::url($assignment->signer->signature) }}" alt="Tanda Tangan" style="height:80px;">
+                            <div class="ttd-jabatan">
+                                INSPEKTUR DAERAH<br>KABUPATEN REMBANG
+                            </div>
+
+                            @if($assignment->isSigned() && !empty($signatureBase64))
+                                <div style="margin-bottom:5px;">
+                                    <img src="{{ $signatureBase64 }}" alt="Tanda Tangan" style="height:90px; max-height:100px; width:auto;">
+                                </div>
+                            @elseif($assignment->isSigned() && $assignment->signer && $assignment->signer->signature)
+                                <div style="margin-bottom:5px;">
+                                    <img src="{{ Storage::url($assignment->signer->signature) }}" alt="Tanda Tangan" style="height:90px; max-height:100px; width:auto;">
+                                </div>
+                            @else
+                                <div class="ttd-space"></div>
+                            @endif
+
+                            @if($assignment->isSigned() && $assignment->signer)
+                                <p class="ttd-nama">{{ $assignment->signer->name }}</p>
+                                <p class="ttd-nip">
+                                    {{ $assignment->signer->jabatan ?? 'Pembina' }}<br>
+                                    NIP. {{ $assignment->signer->nip ?? '-' }}
+                                </p>
+                            @else
+                                <p class="ttd-nama">IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE</p>
+                                <p class="ttd-nip">Pembina<br>NIP. 197411281999032003</p>
+                            @endif
                         </div>
-                    @endif
-                    <p class="ttd-nama">{{ $assignment->signer->name }}</p>
-                    <p class="ttd-nip">
-                        {{ $assignment->signer->jabatan ?? '-' }}<br>
-                        NIP. {{ $assignment->signer->nip ?? '-' }}
-                    </p>
-                @else
-                    <p class="ttd-nama">IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE</p>
-                    <p class="ttd-nip">Pembina<br>NIP. 197411281999032003</p>
-                @endif
-            </div>
+                    </td>
+                </tr>
+            </table>
         </div>
 
         <div class="footer-note">
@@ -247,34 +391,46 @@
         </div>
     </div>
 
-    <div class="no-print" style="text-align: center; margin-top: 20px;">
+    <div class="no-print" style="text-align: center; margin: 30px 0 40px;">
         @php $canSign = auth()->check() && (auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('kepala_inspektorat')); @endphp
 
         @if($canSign && !$assignment->isSigned())
         <form action="{{ route('audit-assignment.sign', $assignment->id) }}" method="POST" style="display:inline;">
             @csrf
             <input type="hidden" name="from" value="preview">
-            <button style="display:inline-block; margin:0 5px; background:#16a34a; color:#fff; border:none; padding:14px 40px; font-size:13pt; font-weight:bold; border-radius:8px; cursor:pointer; letter-spacing:1px;" onclick="return confirm('Tandatangani Surat Tugas ini?')">
-                ✓ TANDA TANGANI
+            <button style="display:inline-block; margin:0 5px; background:#16a34a; color:#fff; border:none; padding:12px 28px; font-size:11pt; font-weight:bold; border-radius:8px; cursor:pointer;" onclick="return confirm('Tandatangani Surat Tugas ini?')">
+                ✓ Tandatangani Surat Tugas
             </button>
         </form>
         @endif
 
         @if($assignment->isSigned())
-        <div style="display:inline-block; margin:0 5px; background:#f0fdf4; border:2px solid #22c55e; border-radius:8px; padding:10px 30px;">
-            <strong style="color:#16a34a; font-size:12pt;">✓ SURAT TUGAS TELAH DITANDATANGANI</strong>
-            <p style="color:#166534; margin:4px 0 0; font-size:10pt;">
-                oleh {{ $assignment->signer->name }}, {{ $assignment->approved_at->translatedFormat('d F Y H:i') }}
-            </p>
+        <div style="display:inline-block; margin:0 5px; background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:8px 20px; vertical-align:middle;">
+            <strong style="color:#16a34a; font-size:11pt;">✓ Telah Ditandatangani</strong>
+            <span style="color:#166534; margin-left:6px; font-size:9.5pt;">
+                oleh {{ $assignment->signer->name ?? 'Kepala Inspektorat' }}, {{ $assignment->approved_at?->locale('id')->translatedFormat('d F Y H:i') }}
+            </span>
         </div>
+        @if($canSign)
+        <form action="{{ route('audit-assignment.batal-sign', $assignment->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Batalkan tanda tangan Surat Tugas ini?')">
+            @csrf
+            <input type="hidden" name="from" value="preview">
+            <button type="submit" style="display:inline-block; margin:0 5px; background:#f59e0b; color:#fff; border:none; padding:12px 20px; font-size:11pt; font-weight:bold; border-radius:8px; cursor:pointer; vertical-align:middle;">
+                Batal TTD
+            </button>
+        </form>
+        @endif
         @endif
 
-        <br><br>
         <a href="{{ route('audit-assignment.print', $assignment->id) }}" target="_blank"
-           style="display:inline-block; margin:0 5px; background:#2563eb; color:#fff; border:none; padding:10px 30px; font-size:11pt; font-weight:bold; border-radius:8px; cursor:pointer; text-decoration:none;">
-            📄 Unduh PDF
+           style="display:inline-block; margin:0 5px; background:#dc2626; color:#fff; border:none; padding:12px 28px; font-size:11pt; font-weight:bold; border-radius:8px; cursor:pointer; text-decoration:none; vertical-align:middle;">
+            📄 Cetak / Unduh PDF
         </a>
-        <button class="btn-print" onclick="window.print()" style="margin:0 5px;">🖨 Cetak Browser</button>
+        <button class="btn-print" onclick="window.print()" style="margin:0 5px; vertical-align:middle;">🖨 Cetak Browser</button>
+        <a href="{{ route('audit-assignment.show', $assignment->id) }}"
+           style="display:inline-block; margin:0 5px; background:#64748b; color:#fff; border:none; padding:12px 24px; font-size:11pt; font-weight:bold; border-radius:8px; cursor:pointer; text-decoration:none; vertical-align:middle;">
+            ← Kembali
+        </a>
     </div>
 
 </body>

@@ -35,7 +35,7 @@ class ProfileController extends Controller
                 Rule::unique(User::class)->ignore($user->id),
             ],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'signature' => ['nullable', 'image', 'mimes:png', 'max:1024'],
+            'signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
         ]);
 
         if ($request->hasFile('avatar')) {

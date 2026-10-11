@@ -248,14 +248,22 @@ class DashboardController extends Controller
                 }
             }
 
-            // ── 10 Unit Periksa Temuan Terbanyak (Single Grouped Query - Optimized) ──
-            $unitKinerja = DB::table('unit_diperiksas')
-                ->leftJoin('lhps', function ($join) use ($lhpIds) {
+            // ── 10 Unit Periksa Temuan Terbanyak (Single Grouped Query - Scoped to User & Period) ──
+            $safeLhpIds = count($lhpIds) > 0 ? $lhpIds->toArray() : [];
+            $unitKinerja = count($safeLhpIds) === 0 ? collect([]) : DB::table('unit_diperiksas')
+                ->join('lhps', function ($join) use ($safeLhpIds) {
                     $join->on('lhps.unit_diperiksa_id', '=', 'unit_diperiksas.id')
-                        ->whereIn('lhps.id', $lhpIds);
+                        ->whereIn('lhps.id', $safeLhpIds)
+                        ->whereNull('lhps.deleted_at');
                 })
-                ->leftJoin('temuans', 'temuans.lhp_id', '=', 'lhps.id')
-                ->leftJoin('recommendations', 'recommendations.temuan_id', '=', 'temuans.id')
+                ->leftJoin('temuans', function ($join) {
+                    $join->on('temuans.lhp_id', '=', 'lhps.id')
+                        ->whereNull('temuans.deleted_at');
+                })
+                ->leftJoin('recommendations', function ($join) {
+                    $join->on('recommendations.temuan_id', '=', 'temuans.id')
+                        ->whereNull('recommendations.deleted_at');
+                })
                 ->selectRaw('
                     unit_diperiksas.id,
                     unit_diperiksas.nama_unit as nama,
@@ -579,174 +587,12 @@ class DashboardController extends Controller
                     'kelompok' => $kelompokList,
                 ];
             } else {
-                // Fallback to AGENTS.md dataset if DB result is 0
                 $matriksKodeTemuan = [
                     'summary' => [
-                        'total_kejadian' => 77,
-                        'total_nilai' => 1222989713,
+                        'total_kejadian' => 0,
+                        'total_nilai' => 0.0,
                     ],
-                    'kelompok' => [
-                        [
-                            'kode' => '1.00.00',
-                            'nama' => 'Temuan Ketidakpatuhan Terhadap Peraturan',
-                            'jumlah_kejadian' => 63,
-                            'persen' => '82%',
-                            'nilai' => 1222989713,
-                            'sub' => [
-                                [
-                                    'kode' => '1.01.00',
-                                    'nama' => 'Kerugian Negara/daerah atau kerugian negara/daerah yang terjadi pada perusahaan milik negara/daerah',
-                                    'jumlah_kejadian' => 25,
-                                    'persen' => '32%',
-                                    'nilai' => 1002187021,
-                                    'units' => [
-                                        ['nama' => 'DESA TIREMAN (REMBANG)', 'jumlah' => 1, 'nilai' => 23001000],
-                                        ['nama' => 'DESA PAKIS (SALE)', 'jumlah' => 1, 'nilai' => 4855000],
-                                        ['nama' => 'DESA MOJOSARI (SEDAN)', 'jumlah' => 3, 'nilai' => 66542066],
-                                        ['nama' => 'DESA TLOGOTUNGGAL (SUMBER)', 'jumlah' => 1, 'nilai' => 19905000],
-                                        ['nama' => 'DESA PANTIHARJO (KALIORI)', 'jumlah' => 3, 'nilai' => 34071589],
-                                        ['nama' => 'DESA TASIKHARJO (KALIORI)', 'jumlah' => 1, 'nilai' => 3577922],
-                                        ['nama' => 'DESA SUMBERGIRANG (LASEM)', 'jumlah' => 3, 'nilai' => 47805094],
-                                        ['nama' => 'DESA WARUGUNUNG (PANCUR)', 'jumlah' => 1, 'nilai' => 11292444],
-                                        ['nama' => 'DESA PACING (SEDAN)', 'jumlah' => 2, 'nilai' => 435935602],
-                                        ['nama' => 'DESA KARANGHARJO (SULANG)', 'jumlah' => 1, 'nilai' => 9750600],
-                                        ['nama' => 'DESA KEMADU (SULANG)', 'jumlah' => 2, 'nilai' => 41681000],
-                                        ['nama' => 'DESA JURANGJERO (SLUKE)', 'jumlah' => 3, 'nilai' => 14090775],
-                                        ['nama' => 'DESA DOROPAYUNG (PANCUR)', 'jumlah' => 3, 'nilai' => 121504828],
-                                        ['nama' => 'DESA NGULAHAN (SEDAN)', 'jumlah' => 1, 'nilai' => 39102623],
-                                        ['nama' => 'DESA SANETAN (SLUKE)', 'jumlah' => 1, 'nilai' => 26889260],
-                                        ['nama' => 'DESA SEREN (SULANG)', 'jumlah' => 1, 'nilai' => 46981172],
-                                        ['nama' => 'DESA JADI (SUMBER)', 'jumlah' => 2, 'nilai' => 17619500],
-                                        ['nama' => 'DESA BULU (BULU)', 'jumlah' => 1, 'nilai' => 9611000],
-                                        ['nama' => 'DESA NGULAAN (BULU)', 'jumlah' => 1, 'nilai' => 5890000],
-                                        ['nama' => 'DESA KETANGGI (REMBANG)', 'jumlah' => 1, 'nilai' => 12195600],
-                                        ['nama' => 'DESA JOHOGUNUNG (PANCUR)', 'jumlah' => 1, 'nilai' => 9884946],
-                                    ],
-                                ],
-                                [
-                                    'kode' => '1.02.00',
-                                    'nama' => 'Potensi kerugian negara/daerah atau kerugian negara/daerah yang terjadi pada perusahaan milik negara/daerah',
-                                    'jumlah_kejadian' => 2,
-                                    'persen' => '3%',
-                                    'nilai' => 53994500,
-                                    'units' => [
-                                        ['nama' => 'DESA PACING (SEDAN)', 'jumlah' => 1, 'nilai' => 16950000],
-                                        ['nama' => 'DESA KEMADU (SULANG)', 'jumlah' => 1, 'nilai' => 37044500],
-                                    ],
-                                ],
-                                [
-                                    'kode' => '1.03.00',
-                                    'nama' => 'Kekurangan penerimaan negara/daerah atau perusahaan milik negara/daerah',
-                                    'jumlah_kejadian' => 7,
-                                    'persen' => '9%',
-                                    'nilai' => 108780308,
-                                    'units' => [
-                                        ['nama' => 'DESA PACING (SEDAN)', 'jumlah' => 1, 'nilai' => 3902353],
-                                        ['nama' => 'DESA KARANGHARJO (SULANG)', 'jumlah' => 2, 'nilai' => 48272617],
-                                        ['nama' => 'DESA KEMADU (SULANG)', 'jumlah' => 1, 'nilai' => 47315363],
-                                        ['nama' => 'DESA JURANGJERO (SLUKE)', 'jumlah' => 1, 'nilai' => 4102774],
-                                        ['nama' => 'DESA JADI (SUMBER)', 'jumlah' => 1, 'nilai' => 3753201],
-                                        ['nama' => 'DESA NGULAAN (BULU)', 'jumlah' => 1, 'nilai' => 1434000],
-                                    ],
-                                ],
-                                [
-                                    'kode' => '1.04.00',
-                                    'nama' => 'Administrasi',
-                                    'jumlah_kejadian' => 29,
-                                    'persen' => '38%',
-                                    'nilai' => 58027884,
-                                    'units' => [
-                                        ['nama' => 'DESA TIREMAN (REMBANG)', 'jumlah' => 2, 'nilai' => 1423000],
-                                        ['nama' => 'DESA PAKIS (SALE)', 'jumlah' => 1, 'nilai' => 0],
-                                        ['nama' => 'DESA MOJOSARI (SEDAN)', 'jumlah' => 3, 'nilai' => 5780500],
-                                        ['nama' => 'DESA TLOGOTUNGGAL (SUMBER)', 'jumlah' => 1, 'nilai' => 1726500],
-                                        ['nama' => 'DESA PANTIHARJO (KALIORI)', 'jumlah' => 2, 'nilai' => 0],
-                                        ['nama' => 'DESA TASIKHARJO (KALIORI)', 'jumlah' => 2, 'nilai' => 1813500],
-                                        ['nama' => 'DESA SUMBERGIRANG (LASEM)', 'jumlah' => 3, 'nilai' => 50000],
-                                        ['nama' => 'DESA WARUGUNUNG (PANCUR)', 'jumlah' => 1, 'nilai' => 2405000],
-                                        ['nama' => 'DESA PACING (SEDAN)', 'jumlah' => 2, 'nilai' => 8791000],
-                                        ['nama' => 'DESA KEMADU (SULANG)', 'jumlah' => 1, 'nilai' => 5468200],
-                                        ['nama' => 'DESA JURANGJERO (SLUKE)', 'jumlah' => 2, 'nilai' => 580000],
-                                        ['nama' => 'DESA DOROPAYUNG (PANCUR)', 'jumlah' => 3, 'nilai' => 14837000],
-                                        ['nama' => 'DESA NGULAHAN (SEDAN)', 'jumlah' => 1, 'nilai' => 4224500],
-                                        ['nama' => 'DESA SEREN (SULANG)', 'jumlah' => 1, 'nilai' => 776000],
-                                        ['nama' => 'DESA JADI (SUMBER)', 'jumlah' => 2, 'nilai' => 167284],
-                                        ['nama' => 'DESA KETANGGI (REMBANG)', 'jumlah' => 1, 'nilai' => 8500000],
-                                        ['nama' => 'DESA JOHOGUNUNG (PANCUR)', 'jumlah' => 1, 'nilai' => 1485400],
-                                    ],
-                                ],
-                                [
-                                    'kode' => '1.05.00',
-                                    'nama' => 'Indikasi tindak pidana',
-                                    'jumlah_kejadian' => 0,
-                                    'persen' => '0%',
-                                    'nilai' => 0,
-                                    'units' => [],
-                                ],
-                            ],
-                        ],
-                        [
-                            'kode' => '2.00.00',
-                            'nama' => 'Temuan Kelemahan Sistem Pengendalian Intern',
-                            'jumlah_kejadian' => 14,
-                            'persen' => '18%',
-                            'nilai' => 0,
-                            'sub' => [
-                                [
-                                    'kode' => '2.01.00',
-                                    'nama' => 'Kelemahan sistem pengendalian akuntansi dan pelaporan',
-                                    'jumlah_kejadian' => 2,
-                                    'persen' => '100%',
-                                    'nilai' => 0,
-                                    'units' => [
-                                        ['nama' => 'DESA KEMADU (SULANG)', 'jumlah' => 1, 'nilai' => 0],
-                                        ['nama' => 'DESA JADI (SUMBER)', 'jumlah' => 1, 'nilai' => 0],
-                                    ],
-                                ],
-                                [
-                                    'kode' => '2.02.00',
-                                    'nama' => 'Kelemahan sistem pengendalian pelaksanaan anggaran pendapatan dan belanja',
-                                    'jumlah_kejadian' => 11,
-                                    'persen' => '14%',
-                                    'nilai' => 0,
-                                    'units' => [
-                                        ['nama' => 'DESA TLOGOTUNGGAL (SUMBER)', 'jumlah' => 1, 'nilai' => 0],
-                                        ['nama' => 'DESA PACING (SEDAN)', 'jumlah' => 2, 'nilai' => 0],
-                                        ['nama' => 'DESA KARANGHARJO (SULANG)', 'jumlah' => 1, 'nilai' => 0],
-                                        ['nama' => 'DESA KEMADU (SULANG)', 'jumlah' => 1, 'nilai' => 0],
-                                        ['nama' => 'DESA SANETAN (SLUKE)', 'jumlah' => 1, 'nilai' => 0],
-                                        ['nama' => 'DESA SEREN (SULANG)', 'jumlah' => 1, 'nilai' => 0],
-                                        ['nama' => 'DESA BULU (BULU)', 'jumlah' => 1, 'nilai' => 0],
-                                        ['nama' => 'DESA NGULAAN (BULU)', 'jumlah' => 1, 'nilai' => 0],
-                                        ['nama' => 'DESA KETANGGI (REMBANG)', 'jumlah' => 1, 'nilai' => 0],
-                                        ['nama' => 'DESA JOHOGUNUNG (PANCUR)', 'jumlah' => 1, 'nilai' => 0],
-                                    ],
-                                ],
-                                [
-                                    'kode' => '2.03.00',
-                                    'nama' => 'Kelemahan struktur pengendalian intern',
-                                    'jumlah_kejadian' => 1,
-                                    'persen' => '1%',
-                                    'nilai' => 0,
-                                    'units' => [
-                                        ['nama' => 'DESA JADI (SUMBER)', 'jumlah' => 1, 'nilai' => 0],
-                                    ],
-                                ],
-                            ],
-                        ],
-                        [
-                            'kode' => '3.00.00',
-                            'nama' => 'Temuan 3E',
-                            'jumlah_kejadian' => 0,
-                            'persen' => '0%',
-                            'nilai' => 0,
-                            'sub' => [
-                                ['kode' => '3.01.00', 'nama' => 'Ketidakhematan / pemborosan / ketidakekonomisan', 'jumlah_kejadian' => 0, 'persen' => '0%', 'nilai' => 0, 'units' => []],
-                                ['kode' => '3.02.00', 'nama' => 'Ketidakefisienan', 'jumlah_kejadian' => 0, 'persen' => '0%', 'nilai' => 0, 'units' => []],
-                                ['kode' => '3.03.00', 'nama' => 'Ketidakefektifan', 'jumlah_kejadian' => 0, 'persen' => '0%', 'nilai' => 0, 'units' => []],
-                            ],
-                        ],
-                    ],
+                    'kelompok' => [],
                 ];
             }
 

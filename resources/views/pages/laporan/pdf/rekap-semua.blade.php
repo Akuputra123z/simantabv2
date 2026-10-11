@@ -1,29 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <meta charset="utf-8"/>
+    <meta charset="UTF-8">
+    <title>Daftar Temuan & Tindak Lanjut Hasil Pemeriksaan</title>
     <style>
-        /* Margin diperlebar di atas (1.5cm) agar logo tidak terpotong printer */
         @page { 
-            margin: 1.5cm 0.5cm 0.5cm 0.5cm; 
-            size: landscape; 
+            size: A4 landscape; 
+            margin: 1.2cm 1cm 1cm 1cm; 
         }
         
         body { 
-            font-family: 'Helvetica', sans-serif; 
-            font-size: 9px; 
-            line-height: 1.4; 
-            color: #333; 
+            font-family: 'DejaVu Sans', Arial, Helvetica, sans-serif; 
+            font-size: 8pt; 
+            line-height: 1.35; 
+            color: #0f172a; 
             margin: 0;
             padding: 0;
         }
-        
-        /* --- KOP SURAT LANDSCAPE --- */
+
+        /* --- KOP SURAT LANDSCAPE RESMI --- */
         .kop-container {
             width: 100%;
-            margin-bottom: 20px;
-            border-bottom: 3px double #000;
-            padding-bottom: 10px;
+            margin-bottom: 12px;
+            border-bottom: 3px double #000000;
+            padding-bottom: 8px;
         }
 
         .table-kop {
@@ -39,269 +39,414 @@
         }
 
         .kop-instansi { 
-            font-size: 16px; 
+            font-size: 13pt; 
             font-weight: bold; 
             text-transform: uppercase; 
+            color: #000000;
             margin: 0;
-            line-height: 1.1;
+            line-height: 1.15;
+            letter-spacing: 0.5px;
         }
 
         .kop-sub { 
-            font-size: 20px; 
-            font-weight: bold; 
+            font-size: 15pt; 
+            font-weight: 900; 
             text-transform: uppercase; 
+            color: #000000; 
             margin: 2px 0;
+            letter-spacing: 1px;
         }
 
         .alamat { 
-            font-size: 9px; 
+            font-size: 7.5pt; 
+            color: #334155;
             font-style: italic;
             line-height: 1.3;
+            margin-top: 3px;
         }
 
-        /* --- STYLES TABEL DATA --- */
+        /* --- JUDUL DOKUMEN --- */
+        .doc-title-container {
+            text-align: center;
+            margin: 10px 0 12px 0;
+        }
+
+        .title-report {
+            font-size: 11pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #000000;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        .meta-periode {
+            font-size: 7.5pt;
+            color: #475569;
+            margin-top: 2px;
+        }
+
+        /* --- TABEL DATA UTAMA --- */
         table.data-table { 
             width: 100%; 
             border-collapse: collapse; 
             table-layout: fixed; 
+            font-size: 7.5pt;
         }
-        
-        table.data-table th, 
-        table.data-table td { 
-            border: 1px solid #000; 
-            padding: 4px; 
-            word-wrap: break-word; 
-            vertical-align: top; 
+
+        table.data-table thead {
+            display: table-header-group;
+        }
+
+        table.data-table tr {
+            page-break-inside: avoid;
         }
         
         table.data-table th { 
-            background-color: #d9d9d9; 
+            background-color: #f1f5f9; 
+            color: #0f172a;
+            border: 1px solid #334155; 
+            padding: 6px 4px; 
             text-align: center; 
             font-weight: bold; 
             text-transform: uppercase; 
-            font-size: 8px; 
+            font-size: 7.5pt; 
+            vertical-align: middle;
+            letter-spacing: 0.2px;
         }
-        
-        .title-report {
-            text-align: center;
-            font-size: 12px;
+
+        table.data-table td { 
+            border: 1px solid #475569; 
+            padding: 5px 4px; 
+            vertical-align: top; 
+            line-height: 1.3;
+        }
+
+        .bg-subtotal { 
+            background-color: #f1f5f9 !important; 
+            font-weight: bold; 
+        }
+
+        .bg-grandtotal {
+            background-color: #e2e8f0 !important;
             font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 15px;
-            text-decoration: underline;
         }
 
         .text-right { text-align: right; }
         .text-center { text-align: center; }
-        .footer-lhp { font-weight: bold; background-color: #eeeeee; }
-        .invalid { color: red; font-style: italic; }
+        .font-bold { font-weight: bold; }
+        .nowrap { white-space: nowrap; }
 
-        /* --- FOOTER / SIGNATURE STYLE --- */
-.signature-section { 
-    margin-top: 30px; 
-    width: 100%; 
-}
+        .col-money {
+            font-size: 7pt;
+            text-align: right;
+            padding: 4px 3px !important;
+            word-wrap: break-word;
+            line-height: 1.25;
+        }
 
-.sig-container {
-    float: right;
-    width: 350px; /* Lebar disesuaikan agar nama panjang tidak terpotong */
-    text-align: center;
-}
+        /* --- FOOTER / TANDA TANGAN --- */
+        .signature-section { 
+            margin-top: 20px; 
+            width: 100%; 
+            page-break-inside: avoid;
+        }
 
-.sig-space { 
-    height: 65px; /* Ruang untuk tanda tangan basah */
-}
+        .sig-container {
+            float: right;
+            width: 330px;
+            text-align: center;
+        }
 
-.sig-name {
-    font-weight: bold;
-    text-decoration: underline;
-    font-size: 9.5px;
-}
+        .sig-space { 
+            height: 60px; 
+        }
 
-.sig-nip {
-    margin-top: 2px;
-    font-size: 9px;
-}
+        .sig-name {
+            font-weight: bold;
+            text-decoration: underline;
+            text-transform: uppercase;
+            font-size: 8.5pt;
+            color: #000000;
+        }
+
+        .sig-nip {
+            margin-top: 2px;
+            font-size: 8pt;
+            color: #0f172a;
+        }
     </style>
 </head>
 <body>
 
+    <!-- KOP SURAT RESMI -->
     <div class="kop-container">
         <table class="table-kop">
             <tr>
-                <td style="width: 80px;">
+                <td style="width: 75px; text-align: left; vertical-align: middle;">
                     @php
                         $logoPath = public_path('images/logo/rembang.png');
-                        $logoBase64 = base64_encode(file_get_contents($logoPath));
+                        $logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : '';
                     @endphp
-                    <img src="data:image/png;base64,{{ $logoBase64 }}" 
-                         style="width: 70px; height: auto; display: block;">
+                    @if($logoBase64)
+                        <img src="data:image/png;base64,{{ $logoBase64 }}" style="width: 65px; height: auto; display: block;">
+                    @endif
                 </td>
                 
-                <td style="text-align: center; padding-right: 80px;">
+                <td style="text-align: center; vertical-align: middle; padding-right: 40px;">
                     <div class="kop-instansi">Pemerintah Kabupaten Rembang</div>
                     <div class="kop-sub">Inspektorat Daerah</div>
                     <div class="alamat">
-                      Jl. Raya Rembang-Lasem Km 1,1, Tireman Barat, Tireman, Kec. Rembang, Kabupaten Rembang, Jawa Tengah 59219 <br>
-                      Telepon: (0295) 691320 | Email: inspektorat@rembangkab.go.id <br>
-                      Laman: https://inspektorat.rembangkab.go.id
+                        Jl. Raya Rembang-Lasem Km 1,1, Tireman Barat, Tireman, Kec. Rembang, Kabupaten Rembang, Jawa Tengah 59219<br>
+                        Telepon: (0295) 691320 | Email: inspektorat@rembangkab.go.id | Laman: https://inspektorat.rembangkab.go.id
                     </div>
                 </td>
             </tr>
         </table>
     </div>
 
-    <div class="title-report">
-        DAFTAR TEMUAN PEMERIKSAAN & PELAKSANAAN TINDAK LANJUT
+    <!-- JUDUL LAPORAN -->
+    <div class="doc-title-container">
+        <div class="title-report">Daftar Rekapitulasi Temuan Pemeriksaan & Tindak Lanjut</div>
+        <div class="meta-periode">
+            Tanggal Cetak: {{ now()->translatedFormat('d F Y') }}
+            @if(!empty($filter['tahun'])) | Tahun: {{ $filter['tahun'] }} @endif
+            @if(!empty($filter['semester'])) | Semester: {{ $filter['semester'] }} @endif
+        </div>
     </div>
 
+    <!-- TABEL DATA UTAMA -->
     <table class="data-table">
         <thead>
             <tr>
-                <th width="3%">NO</th>
-                <th width="12%">NAMA UNIT / LHP</th>
-                <th width="14%">TEMUAN (KONDISI)</th>
-                <th width="5%">KODE TMD</th>
-                <th width="14%">REKOMENDASI</th>
-                <th width="5%">KODE REK</th>
-                <th width="9%">NILAI TEMUAN</th>
-                <th width="8%">TGL BAYAR / KET</th>
-                <th width="10%">NILAI TL (Rp/Barang)</th>
-                <th width="10%">SETORAN (VALID)</th>
-                <th width="10%">SISA (Rp)</th>
+                <th style="width: 3%;">NO</th>
+                <th style="width: 12%;">UNIT KERJA / NO. LHP</th>
+                <th style="width: 15%;">TEMUAN (KONDISI)</th>
+                <th style="width: 4%;">KODE TMD</th>
+                <th style="width: 16%;">REKOMENDASI</th>
+                <th style="width: 4%;">KODE REK</th>
+                <th style="width: 9.5%;">NILAI TEMUAN (Rp)</th>
+                <th style="width: 7.5%;">TGL / KET</th>
+                <th style="width: 9%;">NILAI TL (Rp)</th>
+                <th style="width: 9%;">SETORAN (Rp)</th>
+                <th style="width: 11%;">SISA (Rp)</th>
             </tr>
         </thead>
         <tbody>
-            @php $no = 1; @endphp
-            @foreach($lhps as $lhp)
+            @php 
+                $no = 1;
+                $grandTotalTemuan = 0;
+                $grandTotalTL = 0;
+                $grandTotalSetoran = 0;
+            @endphp
+
+            @forelse($lhps as $lhp)
                 @php 
                     $lhpTotalTemuan = 0;
                     $lhpTotalTL = 0;
                     $lhpTotalSetoran = 0;
                 @endphp
 
-                @foreach($lhp->temuans as $temuan)
-                    @php $lhpTotalTemuan += $temuan->nilai_temuan; @endphp
-                    
-                    @foreach($temuan->recommendations as $indexRekom => $rekom)
-                        @php 
-                            $displayRows = [];
-                            foreach($rekom->tindakLanjuts as $tl) {
+                @foreach($lhp->temuans as $indexTemuan => $temuan)
+                    @php 
+                        $lhpTotalTemuan += (float) $temuan->nilai_temuan; 
+                        
+                        // Hitung total baris yang dibutuhkan oleh temuan ini
+                        $temuanRows = 0;
+                        $rekomRowsMap = [];
+                        foreach($temuan->recommendations as $rKey => $rObj) {
+                            $tlRows = [];
+                            foreach($rObj->tindakLanjuts as $tl) {
                                 if ($tl->is_cicilan) {
                                     foreach($tl->cicilans as $c) {
-                                        $displayRows[] = [
-                                            'tanggal' => $c->tanggal_bayar?->format('d/m/Y'),
-                                            'nilai_tl' => $c->nilai_bayar,
-                                            'setoran' => ($c->status === 'diterima') ? $c->nilai_bayar : 0,
-                                            'keterangan' => "Cicilan Ke-" . $c->ke,
-                                            'is_valid' => ($c->status === 'diterima')
+                                        $tlRows[] = [
+                                            'tanggal' => $c->tanggal_bayar?->format('d/m/Y') ?? '-',
+                                            'nilai_tl' => (float) $c->nilai_bayar,
+                                            'setoran' => ($c->status === 'diterima') ? (float) $c->nilai_bayar : 0,
+                                            'keterangan' => 'Cicilan ke-' . $c->ke,
                                         ];
                                     }
                                 } else {
-                                    $displayRows[] = [
-                                        'tanggal' => $tl->created_at->format('d/m/Y'),
-                                        'nilai_tl' => ($rekom->isUang()) ? $tl->nilai_tindak_lanjut : 0,
-                                        'setoran' => ($tl->status_verifikasi === 'lunas' && $rekom->isUang()) ? $tl->nilai_tindak_lanjut : 0,
-                                        'keterangan' => $tl->catatan_tl ?? ($rekom->isUang() ? 'Bayar Tunai' : 'Penyerahan Barang/Admin'),
-                                        'is_valid' => ($tl->status_verifikasi === 'lunas')
+                                    $isLunas = ($tl->status_verifikasi === 'lunas' || $tl->status_verifikasi === 'diterima');
+                                    $tlRows[] = [
+                                        'tanggal' => $tl->created_at?->format('d/m/Y') ?? '-',
+                                        'nilai_tl' => (float) ($rObj->isUang() ? $tl->nilai_tindak_lanjut : 0),
+                                        'setoran' => (float) ($isLunas && $rObj->isUang() ? $tl->nilai_tindak_lanjut : 0),
+                                        'keterangan' => $tl->catatan_tl ?? ($rObj->isUang() ? 'Setoran Lunas' : 'Administrasi/Fisik'),
                                     ];
                                 }
                             }
-                            
+                            $rekomRowsMap[$rKey] = !empty($tlRows) ? $tlRows : [
+                                [
+                                    'tanggal' => '-',
+                                    'nilai_tl' => 0,
+                                    'setoran' => 0,
+                                    'keterangan' => 'Belum ditindaklanjuti',
+                                ]
+                            ];
+                            $temuanRows += count($rekomRowsMap[$rKey]);
+                        }
+                        if ($temuan->recommendations->isEmpty()) {
+                            $temuanRows = 1;
+                        }
+                        $temuanRowStarted = false;
+                    @endphp
+
+                    @forelse($temuan->recommendations as $indexRekom => $rekom)
+                        @php 
+                            $displayRows = $rekomRowsMap[$indexRekom] ?? [];
+                            $rekomRowCount = count($displayRows);
                             $totalSetoranRekom = collect($displayRows)->sum('setoran');
-                            $lhpTotalTL += collect($displayRows)->sum('nilai_tl');
+                            $totalTlRekom = collect($displayRows)->sum('nilai_tl');
+                            $lhpTotalTL += $totalTlRekom;
                             $lhpTotalSetoran += $totalSetoranRekom;
+                            $rekomRowStarted = false;
                         @endphp
 
-                        @forelse($displayRows as $indexRow => $row)
-                        <tr>
-                            @if($indexRekom == 0 && $indexRow == 0)
-                                <td class="text-center">{{ $no++ }}</td>
-                                <td>
-                                    <strong>{{ $lhp->unitDiperiksa?->nama_unit ?? 'TIDAK ADA UNIT' }}</strong><br>
-                                    {{ $lhp->nomor_lhp }}
-                                </td>
-                                <td>{{ $temuan->kondisi }}</td>
-                                <td class="text-center">{{ $temuan->kodeTemuan?->kode }}</td>
-                            @else
-                                <td colspan="4" style="border-left: none; border-top: none; border-bottom: none;"></td>
-                            @endif
+                        @foreach($displayRows as $indexRow => $row)
+                            <tr>
+                                {{-- Kolom LHP & Temuan (hanya muncul di baris pertama temuan) --}}
+                                @if(!$temuanRowStarted)
+                                    @php $temuanRowStarted = true; @endphp
+                                    <td rowspan="{{ $temuanRows }}" class="text-center font-bold">{{ $no++ }}</td>
+                                    <td rowspan="{{ $temuanRows }}">
+                                        <strong>{{ $lhp->unitDiperiksa?->nama_unit ?? 'Unit Tidak Diketahui' }}</strong>
+                                        <div style="font-size: 7pt; color: #475569; margin-top: 2px;">{{ $lhp->nomor_lhp }}</div>
+                                    </td>
+                                    <td rowspan="{{ $temuanRows }}">
+                                        {{ $temuan->kondisi }}
+                                    </td>
+                                    <td rowspan="{{ $temuanRows }}" class="text-center">
+                                        {{ $temuan->kodeTemuan?->kode ?? '-' }}
+                                    </td>
+                                @endif
 
-                            <td>{!! $indexRow == 0 ? $rekom->uraian_rekom : '' !!}</td>
-                            <td class="text-center">{{ $indexRow == 0 ? ($rekom->kodeRekomendasi?->kode ?? '-') : '' }}</td>
-                            <td class="text-right">{{ $indexRow == 0 ? number_format($temuan->nilai_temuan, 0, ',', '.') : '' }}</td>
+                                {{-- Kolom Rekomendasi & Nilai Temuan (hanya muncul di baris pertama rekomendasi) --}}
+                                @if(!$rekomRowStarted)
+                                    @php $rekomRowStarted = true; @endphp
+                                    <td rowspan="{{ $rekomRowCount }}">
+                                        {!! $rekom->uraian_rekom !!}
+                                    </td>
+                                    <td rowspan="{{ $rekomRowCount }}" class="text-center">
+                                        {{ $rekom->kodeRekomendasi?->kode ?? '-' }}
+                                    </td>
+                                    <td rowspan="{{ $rekomRowCount }}" class="col-money font-bold">
+                                        Rp {{ number_format($temuan->nilai_temuan, 0, ',', '.') }}
+                                    </td>
+                                @endif
 
-                            <td class="text-center">{{ $row['tanggal'] }}</td>
-                            <td class="text-right">
-                                @if($row['nilai_tl'] > 0)
-                                    {{ number_format($row['nilai_tl'], 0, ',', '.') }}
-                                @else
-                                    <small>{{ \Illuminate\Support\Str::limit($row['keterangan'], 25) }}</small>
-                                @endif
-                            </td>
-                            <td class="text-right {{ !$row['is_valid'] ? 'invalid' : '' }}">
-                                @if($row['is_valid'])
-                                    {{ $row['setoran'] > 0 ? number_format($row['setoran'], 0, ',', '.') : 'LUNAS' }}
-                                @else
-                                    0
-                                @endif
-                            </td>
-                            <td class="text-right">
-                                @if($loop->last)
-                                    <strong>{{ number_format(max(0, $temuan->nilai_temuan - $totalSetoranRekom), 0, ',', '.') }}</strong>
-                                @endif
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            @if($indexRekom == 0)
-                                <td class="text-center">{{ $no++ }}</td>
-                                <td>
-                                    <strong>{{ $lhp->unitDiperiksa?->nama_unit ?? 'TIDAK ADA UNIT' }}</strong><br>
-                                    {{ $lhp->nomor_lhp }}
+                                {{-- Kolom Rincian Tindak Lanjut --}}
+                                <td class="text-center">
+                                    {{ $row['tanggal'] }}
+                                    @if(!empty($row['keterangan']) && $row['keterangan'] !== 'Belum ditindaklanjuti')
+                                        <div style="font-size: 6.5pt; color: #64748b;">{{ $row['keterangan'] }}</div>
+                                    @endif
                                 </td>
-                                <td>{{ $temuan->kondisi }}</td>
-                                <td class="text-center">{{ $temuan->kodeTemuan?->kode }}</td>
-                            @else
-                                <td colspan="4" style="border-left: none; border-top: none; border-bottom: none;"></td>
-                            @endif
-                            <td>{!! $rekom->uraian_rekom !!}</td>
-                            <td class="text-center">{{ $rekom->kodeRekomendasi?->kode ?? '-' }}</td>
-                            <td class="text-right">{{ number_format($temuan->nilai_temuan, 0, ',', '.') }}</td>
-                            <td colspan="3" class="text-center invalid">Belum ditindaklanjuti</td>
-                            <td class="text-right">{{ number_format($temuan->nilai_temuan, 0, ',', '.') }}</td>
+                                <td class="col-money">
+                                    {{ $row['nilai_tl'] > 0 ? 'Rp ' . number_format($row['nilai_tl'], 0, ',', '.') : '-' }}
+                                </td>
+                                <td class="col-money">
+                                    {{ $row['setoran'] > 0 ? 'Rp ' . number_format($row['setoran'], 0, ',', '.') : '-' }}
+                                </td>
+                                
+                                {{-- Kolom Sisa Rekomendasi --}}
+                                @if($indexRow == 0)
+                                    <td rowspan="{{ $rekomRowCount }}" class="col-money font-bold">
+                                        Rp {{ number_format(max(0, $temuan->nilai_temuan - $totalSetoranRekom), 0, ',', '.') }}
+                                    </td>
+                                @endif
+                            </tr>
+                        @endforeach
+                    @empty
+                        {{-- Jika Temuan belum memiliki rekomendasi --}}
+                        <tr>
+                            <td class="text-center font-bold">{{ $no++ }}</td>
+                            <td>
+                                <strong>{{ $lhp->unitDiperiksa?->nama_unit ?? 'Unit Tidak Diketahui' }}</strong>
+                                <div style="font-size: 7pt; color: #475569; margin-top: 2px;">{{ $lhp->nomor_lhp }}</div>
+                            </td>
+                            <td>{{ $temuan->kondisi }}</td>
+                            <td class="text-center">{{ $temuan->kodeTemuan?->kode ?? '-' }}</td>
+                            <td colspan="2" class="text-center" style="color: #64748b;">Belum ada rekomendasi</td>
+                            <td class="col-money font-bold">Rp {{ number_format($temuan->nilai_temuan, 0, ',', '.') }}</td>
+                            <td class="text-center">-</td>
+                            <td class="col-money">-</td>
+                            <td class="col-money">-</td>
+                            <td class="col-money font-bold">Rp {{ number_format($temuan->nilai_temuan, 0, ',', '.') }}</td>
                         </tr>
-                        @endforelse
-                    @endforeach
+                    @endforelse
                 @endforeach
 
-                <tr class="footer-lhp">
-                    <td colspan="6" class="text-right">JUMLAH PER LHP : {{ $lhp->nomor_lhp }}</td>
-                    <td class="text-right">{{ number_format($lhpTotalTemuan, 0, ',', '.') }}</td>
+                {{-- Subtotal per LHP --}}
+                @php
+                    $grandTotalTemuan += $lhpTotalTemuan;
+                    $grandTotalTL += $lhpTotalTL;
+                    $grandTotalSetoran += $lhpTotalSetoran;
+                @endphp
+                <tr class="bg-subtotal">
+                    <td colspan="6" class="text-right font-bold" style="padding-right: 6px;">SUBTOTAL: {{ $lhp->nomor_lhp }}</td>
+                    <td class="col-money font-bold">Rp {{ number_format($lhpTotalTemuan, 0, ',', '.') }}</td>
                     <td></td>
-                    <td class="text-right">{{ number_format($lhpTotalTL, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($lhpTotalSetoran, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format(max(0, $lhpTotalTemuan - $lhpTotalSetoran), 0, ',', '.') }}</td>
+                    <td class="col-money font-bold">Rp {{ number_format($lhpTotalTL, 0, ',', '.') }}</td>
+                    <td class="col-money font-bold">Rp {{ number_format($lhpTotalSetoran, 0, ',', '.') }}</td>
+                    <td class="col-money font-bold">Rp {{ number_format(max(0, $lhpTotalTemuan - $lhpTotalSetoran), 0, ',', '.') }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="11" class="text-center" style="padding: 16px; color: #64748b;">
+                        Data rekapitulasi temuan dan tindak lanjut tidak ditemukan.
+                    </td>
+                </tr>
+            @endforelse
         </tbody>
+
+        @if($lhps->isNotEmpty())
+            <tfoot>
+                <tr class="bg-grandtotal">
+                    <td colspan="6" class="text-right font-bold" style="border-top: 2px solid #000; border-bottom: 3px double #000; padding-right: 6px;">
+                        TOTAL KESELURUHAN (SEMUA LHP)
+                    </td>
+                    <td class="col-money font-bold" style="border-top: 2px solid #000; border-bottom: 3px double #000;">
+                        Rp {{ number_format($grandTotalTemuan, 0, ',', '.') }}
+                    </td>
+                    <td style="border-top: 2px solid #000; border-bottom: 3px double #000;"></td>
+                    <td class="col-money font-bold" style="border-top: 2px solid #000; border-bottom: 3px double #000;">
+                        Rp {{ number_format($grandTotalTL, 0, ',', '.') }}
+                    </td>
+                    <td class="col-money font-bold" style="border-top: 2px solid #000; border-bottom: 3px double #000;">
+                        Rp {{ number_format($grandTotalSetoran, 0, ',', '.') }}
+                    </td>
+                    <td class="col-money font-bold" style="border-top: 2px solid #000; border-bottom: 3px double #000;">
+                        Rp {{ number_format(max(0, $grandTotalTemuan - $grandTotalSetoran), 0, ',', '.') }}
+                    </td>
+                </tr>
+            </tfoot>
+        @endif
     </table>
 
+    <!-- TANDA TANGAN / PENGESAHAN -->
+    @php
+        $inspektur = \App\Models\User::find(2);
+    @endphp
     <div class="signature-section">
         <div class="sig-container">
-            <p>Rembang, {{ now()->translatedFormat('d F Y') }}</p>
-            <p style="margin-top: -5px;">Inspektur Kabupaten Rembang,</p>
+            <p style="margin-bottom: 2px;">Mengetahui / Mengesahkan,</p>
+            <p style="margin-top: 0; font-weight: bold; text-transform: uppercase;">Inspektur Daerah Kab. Rembang</p>
             
             <div class="sig-space"></div>
             
             <div class="sig-name">
-                IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.
+                {{ $inspektur?->name ?? 'IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.' }}
+            </div>
+            <div class="sig-nip" style="margin-top: 3px;">
+                {{ $inspektur?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)' }}
             </div>
             <div class="sig-nip">
-                NIP. 197411281999032003
+                NIP. {{ $inspektur?->nip ?? '197411281999032003' }}
             </div>
         </div>
         <div style="clear: both;"></div>
     </div>
+
 </body>
 </html>

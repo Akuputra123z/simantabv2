@@ -148,6 +148,11 @@ class Recommendation extends Model
         if ($this->temuan) {
             $this->temuan->syncStatus();
         }
+
+        if ($this->lhr_catatan_id) {
+            $lhr = $this->lhrCatatan?->pengujian?->lhr;
+            $lhr?->refreshStatistik();
+        }
     }
 
     /**
@@ -253,10 +258,19 @@ class Recommendation extends Model
                 'total_terbayar' => 0,
                 'sisa_belum_bayar' => $model->isUang() ? (float) ($model->nilai_rekom ?? 0) : 0,
             ]);
+            if ($model->lhr_catatan_id) {
+                $lhr = $model->lhrCatatan?->pengujian?->lhr;
+                $lhr?->refreshStatistik();
+            }
         });
 
         static::deleted(function (self $model) {
             $model->temuan?->syncStatus();
+
+            if ($model->lhr_catatan_id) {
+                $lhr = $model->lhrCatatan?->pengujian?->lhr;
+                $lhr?->refreshStatistik();
+            }
         });
     }
 }

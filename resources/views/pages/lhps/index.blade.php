@@ -207,7 +207,7 @@
                         $persen > 0    => 'bg-blue-500',
                         default        => 'bg-gray-300',
                     };
-                    $k = $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori;
+                    $k = $lhp->kategori;
                     $kategoriBadge = match($k) {
                         'PKPT' => 'bg-indigo-50 text-indigo-600 border border-indigo-200/60 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/30',
                         'BPK'  => 'bg-amber-50 text-amber-600 border border-amber-200/60 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/30',
@@ -285,7 +285,7 @@
                     {{-- Kategori --}}
                     <td class="px-4 py-4 text-center border-r border-gray-100 dark:border-gray-800/60">
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider {{ $kategoriBadge }}">
-                            {{ $k ?? '-' }}
+                            {{ $k ?: '-' }}
                         </span>
                     </td>
 

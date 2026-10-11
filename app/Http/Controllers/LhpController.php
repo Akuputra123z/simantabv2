@@ -173,10 +173,7 @@ class LhpController extends Controller
                 'auditProgramDetail.auditProgram',
                 'unitDiperiksas',
             ])
-            ->when(! $user->hasRole('super_admin'), function ($q) use ($user) {
-                $q->where('ketua_tim_id', $user->id)
-                    ->orWhereHas('members', fn ($q2) => $q2->where('user_id', $user->id));
-            })
+            ->forUser($user)
             ->latest()
             ->limit(100)
             ->get();
@@ -366,12 +363,17 @@ class LhpController extends Controller
 
         $assignment = AuditAssignment::with('unitDiperiksas')->findOrFail($validated['audit_assignment_id']);
 
-        // 1. Authorization: Non-super admin must be ketua_tim or team member
+        // 1. Authorization: Non-super admin must be authorized
         $user = auth()->user();
-        if (! $user->hasRole('super_admin')) {
-            $isMemberOrLead = $assignment->ketua_tim_id === $user->id
-                || $assignment->members()->where('user_id', $user->id)->exists();
-            if (! $isMemberOrLead) {
+        if (! $user->hasRole(['super_admin', 'kepala_inspektorat'])) {
+            $irbanNames = ($user->isPengendaliTeknis() || $user->isIrban()) ? $user->getIrbanTeamNames() : [];
+            $isAuthorized = $assignment->ketua_tim_id === $user->id
+                || $assignment->pengendali_teknis_id === $user->id
+                || $assignment->pengendali_teknis === $user->name
+                || $assignment->created_by === $user->id
+                || $assignment->members()->where('user_id', $user->id)->exists()
+                || (! empty($irbanNames) && in_array($assignment->auditProgramDetail?->tim, $irbanNames));
+            if (! $isAuthorized) {
                 abort(403, 'Anda tidak memiliki wewenang untuk membuat LHP pada penugasan ini.');
             }
         }
@@ -526,10 +528,9 @@ class LhpController extends Controller
         $user = auth()->user();
 
         $assignments = AuditAssignment::with(['auditProgramDetail.auditProgram', 'unitDiperiksas'])
-            ->when(! $user->hasRole('super_admin'), function ($q) use ($user, $lhp) {
+            ->where(function ($q) use ($user, $lhp) {
                 $q->where('id', $lhp->audit_assignment_id)
-                    ->orWhere('ketua_tim_id', $user->id)
-                    ->orWhereHas('members', fn ($q2) => $q2->where('user_id', $user->id));
+                    ->orWhere(fn ($sq) => $sq->forUser($user));
             })->get();
 
         $usedUnits = DB::table('lhp_unit_diperiksa')
@@ -685,12 +686,17 @@ class LhpController extends Controller
 
         $assignment = AuditAssignment::with('unitDiperiksas')->findOrFail($validated['audit_assignment_id']);
 
-        // 1. Authorization: Non-super admin must be creator, ketua_tim, or team member
+        // 1. Authorization: Non-super admin must be authorized
         $user = auth()->user();
-        if (! $user->hasRole('super_admin')) {
+        if (! $user->hasRole(['super_admin', 'kepala_inspektorat'])) {
+            $irbanNames = ($user->isPengendaliTeknis() || $user->isIrban()) ? $user->getIrbanTeamNames() : [];
             $isAuthorized = $lhp->created_by === $user->id
                 || $assignment->ketua_tim_id === $user->id
-                || $assignment->members()->where('user_id', $user->id)->exists();
+                || $assignment->pengendali_teknis_id === $user->id
+                || $assignment->pengendali_teknis === $user->name
+                || $assignment->created_by === $user->id
+                || $assignment->members()->where('user_id', $user->id)->exists()
+                || (! empty($irbanNames) && in_array($assignment->auditProgramDetail?->tim, $irbanNames));
             if (! $isAuthorized) {
                 abort(403, 'Anda tidak memiliki wewenang untuk mengubah LHP ini.');
             }

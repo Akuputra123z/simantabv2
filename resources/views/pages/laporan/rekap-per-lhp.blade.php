@@ -253,6 +253,23 @@
                 </tbody>
             </table>
         </div>
+
+        {{-- Bagian Pengesahan / Tanda Tangan --}}
+        @php
+            $inspektur = \App\Models\User::find(2);
+        @endphp
+        <div class="border-t border-gray-100 dark:border-gray-800 p-6">
+            <div class="flex justify-end">
+                <div class="text-center w-80 text-xs">
+                    <p class="text-gray-500 dark:text-gray-400">Mengetahui / Mengesahkan,</p>
+                    <p class="font-bold text-gray-900 dark:text-white uppercase mt-0.5">Inspektur Daerah Kab. Rembang</p>
+                    <div class="h-20"></div>
+                    <p class="font-bold uppercase underline text-gray-900 dark:text-white">{{ $inspektur?->name ?? 'IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.' }}</p>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ $inspektur?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)' }}</p>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">NIP. {{ $inspektur?->nip ?? '197411281999032003' }}</p>
+                </div>
+            </div>
+        </div>
     </div>
 
 </div>

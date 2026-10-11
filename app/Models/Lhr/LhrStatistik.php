@@ -13,16 +13,31 @@ class LhrStatistik extends Model
         'lhr_id',
         'total_rekomendasi',
         'selesai',
+        'belum',
+        'proses',
+        'dikirim_opd',
+        'draft_opd',
+        'ditolak_opd',
         'persen',
+        'persen_tl',
         'dihitung_pada',
     ];
 
-    protected $casts = [
-        'total_rekomendasi' => 'integer',
-        'selesai' => 'integer',
-        'persen' => 'float',
-        'dihitung_pada' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'total_rekomendasi' => 'integer',
+            'selesai'           => 'integer',
+            'belum'             => 'integer',
+            'proses'            => 'integer',
+            'dikirim_opd'       => 'integer',
+            'draft_opd'         => 'integer',
+            'ditolak_opd'       => 'integer',
+            'persen'            => 'float',
+            'persen_tl'         => 'float',
+            'dihitung_pada'     => 'datetime',
+        ];
+    }
 
     public function lhr(): BelongsTo
     {

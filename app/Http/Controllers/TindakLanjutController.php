@@ -69,10 +69,27 @@ class TindakLanjutController extends Controller
 
         // Filter hak akses jika bukan super admin atau kepala inspektorat
         if (! $user->hasRole(['super_admin', 'kepala_inspektorat', 'admin', 'admin_inspektorat'])) {
-            $query->whereHas('auditAssignment', function ($q) use ($user) {
-                $q->where('ketua_tim_id', $user->id)
-                    ->orWhereHas('members', fn ($m) => $m->where('user_id', $user->id));
-            });
+            if ($user->hasRole(User::ROLE_PENGENDALI_TEKNIS) || $user->isPengendaliTeknis() || $user->isIrban()) {
+                $irbanNames = $user->getIrbanTeamNames();
+                $query->whereHas('auditAssignment', function ($q) use ($user, $irbanNames) {
+                    $q->where('pengendali_teknis_id', $user->id)
+                        ->orWhere('pengendali_teknis', $user->name)
+                        ->orWhere(function ($sq) use ($irbanNames) {
+                            if (! empty($irbanNames)) {
+                                $sq->whereHas('auditProgramDetail', fn ($dq) => $dq->whereIn('tim', $irbanNames));
+                            }
+                        })
+                        ->orWhere('ketua_tim_id', $user->id)
+                        ->orWhere('created_by', $user->id)
+                        ->orWhereHas('members', fn ($m) => $m->where('user_id', $user->id));
+                })->orWhere('created_by', $user->id);
+            } else {
+                $query->whereHas('auditAssignment', function ($q) use ($user) {
+                    $q->where('ketua_tim_id', $user->id)
+                        ->orWhere('created_by', $user->id)
+                        ->orWhereHas('members', fn ($m) => $m->where('user_id', $user->id));
+                })->orWhere('created_by', $user->id);
+            }
         }
 
         if ($search) {
@@ -258,10 +275,23 @@ class TindakLanjutController extends Controller
 
         // Hak akses
         if (! $user->hasRole(['super_admin', 'kepala_inspektorat', 'admin', 'admin_inspektorat'])) {
-            $hasAccess = $lhp->auditAssignment && (
-                $lhp->auditAssignment->ketua_tim_id === $user->id ||
-                $lhp->auditAssignment->members()->where('user_id', $user->id)->exists()
-            );
+            $assignment = $lhp->auditAssignment;
+            $hasAccess = false;
+            if ($assignment) {
+                if ($user->hasRole(User::ROLE_PENGENDALI_TEKNIS) || $user->isPengendaliTeknis() || $user->isIrban()) {
+                    $irbanNames = $user->getIrbanTeamNames();
+                    $hasAccess = $assignment->pengendali_teknis_id === $user->id
+                        || $assignment->pengendali_teknis === $user->name
+                        || ($assignment->auditProgramDetail && in_array($assignment->auditProgramDetail->tim, $irbanNames))
+                        || $assignment->ketua_tim_id === $user->id
+                        || $assignment->created_by === $user->id
+                        || $assignment->members()->where('user_id', $user->id)->exists();
+                } else {
+                    $hasAccess = $assignment->ketua_tim_id === $user->id
+                        || $assignment->created_by === $user->id
+                        || $assignment->members()->where('user_id', $user->id)->exists();
+                }
+            }
             if (! $hasAccess) {
                 abort(403, 'Anda tidak memiliki akses ke LHP ini.');
             }

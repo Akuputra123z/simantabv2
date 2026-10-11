@@ -205,17 +205,20 @@
                             <div class="ttd-space"></div>
                         @endif
 
+                        @php
+                            $defaultInspektur = \App\Models\User::find(2);
+                        @endphp
                         @if($auditProgram->approver)
                             <p class="ttd-nama">{{ $auditProgram->approver->name }}</p>
                             <p class="ttd-nip">
-                                {{ $auditProgram->approver->jabatan ?? 'Pembina' }}<br>
+                                {{ $auditProgram->approver->pangkat_gol ?? ($defaultInspektur?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)') }}<br>
                                 NIP. {{ $auditProgram->approver->nip ?? '-' }}
                             </p>
                         @else
-                            <p class="ttd-nama">IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE</p>
+                            <p class="ttd-nama">{{ $defaultInspektur?->name ?? 'IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.' }}</p>
                             <p class="ttd-nip">
-                                Pembina<br>
-                                NIP. 197411281999032003
+                                {{ $defaultInspektur?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)' }}<br>
+                                NIP. {{ $defaultInspektur?->nip ?? '197411281999032003' }}
                             </p>
                         @endif
                     </div>

@@ -21,8 +21,33 @@ class PegawaiInspektoratController extends Controller
             })
             ->when($request->filled('unit_kerja'), fn ($q) => $q->where('unit_kerja', $request->unit_kerja)
             )
-            ->when($request->filled('jabatan'), fn ($q) => $q->where('jabatan', $request->jabatan)
-            )
+            ->when($request->filled('jabatan'), function ($q) use ($request) {
+                $jabatan = $request->jabatan;
+                if ($jabatan === 'Auditor') {
+                    $q->where('jabatan', 'like', '%Auditor%');
+                } elseif ($jabatan === 'Pengawas') {
+                    $q->where(fn ($sq) => $sq->where('jabatan', 'like', '%P2UPD%')->orWhere('jabatan', 'like', '%Pengawas%'));
+                } elseif ($jabatan === 'Staf') {
+                    $q->where(fn ($sq) => $sq->where('jabatan', 'like', '%Kasubbag%')
+                        ->orWhere('jabatan', 'like', '%PPPK%')
+                        ->orWhere('jabatan', 'like', '%Staf%')
+                        ->orWhere('jabatan', 'like', '%Operator%')
+                        ->orWhere('jabatan', 'like', '%Pengadministrasi%')
+                        ->orWhere('jabatan', 'like', '%Pengelola%')
+                        ->orWhere('jabatan', 'like', '%Penata Layanan%')
+                        ->orWhere('jabatan', 'like', '%Pranata%')
+                        ->orWhere('jabatan', 'like', '%Arsiparis%')
+                    );
+                } elseif ($jabatan === 'Inspektur') {
+                    $q->where('jabatan', 'like', '%Inspektur%')->where('jabatan', 'not like', '%Irban%');
+                } elseif ($jabatan === 'Sekdin') {
+                    $q->where(fn ($sq) => $sq->where('jabatan', 'like', '%Sekretaris%')->orWhere('jabatan', 'like', '%Sekdin%'));
+                } elseif ($jabatan === 'Irbansus') {
+                    $q->where(fn ($sq) => $sq->where('jabatan', 'like', '%IRBANSUS%')->orWhere('jabatan', 'like', '%Irbansus%'));
+                } else {
+                    $q->where('jabatan', 'like', "%{$jabatan}%");
+                }
+            })
             ->latest()
             ->paginate(min((int) $request->per_page, 100) ?: 15)
             ->withQueryString();

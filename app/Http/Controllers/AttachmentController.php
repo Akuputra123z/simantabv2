@@ -130,7 +130,7 @@ class AttachmentController extends Controller
         }
 
         // Default izinkan untuk staf/auditor inspektorat internal
-        if ($user->hasRole(['pengendali_teknis', 'ketua_tim', 'anggota', 'staff_inspektorat'])) {
+        if ($user->hasRole(['irban', 'pengendali_teknis', 'ketua_tim', 'anggota', 'staff_inspektorat'])) {
             return;
         }
 

@@ -52,12 +52,14 @@ class LhrController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = Lhr::with([
+        $query = Lhr::forUser(auth()->user())->with([
             'unitDiperiksa',
             'jenisDokumen',
-            'auditAssignment',
+            'auditAssignment.auditProgramDetail',
+            'auditAssignment.pengendaliTeknis',
             'statistik',
             'signer',
+            'pengujians',
         ]);
 
         // Filter Tahun
@@ -94,6 +96,13 @@ class LhrController extends Controller implements HasMiddleware
         }
 
         $lhrs = $query->latest()->paginate(10)->withQueryString();
+
+        // Pastikan statistik tersinkronisasi untuk baris yang ditampilkan
+        foreach ($lhrs as $lhr) {
+            if (! $lhr->statistik || ! $lhr->statistik->dihitung_pada) {
+                $lhr->refreshStatistik();
+            }
+        }
 
         $jenisDokumens = JenisDokumenReviu::where('aktif', true)
             ->orderByRaw("CASE WHEN kode = 'RKPD' THEN 1 WHEN kode = 'KUA_PPAS' THEN 2 ELSE 3 END, nama ASC")
@@ -741,8 +750,8 @@ class LhrController extends Controller implements HasMiddleware
     public function review(Request $request, string $uuid, ReviewLhr $action)
     {
         $user = auth()->user();
-        if (! $user->hasAnyRole([User::ROLE_SUPER_ADMIN, User::ROLE_KEPALA_INSPEKTORAT, User::ROLE_PENGENDALI_TEKNIS, 'admin', 'admin_inspektorat'])) {
-            abort(403, 'Hanya Pengendali Teknis, Kepala Inspektorat, atau Administrator yang berhak menelaah LHR.');
+        if (! $user->hasAnyRole([User::ROLE_SUPER_ADMIN, User::ROLE_KEPALA_INSPEKTORAT, User::ROLE_IRBAN, User::ROLE_PENGENDALI_TEKNIS, 'admin', 'admin_inspektorat'])) {
+            abort(403, 'Hanya Irban / Pengendali Teknis, Kepala Inspektorat, atau Administrator yang berhak menelaah LHR.');
         }
 
         $lhr = Lhr::where('uuid', $uuid)->firstOrFail();

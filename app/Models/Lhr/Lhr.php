@@ -4,6 +4,7 @@ namespace App\Models\Lhr;
 
 use App\Enums\LhrStatus;
 use App\Models\AuditAssignment;
+use App\Models\Recommendation;
 use App\Models\UnitDiperiksa;
 use App\Models\User;
 use App\Traits\HasAttachments;
@@ -76,6 +77,11 @@ class Lhr extends Model
                 $model->uuid = (string) Str::uuid();
             }
         });
+    }
+
+    public function getIrbanAttribute(): ?string
+    {
+        return $this->auditAssignment?->irban;
     }
 
     // ── Relationships ─────────────────────────────────────────────────────────
@@ -170,6 +176,19 @@ class Lhr extends Model
 
     public function progressPengujian(): float
     {
+        if ($this->relationLoaded('pengujians')) {
+            $total = $this->pengujians->count();
+            if ($total === 0) {
+                return 0.0;
+            }
+
+            $completed = $this->pengujians
+                ->where('status_simpulan', '!=', 'belum_dinilai')
+                ->count();
+
+            return round(($completed / $total) * 100, 2);
+        }
+
         $total = $this->pengujians()->count();
         if ($total === 0) {
             return 0.0;
@@ -180,5 +199,217 @@ class Lhr extends Model
             ->count();
 
         return round(($completed / $total) * 100, 2);
+    }
+
+    /**
+     * Hitung ulang dan simpan statistik tindak lanjut / revisi LHR secara sinkron.
+     */
+    public function refreshStatistik(): LhrStatistik
+    {
+        $rekomendasis = Recommendation::whereHas('lhrCatatan.pengujian', function ($q) {
+            $q->where('lhr_id', $this->id);
+        })->with(['tindakLanjuts'])->get();
+
+        $total = $rekomendasis->count();
+        $selesai = 0;
+        $dikirimOpd = 0;
+        $draftOpd = 0;
+        $ditolakOpd = 0;
+        $proses = 0;
+        $belum = 0;
+
+        foreach ($rekomendasis as $rekom) {
+            $tl = $rekom->tindakLanjuts->first();
+            $isLunas = $tl && $tl->status_verifikasi === 'lunas';
+            $isDikirim = $tl && $tl->status_opd === 'dikirim' && empty($tl->alasan_tolak_opd);
+            $isDraft = $tl && $tl->status_opd === 'draft' && empty($tl->alasan_tolak_opd);
+            $isDitolak = $tl && ! empty($tl->alasan_tolak_opd);
+
+            if ($isLunas || $rekom->status === Recommendation::STATUS_SELESAI) {
+                $selesai++;
+            } elseif ($isDikirim) {
+                $dikirimOpd++;
+            } elseif ($isDitolak) {
+                $ditolakOpd++;
+                $proses++;
+            } elseif ($isDraft) {
+                $draftOpd++;
+                $proses++;
+            } elseif ($rekom->status === Recommendation::STATUS_PROSES) {
+                $proses++;
+            } else {
+                $belum++;
+            }
+        }
+
+        $persenSelesai = $total > 0 ? round(($selesai / $total) * 100, 2) : 0.00;
+        $persenTl = $total > 0 ? round((($selesai + $dikirimOpd) / $total) * 100, 2) : 0.00;
+
+        $stat = LhrStatistik::updateOrCreate(
+            ['lhr_id' => $this->id],
+            [
+                'total_rekomendasi' => $total,
+                'selesai'           => $selesai,
+                'belum'             => $belum,
+                'proses'            => $proses,
+                'dikirim_opd'       => $dikirimOpd,
+                'draft_opd'         => $draftOpd,
+                'ditolak_opd'       => $ditolakOpd,
+                'persen'            => $persenSelesai,
+                'persen_tl'         => $persenTl,
+                'dihitung_pada'     => now(),
+            ]
+        );
+
+        $this->setRelation('statistik', $stat);
+
+        // Sinkronisasi status LHR otomatis jika ada revisi dari OPD
+        if (in_array($this->status, [LhrStatus::Terbit, LhrStatus::TindakLanjut])) {
+            if ($total > 0 && $selesai === $total) {
+                $this->updateQuietly(['status' => LhrStatus::Selesai]);
+            } elseif ($dikirimOpd > 0 && $this->status === LhrStatus::Terbit) {
+                $this->updateQuietly(['status' => LhrStatus::TindakLanjut]);
+            }
+        } elseif ($this->status === LhrStatus::Selesai && $total > 0 && $selesai < $total) {
+            $this->updateQuietly(['status' => LhrStatus::TindakLanjut]);
+        }
+
+        return $stat;
+    }
+
+    /**
+     * Ringkasan progres terintegrasi untuk tampilan tabel /lhr/index.
+     */
+    public function getProgresReviuData(): object
+    {
+        $stat = $this->statistik;
+        if (! $stat || ! $stat->dihitung_pada) {
+            $stat = $this->refreshStatistik();
+        }
+
+        $totalRekom = (int) $stat->total_rekomendasi;
+        $selesai = (int) $stat->selesai;
+        $dikirimOpd = (int) $stat->dikirim_opd;
+        $draftOpd = (int) $stat->draft_opd;
+        $ditolakOpd = (int) $stat->ditolak_opd;
+        $belum = (int) $stat->belum;
+        $persenSelesai = (float) $stat->persen;
+        $persenTl = (float) $stat->persen_tl;
+
+        $isTerbit = $this->isTerbit();
+
+        if (! $isTerbit) {
+            $persenDraft = $this->progressPengujian();
+            return (object) [
+                'tahap'          => 'penyusunan',
+                'persen'         => $persenDraft,
+                'total_rekom'    => $totalRekom,
+                'selesai'        => 0,
+                'dikirim_opd'    => 0,
+                'draft_opd'      => 0,
+                'ditolak_opd'    => 0,
+                'belum'          => $totalRekom,
+                'persen_tl'      => 0,
+                'label'          => $persenDraft . '% Disusun',
+            ];
+        }
+
+        return (object) [
+            'tahap'          => 'tindak_lanjut',
+            'persen'         => $totalRekom === 0 ? 100.0 : $persenSelesai,
+            'persen_tl'      => $totalRekom === 0 ? 100.0 : $persenTl,
+            'total_rekom'    => $totalRekom,
+            'selesai'        => $selesai,
+            'dikirim_opd'    => $dikirimOpd,
+            'draft_opd'      => $draftOpd,
+            'ditolak_opd'    => $ditolakOpd,
+            'belum'          => $belum,
+            'label'          => $totalRekom === 0 ? '100% (Nihil)' : $persenSelesai . '% Selesai',
+        ];
+    }
+
+    // ── Scopes ────────────────────────────────────────────────────────────────
+
+    /**
+     * Scope dokumen LHR yang sudah terbit resmi (Terbit, TindakLanjut, Selesai).
+     */
+    public function scopeTerbit(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereIn('status', [
+            LhrStatus::Terbit,
+            LhrStatus::TindakLanjut,
+            LhrStatus::Selesai,
+        ]);
+    }
+
+    /**
+     * Scope data LHR sesuai hak akses pengguna.
+     * Jika pengguna adalah OPD, filter otomatis ke unit binaan miliknya dan hanya status terbit.
+     */
+    public function scopeForUser(\Illuminate\Database\Eloquent\Builder $query, ?User $user): \Illuminate\Database\Eloquent\Builder
+    {
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->hasRole(['super_admin', 'kepala_inspektorat'])) {
+            return $query;
+        }
+
+        if ($user->hasRole('opd')) {
+            $unitIds = $user->opdUnits()->pluck('unit_diperiksas.id');
+            if ($unitIds->isNotEmpty()) {
+                $userUnitNames = $user->opdUnits()->pluck('nama_unit')->filter()->unique();
+                $unitIds = UnitDiperiksa::whereIn('nama_unit', $userUnitNames)->pluck('id');
+            } elseif (! empty($user->unit_kerja)) {
+                $unitIds = UnitDiperiksa::where('nama_unit', 'like', "%{$user->unit_kerja}%")->pluck('id');
+            }
+
+            if ($unitIds->isEmpty()) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->whereIn('unit_diperiksa_id', $unitIds)
+                ->whereIn('status', [
+                    LhrStatus::Terbit,
+                    LhrStatus::TindakLanjut,
+                    LhrStatus::Selesai,
+                ]);
+        }
+
+        // Jika Irban / Pengendali Teknis
+        if ($user->hasAnyRole([User::ROLE_PENGENDALI_TEKNIS, 'irban']) || $user->isPengendaliTeknis() || $user->isIrban()) {
+            $irbanNames = $user->getIrbanTeamNames();
+
+            return $query->where(function ($q) use ($user, $irbanNames) {
+                $q->whereHas('auditAssignment', function ($aq) use ($user, $irbanNames) {
+                    $aq->where('pengendali_teknis_id', $user->id)
+                        ->orWhere('pengendali_teknis', $user->name)
+                        ->orWhere(function ($sq) use ($irbanNames) {
+                            if (! empty($irbanNames)) {
+                                $sq->whereHas('auditProgramDetail', function ($dq) use ($irbanNames) {
+                                    $dq->whereIn('tim', $irbanNames);
+                                })->orWhere(function ($nq) use ($irbanNames) {
+                                    foreach ($irbanNames as $in) {
+                                        $nq->orWhere('nama_tim', 'like', "%{$in}%");
+                                    }
+                                });
+                            }
+                        })
+                        ->orWhere('ketua_tim_id', $user->id)
+                        ->orWhere('created_by', $user->id)
+                        ->orWhereHas('members', fn ($mq) => $mq->where('user_id', $user->id));
+                })->orWhere('created_by', $user->id);
+            });
+        }
+
+        // Auditor (Ketua Tim / Anggota / Staf Inspektorat)
+        return $query->where(function ($q) use ($user) {
+            $q->whereHas('auditAssignment', function ($aq) use ($user) {
+                $aq->where('ketua_tim_id', $user->id)
+                    ->orWhere('created_by', $user->id)
+                    ->orWhereHas('members', fn ($mq) => $mq->where('user_id', $user->id));
+            })->orWhere('created_by', $user->id);
+        });
     }
 }

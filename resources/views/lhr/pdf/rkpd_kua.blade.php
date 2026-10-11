@@ -861,7 +861,7 @@
                 <td style="width:50%;text-align:center">
                     <p style="margin-bottom:60px">INSPEKTUR DAERAH<br>KABUPATEN REMBANG</p>
                     <p style="font-weight:bold;text-decoration:underline;margin:0">{{ $signer?->name ?? $defaultTeam['penanggung_jawab']['nama'] }}</p>
-                    <p style="margin:0">Pembina Utama Muda</p>
+                    <p style="margin:0">{{ $signer?->pangkat_gol ?? (\App\Models\User::find(2)?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)') }}</p>
                     <p style="margin:0">NIP. {{ $signer?->nip ?? $defaultTeam['penanggung_jawab']['nip'] }}</p>
                 </td>
             </tr>

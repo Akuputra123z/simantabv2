@@ -49,6 +49,8 @@ class User extends Authenticatable
 
     public const ROLE_KEPALA_INSPEKTORAT = 'kepala_inspektorat';
 
+    public const ROLE_IRBAN = 'irban';
+
     public const ROLE_PENGENDALI_TEKNIS = 'pengendali_teknis';
 
     public const ROLE_KETUA_TIM = 'ketua_tim';
@@ -85,7 +87,8 @@ class User extends Authenticatable
     public const ROLES = [
         self::ROLE_SUPER_ADMIN => 'Super Admin',
         self::ROLE_KEPALA_INSPEKTORAT => 'Kepala Inspektorat',
-        self::ROLE_PENGENDALI_TEKNIS => 'Pengendali Teknis',
+        self::ROLE_IRBAN => 'Irban (Inspektur Pembantu)',
+        self::ROLE_PENGENDALI_TEKNIS => 'Pengendali Teknis (Irban)',
         self::ROLE_KETUA_TIM => 'Ketua Tim',
         self::ROLE_ANGGOTA => 'Anggota',
         self::ROLE_STAFF_INSPEKTORAT => 'Staff Inspektorat',
@@ -109,6 +112,7 @@ class User extends Authenticatable
         return $query->role([
             self::ROLE_SUPER_ADMIN,
             self::ROLE_KEPALA_INSPEKTORAT,
+            self::ROLE_IRBAN,
             self::ROLE_PENGENDALI_TEKNIS,
             self::ROLE_KETUA_TIM,
             self::ROLE_ANGGOTA,
@@ -162,6 +166,7 @@ class User extends Authenticatable
         return $this->hasAnyRole([
             self::ROLE_SUPER_ADMIN,
             self::ROLE_KEPALA_INSPEKTORAT,
+            self::ROLE_IRBAN,
             self::ROLE_PENGENDALI_TEKNIS,
             self::ROLE_KETUA_TIM,
         ]);
@@ -169,12 +174,64 @@ class User extends Authenticatable
 
     public function isPengendaliTeknis(): bool
     {
-        return $this->hasRole(self::ROLE_PENGENDALI_TEKNIS);
+        return $this->hasAnyRole([self::ROLE_IRBAN, self::ROLE_PENGENDALI_TEKNIS]);
     }
 
     public function isOpd(): bool
     {
         return $this->hasRole(self::ROLE_OPD);
+    }
+
+    public function isIrban(): bool
+    {
+        if ($this->hasAnyRole([self::ROLE_IRBAN, self::ROLE_PENGENDALI_TEKNIS])) {
+            return true;
+        }
+
+        // Jika user memiliki role operasional ketua tim, anggota, staf, atau opd, maka dia bukan pimpinan Irban
+        if ($this->hasAnyRole([self::ROLE_KETUA_TIM, self::ROLE_ANGGOTA, self::ROLE_STAFF_INSPEKTORAT, self::ROLE_OPD])) {
+            return false;
+        }
+
+        $jabatan = strtoupper((string) $this->jabatan);
+
+        return str_starts_with($jabatan, 'IRBAN')
+            || str_contains($jabatan, 'INSPEKTUR PEMBANTU')
+            || str_contains($jabatan, 'IRBANSUS');
+    }
+
+    /**
+     * Dapatkan daftar variasi nama tim Irban untuk user ini jika user adalah Irban / Pengendali Teknis.
+     * Digunakan untuk pencocokan kolom audit_program_details.tim.
+     *
+     * @return array<string>
+     */
+    public function getIrbanTeamNames(): array
+    {
+        $unit = trim((string) ($this->unit_kerja ?: $this->jabatan));
+        $normalized = strtolower(str_replace([' ', '-', '_', '.'], '', $unit));
+
+        if (str_contains($normalized, 'irbaniii') || str_contains($normalized, 'irban3')) {
+            return ['Irban III', 'IRBAN III', 'Irban 3'];
+        }
+
+        if (str_contains($normalized, 'irbanii') || str_contains($normalized, 'irban2')) {
+            return ['Irban II', 'IRBAN II', 'Irban 2'];
+        }
+
+        if (str_contains($normalized, 'irbaniv') || str_contains($normalized, 'irban4')) {
+            return ['Irban IV', 'IRBAN IV', 'Irban 4'];
+        }
+
+        if (str_contains($normalized, 'irbansus') || str_contains($normalized, 'khusus')) {
+            return ['Irban Sus', 'Irbansus', 'IRBANSUS', 'Irban-Sus', 'IRBAN SUS'];
+        }
+
+        if (str_contains($normalized, 'irbani') || str_contains($normalized, 'irban1')) {
+            return ['Irban I', 'IRBAN I', 'Irban 1'];
+        }
+
+        return $unit ? [$unit] : [];
     }
 
     public function opdUnits(): BelongsToMany

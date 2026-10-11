@@ -46,6 +46,90 @@
         :actionUrl="route('opd.dashboard')"
     />
 
+    {{-- RINGKASAN KPI UTAMA OPD (LHP & LHR) --}}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {{-- Card 1: LHP --}}
+        <div class="relative overflow-hidden rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50/70 via-white to-white p-5 shadow-xs dark:border-blue-900/50 dark:from-blue-950/30 dark:via-gray-900 dark:to-gray-900">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">Pemeriksaan (LHP)</span>
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+                <span class="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white font-mono">{{ $totalLhp }}</span>
+                <span class="text-xs font-semibold text-gray-500">Laporan LHP</span>
+            </div>
+            <div class="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-blue-100/80 dark:border-blue-900/30">
+                <span>{{ $totalPatuhKepatuhan }} Tuntas &bull; {{ $totalProsesKepatuhan }} Proses</span>
+                <a href="{{ route('opd.tindak-lanjut.index') }}" class="font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">Lihat LHP &rarr;</a>
+            </div>
+        </div>
+
+        {{-- Card 2: LHR (Reviu Dokumen) --}}
+        <div class="relative overflow-hidden rounded-2xl border border-violet-200/80 bg-gradient-to-br from-violet-50/70 via-white to-white p-5 shadow-xs dark:border-violet-900/50 dark:from-violet-950/30 dark:via-gray-900 dark:to-gray-900">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-violet-700 dark:text-violet-400">Reviu Dokumen (LHR)</span>
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 text-white shadow-xs">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+                <span class="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white font-mono">{{ $totalLhr }}</span>
+                <span class="text-xs font-semibold text-gray-500">LHR Resmi Terbit</span>
+            </div>
+            <div class="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-violet-100/80 dark:border-violet-900/30">
+                <span>{{ $totalCatatanLhr }} Catatan Reviu</span>
+                <a href="{{ route('opd.lhr.index') }}" class="font-bold text-violet-600 hover:text-violet-700 dark:text-violet-400">Lihat LHR &rarr;</a>
+            </div>
+        </div>
+
+        {{-- Card 3: Temuan & Rekomendasi LHP --}}
+        <div class="relative overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/70 via-white to-white p-5 shadow-xs dark:border-amber-900/50 dark:from-amber-950/30 dark:via-gray-900 dark:to-gray-900">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Temuan & Rekomendasi</span>
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500 text-white shadow-xs">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+                <span class="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white font-mono">{{ $totalTemuan }}</span>
+                <span class="text-xs font-semibold text-gray-500">Temuan ({{ $totalRekom }} Rekom)</span>
+            </div>
+            <div class="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-amber-100/80 dark:border-amber-900/30">
+                <span class="text-emerald-600 dark:text-emerald-400 font-semibold">{{ $rekomSelesai }} Selesai ({{ $rekomPct }}%)</span>
+                <span>{{ $rekomBelum }} Belum</span>
+            </div>
+        </div>
+
+        {{-- Card 4: Penyelamatan Aset --}}
+        <div class="relative overflow-hidden rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/70 via-white to-white p-5 shadow-xs dark:border-emerald-900/50 dark:from-emerald-950/30 dark:via-gray-900 dark:to-gray-900">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Penyelamatan Keuangan</span>
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+                <span class="text-xl font-extrabold tracking-tight text-emerald-700 dark:text-emerald-400 font-mono truncate" title="Rp {{ number_format($totalPenyelamatan, 0, ',', '.') }}">
+                    Rp {{ number_format($totalPenyelamatan / 1000000, 1, ',', '.') }} Jt
+                </span>
+            </div>
+            <div class="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-emerald-100/80 dark:border-emerald-900/30">
+                <span class="font-semibold text-emerald-700 dark:text-emerald-400">Recovery: {{ $recoveryRate }}%</span>
+                <span class="truncate">Sisa: Rp {{ number_format($sisaKerugian / 1000000, 1, ',', '.') }} Jt</span>
+            </div>
+        </div>
+    </div>
+
     {{-- 2. INFORMASI KATEGORI PROGRAM AUDIT --}}
     <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900/80">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
@@ -259,7 +343,122 @@
         </div>
     </div>
 
-    {{-- 4. PERBANDINGAN KERUGIAN & PENYELAMATAN ASET + PANEL PENJELASAN FINANSIAL --}}
+    {{-- 4. DOKUMEN HASIL REVIU (LHR) TERBIT OPD --}}
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900/80">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/60 dark:text-violet-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Laporan Hasil Reviu (LHR) Unit Anda</h3>
+                        <span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-0.5 text-[11px] font-bold text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 border border-violet-200/80 dark:border-violet-800/60">
+                            {{ $totalLhr }} LHR Resmi Terbit
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        Dokumen hasil pengawasan reviu yang telah diterbitkan oleh Inspektorat Daerah untuk ditindaklanjuti unit Anda
+                    </p>
+                </div>
+            </div>
+            <a href="{{ route('opd.lhr.index') }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:text-violet-700 dark:text-violet-400 shrink-0">
+                <span>Lihat Semua LHR OPD</span>
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+
+        {{-- Tabel Daftar LHR --}}
+        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+            <table class="w-full text-left text-xs text-gray-700 dark:text-gray-300">
+                <thead class="border-b border-gray-200 bg-gray-50/80 font-semibold uppercase tracking-wider text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300">
+                    <tr>
+                        <th scope="col" class="py-3 px-4 w-10 text-center">No</th>
+                        <th scope="col" class="py-3 px-4">Nomor LHR & Jenis Dokumen</th>
+                        <th scope="col" class="py-3 px-4">Tanggal Terbit</th>
+                        <th scope="col" class="py-3 px-4 text-center">Catatan Reviu</th>
+                        <th scope="col" class="py-3 px-4 text-center">Status</th>
+                        <th scope="col" class="py-3 px-4 w-44 text-center">Aksi Dokumen</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                    @forelse($recentLhrs as $index => $lhr)
+                        @php
+                            $catatanCount = $lhr->catatans()->count();
+                        @endphp
+                        <tr class="hover:bg-gray-50/70 transition dark:hover:bg-gray-800/40">
+                            <td class="py-3.5 px-4 text-center font-medium text-gray-500 dark:text-gray-400">
+                                {{ $index + 1 }}
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-bold text-gray-900 dark:text-white font-mono">
+                                    {{ $lhr->nomor_lhr ?: 'Nomor Belum Diatur' }}
+                                </div>
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                    {{ $lhr->jenisDokumen?->nama ?? 'Reviu Dokumen' }} &bull; TA {{ $lhr->tahun_anggaran }}
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-4 whitespace-nowrap">
+                                <span class="text-gray-800 dark:text-gray-200 font-medium">
+                                    {{ $lhr->tanggal_lhr ? $lhr->tanggal_lhr->format('d M Y') : '-' }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 text-center">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800/50">
+                                    {{ $catatanCount }} Catatan
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 text-center">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/50">
+                                    {{ $lhr->status->label() }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 text-center">
+                                <div class="inline-flex items-center gap-1.5">
+                                    <a href="{{ route('opd.lhr.show', $lhr->uuid) }}"
+                                       title="Buka Lembar Reviu LHR"
+                                       class="inline-flex items-center gap-1 rounded-lg border border-violet-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50 shadow-xs dark:border-violet-800 dark:bg-gray-800 dark:text-violet-300 dark:hover:bg-gray-700 transition">
+                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                        Buka
+                                    </a>
+                                    <a href="{{ route('opd.lhr.pdf', $lhr->uuid) }}"
+                                       title="Unduh PDF Resmi"
+                                       target="_blank"
+                                       class="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-rose-700 transition">
+                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        PDF
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-gray-400">
+                                <div class="flex flex-col items-center justify-center gap-2">
+                                    <svg class="h-8 w-8 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <p class="font-medium">Belum ada LHR resmi berstatus Terbit untuk unit Anda.</p>
+                                    <p class="text-[11px] text-gray-400">Dokumen reviu akan tampil otomatis setelah disahkan dan diterbitkan oleh tim Inspektorat.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{-- 5. PERBANDINGAN KERUGIAN & PENYELAMATAN ASET + PANEL PENJELASAN FINANSIAL --}}
     <div class="grid grid-cols-12 gap-6">
 
         {{-- Left Side: Bar Chart (~65% / 8 cols) --}}

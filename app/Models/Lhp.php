@@ -123,6 +123,33 @@ class Lhp extends Model
         return $this->unitDiperiksa?->nama_unit ?? '-';
     }
 
+    /**
+     * Dapatkan kategori pengawasan LHP (PKPT, BPK, BPKP, ITPROV, ITDA, LAINNYA).
+     */
+    public function getKategoriAttribute(): string
+    {
+        $k = $this->auditAssignment?->auditProgramDetail?->auditProgram?->kategori;
+        if (! empty($k)) {
+            return $k;
+        }
+
+        $kProgram = $this->auditAssignment?->auditProgram?->kategori;
+        if (! empty($kProgram)) {
+            return $kProgram;
+        }
+
+        if ($this->nomor_lhp) {
+            $upperNo = strtoupper($this->nomor_lhp);
+            foreach (AuditProgram::KATEGORI as $kat) {
+                if ($kat !== 'LAINNYA' && str_contains($upperNo, $kat)) {
+                    return $kat;
+                }
+            }
+        }
+
+        return 'PKPT';
+    }
+
     public function getIrbanAttribute(): ?string
     {
         return $this->auditAssignment?->auditProgramDetail?->tim;
@@ -200,6 +227,8 @@ class Lhp extends Model
             if ($unitIds->isNotEmpty()) {
                 $userUnitNames = $user->opdUnits()->pluck('nama_unit')->filter()->unique();
                 $unitIds = UnitDiperiksa::whereIn('nama_unit', $userUnitNames)->pluck('id');
+            } elseif (! empty($user->unit_kerja)) {
+                $unitIds = UnitDiperiksa::where('nama_unit', 'like', "%{$user->unit_kerja}%")->pluck('id');
             }
             if ($unitIds->isEmpty()) {
                 return $query->whereRaw('1 = 0');
@@ -211,11 +240,39 @@ class Lhp extends Model
             });
         }
 
-        return $query->whereHas('auditAssignment', function ($q) use ($user) {
-            $q->where('ketua_tim_id', $user->id)
-                ->orWhereHas('members', function ($q2) use ($user) {
-                    $q2->where('user_id', $user->id);
-                });
+        // Jika Irban / Pengendali Teknis
+        if ($user->hasAnyRole([User::ROLE_PENGENDALI_TEKNIS, 'irban']) || $user->isPengendaliTeknis() || $user->isIrban()) {
+            $irbanNames = $user->getIrbanTeamNames();
+
+            return $query->where(function ($q) use ($user, $irbanNames) {
+                $q->whereHas('auditAssignment', function ($aq) use ($user, $irbanNames) {
+                    $aq->where('pengendali_teknis_id', $user->id)
+                        ->orWhere('pengendali_teknis', $user->name)
+                        ->orWhere(function ($sq) use ($irbanNames) {
+                            if (! empty($irbanNames)) {
+                                $sq->whereHas('auditProgramDetail', function ($dq) use ($irbanNames) {
+                                    $dq->whereIn('tim', $irbanNames);
+                                })->orWhere(function ($nq) use ($irbanNames) {
+                                    foreach ($irbanNames as $in) {
+                                        $nq->orWhere('nama_tim', 'like', "%{$in}%");
+                                    }
+                                });
+                            }
+                        })
+                        ->orWhere('ketua_tim_id', $user->id)
+                        ->orWhere('created_by', $user->id)
+                        ->orWhereHas('members', fn ($mq) => $mq->where('user_id', $user->id));
+                })->orWhere('created_by', $user->id);
+            });
+        }
+
+        // Auditor (Ketua Tim / Anggota / Staf)
+        return $query->where(function ($q) use ($user) {
+            $q->whereHas('auditAssignment', function ($aq) use ($user) {
+                $aq->where('ketua_tim_id', $user->id)
+                    ->orWhere('created_by', $user->id)
+                    ->orWhereHas('members', fn ($mq) => $mq->where('user_id', $user->id));
+            })->orWhere('created_by', $user->id);
         });
     }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditProgram;
 use App\Models\Lhp;
+use App\Models\Lhr\Lhr;
 use App\Models\LhpStatistik;
 use App\Models\Recommendation;
 use App\Models\Temuan;
@@ -101,6 +102,8 @@ class OpdDashboardController extends Controller
             $unitIds = UnitDiperiksa::whereIn('nama_unit', $userUnitNames)->pluck('id');
         } elseif ($isSuperOrAdmin) {
             $unitIds = UnitDiperiksa::pluck('id');
+        } elseif (! empty($user->unit_kerja)) {
+            $unitIds = UnitDiperiksa::where('nama_unit', 'like', "%{$user->unit_kerja}%")->pluck('id');
         }
 
         if ($unitIds->isEmpty()) {
@@ -112,7 +115,10 @@ class OpdDashboardController extends Controller
             $missingQuery = Recommendation::doesntHave('tindakLanjuts');
             if (! $isSuperOrAdmin) {
                 $missingQuery->whereHas('temuan.lhp', function ($q) use ($unitIds) {
-                    $q->whereIn('unit_diperiksa_id', $unitIds);
+                    $q->where(function ($sub) use ($unitIds) {
+                        $sub->whereIn('unit_diperiksa_id', $unitIds)
+                            ->orWhereHas('unitDiperiksas', fn ($uq) => $uq->whereIn('unit_diperiksas.id', $unitIds));
+                    });
                 });
             }
             $missingRekomIds = $missingQuery->pluck('id');
@@ -131,7 +137,10 @@ class OpdDashboardController extends Controller
         }
 
         // ── 3. Base LHP Query ─────────────────────────────────────────────────────────
-        $baseLhpQuery = Lhp::whereIn('unit_diperiksa_id', $unitIds);
+        $baseLhpQuery = Lhp::where(function ($q) use ($unitIds) {
+            $q->whereIn('unit_diperiksa_id', $unitIds)
+                ->orWhereHas('unitDiperiksas', fn ($uq) => $uq->whereIn('unit_diperiksas.id', $unitIds));
+        });
         if (! empty($kategoriProgram) && $kategoriProgram !== 'semua') {
             $baseLhpQuery->whereHas('auditAssignment.auditProgramDetail.auditProgram', function ($q) use ($kategoriProgram) {
                 $q->where('kategori', $kategoriProgram);
@@ -615,10 +624,12 @@ class OpdDashboardController extends Controller
 
         // ── 12. Breakdown Per Kategori Program Audit ────────────────────────────────
         $kategoriBreakdown = collect(AuditProgram::KATEGORI)->map(function ($kat) use ($unitIds, $startDate, $endDate, $preset) {
-            $lhpQuery = Lhp::whereIn('unit_diperiksa_id', $unitIds)
-                ->whereHas('auditAssignment.auditProgramDetail.auditProgram', function ($q) use ($kat) {
-                    $q->where('kategori', $kat);
-                });
+            $lhpQuery = Lhp::where(function ($q) use ($unitIds) {
+                $q->whereIn('unit_diperiksa_id', $unitIds)
+                    ->orWhereHas('unitDiperiksas', fn ($uq) => $uq->whereIn('unit_diperiksas.id', $unitIds));
+            })->whereHas('auditAssignment.auditProgramDetail.auditProgram', function ($q) use ($kat) {
+                $q->where('kategori', $kat);
+            });
 
             if ($preset !== 'all') {
                 $lhpQuery->whereBetween('tanggal_lhp', [$startDate, $endDate]);
@@ -645,7 +656,7 @@ class OpdDashboardController extends Controller
 
         $listKategori = AuditProgram::KATEGORI;
 
-        // ── 11. Status Laporan Kepatuhan OPD (Tuntas 100% / Nihil) ───────────
+        // ── 13. Status Laporan Kepatuhan OPD (Tuntas 100% / Nihil) ───────────
         $kepatuhanQuery = Lhp::whereIn('id', $lhpIdsArray)
             ->with(['statistik', 'unitDiperiksa', 'auditAssignment.auditProgram', 'auditAssignment.auditProgramDetail']);
 
@@ -653,6 +664,15 @@ class OpdDashboardController extends Controller
         $totalPatuhKepatuhan = (clone $kepatuhanQuery)->patuhLengkap()->count();
         $totalProsesKepatuhan = max(0, $totalLhpKepatuhan - $totalPatuhKepatuhan);
         $kepatuhanLhps = (clone $kepatuhanQuery)->orderBy('tanggal_lhp', 'desc')->take(6)->get();
+
+        // ── 14. Data Reviu Dokumen (LHR) untuk OPD ──────────────────────────────────
+        $lhrQuery = Lhr::forUser($user)->with(['jenisDokumen', 'unitDiperiksa', 'statistik']);
+        if ($preset !== 'all') {
+            $lhrQuery->whereBetween('tanggal_lhr', [$startDate, $endDate]);
+        }
+        $totalLhr = (clone $lhrQuery)->count();
+        $recentLhrs = (clone $lhrQuery)->latest('tanggal_lhr')->take(5)->get();
+        $totalCatatanLhr = (clone $lhrQuery)->withCount('catatans')->get()->sum('catatans_count');
 
         return view('pages.opd.dashboard', [
             'totalLhp' => $totalLhp,
@@ -700,6 +720,9 @@ class OpdDashboardController extends Controller
             'totalPatuhKepatuhan' => $totalPatuhKepatuhan,
             'totalProsesKepatuhan' => $totalProsesKepatuhan,
             'kepatuhanLhps' => $kepatuhanLhps,
+            'totalLhr' => $totalLhr,
+            'recentLhrs' => $recentLhrs,
+            'totalCatatanLhr' => $totalCatatanLhr,
             'isMultiYear' => $isMultiYear,
             'startDateCarbon' => $startDate,
         ]);

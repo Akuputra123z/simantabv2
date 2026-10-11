@@ -687,10 +687,12 @@ class GenerateLhrWord
         $ttdCell->addText('KABUPATEN REMBANG', ['bold' => true], ['alignment' => Jc::CENTER, 'spaceAfter' => 120]);
         $ttdCell->addTextBreak(3);
 
-        $signerName = $lhr->signer?->name ?? 'IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.';
-        $signerNip = $lhr->signer?->nip ?? '19741128 199903 2 003';
+        $defaultInspektur = \App\Models\User::find(2);
+        $signerName = $lhr->signer?->name ?? ($defaultInspektur?->name ?? 'IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.');
+        $signerPangkat = $lhr->signer?->pangkat_gol ?? ($defaultInspektur?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)');
+        $signerNip = $lhr->signer?->nip ?? ($defaultInspektur?->nip ?? '19741128 199903 2 003');
         $ttdCell->addText($signerName, ['bold' => true, 'underline' => 'single'], ['alignment' => Jc::CENTER, 'spaceAfter' => 10]);
-        $ttdCell->addText('Pembina Utama Muda', null, ['alignment' => Jc::CENTER, 'spaceAfter' => 10]);
+        $ttdCell->addText($signerPangkat, null, ['alignment' => Jc::CENTER, 'spaceAfter' => 10]);
         $ttdCell->addText("NIP. {$signerNip}", null, ['alignment' => Jc::CENTER]);
 
         // ── LAMPIRAN: DAFTAR DOKUMEN PENDUKUNG (JIKA ADA) ─────────────────────────

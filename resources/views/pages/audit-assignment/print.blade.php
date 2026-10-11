@@ -206,39 +206,83 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @if($assignment->ketuaTim)
-                        <tr>
-                            <td style="text-align: center;">1.</td>
-                            <td>
-                                <strong>{{ $assignment->ketuaTim->name }}</strong><br>
-                                <span style="font-size: 11pt; color: #333;">NIP. {{ $assignment->ketuaTim->nip ?? '-' }}</span>
-                            </td>
-                            <td>Ketua Tim</td>
-                        </tr>
-                        @endif
+                        @php
+                            $nomor = 0;
+                            $penanggungJawab = \App\Models\User::find(2) 
+                                ?? \App\Models\User::where('jabatan', 'like', '%Inspektur%')->where('jabatan', 'not like', '%Pembantu%')->first();
 
-                        @if($assignment->pengendaliTeknis)
-                        <tr>
-                            <td style="text-align: center;">{{ $assignment->ketuaTim ? 2 : 1 }}.</td>
-                            <td>
-                                <strong>{{ $assignment->pengendaliTeknis->name }}</strong><br>
-                                <span style="font-size: 11pt; color: #333;">NIP. {{ $assignment->pengendaliTeknis->nip ?? '-' }}</span>
-                            </td>
-                            <td>Pengendali Teknis</td>
-                        </tr>
-                        @endif
+                            $excludeIds = array_filter([
+                                $penanggungJawab?->id,
+                                $assignment->pengendali_teknis_id,
+                                $assignment->ketua_tim_id,
+                            ]);
 
-                        @if($assignment->members && $assignment->members->isNotEmpty())
-                            @php $nomor = ($assignment->ketuaTim ? 1 : 0) + ($assignment->pengendaliTeknis ? 1 : 0); @endphp
-                            @foreach($assignment->members as $index => $member)
+                            $anggotaList = $assignment->members 
+                                ? $assignment->members->reject(fn($m) => in_array($m->id, $excludeIds)) 
+                                : collect();
+                        @endphp
+
+                        {{-- 1. Penanggung Jawab (Kepala Inspektorat / IMUNG) --}}
+                        @if($penanggungJawab)
+                            @php $nomor++; @endphp
                             <tr>
-                                <td style="text-align: center;">{{ $index + 1 + $nomor }}.</td>
+                                <td style="text-align: center;">{{ $nomor }}.</td>
                                 <td>
-                                    <strong>{{ $member->name }}</strong><br>
-                                    <span style="font-size: 11pt; color: #333;">NIP. {{ $member->nip ?? '-' }}</span>
+                                    <strong>{{ $penanggungJawab->name }}</strong><br>
+                                    <span style="font-size: 11pt; color: #333;">NIP. {{ $penanggungJawab->nip ?? '-' }}</span>
                                 </td>
-                                <td>{{ $member->pivot->jabatan_tim ?? 'Anggota Tim' }}</td>
+                                <td>Penanggung Jawab</td>
                             </tr>
+                        @endif
+
+                        {{-- 2. Pengendali Teknis --}}
+                        @if($assignment->pengendaliTeknis)
+                            @php $nomor++; @endphp
+                            <tr>
+                                <td style="text-align: center;">{{ $nomor }}.</td>
+                                <td>
+                                    <strong>{{ $assignment->pengendaliTeknis->name }}</strong><br>
+                                    <span style="font-size: 11pt; color: #333;">NIP. {{ $assignment->pengendaliTeknis->nip ?? '-' }}</span>
+                                </td>
+                                <td>Pengendali Teknis</td>
+                            </tr>
+                        @elseif($assignment->pengendali_teknis)
+                            @php $nomor++; @endphp
+                            <tr>
+                                <td style="text-align: center;">{{ $nomor }}.</td>
+                                <td>
+                                    <strong>{{ $assignment->pengendali_teknis }}</strong><br>
+                                    <span style="font-size: 11pt; color: #333;">NIP. -</span>
+                                </td>
+                                <td>Pengendali Teknis</td>
+                            </tr>
+                        @endif
+
+                        {{-- 3. Ketua Tim --}}
+                        @if($assignment->ketuaTim)
+                            @php $nomor++; @endphp
+                            <tr>
+                                <td style="text-align: center;">{{ $nomor }}.</td>
+                                <td>
+                                    <strong>{{ $assignment->ketuaTim->name }}</strong><br>
+                                    <span style="font-size: 11pt; color: #333;">NIP. {{ $assignment->ketuaTim->nip ?? '-' }}</span>
+                                </td>
+                                <td>Ketua Tim</td>
+                            </tr>
+                        @endif
+
+                        {{-- 4. Anggota --}}
+                        @if($anggotaList->isNotEmpty())
+                            @foreach($anggotaList as $member)
+                                @php $nomor++; @endphp
+                                <tr>
+                                    <td style="text-align: center;">{{ $nomor }}.</td>
+                                    <td>
+                                        <strong>{{ $member->name }}</strong><br>
+                                        <span style="font-size: 11pt; color: #333;">NIP. {{ $member->nip ?? '-' }}</span>
+                                    </td>
+                                    <td>{{ $member->pivot->jabatan_tim ?: 'Anggota' }}</td>
+                                </tr>
                             @endforeach
                         @endif
                     </tbody>
@@ -369,15 +413,18 @@
                                 <div class="ttd-space"></div>
                             @endif
 
+                            @php
+                                $defaultInspektur = \App\Models\User::find(2);
+                            @endphp
                             @if($assignment->isSigned() && $assignment->signer)
                                 <p class="ttd-nama">{{ $assignment->signer->name }}</p>
                                 <p class="ttd-nip">
-                                    {{ $assignment->signer->jabatan ?? 'Pembina' }}<br>
+                                    {{ $assignment->signer->pangkat_gol ?? ($defaultInspektur?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)') }}<br>
                                     NIP. {{ $assignment->signer->nip ?? '-' }}
                                 </p>
                             @else
-                                <p class="ttd-nama">IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE</p>
-                                <p class="ttd-nip">Pembina<br>NIP. 197411281999032003</p>
+                                <p class="ttd-nama">{{ $defaultInspektur?->name ?? 'IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.' }}</p>
+                                <p class="ttd-nip">{{ $defaultInspektur?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)' }}<br>NIP. {{ $defaultInspektur?->nip ?? '197411281999032003' }}</p>
                             @endif
                         </div>
                     </td>

@@ -36,9 +36,28 @@ class LaporanController extends Controller
         $irbanList = Cache::remember('laporan:irbanList:'.$user->id, 600, function () use ($user) {
             return AuditProgramDetail::whereHas('assignments', function ($q) use ($user) {
                 $q->whereHas('lhps');
-                if (! $user->hasRole('super_admin')) {
-                    $q->where('ketua_tim_id', $user->id)
-                        ->orWhereHas('members', fn ($q2) => $q2->where('user_id', $user->id));
+                if (! $user->hasRole('super_admin') && ! $user->hasRole('kepala_inspektorat')) {
+                    if ($user->hasRole(User::ROLE_PENGENDALI_TEKNIS) || $user->isPengendaliTeknis() || $user->isIrban()) {
+                        $irbanNames = $user->getIrbanTeamNames();
+                        $q->where(function ($subQ) use ($user, $irbanNames) {
+                            $subQ->where('pengendali_teknis_id', $user->id)
+                                ->orWhere('pengendali_teknis', $user->name)
+                                ->orWhere(function ($sq) use ($irbanNames) {
+                                    if (! empty($irbanNames)) {
+                                        $sq->whereHas('auditProgramDetail', fn ($dq) => $dq->whereIn('tim', $irbanNames));
+                                    }
+                                })
+                                ->orWhere('ketua_tim_id', $user->id)
+                                ->orWhere('created_by', $user->id)
+                                ->orWhereHas('members', fn ($q2) => $q2->where('user_id', $user->id));
+                        });
+                    } else {
+                        $q->where(function ($subQ) use ($user) {
+                            $subQ->where('ketua_tim_id', $user->id)
+                                ->orWhere('created_by', $user->id)
+                                ->orWhereHas('members', fn ($q2) => $q2->where('user_id', $user->id));
+                        });
+                    }
                 }
             })
                 ->whereNotNull('tim')

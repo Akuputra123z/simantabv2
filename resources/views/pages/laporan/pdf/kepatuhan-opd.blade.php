@@ -735,15 +735,18 @@
     </div>
 
     {{-- VIII. TANDA TANGAN --}}
+    @php
+        $inspektur = \App\Models\User::find(2);
+    @endphp
     <table class="table-signature">
         <tr>
             <td>
                 Mengetahui / Mengesahkan,<br>
                 <strong>Inspektur Daerah Kabupaten Rembang</strong>
                 <div class="sig-space"></div>
-                <div class="sig-name">IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE</div>
-                <div class="sig-nip">Pembina Utama Muda</div>
-                <div class="sig-nip">NIP. 19920401202521104733</div>
+                <div class="sig-name">{{ $inspektur?->name ?? 'IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.' }}</div>
+                <div class="sig-nip">{{ $inspektur?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)' }}</div>
+                <div class="sig-nip">NIP. {{ $inspektur?->nip ?? '197411281999032003' }}</div>
             </td>
             <td>
                 Rembang, {{ now()->translatedFormat('d F Y') }}<br>

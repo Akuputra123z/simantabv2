@@ -53,6 +53,7 @@ class AuditAssignmentController extends Controller
                 'unitDiperiksas',
                 'ketuaTim',
             ])
+            ->forUser(auth()->user())
             ->when($request->tahun, fn ($q, $v) => $q->whereHas('auditProgramDetail.auditProgram', fn ($q) => $q->where('tahun', $v))
             )
             ->when($request->kategori, fn ($q, $v) => $q->whereHas('auditProgramDetail.auditProgram', fn ($q) => $q->where('kategori', $v))

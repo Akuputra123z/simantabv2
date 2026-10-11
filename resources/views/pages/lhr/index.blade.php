@@ -205,12 +205,27 @@
                                 </span>
                             </div>
 
-                            {{-- 3. Nomor SPT --}}
-                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                <span class="font-medium text-gray-600 dark:text-gray-300">SPT:</span>
-                                <span class="font-mono text-[11px] text-gray-700 dark:text-gray-300">{{ $lhr->auditAssignment->nomor_surat ?? '-' }}</span>
-                                @if($lhr->auditAssignment?->tanggal_surat)
-                                    <span class="text-gray-400 dark:text-gray-500 text-[10px]">({{ $lhr->auditAssignment->tanggal_surat->format('d/m/Y') }})</span>
+                            {{-- 3. Nomor SPT & Irban --}}
+                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-1.5">
+                                <div class="flex items-center gap-1">
+                                    <span class="font-medium text-gray-600 dark:text-gray-300">SPT:</span>
+                                    <span class="font-mono text-[11px] text-gray-700 dark:text-gray-300">{{ $lhr->auditAssignment->nomor_surat ?? '-' }}</span>
+                                    @if($lhr->auditAssignment?->tanggal_surat)
+                                        <span class="text-gray-400 dark:text-gray-500 text-[10px]">({{ $lhr->auditAssignment->tanggal_surat->format('d/m/Y') }})</span>
+                                    @endif
+                                </div>
+
+                                @php
+                                    $irbanName = $lhr->irban;
+                                @endphp
+                                @if($irbanName)
+                                    <span class="text-gray-300 dark:text-gray-600">&bull;</span>
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200/80 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700" title="Inspektur Pembantu / Wilayah Tim">
+                                        <svg class="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                        </svg>
+                                        <span>{{ $irbanName }}</span>
+                                    </span>
                                 @endif
                             </div>
                         </td>
@@ -224,17 +239,94 @@
                         </td>
                         <td class="px-5 py-4">
                             @php
-                                $progress = $lhr->progressPengujian();
+                                $progres = $lhr->getProgresReviuData();
                             @endphp
-                            <div class="flex items-center gap-2">
-                                <div class="w-24 bg-gray-200 rounded-full h-2 dark:bg-gray-700 overflow-hidden">
-                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ $progress }}%"></div>
+
+                            @if($progres->tahap === 'penyusunan')
+                                {{-- TAHAP PENYUSUNAN REVIU (Sebelum Terbit) --}}
+                                <div class="space-y-1.5 min-w-[180px]">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="font-medium text-slate-600 dark:text-slate-400">Penyusunan KKP</span>
+                                        <span class="font-bold text-blue-600 dark:text-blue-400">{{ $progres->persen }}%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-200 rounded-full h-2 dark:bg-slate-700 overflow-hidden">
+                                        <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: {{ $progres->persen }}%"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between text-[11px] text-slate-500">
+                                        <span>Rekomendasi Dirumuskan:</span>
+                                        <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $progres->total_rekom }} butir</span>
+                                    </div>
                                 </div>
-                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">{{ $progress }}%</span>
-                            </div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                Rekomendasi: {{ $lhr->statistik->total_rekomendasi ?? 0 }} butir
-                            </div>
+                            @else
+                                {{-- TAHAP TINDAK LANJUT & REVISI OPD (Pasca Terbit) --}}
+                                <div class="space-y-1.5 min-w-[210px]">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="font-medium text-slate-600 dark:text-slate-400">
+                                            @if($progres->total_rekom === 0)
+                                                Bebas Catatan
+                                            @else
+                                                Tuntas: {{ $progres->selesai }}/{{ $progres->total_rekom }}
+                                            @endif
+                                        </span>
+                                        <span class="font-bold {{ $progres->persen >= 100 ? 'text-emerald-600 dark:text-emerald-400' : ($progres->persen > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400') }}">
+                                            {{ $progres->persen }}%
+                                        </span>
+                                    </div>
+
+                                    {{-- Stacked Progress Bar: Hijau (Selesai) + Biru (Revisi Masuk OPD) --}}
+                                    <div class="w-full bg-slate-200 rounded-full h-2 dark:bg-slate-700 overflow-hidden flex">
+                                        @if($progres->total_rekom === 0)
+                                            <div class="bg-emerald-500 h-2 w-full"></div>
+                                        @else
+                                            <div class="bg-emerald-500 h-2 transition-all duration-300" style="width: {{ $progres->persen }}%" title="Selesai Diverifikasi: {{ $progres->selesai }} butir"></div>
+                                            @php
+                                                $persenDikirim = $progres->total_rekom > 0 ? round(($progres->dikirim_opd / $progres->total_rekom) * 100, 1) : 0;
+                                            @endphp
+                                            @if($persenDikirim > 0)
+                                                <div class="bg-blue-500 h-2 transition-all duration-300" style="width: {{ $persenDikirim }}%" title="Revisi OPD Masuk: {{ $progres->dikirim_opd }} butir"></div>
+                                            @endif
+                                        @endif
+                                    </div>
+
+                                    {{-- Status Butir Tindak Lanjut OPD --}}
+                                    <div class="flex flex-wrap items-center gap-1.5 text-[10px] pt-0.5">
+                                        @if($progres->total_rekom === 0)
+                                            <span class="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                                Nihil Catatan Rekomendasi
+                                            </span>
+                                        @else
+                                            @if($progres->dikirim_opd > 0)
+                                                <span class="inline-flex items-center gap-1 rounded bg-blue-100 px-1.5 py-0.5 font-bold text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 ring-1 ring-blue-300 dark:ring-blue-800 animate-pulse" title="Revisi OPD telah dikirim & menunggu ditelaah">
+                                                    <span class="h-1.5 w-1.5 rounded-full bg-blue-600"></span>
+                                                    {{ $progres->dikirim_opd }} Revisi OPD Masuk
+                                                </span>
+                                            @endif
+
+                                            @if($progres->ditolak_opd > 0)
+                                                <span class="inline-flex items-center gap-1 rounded bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-800 dark:bg-rose-900/50 dark:text-rose-300" title="Dikembalikan untuk perbaikan">
+                                                    {{ $progres->ditolak_opd }} Perlu Koreksi
+                                                </span>
+                                            @endif
+
+                                            @if($progres->draft_opd > 0 && $progres->dikirim_opd === 0)
+                                                <span class="inline-flex items-center rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                                                    {{ $progres->draft_opd }} Draf OPD
+                                                </span>
+                                            @endif
+
+                                            @if($progres->selesai === $progres->total_rekom)
+                                                <span class="inline-flex items-center rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                                    ✓ Tuntas Diverifikasi
+                                                </span>
+                                            @elseif($progres->dikirim_opd === 0 && $progres->draft_opd === 0 && $progres->selesai === 0 && $progres->ditolak_opd === 0)
+                                                <span class="text-slate-400 dark:text-slate-500 italic">
+                                                    Menunggu Tindak Lanjut OPD
+                                                </span>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
                         </td>
                         <td class="px-5 py-4 text-center">
                             @php
@@ -249,9 +341,28 @@
                                     \App\Enums\LhrStatus::Dibatalkan          => 'bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300',
                                 };
                             @endphp
-                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $badgeClass }}">
-                                {{ $lhr->status->label() }}
-                            </span>
+                            <div class="flex flex-col items-center gap-1">
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $badgeClass }}">
+                                    {{ $lhr->status->label() }}
+                                </span>
+
+                                {{-- Sub-status sinkronisasi revisi OPD --}}
+                                @if($lhr->isTerbit())
+                                    @if($progres->dikirim_opd > 0)
+                                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 border border-blue-300 shadow-2xs">
+                                            <span>📩</span> Ada Revisi OPD
+                                        </span>
+                                    @elseif($progres->ditolak_opd > 0)
+                                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-300 shadow-2xs">
+                                            Perlu Koreksi OPD
+                                        </span>
+                                    @elseif($progres->total_rekom > 0 && $progres->selesai === $progres->total_rekom)
+                                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-300 shadow-2xs">
+                                            ✓ Tuntas 100%
+                                        </span>
+                                    @endif
+                                @endif
+                            </div>
                         </td>
                         <td class="px-5 py-4 text-right whitespace-nowrap">
                             <div class="inline-flex items-center justify-end gap-1.5">

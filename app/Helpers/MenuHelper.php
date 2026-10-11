@@ -27,7 +27,7 @@ class MenuHelper
 
         $isSuperAdmin = $user?->hasRole('super_admin');
         $isKepala = $user?->hasRole('kepala_inspektorat');
-        $isAuditor = $user?->hasRole('ketua_tim') || $user?->hasRole('anggota') || $user?->hasRole('staff_inspektorat') || $user?->hasRole('pengendali_teknis');
+        $isAuditor = $user?->hasRole('ketua_tim') || $user?->hasRole('anggota') || $user?->hasRole('staff_inspektorat') || $user?->hasRole('pengendali_teknis') || $user?->hasRole('irban');
 
         $canMasterData = $isSuperAdmin || $isKepala;
         $canAudit = $isSuperAdmin || $isKepala || $isAuditor;
@@ -76,10 +76,10 @@ class MenuHelper
                         'name' => 'Daftar LHR',
                         'path' => route('lhr.index', absolute: false),
                     ],
-                    [
-                        'name' => 'Buat LHR Baru',
-                        'path' => route('lhr.create', absolute: false),
-                    ],
+                    // [
+                    //     'name' => 'Buat LHR Baru',
+                    //     'path' => route('lhr.create', absolute: false),
+                    // ],
                 ],
             ];
         }
@@ -213,16 +213,26 @@ class MenuHelper
         return [
             [
                 'icon' => 'task',
-                'name' => 'Tindak Lanjut',
+                'name' => 'Tindak Lanjut LHP',
                 'subItems' => [
                     [
-                        'name' => 'Monitoring TL Saya',
+                        'name' => 'Monitoring LHP Saya',
                         'path' => route('opd.tindak-lanjut.index', absolute: false),
                     ],
                 ],
             ],
             [
                 'icon' => 'pages',
+                'name' => 'Reviu Dokumen (LHR)',
+                'subItems' => [
+                    [
+                        'name' => 'Daftar LHR Saya',
+                        'path' => route('opd.lhr.index', absolute: false),
+                    ],
+                ],
+            ],
+            [
+                'icon' => 'charts',
                 'name' => 'Laporan Kepatuhan',
                 'subItems' => [
                     [

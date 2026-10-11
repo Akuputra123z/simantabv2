@@ -14,6 +14,7 @@ use App\Http\Controllers\LhpController;
 use App\Http\Controllers\LhrController;
 use App\Http\Controllers\LhrKategoriCatatanController;
 use App\Http\Controllers\OpdDashboardController;
+use App\Http\Controllers\OpdLhrController;
 use App\Http\Controllers\OpdProfileController;
 use App\Http\Controllers\OpdTindakLanjutController;
 use App\Http\Controllers\PegawaiController;
@@ -249,6 +250,24 @@ Route::middleware(['auth', 'active', 'role:opd'])
             ->name('tindak-lanjut.kirim');
         Route::delete('/tindak-lanjut/{tindakLanjut}/lampiran/{attachment}', [OpdTindakLanjutController::class, 'hapusLampiran'])
             ->name('tindak-lanjut.hapus-lampiran');
+
+        // ── Dokumen Reviu (LHR) Khusus OPD ──
+        Route::prefix('lhr')->name('lhr.')->group(function () {
+            Route::get('/', [OpdLhrController::class, 'index'])->name('index');
+            Route::get('/{uuid}', [OpdLhrController::class, 'show'])->name('show');
+            Route::get('/{uuid}/pdf', [OpdLhrController::class, 'downloadPdf'])->name('pdf');
+            Route::get('/{uuid}/word', [OpdLhrController::class, 'downloadWord'])->name('word');
+
+            // Tindak Lanjut & Dokumen Revisi OPD
+            Route::post('/{uuid}/tindak-lanjut/{tindakLanjut}/upload', [OpdLhrController::class, 'uploadTindakLanjut'])
+                ->name('tindak-lanjut.upload');
+            Route::post('/{uuid}/tindak-lanjut/{tindakLanjut}/kirim', [OpdLhrController::class, 'kirimTindakLanjut'])
+                ->name('tindak-lanjut.kirim');
+            Route::post('/{uuid}/kirim-semua', [OpdLhrController::class, 'kirimSemuaTindakLanjut'])
+                ->name('tindak-lanjut.kirim-semua');
+            Route::delete('/{uuid}/tindak-lanjut/{tindakLanjut}/lampiran/{attachment}', [OpdLhrController::class, 'hapusLampiran'])
+                ->name('tindak-lanjut.hapus-lampiran');
+        });
 
         Route::get('/dashboard', [OpdDashboardController::class, 'index'])->name('dashboard');
         Route::get('/profile', [OpdProfileController::class, 'edit'])->name('profile.edit');

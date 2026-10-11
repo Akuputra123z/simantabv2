@@ -136,6 +136,8 @@ class PermissionController extends Controller
         $protected = [
             User::ROLE_SUPER_ADMIN,
             User::ROLE_KEPALA_INSPEKTORAT,
+            User::ROLE_IRBAN,
+            User::ROLE_PENGENDALI_TEKNIS,
             User::ROLE_KETUA_TIM,
             User::ROLE_ANGGOTA,
             User::ROLE_STAFF_INSPEKTORAT,

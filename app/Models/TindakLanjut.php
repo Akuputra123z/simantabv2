@@ -24,7 +24,7 @@ class TindakLanjut extends Model
         'nilai_per_cicilan_rencana', 'jumlah_cicilan_realisasi', 'total_terbayar',
         'sisa_belum_bayar', 'catatan_tl', 'hambatan', 'status_verifikasi',
         'diverifikasi_oleh', 'diverifikasi_pada', 'catatan_verifikasi',
-        'keterangan_pendukung_opd', 'upload_opd_oleh',
+        'keterangan_pendukung_opd', 'uraian_tindak_lanjut', 'upload_opd_oleh',
         'status_opd', 'dikirim_pada', 'alasan_tolak_opd',
         'created_by', 'updated_by',
     ];
@@ -84,12 +84,46 @@ class TindakLanjut extends Model
 
     public function scopeForUser($query, $user)
     {
-        if ($user->hasRole('super_admin')) {
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->hasAnyRole(['super_admin', 'kepala_inspektorat'])) {
             return $query;
         }
 
+        if ($user->hasRole('opd')) {
+            return $this->scopeForOpd($query, $user);
+        }
+
+        // Jika Irban / Pengendali Teknis
+        if ($user->hasAnyRole([User::ROLE_PENGENDALI_TEKNIS, 'irban']) || $user->isPengendaliTeknis() || $user->isIrban()) {
+            $irbanNames = $user->getIrbanTeamNames();
+
+            return $query->whereHas('recommendation.temuan.lhp.auditAssignment', function ($q) use ($user, $irbanNames) {
+                $q->where('pengendali_teknis_id', $user->id)
+                    ->orWhere('pengendali_teknis', $user->name)
+                    ->orWhere(function ($sq) use ($irbanNames) {
+                        if (! empty($irbanNames)) {
+                            $sq->whereHas('auditProgramDetail', function ($dq) use ($irbanNames) {
+                                $dq->whereIn('tim', $irbanNames);
+                            })->orWhere(function ($nq) use ($irbanNames) {
+                                foreach ($irbanNames as $in) {
+                                    $nq->orWhere('nama_tim', 'like', "%{$in}%");
+                                }
+                            });
+                        }
+                    })
+                    ->orWhere('ketua_tim_id', $user->id)
+                    ->orWhere('created_by', $user->id)
+                    ->orWhereHas('members', fn ($mq) => $mq->where('user_id', $user->id));
+            });
+        }
+
+        // Auditor (Ketua Tim / Anggota / Staf)
         return $query->whereHas('recommendation.temuan.lhp.auditAssignment', function ($q) use ($user) {
             $q->where('ketua_tim_id', $user->id)
+                ->orWhere('created_by', $user->id)
                 ->orWhereHas('members', function ($q2) use ($user) {
                     $q2->where('audit_assignment_members.user_id', $user->id);
                 });
@@ -101,13 +135,22 @@ class TindakLanjut extends Model
     public function scopeForOpd($query, $user)
     {
         $unitIds = $user->opdUnits()->pluck('unit_diperiksas.id');
+        if ($unitIds->isNotEmpty()) {
+            $userUnitNames = $user->opdUnits()->pluck('nama_unit')->filter()->unique();
+            $unitIds = UnitDiperiksa::whereIn('nama_unit', $userUnitNames)->pluck('id');
+        } elseif (! empty($user->unit_kerja)) {
+            $unitIds = UnitDiperiksa::where('nama_unit', 'like', "%{$user->unit_kerja}%")->pluck('id');
+        }
 
         if ($unitIds->isEmpty()) {
             return $query->whereRaw('0 = 1');
         }
 
         return $query->whereHas('recommendation.temuan.lhp', function ($q) use ($unitIds) {
-            $q->whereIn('unit_diperiksa_id', $unitIds);
+            $q->where(function ($sub) use ($unitIds) {
+                $sub->whereIn('unit_diperiksa_id', $unitIds)
+                    ->orWhereHas('unitDiperiksas', fn ($uq) => $uq->whereIn('unit_diperiksas.id', $unitIds));
+            });
         });
     }
 
@@ -295,6 +338,16 @@ class TindakLanjut extends Model
     public function getUraianAttribute()
     {
         return $this->catatan_tl;
+    }
+
+    public function getUraianTindakLanjutAttribute(): ?string
+    {
+        return $this->keterangan_pendukung_opd;
+    }
+
+    public function setUraianTindakLanjutAttribute(?string $value): void
+    {
+        $this->attributes['keterangan_pendukung_opd'] = $value;
     }
 
     public function getNilaiAttribute()

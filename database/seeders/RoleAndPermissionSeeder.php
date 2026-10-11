@@ -113,7 +113,7 @@ class RoleAndPermissionSeeder extends Seeder
 
         // PENGENDALI TEKNIS (IRBAN) — kendali mutu, telaah LHR, verifikasi tindak lanjut
         $pengendaliTeknis = Role::firstOrCreate(['name' => User::ROLE_PENGENDALI_TEKNIS]);
-        $pengendaliTeknis->syncPermissions([
+        $irbanPermissions = [
             'lhp.view',
             'temuan.view',
             'rekomendasi.view',
@@ -131,7 +131,12 @@ class RoleAndPermissionSeeder extends Seeder
             'lhtl.review',
             'tl.approve-tidak-dapat',
             'ba.confirm',
-        ]);
+        ];
+        $pengendaliTeknis->syncPermissions($irbanPermissions);
+
+        // IRBAN (INSPEKTUR PEMBANTU) — setara Pengendali Teknis dalam pengawasan
+        $irbanRole = Role::firstOrCreate(['name' => User::ROLE_IRBAN]);
+        $irbanRole->syncPermissions($irbanPermissions);
 
         // KETUA TIM — kelola semua data audit, susun LHR & LHTL, verifikasi cicilan
         $ketuaTim = Role::firstOrCreate(['name' => User::ROLE_KETUA_TIM]);

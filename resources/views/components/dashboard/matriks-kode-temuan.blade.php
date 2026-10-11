@@ -44,7 +44,7 @@
                 <div>
                     <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Total Kejadian</span>
                     <div class="text-lg font-black text-blue-950 dark:text-blue-200">
-                        {{ $matriks['summary']['total_kejadian'] ?? 77 }} Kejadian
+                        {{ $matriks['summary']['total_kejadian'] ?? 0 }} Kejadian
                     </div>
                 </div>
                 <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 font-black text-xs">100%</span>
@@ -53,7 +53,7 @@
                 <div>
                     <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Total Nilai Temuan (Rp)</span>
                     <div class="text-lg font-black text-emerald-950 dark:text-emerald-200">
-                        Rp {{ number_format($matriks['summary']['total_nilai'] ?? 1222989713, 2, ',', '.') }}
+                        Rp {{ number_format($matriks['summary']['total_nilai'] ?? 0, 2, ',', '.') }}
                     </div>
                 </div>
                 <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
@@ -92,7 +92,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-gray-800/60 text-[11px]">
                     
-                    @foreach($matriks['kelompok'] as $kelIndex => $kel)
+                    @forelse($matriks['kelompok'] ?? [] as $kelIndex => $kel)
                     {{-- HEADER KELOMPOK (e.g. 1.00.00) --}}
                     <tr class="bg-slate-200/80 dark:bg-gray-800 font-bold text-slate-900 dark:text-white border-t border-slate-300 dark:border-gray-700">
                         <td class="py-2.5 px-3 text-center font-bold">{{ $kelIndex + 1 }}</td>
@@ -174,17 +174,23 @@
                             {{ $kel['nilai'] > 0 ? number_format($kel['nilai'], 2, ',', '.') : '-' }}
                         </td>
                     </tr>
-                    @endforeach
+                    @empty
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400 italic text-xs">
+                            Belum ada data matriks temuan untuk periode pengawasan ini.
+                        </td>
+                    </tr>
+                    @endforelse
 
                     {{-- TOTAL AKHIR KESELURUHAN --}}
                     <tr class="bg-blue-900 text-white font-black text-xs uppercase tracking-wider">
                         <td class="py-3 px-3 text-center" colspan="3">JUMLAH KEJADIAN KESELURUHAN</td>
                         <td class="py-3 px-3 text-center font-black text-amber-300 text-sm font-mono tabular-nums">
-                            {{ $matriks['summary']['total_kejadian'] ?? 77 }}
+                            {{ $matriks['summary']['total_kejadian'] ?? 0 }}
                         </td>
                         <td class="py-3 px-3 text-center font-black text-white font-mono">100%</td>
                         <td class="py-3 px-3 text-right font-black text-amber-300 text-sm whitespace-nowrap font-mono tabular-nums tracking-tight">
-                            Rp {{ number_format($matriks['summary']['total_nilai'] ?? 1222989713, 2, ',', '.') }}
+                            Rp {{ number_format($matriks['summary']['total_nilai'] ?? 0, 2, ',', '.') }}
                         </td>
                     </tr>
 

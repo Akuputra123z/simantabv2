@@ -41,6 +41,25 @@ class AuditProgram extends Model
         'approved_at' => 'datetime',
     ];
 
+    /**
+     * Pastikan kategori selalu mengembalikan string valid (default 'PKPT').
+     */
+    public function getKategoriAttribute(?string $value): string
+    {
+        if (! empty($value)) {
+            return $value;
+        }
+
+        $nama = strtoupper((string) $this->nama_program);
+        foreach (self::KATEGORI as $kat) {
+            if ($kat !== 'LAINNYA' && str_contains($nama, $kat)) {
+                return $kat;
+            }
+        }
+
+        return 'PKPT';
+    }
+
     // ─── Relations ────────────────────────────────────────────────────────────
 
     public function details(): HasMany

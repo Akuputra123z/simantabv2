@@ -87,14 +87,29 @@ class UserSeeder extends Seeder
             [73, 'ANDRI KURNIAWAN', '199204012025211047', 'PPPK (Kelas Jabatan I)', 'Pengelola Umum Operasional', 'SMP Sederajat', 'L', 'Sekretariat'],
         ];
 
+        $defaultPassword = Hash::make('password123');
+
+        // Pastikan role inspektorat yang dibutuhkan sudah ada
+        $availableRoles = [
+            User::ROLE_KEPALA_INSPEKTORAT,
+            User::ROLE_IRBAN,
+            User::ROLE_PENGENDALI_TEKNIS,
+            User::ROLE_KETUA_TIM,
+            User::ROLE_ANGGOTA,
+            User::ROLE_STAFF_INSPEKTORAT,
+        ];
+        foreach ($availableRoles as $roleName) {
+            \Spatie\Permission\Models\Role::firstOrCreate(['name' => $roleName]);
+        }
+
         foreach ($data as $row) {
-            User::updateOrCreate(
+            $user = User::updateOrCreate(
                 ['nip' => $row[2]],
                 [
                     'name' => $row[1],
                     'email' => Str::slug($row[1]).'@inspektorat.go.id',
                     'email_verified_at' => now(),
-                    'password' => Hash::make('password123'),
+                    'password' => $defaultPassword,
                     'nip' => $row[2],
                     'pangkat_gol' => $row[3],
                     'jabatan' => $row[4],
@@ -108,6 +123,40 @@ class UserSeeder extends Seeder
                     'remember_token' => Str::random(10),
                 ]
             );
+
+            $role = $this->resolveRole($row[4]);
+            $user->syncRoles([$role]);
         }
+    }
+
+    /**
+     * Tentukan role inspektorat berdasarkan jabatan pegawai.
+     */
+    private function resolveRole(string $jabatan): string
+    {
+        if (str_contains($jabatan, 'Inspektur Daerah')) {
+            return User::ROLE_KEPALA_INSPEKTORAT;
+        }
+
+        if (str_starts_with($jabatan, 'Irban') || str_contains($jabatan, 'IRBANSUS') || str_contains($jabatan, 'Irbansus')) {
+            return User::ROLE_PENGENDALI_TEKNIS;
+        }
+
+        if (
+            str_contains($jabatan, 'Auditor Ahli Madya') ||
+            str_contains($jabatan, 'Auditor Ahli Muda') ||
+            str_contains($jabatan, 'P2UPD Ahli Madya')
+        ) {
+            return User::ROLE_KETUA_TIM;
+        }
+
+        if (
+            str_contains($jabatan, 'Auditor Ahli Pertama') ||
+            str_contains($jabatan, 'P2UPD Ahli Pertama')
+        ) {
+            return User::ROLE_ANGGOTA;
+        }
+
+        return User::ROLE_STAFF_INSPEKTORAT;
     }
 }

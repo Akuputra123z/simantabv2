@@ -208,7 +208,11 @@ class LhpController extends Controller
         $kategoris = AuditProgram::KATEGORI;
 
         // Data Nomor LHP aktif yang sudah ada untuk opsi reuse/kolektif BPK/BPKP/ITPROV
-        $existingLhpsData = Lhp::with(['auditAssignment.auditProgramDetail.auditProgram', 'unitDiperiksa'])
+        $existingLhpsData = Lhp::with([
+            'auditAssignment.auditProgramDetail.auditProgram',
+            'auditAssignment.unitDiperiksas:id',
+            'unitDiperiksa:id,nama_unit',
+        ])
             ->where('status', '!=', 'dibatalkan')
             ->whereNull('deleted_at')
             ->latest('tanggal_lhp')
@@ -219,7 +223,7 @@ class LhpController extends Controller
                 $assignment = $first->auditAssignment;
                 $program = $assignment?->auditProgramDetail?->auditProgram;
                 $usedUnitIds = $group->pluck('unit_diperiksa_id')->filter()->unique()->values()->toArray();
-                $totalUnitsInAss = $assignment ? $assignment->unitDiperiksas()->count() : 0;
+                $totalUnitsInAss = $assignment ? $assignment->unitDiperiksas->count() : 0;
 
                 return [
                     'nomor_lhp' => $first->nomor_lhp,

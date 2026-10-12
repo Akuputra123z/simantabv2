@@ -93,7 +93,7 @@
         </div>
 
         <div class="p-6">
-            <form action="{{ route('tindak-lanjuts.cicilans.store', $tindakLanjut) }}" method="POST" id="form-cicilan" novalidate>
+            <form action="{{ route('tindak-lanjuts.cicilans.store', $tindakLanjut) }}" method="POST" enctype="multipart/form-data" id="form-cicilan" novalidate>
                 @csrf
                 <div class="space-y-5">
 
@@ -255,6 +255,15 @@
                         <textarea name="keterangan" rows="3"
                                   placeholder="Catatan tambahan pembayaran (opsional)..."
                                   class="field-input h-auto py-3 resize-none leading-relaxed">{{ old('keterangan') }}</textarea>
+                    </div>
+
+                    {{-- Upload Bukti Pembayaran / Lampiran --}}
+                    <div class="space-y-1.5">
+                        <label class="field-label">Upload Bukti Pembayaran / Lampiran (Opsional)</label>
+                        <input type="file" name="attachments[]" multiple
+                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                               class="block w-full text-xs text-slate-500 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/40 dark:file:text-indigo-300 border border-slate-200 dark:border-slate-800 rounded-xl p-2 bg-slate-50/50 dark:bg-slate-800/30">
+                        <p class="text-[11px] text-slate-400 mt-1">Format: PDF, JPG, PNG, DOC, XLS (Maks. 10MB per file)</p>
                     </div>
 
                     {{-- ── Actions ── --}}

@@ -160,7 +160,8 @@
 
        .lanes,
 .finish {
-    position: absolute;
+        display: none;
+
 }
 .lanes {
     z-index: 0;
@@ -427,7 +428,7 @@
         ========================================================= */
 
         .finish {
-            position: absolute;
+              display: none;
 
             left: 0;
             right: 0;

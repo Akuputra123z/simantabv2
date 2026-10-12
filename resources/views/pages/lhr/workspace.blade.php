@@ -798,6 +798,178 @@
                                                 @endif
                                             </div>
                                         </div>
+
+                                        {{-- Panel Revisi & Tindak Lanjut OPD (Aktif saat LHR Resmi Terbit / Tindak Lanjut) --}}
+                                        @php
+                                            $rekom = $cat->rekomendasis->first();
+                                            $tl = $rekom?->tindakLanjuts?->first();
+                                            $isPublishedStage = in_array($lhr->status, [\App\Enums\LhrStatus::Terbit, \App\Enums\LhrStatus::TindakLanjut, \App\Enums\LhrStatus::Selesai], true);
+                                        @endphp
+
+                                        @if($isPublishedStage && $rekom)
+                                            @php
+                                                $uraianOpd = $tl?->keterangan_pendukung_opd ?: $tl?->uraian_tindak_lanjut;
+                                                $isDikirim = $tl && $tl->status_opd === 'dikirim' && empty($tl->alasan_tolak_opd);
+                                                $isDitolak = $tl && !empty($tl->alasan_tolak_opd);
+                                                $isSelesai = $tl && $tl->status_verifikasi === 'lunas';
+                                                $isDraft = $tl && $tl->status_opd === 'draft' && empty($tl->alasan_tolak_opd);
+                                                $isBelum = !$tl || (empty($tl->status_opd) && empty($uraianOpd) && $tl->attachments->isEmpty());
+
+                                                $canVerify = auth()->user()->hasAnyRole([
+                                                    \App\Models\User::ROLE_SUPER_ADMIN,
+                                                    \App\Models\User::ROLE_KEPALA_INSPEKTORAT,
+                                                    \App\Models\User::ROLE_IRBAN,
+                                                    \App\Models\User::ROLE_PENGENDALI_TEKNIS,
+                                                    'admin',
+                                                    'admin_inspektorat',
+                                                    \App\Models\User::ROLE_KETUA_TIM,
+                                                ]);
+                                            @endphp
+
+                                            <div class="mt-3.5 pt-3 border-t border-dashed border-gray-200 dark:border-gray-700">
+                                                <div class="rounded-xl border {{ $isSelesai ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/20' : ($isDikirim ? 'border-blue-300 bg-blue-50/60 dark:border-blue-900/50 dark:bg-blue-950/30' : ($isDitolak ? 'border-rose-200 bg-rose-50/50 dark:border-rose-900/40 dark:bg-rose-950/20' : 'border-gray-200 bg-gray-50/60 dark:border-gray-800 dark:bg-gray-800/40')) }} p-3.5 transition">
+                                                    
+                                                    {{-- Header Tindak Lanjut --}}
+                                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                                                                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                                Revisi & Tindak Lanjut OPD:
+                                                            </span>
+                                                        </div>
+
+                                                        {{-- Badge Status Verifikasi --}}
+                                                        <div>
+                                                            @if($isSelesai)
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-300">
+                                                                    ✓ Disetujui / Selesai
+                                                                </span>
+                                                            @elseif($isDikirim)
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-300 animate-pulse">
+                                                                    🕒 Revisi Masuk - Menunggu Telaah Irban
+                                                                </span>
+                                                            @elseif($isDitolak)
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300 border border-rose-300">
+                                                                    ⚠️ Dikembalikan ke OPD (Perlu Perbaikan)
+                                                                </span>
+                                                            @elseif($isDraft)
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border border-amber-300">
+                                                                    ✏️ Draf Disimpan OPD (Belum Dikirim)
+                                                                </span>
+                                                            @else
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                                                                    Belum Ada Pengiriman OPD
+                                                                </span>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- Isi Uraian & Berkas Lampiran dari OPD --}}
+                                                    @if($uraianOpd || ($tl && $tl->attachments->isNotEmpty()))
+                                                        <div class="space-y-2 mb-3">
+                                                            @if($uraianOpd)
+                                                                <div class="text-xs text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-gray-900/60 p-2.5 rounded-lg border border-gray-200/70 dark:border-gray-700/70 leading-relaxed">
+                                                                    <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Uraian Perbaikan OPD:</div>
+                                                                    {!! nl2br(e($uraianOpd)) !!}
+                                                                </div>
+                                                            @endif
+
+                                                            @if($tl && $tl->attachments->isNotEmpty())
+                                                                <div>
+                                                                    <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">Berkas Naskah Perbaikan ({{ $tl->attachments->count() }} file):</div>
+                                                                    <div class="flex flex-wrap gap-2">
+                                                                        @foreach($tl->attachments as $att)
+                                                                            <a href="{{ route('attachments.download', $att->id) }}"
+                                                                               target="_blank"
+                                                                               class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white text-blue-700 border border-blue-200 hover:bg-blue-50 dark:bg-gray-900 dark:text-blue-300 dark:border-blue-800 shadow-xs transition">
+                                                                                <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                                                <span class="truncate max-w-[200px]" title="{{ $att->file_name }}">{{ $att->file_name }}</span>
+                                                                                <span class="text-[9px] text-gray-400">({{ number_format($att->file_size / 1024, 0) }} KB)</span>
+                                                                            </a>
+                                                                        @endforeach
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+
+                                                            <div class="flex items-center gap-3 text-[10px] text-gray-500 dark:text-gray-400 pt-1">
+                                                                @if($tl->uploadOpdOleh)
+                                                                    <span>Pengunggah: <strong>{{ $tl->uploadOpdOleh->name }}</strong></span>
+                                                                @endif
+                                                                @if($tl->dikirim_pada)
+                                                                    <span>Dikirim: <strong>{{ $tl->dikirim_pada->translatedFormat('d F Y H:i') }}</strong></span>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    @else
+                                                        <div class="text-[11px] text-gray-500 italic mb-2">
+                                                            OPD belum mengunggah naskah perbaikan atau uraian tindak lanjut untuk butir rekomendasi ini.
+                                                        </div>
+                                                    @endif
+
+                                                    {{-- Catatan Penolakan Sebelumnya --}}
+                                                    @if($isDitolak && !empty($tl->alasan_tolak_opd))
+                                                        <div class="mb-3 p-2.5 rounded-lg bg-rose-100/60 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-800 dark:text-rose-300">
+                                                            <div class="font-bold text-[10px] uppercase tracking-wider mb-0.5">Catatan Koreksi Irban:</div>
+                                                            {{ $tl->alasan_tolak_opd }}
+                                                        </div>
+                                                    @endif
+
+                                                    {{-- Info Verifikasi Selesai --}}
+                                                    @if($isSelesai)
+                                                        <div class="text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+                                                            <span>Diverifikasi oleh: <strong>{{ $tl->verifikator->name ?? 'Pengendali Teknis / Irban' }}</strong> pada {{ $tl->diverifikasi_pada ? $tl->diverifikasi_pada->translatedFormat('d F Y H:i') : '-' }}</span>
+                                                            @if($canVerify)
+                                                                <form method="POST" action="{{ route('lhr.tindak-lanjut.verifikasi', [$lhr->uuid, $tl->id]) }}" onsubmit="return confirm('Kembalikan status verifikasi menjadi Dalam Proses?')">
+                                                                    @csrf
+                                                                    <input type="hidden" name="status_verifikasi" value="berjalan">
+                                                                    <button type="submit" class="text-[10px] text-gray-500 hover:text-gray-800 underline cursor-pointer">Ubah ke Berjalan</button>
+                                                                </form>
+                                                            @endif
+                                                        </div>
+                                                    @endif
+
+                                                    {{-- Tombol Aksi Verifikasi / Tolak bagi Irban & Dalnis --}}
+                                                    @if($canVerify && $tl && !$isSelesai)
+                                                        <div x-data="{ openTolak: false }" class="mt-2.5 pt-2.5 border-t border-gray-200/80 dark:border-gray-700/80 flex flex-wrap items-center justify-end gap-2">
+                                                            {{-- Tombol Tolak / Minta Perbaikan --}}
+                                                            <button type="button"
+                                                                    @click="openTolak = !openTolak"
+                                                                    class="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 dark:bg-gray-800 dark:border-rose-900/60 dark:text-rose-300 shadow-xs transition cursor-pointer">
+                                                                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                                Tolak / Minta Revisi Ulang
+                                                            </button>
+
+                                                            {{-- Tombol Setujui (Lunas/Selesai) --}}
+                                                            <form method="POST" action="{{ route('lhr.tindak-lanjut.verifikasi', [$lhr->uuid, $tl->id]) }}" onsubmit="return confirm('Apakah Anda yakin menyetujui naskah revisi dari OPD untuk rekomendasi butir ini?')">
+                                                                @csrf
+                                                                <input type="hidden" name="status_verifikasi" value="lunas">
+                                                                <button type="submit"
+                                                                        class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs transition cursor-pointer">
+                                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                                    Setujui Revisi (Selesai)
+                                                                </button>
+                                                            </form>
+
+                                                            {{-- Dropdown / Form Alasan Tolak --}}
+                                                            <div x-show="openTolak" x-cloak class="w-full mt-2 p-3 rounded-xl border border-rose-200 bg-white shadow-sm dark:bg-gray-900 dark:border-rose-900/60">
+                                                                <form method="POST" action="{{ route('lhr.tindak-lanjut.tolak', [$lhr->uuid, $tl->id]) }}">
+                                                                    @csrf
+                                                                    <label class="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
+                                                                        Catatan Koreksi / Alasan Penolakan untuk OPD:
+                                                                    </label>
+                                                                    <textarea name="alasan_tolak" rows="2" required placeholder="Tuliskan bagian mana yang belum sesuai dan harus diperbaiki oleh OPD..." class="w-full text-xs rounded-lg border border-gray-300 dark:border-gray-700 p-2 dark:bg-gray-800 dark:text-white focus:ring-rose-500 focus:border-rose-500"></textarea>
+                                                                    <div class="mt-2 flex items-center justify-end gap-2">
+                                                                        <button type="button" @click="openTolak = false" class="px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer">Batal</button>
+                                                                        <button type="submit" class="px-3 py-1 text-xs font-bold bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition cursor-pointer">Kirim Catatan ke OPD</button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    @endif
+
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>

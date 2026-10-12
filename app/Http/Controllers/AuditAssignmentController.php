@@ -411,7 +411,7 @@ class AuditAssignmentController extends Controller
         return [$signatureBase64, $qrBase64];
     }
 
-    public function print($id)
+    public function print(Request $request, $id)
     {
         $assignment = AuditAssignment::with([
             'auditProgramDetail.auditProgram',
@@ -431,12 +431,17 @@ class AuditAssignmentController extends Controller
 
         [$signatureBase64, $qrBase64] = $this->getSignatureAndQr($assignment);
 
-        return view('pages.audit-assignment.print', compact('assignment', 'logoBase64', 'signatureBase64', 'qrBase64'));
+        $paper = strtolower((string) $request->query('paper', 'f4'));
+        if (! in_array($paper, ['a4', 'f4', 'folio'], true)) {
+            $paper = 'f4';
+        }
+
+        return view('pages.audit-assignment.print', compact('assignment', 'logoBase64', 'signatureBase64', 'qrBase64', 'paper'));
     }
 
     // ── Print PDF (stream) ────────────────────────────────────────────────
 
-    public function printPdf($id)
+    public function printPdf(Request $request, $id)
     {
         $assignment = AuditAssignment::with([
             'auditProgramDetail.auditProgram',
@@ -456,15 +461,22 @@ class AuditAssignmentController extends Controller
 
         [$signatureBase64, $qrBase64] = $this->getSignatureAndQr($assignment);
 
-        $pdf = Pdf::loadView('pages.audit-assignment.print-pdf', compact('assignment', 'signatureBase64', 'logoBase64', 'qrBase64'))
-            ->setPaper('a4', 'portrait')
+        $paper = strtolower((string) $request->query('paper', 'f4'));
+        // Dimensi F4 / Folio (215mm x 330mm = 609.45pt x 935.43pt)
+        $paperConfig = in_array($paper, ['f4', 'folio'], true)
+            ? [0, 0, 609.45, 935.43]
+            : 'a4';
+
+        $pdf = Pdf::loadView('pages.audit-assignment.print-pdf', compact('assignment', 'signatureBase64', 'logoBase64', 'qrBase64', 'paper'))
+            ->setPaper($paperConfig, 'portrait')
             ->setOptions([
                 'defaultFont' => 'sans-serif',
                 'isHtml5ParserEnabled' => true,
                 'isRemoteEnabled' => true,
             ]);
 
-        $filename = 'surat-tugas-'.$assignment->nomor_surat.'-'.now()->format('Ymd').'.pdf';
+        $paperLabel = in_array($paper, ['f4', 'folio'], true) ? 'F4' : 'A4';
+        $filename = 'surat-tugas-'.$assignment->nomor_surat.'-'.$paperLabel.'-'.now()->format('Ymd').'.pdf';
 
         return $pdf->stream(str_replace('/', '-', $filename));
     }

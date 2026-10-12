@@ -87,7 +87,7 @@
         </div>
 
         <div class="p-6">
-            <form action="{{ route('tindak-lanjuts.cicilans.update', [$tindakLanjut, $cicilan]) }}" method="POST" id="form-cicilan" novalidate>
+            <form action="{{ route('tindak-lanjuts.cicilans.update', [$tindakLanjut, $cicilan]) }}" method="POST" enctype="multipart/form-data" id="form-cicilan" novalidate>
                 @csrf
                 @method('PUT')
                 <div class="space-y-5">
@@ -231,6 +231,31 @@
                         <textarea name="keterangan" rows="3"
                                   placeholder="Catatan tambahan pembayaran (opsional)..."
                                   class="field-input h-auto py-3 resize-none leading-relaxed">{{ old('keterangan', $cicilan->keterangan) }}</textarea>
+                    </div>
+
+                    {{-- Lampiran Existing & Upload Baru --}}
+                    <div class="space-y-2">
+                        @if($cicilan->attachments && $cicilan->attachments->isNotEmpty())
+                        <div>
+                            <label class="field-label mb-1">Lampiran Tersimpan</label>
+                            <div class="space-y-1.5">
+                                @foreach($cicilan->attachments as $att)
+                                <div class="flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2">
+                                    <span class="truncate font-medium text-slate-700 dark:text-slate-300 max-w-xs">{{ $att->file_name }}</span>
+                                    <a href="{{ asset('storage/'.$att->file_path) }}" target="_blank" class="text-indigo-600 hover:underline font-bold text-[11px] ml-2">Lihat File</a>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
+                        <div class="space-y-1.5">
+                            <label class="field-label">Tambah Bukti Pembayaran / Lampiran Baru</label>
+                            <input type="file" name="attachments[]" multiple
+                                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                                   class="block w-full text-xs text-slate-500 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/40 dark:file:text-indigo-300 border border-slate-200 dark:border-slate-800 rounded-xl p-2 bg-slate-50/50 dark:bg-slate-800/30">
+                            <p class="text-[11px] text-slate-400 mt-1">Format: PDF, JPG, PNG, DOC, XLS (Maks. 10MB per file)</p>
+                        </div>
                     </div>
 
                     {{-- ── Actions ── --}}

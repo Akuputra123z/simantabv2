@@ -303,6 +303,7 @@ class Lhr extends Model
             return (object) [
                 'tahap'          => 'penyusunan',
                 'persen'         => $persenDraft,
+                'persen_reviu'   => $persenDraft,
                 'total_rekom'    => $totalRekom,
                 'selesai'        => 0,
                 'dikirim_opd'    => 0,
@@ -317,6 +318,7 @@ class Lhr extends Model
         return (object) [
             'tahap'          => 'tindak_lanjut',
             'persen'         => $totalRekom === 0 ? 100.0 : $persenSelesai,
+            'persen_reviu'   => 100.0,
             'persen_tl'      => $totalRekom === 0 ? 100.0 : $persenTl,
             'total_rekom'    => $totalRekom,
             'selesai'        => $selesai,

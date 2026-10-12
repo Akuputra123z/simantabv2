@@ -18,6 +18,7 @@ use App\Models\Lhr\LhrCatatan;
 use App\Models\Lhr\LhrKategoriCatatan;
 use App\Models\Lhr\LhrPengujian;
 use App\Models\Recommendation;
+use App\Models\TindakLanjut;
 use App\Models\UnitDiperiksa;
 use App\Models\User;
 use App\Services\Lhr\LhrDocumentBuilder;
@@ -59,7 +60,6 @@ class LhrController extends Controller implements HasMiddleware
             'auditAssignment.pengendaliTeknis',
             'statistik',
             'signer',
-            'pengujians',
         ]);
 
         // Filter Tahun
@@ -97,7 +97,7 @@ class LhrController extends Controller implements HasMiddleware
 
         $lhrs = $query->latest()->paginate(10)->withQueryString();
 
-        // Pastikan statistik tersinkronisasi untuk baris yang ditampilkan
+        // Pastikan baris yang belum memiliki catatan statistik di-inisialisasi
         foreach ($lhrs as $lhr) {
             if (! $lhr->statistik || ! $lhr->statistik->dihitung_pada) {
                 $lhr->refreshStatistik();
@@ -291,15 +291,45 @@ class LhrController extends Controller implements HasMiddleware
                 'auditAssignment.members',
                 'sections',
                 'dasarHukums',
-                'pengujians.children',
+                'pengujians.children.catatans.rekomendasis.tindakLanjuts.attachments',
+                'pengujians.children.catatans.rekomendasis.tindakLanjuts.verifikator',
+                'pengujians.children.catatans.rekomendasis.tindakLanjuts.uploadOpdOleh',
+                'pengujians.children.catatans.kategori',
                 'pengujians.parent',
-                'pengujians.catatans.rekomendasis',
+                'pengujians.catatans.rekomendasis.tindakLanjuts.attachments',
+                'pengujians.catatans.rekomendasis.tindakLanjuts.verifikator',
+                'pengujians.catatans.rekomendasis.tindakLanjuts.uploadOpdOleh',
                 'pengujians.catatans.kategori',
                 'statistik',
                 'signer',
                 'attachments.uploadedBy',
             ])
             ->firstOrFail();
+
+        // Pastikan stub TindakLanjut ada untuk seluruh rekomendasi dokumen LHR ini jika berstatus terbit / tindak lanjut
+        if (in_array($lhr->status, [LhrStatus::Terbit, LhrStatus::TindakLanjut, LhrStatus::Selesai], true)) {
+            $rekomendasiIds = Recommendation::whereHas('lhrCatatan.pengujian', function ($q) use ($lhr) {
+                $q->where('lhr_id', $lhr->id);
+            })->pluck('id');
+
+            if ($rekomendasiIds->isNotEmpty()) {
+                $missingIds = Recommendation::whereIn('id', $rekomendasiIds)
+                    ->doesntHave('tindakLanjuts')
+                    ->pluck('id');
+
+                foreach ($missingIds as $mId) {
+                    TindakLanjut::firstOrCreate(
+                        ['recommendation_id' => $mId],
+                        [
+                            'status_verifikasi' => 'menunggu_verifikasi',
+                            'nilai_tindak_lanjut' => 0,
+                            'total_terbayar' => 0,
+                            'sisa_belum_bayar' => 0,
+                        ]
+                    );
+                }
+            }
+        }
 
         // Urutkan pengujian secara hierarkis: Format dahulu, lalu Substansi (S1 s/d S8)
         // Sub-pengujian (seperti S6.a s/d e) tepat bersarang di bawah induknya
@@ -791,6 +821,113 @@ class LhrController extends Controller implements HasMiddleware
             return back()->with('success', "LHR berhasil disetujui dan diterbitkan dengan Nomor: {$lhr->fresh()->nomor_lhr}");
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Verifikasi & setujui tindak lanjut revisi OPD untuk rekomendasi LHR (Irban / Dalnis / Tim Auditor).
+     */
+    public function verifikasiTindakLanjut(Request $request, string $uuid, TindakLanjut $tindakLanjut)
+    {
+        $user = auth()->user();
+        if (! $user->hasAnyRole([User::ROLE_SUPER_ADMIN, User::ROLE_KEPALA_INSPEKTORAT, User::ROLE_IRBAN, User::ROLE_PENGENDALI_TEKNIS, 'admin', 'admin_inspektorat', User::ROLE_KETUA_TIM])) {
+            abort(403, 'Hanya Irban / Pengendali Teknis, Ketua Tim, atau Administrator yang berhak memverifikasi revisi tindak lanjut.');
+        }
+
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+
+        $rekom = $tindakLanjut->recommendation;
+        if (! $rekom || ! $rekom->lhrCatatan || $rekom->lhrCatatan->pengujian?->lhr_id !== $lhr->id) {
+            abort(403, 'Rekomendasi ini tidak terafiliasi dengan dokumen LHR ini.');
+        }
+
+        $validated = $request->validate([
+            'status_verifikasi' => 'required|in:lunas,berjalan',
+            'catatan_verifikasi' => 'nullable|string|max:1000',
+        ]);
+
+        $newStatus = $validated['status_verifikasi'];
+
+        DB::beginTransaction();
+        try {
+            $tindakLanjut->status_verifikasi = $newStatus;
+            $tindakLanjut->catatan_verifikasi = $validated['catatan_verifikasi'] ?? null;
+            $tindakLanjut->diverifikasi_oleh = $user->id;
+            $tindakLanjut->diverifikasi_pada = now();
+            $tindakLanjut->alasan_tolak_opd = null;
+
+            if ($newStatus === 'lunas') {
+                $tindakLanjut->total_terbayar = 1;
+                $tindakLanjut->sisa_belum_bayar = 0;
+            }
+
+            $tindakLanjut->saveQuietly();
+
+            $rekom->refresh();
+            $rekom->syncStatus();
+
+            $stat = $lhr->refreshStatistik();
+
+            if ($stat->total_rekomendasi > 0 && $stat->selesai === $stat->total_rekomendasi) {
+                $lhr->update(['status' => LhrStatus::Selesai]);
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 3])
+                ->with('success', 'Naskah revisi tindak lanjut OPD berhasil disetujui / diverifikasi (Selesai).');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal memverifikasi tindak lanjut: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Tolak naskah revisi OPD dan kembalikan ke OPD disertai catatan/alasan perbaikan.
+     */
+    public function tolakTindakLanjut(Request $request, string $uuid, TindakLanjut $tindakLanjut)
+    {
+        $user = auth()->user();
+        if (! $user->hasAnyRole([User::ROLE_SUPER_ADMIN, User::ROLE_KEPALA_INSPEKTORAT, User::ROLE_IRBAN, User::ROLE_PENGENDALI_TEKNIS, 'admin', 'admin_inspektorat', User::ROLE_KETUA_TIM])) {
+            abort(403, 'Hanya Irban / Pengendali Teknis, Ketua Tim, atau Administrator yang berhak mengembalikan revisi tindak lanjut.');
+        }
+
+        $lhr = Lhr::where('uuid', $uuid)->firstOrFail();
+
+        $rekom = $tindakLanjut->recommendation;
+        if (! $rekom || ! $rekom->lhrCatatan || $rekom->lhrCatatan->pengujian?->lhr_id !== $lhr->id) {
+            abort(403, 'Rekomendasi ini tidak terafiliasi dengan dokumen LHR ini.');
+        }
+
+        $validated = $request->validate([
+            'alasan_tolak' => 'required|string|max:2000',
+        ], [
+            'alasan_tolak.required' => 'Catatan / alasan penolakan perbaikan wajib diisi agar OPD dapat memperbaiki naskah.',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $tindakLanjut->update([
+                'status_opd' => 'draft',
+                'status_verifikasi' => 'menunggu_verifikasi',
+                'alasan_tolak_opd' => $validated['alasan_tolak'],
+                'dikirim_pada' => null,
+            ]);
+
+            $rekom->refresh();
+            $rekom->syncStatus();
+
+            $lhr->refreshStatistik();
+
+            DB::commit();
+
+            return redirect()
+                ->route('lhr.show', ['uuid' => $lhr->uuid, 'step' => 3])
+                ->with('success', 'Naskah revisi OPD dikembalikan ke OPD dengan catatan perbaikan.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal menolak tindak lanjut: ' . $e->getMessage());
         }
     }
 }

@@ -10,6 +10,7 @@ use App\Models\TindakLanjutCicilan;
 use App\Services\LhpStatistikService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class TindakLanjutCicilanController extends Controller
@@ -20,6 +21,8 @@ class TindakLanjutCicilanController extends Controller
 
     public function index(TindakLanjut $tindakLanjut): View
     {
+        $this->authorize('view', $tindakLanjut);
+
         $tindakLanjut->load([
             'recommendation:id,temuan_id,uraian_rekom,nilai_rekom,nilai_sisa,jenis_rekomendasi,status',
             'recommendation.temuan:id,lhp_id,kondisi',
@@ -27,19 +30,21 @@ class TindakLanjutCicilanController extends Controller
         ]);
 
         $cicilans = $tindakLanjut->cicilans()
-            ->with('diverifikator:id,name')
-            ->withTrashed()
+            ->with([
+                'diverifikator:id,name',
+                'creator:id,name',
+                'attachments',
+            ])
             ->orderBy('ke')
             ->get();
 
-        // FIX: Menambahkan key 'total_rencana' dan 'total_realisasi' agar View tidak error
         $summary = [
-            'total_rencana' => $tindakLanjut->jumlah_cicilan_rencana ?? 0,
-            'total_realisasi' => $cicilans->whereNull('deleted_at')->count(),
-            'total_terbayar' => $tindakLanjut->total_terbayar ?? 0,
-            'sisa' => $tindakLanjut->sisa_belum_bayar ?? 0,
-            'nilai_rekom' => $tindakLanjut->recommendation->nilai_rekom ?? 0,
-            'is_uang' => $tindakLanjut->recommendation?->isUang() ?? true,
+            'total_rencana'   => $tindakLanjut->jumlah_cicilan_rencana ?? 0,
+            'total_realisasi' => $cicilans->count(),
+            'total_terbayar'  => (float) ($tindakLanjut->total_terbayar ?? 0),
+            'sisa'            => (float) ($tindakLanjut->sisa_belum_bayar ?? 0),
+            'nilai_rekom'     => (float) ($tindakLanjut->recommendation->nilai_rekom ?? 0),
+            'is_uang'         => $tindakLanjut->recommendation?->isUang() ?? true,
         ];
 
         return view('pages.tindak-lanjuts.cicilans.index', compact('tindakLanjut', 'cicilans', 'summary'));
@@ -49,8 +54,8 @@ class TindakLanjutCicilanController extends Controller
 
     public function create(TindakLanjut $tindakLanjut): View
     {
-        // Nomor urut berikutnya — pakai helper model agar konsisten dengan
-        // auto-set 'ke' saat menyimpan (max('ke') + 1, bukan count + 1).
+        $this->authorize('view', $tindakLanjut);
+
         $nextKe = $tindakLanjut->nextKeCicilan();
         $tindakLanjut->load(['recommendation.temuan.lhp']);
 
@@ -61,24 +66,56 @@ class TindakLanjutCicilanController extends Controller
 
     public function store(StoreTindakLanjutCicilanRequest $request, TindakLanjut $tindakLanjut): RedirectResponse
     {
+        $this->authorize('view', $tindakLanjut);
+
         DB::beginTransaction();
         try {
             $data = $request->validated();
 
-            // Satukan data dengan default breakdown 0 jika kosong
             $insertData = array_merge($data, [
-                'created_by' => auth()->id(),
-                'nilai_bayar_negara' => $request->nilai_bayar_negara ?? 0,
-                'nilai_bayar_daerah' => $request->nilai_bayar_daerah ?? 0,
-                'nilai_bayar_desa' => $request->nilai_bayar_desa ?? 0,
+                'created_by'           => auth()->id(),
+                'nilai_bayar_negara'   => $request->nilai_bayar_negara ?? 0,
+                'nilai_bayar_daerah'   => $request->nilai_bayar_daerah ?? 0,
+                'nilai_bayar_desa'     => $request->nilai_bayar_desa ?? 0,
                 'nilai_bayar_bos_blud' => $request->nilai_bayar_bos_blud ?? 0,
             ]);
 
+            // Jika status langsung diterima oleh pemeriksa/admin saat input
+            if (($insertData['status'] ?? null) === TindakLanjutCicilan::STATUS_DITERIMA) {
+                $insertData['diverifikasi_oleh'] = auth()->id();
+                $insertData['diverifikasi_pada'] = now();
+            }
+
             $cicilan = $tindakLanjut->cicilans()->create($insertData);
 
-            DB::commit();
+            // Simpan bukti attachment jika diunggah
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $i => $file) {
+                    if ($file && $file->isValid()) {
+                        $path = $file->store('attachments/cicilans', 'public');
+                        $cicilan->attachments()->create([
+                            'file_path'   => $path,
+                            'file_name'   => $file->getClientOriginalName(),
+                            'file_type'   => $file->getMimeType(),
+                            'file_size'   => $file->getSize(),
+                            'jenis_bukti' => 'cicilan_bukti',
+                            'urutan'      => $i,
+                            'visibilitas' => 'internal',
+                            'uploaded_by' => auth()->id(),
+                        ]);
+                    }
+                }
+            }
 
-            $this->updateGlobalStatistik($tindakLanjut);
+            // Pastikan flag cicilan pada tindak lanjut aktif
+            if (! $tindakLanjut->is_cicilan || $tindakLanjut->jenis_penyelesaian !== 'cicilan') {
+                $tindakLanjut->updateQuietly([
+                    'is_cicilan'         => true,
+                    'jenis_penyelesaian' => 'cicilan',
+                ]);
+            }
+
+            DB::commit();
 
             return redirect()
                 ->route('tindak-lanjuts.cicilans.index', $tindakLanjut)
@@ -86,9 +123,9 @@ class TindakLanjutCicilanController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Gagal menyimpan cicilan: '.$e->getMessage());
+            Log::error('Gagal menyimpan cicilan: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
-            return back()->withInput()->with('error', 'Gagal menyimpan cicilan. Silakan coba lagi.');
+            return back()->withInput()->with('error', 'Gagal menyimpan cicilan: '.$e->getMessage());
         }
     }
 
@@ -102,6 +139,7 @@ class TindakLanjutCicilanController extends Controller
             'tindakLanjut.recommendation.temuan.lhp',
             'diverifikator:id,name',
             'creator:id,name',
+            'attachments',
         ]);
 
         return view('pages.tindak-lanjuts.cicilans.show', compact('tindakLanjut', 'cicilan'));
@@ -109,20 +147,22 @@ class TindakLanjutCicilanController extends Controller
 
     // ── Edit ──────────────────────────────────────────────────────────────────
 
-    public function edit(TindakLanjut $tindakLanjut, TindakLanjutCicilan $cicilan): View
+    public function edit(TindakLanjut $tindakLanjut, TindakLanjutCicilan $cicilan): View|RedirectResponse
     {
         $this->authorizeCicilan($tindakLanjut, $cicilan);
 
         if ($cicilan->isDiterima()) {
             return redirect()
                 ->route('tindak-lanjuts.cicilans.index', $tindakLanjut)
-                ->with('error', 'Cicilan yang sudah diterima tidak dapat diubah.');
+                ->with('error', 'Cicilan yang sudah diverifikasi diterima tidak dapat diubah.');
         }
 
         $tindakLanjut->load([
             'recommendation:id,temuan_id,uraian_rekom,nilai_rekom,nilai_sisa,jenis_rekomendasi',
             'recommendation.temuan.lhp:id,nomor_lhp',
         ]);
+
+        $cicilan->load('attachments');
 
         return view('pages.tindak-lanjuts.cicilans.edit', compact('tindakLanjut', 'cicilan'));
     }
@@ -134,22 +174,48 @@ class TindakLanjutCicilanController extends Controller
         $this->authorizeCicilan($tindakLanjut, $cicilan);
 
         if ($cicilan->isDiterima()) {
-            return back()->with('error', 'Cicilan yang sudah diterima tidak dapat diubah.');
+            return back()->with('error', 'Cicilan yang sudah diverifikasi diterima tidak dapat diubah.');
         }
 
         DB::beginTransaction();
         try {
-            $cicilan->update(array_merge($request->validated(), [
-                'updated_by' => auth()->id(),
-                'nilai_bayar_negara' => $request->nilai_bayar_negara ?? 0,
-                'nilai_bayar_daerah' => $request->nilai_bayar_daerah ?? 0,
-                'nilai_bayar_desa' => $request->nilai_bayar_desa ?? 0,
+            $data = $request->validated();
+
+            $updateData = array_merge($data, [
+                'updated_by'           => auth()->id(),
+                'nilai_bayar_negara'   => $request->nilai_bayar_negara ?? 0,
+                'nilai_bayar_daerah'   => $request->nilai_bayar_daerah ?? 0,
+                'nilai_bayar_desa'     => $request->nilai_bayar_desa ?? 0,
                 'nilai_bayar_bos_blud' => $request->nilai_bayar_bos_blud ?? 0,
-            ]));
+            ]);
+
+            if (($updateData['status'] ?? null) === TindakLanjutCicilan::STATUS_DITERIMA) {
+                $updateData['diverifikasi_oleh'] = auth()->id();
+                $updateData['diverifikasi_pada'] = now();
+            }
+
+            $cicilan->update($updateData);
+
+            if ($request->hasFile('attachments')) {
+                $existingCount = $cicilan->attachments()->count();
+                foreach ($request->file('attachments') as $i => $file) {
+                    if ($file && $file->isValid()) {
+                        $path = $file->store('attachments/cicilans', 'public');
+                        $cicilan->attachments()->create([
+                            'file_path'   => $path,
+                            'file_name'   => $file->getClientOriginalName(),
+                            'file_type'   => $file->getMimeType(),
+                            'file_size'   => $file->getSize(),
+                            'jenis_bukti' => 'cicilan_bukti',
+                            'urutan'      => $existingCount + $i,
+                            'visibilitas' => 'internal',
+                            'uploaded_by' => auth()->id(),
+                        ]);
+                    }
+                }
+            }
 
             DB::commit();
-
-            $this->updateGlobalStatistik($tindakLanjut);
 
             return redirect()
                 ->route('tindak-lanjuts.cicilans.index', $tindakLanjut)
@@ -157,9 +223,9 @@ class TindakLanjutCicilanController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Gagal memperbarui cicilan: '.$e->getMessage());
+            Log::error('Gagal memperbarui cicilan: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
-            return back()->withInput()->with('error', 'Gagal memperbarui cicilan. Silakan coba lagi.');
+            return back()->withInput()->with('error', 'Gagal memperbarui cicilan: '.$e->getMessage());
         }
     }
 
@@ -168,22 +234,21 @@ class TindakLanjutCicilanController extends Controller
     public function verifikasi(VerifikasiCicilanRequest $request, TindakLanjut $tindakLanjut, TindakLanjutCicilan $cicilan): RedirectResponse
     {
         $this->authorizeCicilan($tindakLanjut, $cicilan);
+        $this->authorize('verifikasi', $tindakLanjut);
 
         DB::beginTransaction();
         try {
             $cicilan->update([
-                'status' => $request->status,
-                'diverifikasi_oleh' => auth()->id(),
-                'diverifikasi_pada' => now(),
+                'status'             => $request->status,
+                'diverifikasi_oleh'  => auth()->id(),
+                'diverifikasi_pada'  => now(),
                 'catatan_verifikasi' => $request->catatan_verifikasi,
-                'updated_by' => auth()->id(),
+                'updated_by'         => auth()->id(),
             ]);
 
             DB::commit();
 
-            $this->updateGlobalStatistik($tindakLanjut);
-
-            $label = $request->status === 'diterima' ? 'diterima' : 'ditolak';
+            $label = $request->status === TindakLanjutCicilan::STATUS_DITERIMA ? 'diterima' : 'ditolak';
 
             return redirect()
                 ->route('tindak-lanjuts.cicilans.index', $tindakLanjut)
@@ -191,7 +256,7 @@ class TindakLanjutCicilanController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Gagal memverifikasi cicilan: '.$e->getMessage());
+            Log::error('Gagal memverifikasi cicilan: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
             return back()->with('error', 'Gagal memverifikasi cicilan. Silakan coba lagi.');
         }
@@ -210,8 +275,6 @@ class TindakLanjutCicilanController extends Controller
         $ke = $cicilan->ke;
         DB::transaction(fn () => $cicilan->delete());
 
-        $this->updateGlobalStatistik($tindakLanjut);
-
         return redirect()
             ->route('tindak-lanjuts.cicilans.index', $tindakLanjut)
             ->with('success', "Cicilan ke-{$ke} berhasil dihapus.");
@@ -219,22 +282,12 @@ class TindakLanjutCicilanController extends Controller
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private function updateGlobalStatistik(TindakLanjut $tindakLanjut): void
+    private function authorizeCicilan(TindakLanjut $tindakLanjut, TindakLanjutCicilan $cicilan): void
     {
-        // ✅ Refresh TL dari DB agar relasi cicilan terbaru terbaca
-        $tindakLanjut->refresh();
-        $tindakLanjut->load('recommendation.tindakLanjuts.cicilans');
-
-        $recommendation = $tindakLanjut->recommendation;
-        if ($recommendation) {
-            // Sync recommendation: update status, nilai_tl_selesai, nilai_sisa
-            // sekaligus trigger temuan->syncStatus()
-            $recommendation->syncStatus();
+        if ((int) $cicilan->tindak_lanjut_id !== (int) $tindakLanjut->id) {
+            abort(404, 'Data cicilan tidak sesuai dengan tindak lanjut yang dipilih.');
         }
 
-        $lhpId = $recommendation?->temuan?->lhp_id;
-        if ($lhpId) {
-            $this->statistikService->updateStatistik($lhpId);
-        }
+        $this->authorize('view', $tindakLanjut);
     }
 }

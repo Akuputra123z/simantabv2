@@ -309,4 +309,213 @@ class TindakLanjutCalculationAndSyncTest extends TestCase
         $this->assertEquals('setor_kas', $tl->jenis_penyelesaian);
         $this->assertEquals('lunas', $tl->status_verifikasi);
     }
+
+    public function test_cicilan_controller_crud_and_verification_flow(): void
+    {
+        $this->actingAs($this->admin);
+
+        $temuan = Temuan::create([
+            'lhp_id' => $this->lhp->id,
+            'kode_temuan_id' => $this->kodeTemuan->id,
+            'kondisi' => 'Kekurangan volume pekerjaan',
+            'nilai_temuan' => 10000000,
+            'nilai_kerugian_daerah' => 10000000,
+        ]);
+
+        $rekom = Recommendation::create([
+            'temuan_id' => $temuan->id,
+            'kode_rekomendasi_id' => $this->kodeRekomendasi->id,
+            'uraian_rekom' => 'Setor pengembalian kas ke kas daerah',
+            'jenis_rekomendasi' => Recommendation::JENIS_UANG,
+            'nilai_rekom' => 10000000,
+            'batas_waktu' => now()->addDays(60),
+        ]);
+
+        $tl = $rekom->tindakLanjuts()->first();
+        $tl->update([
+            'jenis_penyelesaian' => 'cicilan',
+            'is_cicilan' => true,
+            'nilai_tindak_lanjut' => 10000000,
+        ]);
+
+        // 1. Index
+        $response = $this->get(route('tindak-lanjuts.cicilans.index', $tl));
+        $response->assertOk();
+
+        // 2. Create Page
+        $response = $this->get(route('tindak-lanjuts.cicilans.create', $tl));
+        $response->assertOk();
+
+        // 3. Store Cicilan #1 (4.000.000) status menunggu
+        $response = $this->post(route('tindak-lanjuts.cicilans.store', $tl), [
+            'nilai_bayar' => 4000000,
+            'tanggal_bayar' => now()->toDateString(),
+            'nomor_bukti' => 'BKT-001',
+            'jenis_bayar' => 'transfer',
+            'keterangan' => 'Cicilan tahap 1',
+            'status' => 'menunggu_verifikasi',
+        ]);
+        $response->assertRedirect(route('tindak-lanjuts.cicilans.index', $tl));
+
+        $cicilan1 = $tl->cicilans()->first();
+        $this->assertNotNull($cicilan1);
+        $this->assertEquals(1, $cicilan1->ke);
+        $this->assertEquals(4000000, (float) $cicilan1->nilai_bayar);
+
+        // TL belum terbayar karena menunggu_verifikasi
+        $tl->refresh();
+        $this->assertEquals(0, (float) $tl->total_terbayar);
+        $this->assertEquals(10000000, (float) $tl->sisa_belum_bayar);
+
+        // 4. Show Cicilan
+        $response = $this->get(route('tindak-lanjuts.cicilans.show', [$tl, $cicilan1]));
+        $response->assertOk();
+
+        // 5. Verifikasi: Diterima
+        $response = $this->patch(route('tindak-lanjuts.cicilans.verifikasi', [$tl, $cicilan1]), [
+            'status' => 'diterima',
+            'catatan_verifikasi' => 'Valid dan sesuai STS',
+        ]);
+        $response->assertRedirect(route('tindak-lanjuts.cicilans.index', $tl));
+
+        $cicilan1->refresh();
+        $this->assertEquals('diterima', $cicilan1->status);
+        $this->assertEquals($this->admin->id, $cicilan1->diverifikasi_oleh);
+
+        // Cascading sync: total_terbayar = 4.000.000, sisa = 6.000.000, status TL = berjalan
+        $tl->refresh();
+        $this->assertEquals(4000000, (float) $tl->total_terbayar);
+        $this->assertEquals(6000000, (float) $tl->sisa_belum_bayar);
+        $this->assertEquals('berjalan', $tl->status_verifikasi);
+
+        // 6. Cicilan yang diterima tidak boleh dihapus atau diedit
+        $response = $this->delete(route('tindak-lanjuts.cicilans.destroy', [$tl, $cicilan1]));
+        $response->assertSessionHas('error');
+        $this->assertFalse($cicilan1->fresh()->trashed());
+
+        // 7. Store Cicilan #2 (6.000.000) dan verifikasi diterima -> LUNAS
+        $response = $this->post(route('tindak-lanjuts.cicilans.store', $tl), [
+            'nilai_bayar' => 6000000,
+            'tanggal_bayar' => now()->toDateString(),
+            'nomor_bukti' => 'BKT-002',
+            'jenis_bayar' => 'transfer',
+            'status' => 'menunggu_verifikasi',
+        ]);
+        $response->assertRedirect(route('tindak-lanjuts.cicilans.index', $tl));
+
+        $cicilan2 = $tl->cicilans()->where('ke', 2)->first();
+        $this->assertNotNull($cicilan2);
+
+        $this->patch(route('tindak-lanjuts.cicilans.verifikasi', [$tl, $cicilan2]), [
+            'status' => 'diterima',
+        ]);
+
+        $tl->refresh();
+        $this->assertEquals(10000000, (float) $tl->total_terbayar);
+        $this->assertEquals(0, (float) $tl->sisa_belum_bayar);
+        $this->assertEquals('lunas', $tl->status_verifikasi);
+
+        $rekom->refresh();
+        $this->assertEquals(Recommendation::STATUS_SELESAI, $rekom->status);
+
+        $temuan->refresh();
+        $this->assertEquals(Temuan::STATUS_SELESAI, $temuan->status_tl);
+
+        $stats = LhpStatistik::where('lhp_id', $this->lhp->id)->first();
+        $this->assertEquals(1, $stats->rekom_selesai);
+        $this->assertEquals(100.0, (float) $stats->persen_selesai);
+    }
+
+    public function test_cicilan_cannot_exceed_remaining_balance(): void
+    {
+        $this->actingAs($this->admin);
+
+        $temuan = Temuan::create([
+            'lhp_id' => $this->lhp->id,
+            'kode_temuan_id' => $this->kodeTemuan->id,
+            'kondisi' => 'Kelebihan pembayaran',
+            'nilai_temuan' => 5000000,
+            'nilai_kerugian_daerah' => 5000000,
+        ]);
+
+        $rekom = Recommendation::create([
+            'temuan_id' => $temuan->id,
+            'kode_rekomendasi_id' => $this->kodeRekomendasi->id,
+            'uraian_rekom' => 'Setor uang',
+            'jenis_rekomendasi' => Recommendation::JENIS_UANG,
+            'nilai_rekom' => 5000000,
+            'batas_waktu' => now()->addDays(30),
+        ]);
+
+        $tl = $rekom->tindakLanjuts()->first();
+        $tl->update([
+            'jenis_penyelesaian' => 'cicilan',
+            'is_cicilan' => true,
+            'nilai_tindak_lanjut' => 5000000,
+            'sisa_belum_bayar' => 5000000,
+        ]);
+
+        // Input lebih besar dari sisa (6.000.000 > 5.000.000)
+        $response = $this->post(route('tindak-lanjuts.cicilans.store', $tl), [
+            'nilai_bayar' => 6000000,
+            'tanggal_bayar' => now()->toDateString(),
+            'status' => 'menunggu_verifikasi',
+        ]);
+
+        $response->assertSessionHasErrors('nilai_bayar');
+        $this->assertEquals(0, $tl->cicilans()->count());
+    }
+
+    public function test_cicilan_rejection_reverts_tindak_lanjut_status(): void
+    {
+        $this->actingAs($this->admin);
+
+        $temuan = Temuan::create([
+            'lhp_id' => $this->lhp->id,
+            'kode_temuan_id' => $this->kodeTemuan->id,
+            'kondisi' => 'Kelebihan pembayaran',
+            'nilai_temuan' => 5000000,
+            'nilai_kerugian_daerah' => 5000000,
+        ]);
+
+        $rekom = Recommendation::create([
+            'temuan_id' => $temuan->id,
+            'kode_rekomendasi_id' => $this->kodeRekomendasi->id,
+            'uraian_rekom' => 'Setor uang',
+            'jenis_rekomendasi' => Recommendation::JENIS_UANG,
+            'nilai_rekom' => 5000000,
+            'batas_waktu' => now()->addDays(30),
+        ]);
+
+        $tl = $rekom->tindakLanjuts()->first();
+        $tl->update([
+            'jenis_penyelesaian' => 'cicilan',
+            'is_cicilan' => true,
+            'nilai_tindak_lanjut' => 5000000,
+        ]);
+
+        $cicilan = $tl->cicilans()->create([
+            'nilai_bayar' => 5000000,
+            'status' => TindakLanjutCicilan::STATUS_DITERIMA,
+            'tanggal_bayar' => now(),
+        ]);
+
+        $tl->refresh();
+        $this->assertEquals('lunas', $tl->status_verifikasi);
+
+        // Reject cicilan
+        $response = $this->patch(route('tindak-lanjuts.cicilans.verifikasi', [$tl, $cicilan]), [
+            'status' => 'ditolak',
+            'catatan_verifikasi' => 'Bukti fiktif',
+        ]);
+        $response->assertRedirect();
+
+        $tl->refresh();
+        $this->assertEquals(0, (float) $tl->total_terbayar);
+        $this->assertEquals(5000000, (float) $tl->sisa_belum_bayar);
+        $this->assertEquals('menunggu_verifikasi', $tl->status_verifikasi);
+
+        $rekom->refresh();
+        $this->assertEquals(Recommendation::STATUS_BELUM, $rekom->status);
+    }
 }

@@ -338,7 +338,7 @@
                             @endif
 
                             {{-- Kolom 1: Nomor LHP, Sub Program, Tgl LHP, Irban, Kategori --}}
-                            <td class="px-4 py-3.5">
+                            <td class="px-4 py-3.5 w-[30%] min-w-[280px]">
                                 <div class="space-y-1">
                                     <div class="flex items-center gap-1.5 flex-wrap">
                                         <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
@@ -396,7 +396,7 @@
                             </td>
 
                             {{-- Kolom 2: Obrik dan Nama Ketua Tim --}}
-                            <td class="px-4 py-3.5">
+                            <td class="px-4 py-3.5 w-[20%] min-w-[200px]">
                                 <div class="space-y-1">
                                     <span class="font-bold text-gray-900 dark:text-white text-xs sm:text-sm block">
                                         {{ $lhp->unitDiperiksa?->nama_unit ?? '-' }}
@@ -421,7 +421,7 @@
 
                             {{-- Kolom 3: Realisasi Tindak Lanjut --}}
                             <td class="px-4 py-3.5">
-                                <div class="space-y-1 text-xs min-w-[190px]">
+                                <div class="space-y-1 text-xs min-w-[240px]">
                                     <div class="flex items-center justify-between gap-3">
                                         <span class="text-[11px] font-semibold text-gray-600 dark:text-gray-400">Realisasi TL:</span>
                                         <span class="font-bold font-mono text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
@@ -440,6 +440,17 @@
                                             {{ $totalTemuan }} / {{ $totalRekom }}
                                         </span>
                                     </div>
+                                    @php
+                                        $latestTl = $tindakLanjuts->sortByDesc('updated_at')->first();
+                                    @endphp
+                                    @if($latestTl && $latestTl->updated_at)
+                                    <div class="flex items-center justify-between gap-3 text-[10px] text-gray-400 pt-0.5">
+                                        <span>Update TL:</span>
+                                        <span class="font-medium text-blue-600 dark:text-blue-400" title="{{ $latestTl->updated_at->format('d/m/Y H:i') }}">
+                                            {{ $latestTl->updated_at->diffForHumans() }}
+                                        </span>
+                                    </div>
+                                    @endif
                                 </div>
                             </td>
 

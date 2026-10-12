@@ -39,7 +39,7 @@ class OpdTindakLanjutController extends Controller
             $unitIds = UnitDiperiksa::pluck('id');
         }
 
-        // Auto-ensure default TindakLanjut stubs exist for all recommendations of these units
+        // Auto-ensure default TindakLanjut stubs exist for all recommendations of these units (bulk insert efisien)
         if ($unitIds->isNotEmpty() || $isSuperOrAdmin) {
             $missingQuery = Recommendation::doesntHave('tindakLanjuts');
             if (! $isSuperOrAdmin) {
@@ -49,16 +49,18 @@ class OpdTindakLanjutController extends Controller
             }
             $missingRekomIds = $missingQuery->pluck('id');
 
-            foreach ($missingRekomIds as $rekomId) {
-                TindakLanjut::firstOrCreate(
-                    ['recommendation_id' => $rekomId],
-                    [
-                        'status_verifikasi' => 'menunggu_verifikasi',
-                        'nilai_tindak_lanjut' => 0,
-                        'total_terbayar' => 0,
-                        'sisa_belum_bayar' => 0,
-                    ]
-                );
+            if ($missingRekomIds->isNotEmpty()) {
+                $now = now();
+                $stubs = $missingRekomIds->map(fn ($rekomId) => [
+                    'recommendation_id' => $rekomId,
+                    'status_verifikasi' => 'menunggu_verifikasi',
+                    'nilai_tindak_lanjut' => 0,
+                    'total_terbayar' => 0,
+                    'sisa_belum_bayar' => 0,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])->toArray();
+                TindakLanjut::insert($stubs);
             }
         }
 

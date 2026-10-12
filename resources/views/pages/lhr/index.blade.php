@@ -177,7 +177,7 @@
                     <th class="px-5 py-4 w-12 text-center">No</th>
                     <th class="px-5 py-4">Perangkat Daerah, Nomor LHR & SPT</th>
                     <th class="px-5 py-4">Jenis Dokumen</th>
-                    <th class="px-5 py-4">Progres Reviu</th>
+                    <th class="px-5 py-4">Progres Reviu &amp; TL</th>
                     <th class="px-5 py-4 text-center">Status</th>
                     <th class="px-5 py-4 text-right">Aksi</th>
                 </tr>
@@ -257,20 +257,103 @@
                                         <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $progres->total_rekom }} butir</span>
                                     </div>
                                 </div>
-                            @else
-                                {{-- TAHAP TINDAK LANJUT & REVISI OPD (Pasca Terbit) --}}
+                            @elseif($lhr->status === \App\Enums\LhrStatus::Terbit)
+                                {{-- TAHAP TERBIT RESMI: Reviu KKP Selesai 100% & Terbit Resmi --}}
                                 <div class="space-y-1.5 min-w-[210px]">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-400">
+                                            <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                                            <span>Reviu: Selesai 100%</span>
+                                        </span>
+                                        <span class="font-bold text-emerald-600 dark:text-emerald-400">
+                                            100%
+                                        </span>
+                                    </div>
+
+                                    {{-- Full Green Progress Bar (Reviu 100% Selesai & Terbit Resmi) --}}
+                                    <div class="w-full bg-slate-200 rounded-full h-2 dark:bg-slate-700 overflow-hidden">
+                                        <div class="bg-emerald-500 h-2 w-full rounded-full transition-all duration-300" title="Reviu KKP 100% Selesai dan LHR Terbit Resmi"></div>
+                                    </div>
+
+                                    {{-- Status Tindak Lanjut Rekomendasi OPD --}}
+                                    <div class="pt-0.5 space-y-1">
+                                        @if($progres->total_rekom === 0)
+                                            <span class="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                                ✓ Bebas Catatan Rekomendasi
+                                            </span>
+                                        @else
+                                            <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                                                <span>TL Rekomendasi &bull; Tuntas: {{ $progres->selesai }}/{{ $progres->total_rekom }}</span>
+                                                <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $progres->persen }}%</span>
+                                            </div>
+                                            <div class="flex flex-wrap items-center gap-1.5 text-[10px]">
+                                                @if($progres->dikirim_opd > 0)
+                                                    <span class="inline-flex items-center gap-1 rounded bg-blue-100 px-1.5 py-0.5 font-bold text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 ring-1 ring-blue-300 animate-pulse">
+                                                        <span class="h-1.5 w-1.5 rounded-full bg-blue-600"></span>
+                                                        {{ $progres->dikirim_opd }} Revisi OPD Masuk
+                                                    </span>
+                                                @endif
+
+                                                @if($progres->ditolak_opd > 0)
+                                                    <span class="inline-flex items-center gap-1 rounded bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-800 dark:bg-rose-900/50 dark:text-rose-300" title="Dikembalikan untuk perbaikan">
+                                                        {{ $progres->ditolak_opd }} Perlu Koreksi
+                                                    </span>
+                                                @endif
+
+                                                @if($progres->draft_opd > 0 && $progres->dikirim_opd === 0)
+                                                    <span class="inline-flex items-center rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                                                        {{ $progres->draft_opd }} Draf OPD
+                                                    </span>
+                                                @endif
+
+                                                @if($progres->selesai === $progres->total_rekom)
+                                                    <span class="inline-flex items-center rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                                        ✓ Tuntas Diverifikasi
+                                                    </span>
+                                                @elseif($progres->dikirim_opd === 0 && $progres->draft_opd === 0 && $progres->selesai === 0 && $progres->ditolak_opd === 0)
+                                                    <span class="text-slate-400 dark:text-slate-500 italic">
+                                                        Menunggu Tindak Lanjut OPD
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @else
+                                {{-- TAHAP TINDAK LANJUT & SELESAI (Pasca Terbit & Ada Aksi TL) --}}
+                                <div class="space-y-1.5 min-w-[210px]">
+                                    <div class="flex items-center justify-between text-[11px] pb-1 border-b border-slate-100 dark:border-slate-800">
+                                        <span class="inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-400">
+                                            <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                                            <span>Reviu: Selesai 100%</span>
+                                        </span>
+                                        <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                                            TL OPD
+                                        </span>
+                                    </div>
+
+                                    @php
+                                        $persenDikirim = $progres->total_rekom > 0 ? round(($progres->dikirim_opd / $progres->total_rekom) * 100, 1) : 0;
+                                    @endphp
+
                                     <div class="flex items-center justify-between text-xs">
                                         <span class="font-medium text-slate-600 dark:text-slate-400">
                                             @if($progres->total_rekom === 0)
                                                 Bebas Catatan
                                             @else
-                                                Tuntas: {{ $progres->selesai }}/{{ $progres->total_rekom }}
+                                                TL Rekomendasi &bull; Tuntas: {{ $progres->selesai }}/{{ $progres->total_rekom }}
                                             @endif
                                         </span>
-                                        <span class="font-bold {{ $progres->persen >= 100 ? 'text-emerald-600 dark:text-emerald-400' : ($progres->persen > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400') }}">
-                                            {{ $progres->persen }}%
-                                        </span>
+                                        <div class="flex items-center gap-1.5 font-bold">
+                                            <span class="{{ $progres->persen >= 100 ? 'text-emerald-600 dark:text-emerald-400' : ($progres->persen > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400') }}">
+                                                {{ $progres->persen }}%
+                                            </span>
+                                            @if($persenDikirim > 0)
+                                                <span class="text-[10px] text-blue-600 dark:text-blue-400 font-medium" title="Revisi OPD Masuk: {{ $progres->dikirim_opd }} butir ({{ $persenDikirim }}%)">
+                                                    (+{{ $persenDikirim }}% revisi)
+                                                </span>
+                                            @endif
+                                        </div>
                                     </div>
 
                                     {{-- Stacked Progress Bar: Hijau (Selesai) + Biru (Revisi Masuk OPD) --}}
@@ -279,9 +362,6 @@
                                             <div class="bg-emerald-500 h-2 w-full"></div>
                                         @else
                                             <div class="bg-emerald-500 h-2 transition-all duration-300" style="width: {{ $progres->persen }}%" title="Selesai Diverifikasi: {{ $progres->selesai }} butir"></div>
-                                            @php
-                                                $persenDikirim = $progres->total_rekom > 0 ? round(($progres->dikirim_opd / $progres->total_rekom) * 100, 1) : 0;
-                                            @endphp
                                             @if($persenDikirim > 0)
                                                 <div class="bg-blue-500 h-2 transition-all duration-300" style="width: {{ $persenDikirim }}%" title="Revisi OPD Masuk: {{ $progres->dikirim_opd }} butir"></div>
                                             @endif

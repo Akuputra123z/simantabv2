@@ -5,6 +5,7 @@
     <title>Surat Tugas - {{ $assignment->nomor_surat }}</title>
     <style>
         @page {
+            size: {{ (isset($paper) && $paper === 'a4') ? '210mm 297mm' : '215mm 330mm' }};
             margin: 2cm 1.5cm 1.5cm 2cm;
         }
 
@@ -605,19 +606,19 @@
             <div class="signature-group">
                 <table class="table-ttd-layout">
                     <tr>
-                        {{-- QR Code di sebelah kiri bawah tabel --}}
-                        <td style="width: 50%; vertical-align: top; text-align: left;">
+                        {{-- Kolom Kiri: QR Code Verifikasi (Rata Bawah agar sejajar & tidak bentrok dengan TTD) --}}
+                        <td style="width: 44%; vertical-align: bottom; text-align: left; padding-bottom: 5px;">
                             @if($assignment->isSigned() && !empty($qrBase64))
-                                <div style="display: inline-block; border: 1px solid #d1d5db; background: #fafafa; padding: 6px 12px; border-radius: 4px; margin-top: 10px;">
-                                    <table style="border-collapse: collapse; border: none; margin: 0; padding: 0;">
+                                <div style="display: inline-block; border: 1px solid #cbd5e1; background: #f8fafc; padding: 7px 10px; border-radius: 4px; width: 250px;">
+                                    <table style="border-collapse: collapse; border: none; margin: 0; padding: 0; width: 100%;">
                                         <tr>
-                                            <td style="width: 74px; vertical-align: middle; padding: 0 10px 0 0; border: none !important;">
-                                                <img src="{{ $qrBase64 }}" width="70" height="70" style="width: 70px; height: 70px; display: block;" alt="QR Code Verifikasi">
+                                            <td style="width: 66px; vertical-align: middle; padding: 0 8px 0 0; border: none !important;">
+                                                <img src="{{ $qrBase64 }}" width="64" height="64" style="width: 64px; height: 64px; display: block;" alt="QR Code Verifikasi">
                                             </td>
-                                            <td style="vertical-align: middle; border: none !important; font-size: 7.5pt; line-height: 1.4; color: #333;">
-                                                <strong style="color: #000; font-size: 8pt;">DITANDATANGANI SECARA ELEKTRONIK</strong><br>
-                                                Inspektorat Daerah Kabupaten Rembang<br>
-                                                <span style="color: #666; font-size: 7pt;">Pindai QR untuk verifikasi keaslian dokumen</span>
+                                            <td style="vertical-align: middle; border: none !important; font-size: 7.5pt; line-height: 1.35; color: #334155;">
+                                                <strong style="color: #0f172a; font-size: 8pt; display: block; margin-bottom: 2px;">DITANDATANGANI ELEKTRONIK</strong>
+                                                <span style="font-size: 7.5pt; color: #1e293b;">Inspektorat Kab. Rembang</span><br>
+                                                <span style="color: #64748b; font-size: 6.5pt;">Scan QR untuk validasi naskah dinas</span>
                                             </td>
                                         </tr>
                                     </table>
@@ -625,49 +626,52 @@
                             @endif
                         </td>
 
-                        {{-- Tanda Tangan di sebelah kanan --}}
-                        <td style="width: 50%; vertical-align: top; text-align: right;">
-                            <div class="ttd-container" style="display: inline-block; text-align: center; width: 330px;">
-                                <table class="table-ttd-meta" style="margin-left: auto; margin-right: auto; width: 260px;">
+                        {{-- Kolom Tengah: Spasi Pemisah --}}
+                        <td style="width: 12%; border: none !important;">&nbsp;</td>
+
+                        {{-- Kolom Kanan: Blok Tanda Tangan --}}
+                        <td style="width: 44%; vertical-align: top; text-align: center;">
+                            <div class="ttd-container" style="display: block; text-align: center; width: 100%;">
+                                <table class="table-ttd-meta" style="margin: 0 auto 6px auto; width: 220px; font-size: 10pt;">
                                     <tr>
-                                        <td style="width: 40%;">Ditetapkan di</td>
-                                        <td style="width: 5%;">:</td>
-                                        <td style="width: 55%;">Rembang</td>
+                                        <td style="width: 45%; text-align: left;">Ditetapkan di</td>
+                                        <td style="width: 5%; text-align: center;">:</td>
+                                        <td style="width: 50%; text-align: left;">Rembang</td>
                                     </tr>
                                     <tr>
-                                        <td>Pada tanggal</td>
-                                        <td>:</td>
-                                        <td>{{ ($assignment->created_at ?? now())->locale('id')->translatedFormat('d F Y') }}</td>
+                                        <td style="text-align: left;">Pada tanggal</td>
+                                        <td style="text-align: center;">:</td>
+                                        <td style="text-align: left;">{{ ($assignment->created_at ?? now())->locale('id')->translatedFormat('d F Y') }}</td>
                                     </tr>
                                 </table>
 
-                                <div class="ttd-jabatan">
+                                <div class="ttd-jabatan" style="font-size: 10.5pt; margin-bottom: 8px;">
                                     INSPEKTUR DAERAH<br>
                                     KABUPATEN REMBANG
                                 </div>
 
                                 @if($assignment->isSigned() && !empty($signatureBase64))
-                                    <div class="ttd-signature">
-                                        <img src="{{ $signatureBase64 }}" alt="Tanda Tangan">
+                                    <div class="ttd-signature" style="min-height: 70px; margin: 4px 0;">
+                                        <img src="{{ $signatureBase64 }}" alt="Tanda Tangan" style="height: 68px; max-height: 75px; width: auto;">
                                     </div>
                                 @else
-                                    <div class="ttd-space"></div>
+                                    <div class="ttd-space" style="height: 65px;"></div>
                                 @endif
 
                                 @php
                                     $defaultInspektur = \App\Models\User::find(2);
                                 @endphp
                                 @if($assignment->isSigned() && $assignment->signer)
-                                    <p class="ttd-nama">{{ $assignment->signer->name }}</p>
-                                    <p class="ttd-nip">
+                                    <p class="ttd-nama" style="font-size: 10.5pt;">{{ $assignment->signer->name }}</p>
+                                    <p class="ttd-nip" style="font-size: 10pt;">
                                         {{ $assignment->signer->pangkat_gol ?? ($defaultInspektur?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)') }}<br>
                                         NIP. {{ $assignment->signer->nip ?? '-' }}
                                     </p>
                                 @else
-                                    <p class="ttd-nama">
+                                    <p class="ttd-nama" style="font-size: 10.5pt;">
                                         {{ $defaultInspektur?->name ?? 'IMUNG TRI WIJAYANTI, S.P., M.T., M.A., CGCAE.' }}
                                     </p>
-                                    <p class="ttd-nip">
+                                    <p class="ttd-nip" style="font-size: 10pt;">
                                         {{ $defaultInspektur?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)' }}<br>
                                         NIP. {{ $defaultInspektur?->nip ?? '197411281999032003' }}
                                     </p>

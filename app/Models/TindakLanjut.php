@@ -261,23 +261,26 @@ class TindakLanjut extends Model
         } else {
             // ── UANG ──────────────────────────────────────────────────────────
             $nilaiRekom = (float) ($rekom?->nilai_rekom ?? 0);
-            $targetNilai = (float) ($this->nilai_tindak_lanjut > 0
-                            ? $this->nilai_tindak_lanjut
-                            : $nilaiRekom);
+            $targetNilai = $nilaiRekom > 0 ? $nilaiRekom : (float) $this->nilai_tindak_lanjut;
 
             if ($isCicilan) {
-                // Total terbayar dari cicilan yang diterima (selalu dihitung dari DB)
-                $terbayar = (float) $this->cicilanDiterima()->sum('nilai_bayar');
+                // Total terbayar dari cicilan yang diterima (1 query agregat cepat)
+                $agg = $this->cicilanDiterima()
+                    ->selectRaw('COALESCE(SUM(nilai_bayar), 0) as total, COUNT(*) as jumlah')
+                    ->first();
+                $terbayar = (float) ($agg->total ?? 0);
                 // Cap total_terbayar agar tidak melebihi target → mencegah progress > 100%
                 $this->total_terbayar = min($terbayar, $targetNilai);
-                $this->jumlah_cicilan_realisasi = $this->cicilanDiterima()->count();
+                $this->jumlah_cicilan_realisasi = (int) ($agg->jumlah ?? 0);
             } else {
-                // Jenis langsung: jika user set status = lunas, terbayar = target
+                // Jenis setor kas / langsung:
                 if ($this->status_verifikasi === 'lunas') {
-                    $this->total_terbayar = $targetNilai;
-                } elseif ($fromCascade === false) {
-                    // Saat user edit dan status bukan lunas, jangan override total_terbayar
-                    // (biarkan nilai yang ada)
+                    $this->total_terbayar = max((float) $this->nilai_tindak_lanjut, $targetNilai);
+                } elseif ($this->status_verifikasi === 'berjalan') {
+                    $nominal = (float) $this->nilai_tindak_lanjut;
+                    if ($nominal > 0) {
+                        $this->total_terbayar = min($nominal, $targetNilai);
+                    }
                 }
                 $this->jumlah_cicilan_realisasi = 0;
             }
@@ -289,12 +292,13 @@ class TindakLanjut extends Model
             // ── Auto-status HANYA untuk jenis cicilan (dihitung dari data nyata) ──
             // Untuk jenis 'langsung', status dikendalikan penuh oleh user.
             if ($isCicilan || $fromCascade) {
-                if ($targetNilai > 0 && $this->sisa_belum_bayar <= 0) {
+                if ($targetNilai > 0 && $this->sisa_belum_bayar <= 0 && $this->total_terbayar >= $targetNilai) {
                     $this->status_verifikasi = 'lunas';
                 } elseif ($this->total_terbayar > 0 && $this->sisa_belum_bayar > 0) {
                     $this->status_verifikasi = 'berjalan';
+                } else {
+                    $this->status_verifikasi = 'menunggu_verifikasi';
                 }
-                // Jika belum ada pembayaran sama sekali, biarkan status yang ada
             }
             // Untuk jenis 'langsung' yang diedit user (bukan cascade):
             // status_verifikasi TIDAK di-override → user bebas set lunas/berjalan/menunggu

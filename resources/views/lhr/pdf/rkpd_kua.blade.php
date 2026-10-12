@@ -188,6 +188,30 @@
         [null, 'Indeks Risiko Bencana (IRB)', 'Angka', '107,82 - 106,8', 'Indeks Risiko Bencana', 'Angka', '107,82 - 106,8'],
     ];
 
+    /* Render tabel konsistensi RPJMD vs RKPD untuk pengujian S8 */
+    $tabelKonsistensi = '<table class="bordered" style="margin-top:6px"><thead>'
+        . '<tr><th rowspan="2" style="width:22%">Sasaran Daerah</th><th colspan="3">Target RPJMD</th><th colspan="3">Target RKPD ' . $tahun . '</th></tr>'
+        . '<tr><th style="width:23%">Indikator</th><th style="width:8%">Satuan</th><th style="width:8%">Target</th><th style="width:23%">Indikator</th><th style="width:8%">Satuan</th><th style="width:8%">Target</th></tr>'
+        . '</thead><tbody>';
+    foreach ($konsistensiRows as $row) {
+        if ($row[0] === 'misi') {
+            $tabelKonsistensi .= '<tr><td colspan="7" class="misi">' . e($row[1]) . '</td></tr>';
+        } else {
+            [$sas, $indRpjmd, $satRpjmd, $tarRpjmd, $indRkpd, $satRkpd, $tarRkpd] = $row;
+            $diffClass = ($tarRpjmd !== $tarRkpd) ? ' class="diff"' : '';
+            $tabelKonsistensi .= '<tr>'
+                . '<td>' . ($sas ?? '') . '</td>'
+                . '<td>' . $indRpjmd . '</td>'
+                . '<td class="c">' . $satRpjmd . '</td>'
+                . '<td class="c"' . $diffClass . '>' . $tarRpjmd . '</td>'
+                . '<td>' . $indRkpd . '</td>'
+                . '<td class="c">' . $satRkpd . '</td>'
+                . '<td class="c"' . $diffClass . '>' . $tarRkpd . '</td>'
+                . '</tr>';
+        }
+    }
+    $tabelKonsistensi .= '</tbody></table>';
+
     /* ───────────── 6. HELPER DATA PENGUJIAN ───────────── */
     $pKeyed = ($pengujians ?? $lhr->pengujians)->keyBy('kode');
 
@@ -392,7 +416,7 @@
 
         ['kode' => 'RKPD.S8', 'judul' => 'Pengujian atas Konsistensi Pencantuman Indikator serta Target Kinerja Tujuan dan Sasaran dalam Rancangan Akhir RKPD dan RPJMD',
          'simpulan' => "Target Kinerja Tujuan dan Sasaran dalam dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} belum konsisten dengan Dokumen RPJMD Kabupaten Rembang Tahun 2025-2029.",
-         'catatan' => "Terdapat ketidakkonsistenan target Indikator Kinerja Tujuan dan Sasaran yang dicantumkan pada tabel 3.6 RPJMD Kabupaten Rembang tahun 2025-2029 dengan tabel 4.1 Rancangan Akhir RKPD tahun {$tahun}, sebagaimana penyandingan sebagai berikut:",
+         'catatan' => "Terdapat ketidakkonsistenan target Indikator Kinerja Tujuan dan Sasaran yang dicantumkan pada tabel 3.6 RPJMD Kabupaten Rembang tahun 2025-2029 dengan tabel 4.1 Rancangan Akhir RKPD tahun {$tahun}, sebagaimana penyandingan sebagai berikut:" . $tabelKonsistensi,
          'rekom' => "Mengkaji kembali penetapan target indikator kinerja Tujuan dan Sasaran yang tercantum pada tabel 3.6 Misi, Tujuan Dan Sasaran Pembangunan Kabupaten Rembang Beserta Indikator dan Target Kinerja Tahun 2025-2029 dan tabel 3.9 Teknik Perumusan Program Prioritas Pembangunan Daerah Rancangan Akhir RPJMD tahun 2025-2029 dengan Rancangan Akhir RKPD Kabupaten Rembang tahun {$tahun} yang tidak konsisten."],
     ];
 
@@ -423,108 +447,309 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Hasil Reviu Dokumen Rankir RKPD Kabupaten Rembang Tahun {{ $tahun }}</title>
     <style>
-        /* ================= DASAR (semua mode) ================= */
+        /* ================= DASAR TYPOGRAPHY & RESET ================= */
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; line-height: 1.35; color: #000; margin: 0; padding: 0; }
-        h3, h4 { margin: 10px 0 4px; page-break-after: avoid; break-after: avoid; }
-        p { margin: 4px 0; }
-        ol, ul { margin: 2px 0 5px; padding-left: 18px; }
-        li { margin-bottom: 3px; text-align: justify; }
-        a { color: #000; word-break: break-all; }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9.5pt;
+            line-height: 1.45;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+        h2, h3, h4 { margin: 12px 0 4px; color: #0f172a; page-break-after: avoid; break-after: avoid; }
+        p { margin: 5px 0; }
+        ol, ul { margin: 3px 0 6px; padding-left: 20px; }
+        li { margin-bottom: 4px; text-align: justify; }
+        a { color: #1e3a8a; text-decoration: none; word-break: break-all; }
 
         .text-center { text-align: center; }
-        .text-justify { text-align: justify; }
+        .text-justify { text-align: justify; text-justify: inter-word; }
         .text-right { text-align: right; }
-        .indent  { margin-left: 15px; }
-        .indent2 { margin-left: 30px; }
+        .indent  { margin-left: 16px; }
+        .indent2 { margin-left: 32px; }
         .nobreak { page-break-inside: avoid; break-inside: avoid; }
         .new-page { page-break-before: always; break-before: page; }
-        .sec-title { font-weight: bold; margin: 10px 0 2px; page-break-after: avoid; break-after: avoid; }
-        .item { margin: 6px 0; }
-        .item > .note, .note { margin: 4px 0 6px; text-align: justify; }
-        .ref { font-weight: bold; background: #eee; padding: 1px 4px; font-size: 8.5pt; }
-        .sub-rekom { margin: 3px 0 3px 18px; text-align: justify; }
+        
+        /* Section Titles & Badges */
+        .sec-title {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin: 12px 0 4px;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+        .sec-h4 {
+            font-size: 10.5pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin: 18px 0 6px;
+            border-left: 3.5px solid #1e3a8a;
+            padding-left: 8px;
+            page-break-after: avoid;
+            break-after: avoid;
+            text-transform: uppercase;
+        }
+        .item { margin: 8px 0; }
+        .item > .note, .note { margin: 5px 0 7px; text-align: justify; line-height: 1.4; }
+        .ref {
+            font-weight: 600;
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 8pt;
+            display: inline-block;
+            margin-bottom: 2px;
+        }
+        .sub-rekom { margin: 4px 0 4px 18px; text-align: justify; }
 
-        /* tabel */
+        /* TABEL MODERN & TERSTRUKTUR */
         table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 8.5pt; }
-        table th, table td { padding: 3px 5px; vertical-align: top; }
-        table.plain th, table.plain td { border: 0; }
-        table.bordered, table.bordered th, table.bordered td { border: 1px solid #000; }
-        table.bordered th { background: #f2f2f2; text-align: center; }
+        table th, table td { padding: 5px 7px; vertical-align: top; }
+        table.plain th, table.plain td { border: 0; padding: 2px 4px; }
+        table.bordered, table.bordered th, table.bordered td { border: 1px solid #94a3b8; }
+        table.bordered th {
+            background: #f1f5f9;
+            color: #0f172a;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 8.5pt;
+            padding: 6px 8px;
+        }
+        table.bordered tbody tr:nth-child(even) td { background: #fafbfc; }
         thead { display: table-header-group; }
         tr { page-break-inside: avoid; break-inside: avoid; }
-        td.c { text-align: center; }
-        td.grp, td.misi { background: #e6e6e6; font-weight: bold; }
+        td.c { text-align: center; vertical-align: middle; }
+        td.grp, td.misi {
+            background: #e2e8f0;
+            font-weight: bold;
+            color: #0f172a;
+            border-top: 1.5px solid #64748b;
+        }
         td.cont { border-top-color: transparent !important; }
-        td.diff { background: #fde8e8; font-weight: bold; }
-        table.data-table th, table.data-table td { border: 1px solid #cbd5e1; padding: 5px 6px; }
-        table.data-table th { background: #f1f5f9; }
-        .mono { font-family: monospace; font-size: 8pt; background: #e2e8f0; padding: 1px 5px; }
+        td.diff { background: #fee2e2; color: #991b1b; font-weight: bold; }
+        
+        table.data-table th, table.data-table td { border: 1px solid #cbd5e1; padding: 6px 8px; }
+        table.data-table th { background: #f1f5f9; color: #0f172a; font-weight: bold; text-align: center; }
+        .mono { font-family: monospace; font-size: 8pt; background: #e2e8f0; color: #334155; padding: 2px 6px; border-radius: 3px; }
 
-        .person td { padding: 2px; font-size: 9pt; }
-        .person td:first-child { width: 100px; }
-        .person-sep td { padding: 2px; }
-        .surat-meta td { padding: 1px 4px; font-size: 9pt; }
+        .person td { padding: 2px 4px; font-size: 9pt; }
+        .person td:first-child { width: 110px; color: #475569; }
+        .surat-meta td { padding: 2px 4px; font-size: 9pt; vertical-align: top; }
 
-        /* kop */
-        .header-kop { text-align: center; border-bottom: 3px double #000; padding-bottom: 4px; margin-bottom: 10px; }
-        .header-kop h3 { margin: 0; font-size: 11pt; }
-        .header-kop h2 { margin: 0; font-size: 13pt; }
-        .header-kop p { margin: 1px 0; font-size: 8pt; }
+        /* KOP SURAT RESMI PEMERINTAH DAERAH */
+        .kop-table { width: 100%; border-collapse: collapse; margin-bottom: 2px; }
+        .kop-table td { border: 0; padding: 0; }
+        .kop-pemkab { font-size: 11.5pt; font-weight: bold; letter-spacing: 0.8px; text-transform: uppercase; color: #000; }
+        .kop-instansi { font-size: 15.5pt; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: #000; margin: 1px 0; }
+        .kop-alamat { font-size: 8.5pt; color: #222; margin-top: 2px; line-height: 1.25; }
+        .kop-kontak { font-size: 8pt; color: #333; line-height: 1.25; }
+        .kop-line { border-bottom: 3px double #000; margin-top: 6px; margin-bottom: 14px; }
 
-        /* cover & penutup */
-        .bleed { background: #f7b267; text-align: center; page-break-after: always; break-after: page; }
-        .bleed:last-of-type { page-break-after: auto; break-after: auto; }
-        .cover-logo { width: 100px; margin: 0 auto 10px; display: block; }
-        .cover-header { font-weight: bold; font-size: 13pt; }
-        .cover-title { font-size: 13.5pt; font-weight: bold; margin: 20px 0 15px; line-height: 1.3; }
-        .cover-meta { text-align: left; margin: 20px auto; width: 85%; font-weight: bold; font-size: 10pt; }
-        .cover-year { font-weight: bold; font-size: 14pt; margin-top: 40px; }
+        /* COVER & PENUTUP RESMI EKSEKUTIF */
+        .cover-wrapper {
+            box-sizing: border-box;
+            text-align: center;
+            border: 2.5px solid #1e3a8a;
+            padding: 22px 18px 18px;
+            page-break-after: always;
+            break-after: page;
+            position: relative;
+            background: #ffffff;
+        }
+        .cover-inner-border {
+            border: 1px solid #94a3b8;
+            padding: 20px 16px 18px;
+        }
+        .cover-header-instansi { font-weight: 800; font-size: 11.5pt; letter-spacing: 1.5px; color: #0f172a; margin: 0; text-transform: uppercase; }
+        .cover-header-sub { font-weight: 700; font-size: 9.5pt; letter-spacing: 1px; color: #1e3a8a; margin: 2px 0 0; text-transform: uppercase; }
+        .cover-gold-bar { height: 3px; background: #d97706; width: 60px; margin: 8px auto 12px; }
+        .cover-logo-img { width: 80px; height: auto; display: block; margin: 0 auto; }
+        .cover-berakhlak { font-weight: 800; font-size: 9.5pt; color: #0f172a; letter-spacing: 1px; margin: 5px 0 0; }
+        .cover-berakhlak-sub { font-size: 7.5pt; color: #64748b; margin: 0; text-transform: lowercase; }
+        
+        .cover-title-box {
+            margin: 18px 0 14px;
+            padding: 10px 12px;
+            border-top: 1.5px solid #1e3a8a;
+            border-bottom: 1.5px solid #1e3a8a;
+            background: #f8fafc;
+        }
+        .cover-main-title { font-size: 13.5pt; font-weight: 800; color: #0f172a; letter-spacing: 0.8px; margin: 0 0 4px; line-height: 1.3; }
+        .cover-sub-title { font-size: 10.5pt; font-weight: 700; color: #1e3a8a; margin: 0 0 4px; line-height: 1.35; }
+        .cover-unit-badge {
+            display: inline-block;
+            margin-top: 5px;
+            padding: 4px 12px;
+            background: #e2e8f0;
+            color: #0f172a;
+            font-size: 9pt;
+            font-weight: 700;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
 
-        /* tanda tangan */
-        .ttd { width: 100%; margin-top: 30px; }
-        .ttd td { border: 0; }
+        .cover-meta-card {
+            width: 86%;
+            margin: 16px auto 14px;
+            text-align: left;
+            border: 1px solid #cbd5e1;
+            border-left: 4px solid #1e3a8a;
+            background: #f8fafc;
+            padding: 8px 12px;
+        }
+        .cover-meta-card td { padding: 3px 6px; font-size: 8.5pt; }
+        .cover-meta-label { width: 110px; font-weight: 700; color: #475569; }
+        .cover-meta-val { font-weight: 700; color: #0f172a; }
+
+        .cover-year-bottom { font-weight: 800; font-size: 11.5pt; color: #0f172a; letter-spacing: 1px; margin-top: 20px; }
+
+        /* BACK COVER */
+        .back-cover-wrapper {
+            box-sizing: border-box;
+            text-align: center;
+            border: 2.5px solid #1e3a8a;
+            padding: 22px 18px;
+            page-break-after: auto;
+            break-after: auto;
+            background: #ffffff;
+        }
+        .back-cover-inner {
+            border: 1px solid #94a3b8;
+            padding: 60mm 20px 40mm;
+        }
+
+        /* TANDA TANGAN */
+        .ttd { width: 100%; margin-top: 25px; }
+        .ttd td { border: 0; padding: 0; }
 
         @if($engine === 'dompdf')
-        /* ================= DOMPDF ================= */
-        @page { size: 210mm 297mm; margin: 15mm 15mm 20mm 20mm; }
+        /* ================= DOMPDF SPECIFIC ================= */
+        @page { size: 210mm 297mm; margin: 20mm 15mm 20mm 20mm; }
         .preview-toolbar { display: none !important; }
-        .running-footer { position: fixed; left: 0; right: 0; bottom: -12mm; border-top: 1px solid #ccc; padding-top: 3px; font-size: 8pt; font-style: italic; z-index: -10; }
+        .running-footer {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: -12mm;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 3px;
+            font-size: 8pt;
+            color: #64748b;
+            font-style: italic;
+            z-index: -10;
+        }
         .running-footer table { margin: 0; font-size: 8pt; }
         .running-footer td { border: 0; padding: 0; }
         .pagenum:before { content: counter(page); }
-        .bleed { margin: -15mm -15mm -20mm -20mm; width: 210mm; height: 262mm; overflow: hidden; padding: 20mm 15mm 15mm; position: relative; z-index: 10; }
-        .cover-title { font-size: 13.5pt; font-weight: bold; margin: 15px 0 10px; line-height: 1.3; }
-        .cover-meta { text-align: left; margin: 15px auto; width: 85%; font-weight: bold; font-size: 10pt; }
-        .cover-year { font-weight: bold; font-size: 14pt; margin-top: 25px; }
+        .sheet { width: 100%; }
+
         @elseif($engine === 'chrome')
         /* ================= CHROME / BROWSERSHOT ================= */
-        @page { size: A4; margin: 15mm 15mm 20mm 20mm;
-            @bottom-left  { content: "{{ $footerText }}"; font: italic 8pt Arial; border-top: 1px solid #ccc; width: 100%; vertical-align: top; padding-top: 3px; }
-            @bottom-right { content: counter(page); font: italic 8pt Arial; border-top: 1px solid #ccc; vertical-align: top; padding-top: 3px; }
+        @page {
+            size: A4;
+            margin: 20mm 15mm 20mm 20mm;
+            @bottom-left  { content: "{{ $footerText }}"; font: italic 8pt Arial; border-top: 1px solid #cbd5e1; width: 100%; vertical-align: top; padding-top: 3px; color: #64748b; }
+            @bottom-right { content: counter(page); font: italic 8pt Arial; border-top: 1px solid #cbd5e1; vertical-align: top; padding-top: 3px; color: #64748b; }
         }
-        @page bleed { margin: 0; @bottom-left { content: none; border: 0 } @bottom-right { content: none; border: 0 } }
         .preview-toolbar { display: none !important; }
-        .bleed { page: bleed; height: 297mm; padding: 25mm 20mm 20mm; }
+        .sheet { width: 100%; }
+
         @else
-        /* ================= PREVIEW LAYAR ================= */
-        @page { size: A4; margin: 15mm 15mm 20mm 20mm;
-            @bottom-left  { content: "{{ $footerText }}"; font: italic 8pt Arial; }
-            @bottom-right { content: counter(page); font: italic 8pt Arial; }
+        /* ================= PREVIEW LAYAR BROWSER ================= */
+        @page { size: A4; margin: 20mm 15mm 20mm 20mm; }
+        body { background: #334155; }
+        .sheet, .cover-wrapper, .back-cover-wrapper {
+            width: 210mm;
+            max-width: 100%;
+            margin: 20px auto;
+            background: #ffffff;
+            padding: 20mm 15mm 20mm 20mm;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.25);
+            border-radius: 3px;
         }
-        @page bleed { margin: 0; @bottom-left { content: none } @bottom-right { content: none } }
-        body { background: #525659; }
-        .sheet { width: 210mm; max-width: 100%; margin: 15px auto; background: #fff; padding: 15mm 15mm 15mm 20mm; box-shadow: 0 4px 15px rgba(0,0,0,.25); }
-        .bleed { page: bleed; width: 210mm; max-width: 100%; min-height: 297mm; margin: 15px auto; padding: 25mm 20mm 20mm; box-shadow: 0 4px 15px rgba(0,0,0,.25); }
+        .cover-wrapper, .back-cover-wrapper {
+            padding: 15mm 15mm 15mm 15mm;
+        }
         .running-footer { display: none; }
-        .preview-toolbar { position: sticky; top: 0; z-index: 9999; background: #1e293b; color: #fff; padding: 10px 20px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
-        .preview-toolbar a, .preview-toolbar button { font: bold 12px Arial, sans-serif; padding: 6px 14px; border-radius: 6px; text-decoration: none; cursor: pointer; border: 0; color: #fff; display: inline-block; }
-        .btn-back { background: #475569; } .btn-print { background: #2563eb; } .btn-pdf { background: #dc2626; } .btn-word { background: #2563eb; }
+
+        /* Modern Glassmorphic Preview Toolbar */
+        .preview-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 9999;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            color: #fff;
+            padding: 10px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .btn-tb {
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 7px 14px;
+            border-radius: 6px;
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid transparent;
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-tb:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .btn-tb-back { background: #334155; border-color: #475569; }
+        .btn-tb-back:hover { background: #475569; }
+        .btn-tb-print { background: #2563eb; }
+        .btn-tb-print:hover { background: #1d4ed8; }
+        .btn-tb-pdf { background: #dc2626; }
+        .btn-tb-pdf:hover { background: #b91c1c; }
+        .btn-tb-word { background: #0891b2; }
+        .btn-tb-word:hover { background: #0e7490; }
+        
+        .doc-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(30, 58, 138, 0.5);
+            border: 1px solid rgba(147, 197, 253, 0.3);
+            color: #bfdbfe;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 600;
+        }
+        .doc-badge-dot {
+            width: 7px;
+            height: 7px;
+            background: #38bdf8;
+            border-radius: 50%;
+        }
+
         @media print {
-            body { background: none; }
-            .sheet { width: auto; margin: 0; padding: 0; box-shadow: none; }
-            .bleed { width: 100%; height: 297mm; margin: 0; box-shadow: none; }
-            .no-print { display: none !important; }
+            body { background: transparent !important; }
+            .sheet, .cover-wrapper, .back-cover-wrapper {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+            .no-print, .preview-toolbar { display: none !important; }
         }
         @endif
     </style>
@@ -532,112 +757,168 @@
 <body>
 
 @if($engine === 'dompdf')
-    {{-- harus pertama di body agar cover menimpanya --}}
+    {{-- Running footer fixed di bagian bawah setiap halaman --}}
     <div class="running-footer">
         <table><tr>
             <td style="text-align:left">{{ $footerText }}</td>
-            <td style="text-align:right"><span class="pagenum"></span></td>
+            <td style="text-align:right">Hal. <span class="pagenum"></span></td>
         </tr></table>
     </div>
 @endif
 
 @if($engine === 'browser')
     <div class="preview-toolbar no-print">
-        <div>
-            <a href="{{ route('lhr.show', $lhr->uuid) }}" class="btn-back">&larr; Kembali ke Ruang Kerja LHR</a>
-            <span style="font-size:13px;font-weight:bold;color:#cbd5e1;margin-left:8px">Dokumen LHR: {{ $nomorLhr }}</span>
+        <div class="toolbar-left">
+            <a href="{{ route('lhr.show', $lhr->uuid) }}" class="btn-tb btn-tb-back">
+                &larr; Kembali ke Ruang Kerja
+            </a>
+            <span class="doc-badge">
+                <span class="doc-badge-dot"></span>
+                <span>Dokumen LHR: {{ $nomorLhr }}</span>
+            </span>
         </div>
-        <div>
-            <button type="button" class="btn-print" onclick="window.print()">&#128438; Cetak / Print Browser</button>
-            <a href="{{ route('lhr.pdf', $lhr->uuid) }}" class="btn-pdf">&#128190; Unduh PDF</a>
-            <a href="{{ route('lhr.word', $lhr->uuid) }}" class="btn-word">&#128196; Unduh Word (.docx)</a>
+        <div class="toolbar-right">
+            <button type="button" class="btn-tb btn-tb-print" onclick="window.print()">
+                &#128438; Cetak Dokumen
+            </button>
+            <a href="{{ route('lhr.pdf', $lhr->uuid) }}" class="btn-tb btn-tb-pdf">
+                &#128190; Unduh PDF
+            </a>
+            <a href="{{ route('lhr.word', $lhr->uuid) }}" class="btn-tb btn-tb-word">
+                &#128196; Unduh Word (.docx)
+            </a>
         </div>
     </div>
 @endif
 
-{{-- ==================== COVER ==================== --}}
-<section class="bleed">
-    <div class="cover-header">
-        <p style="margin:0">KABUPATEN REMBANG</p>
-        <p style="margin:0">INSPEKTORAT DAERAH KABUPATEN REMBANG</p>
+{{-- ==================== COVER RESMI EKSEKUTIF ==================== --}}
+<section class="cover-wrapper">
+    <div class="cover-inner-border">
+        <p class="cover-header-instansi">PEMERINTAH KABUPATEN REMBANG</p>
+        <p class="cover-header-sub">INSPEKTORAT DAERAH</p>
+        <div class="cover-gold-bar"></div>
+
+        <div style="margin: 16px 0 8px;">
+            <img src="{{ $logoSrc }}" alt="Logo Rembang" class="cover-logo-img">
+            <p class="cover-berakhlak">BerAKHLAK</p>
+            <p class="cover-berakhlak-sub">Bangga Melayani Bangsa</p>
+        </div>
+
+        <div class="cover-title-box">
+            <div class="cover-main-title">LAPORAN HASIL REVIU</div>
+            <div class="cover-sub-title">DOKUMEN RANCANGAN AKHIR<br>RENCANA KERJA PEMERINTAH DAERAH (RKPD)<br>KABUPATEN REMBANG TAHUN {{ $tahun }}</div>
+            <div class="cover-unit-badge">{{ $namaUnit }}</div>
+        </div>
+
+        <div class="cover-meta-card">
+            <table class="plain">
+                <tr>
+                    <td class="cover-meta-label">Nomor LHR</td>
+                    <td style="width: 10px;">:</td>
+                    <td class="cover-meta-val">{{ $nomorLhr }}</td>
+                </tr>
+                <tr>
+                    <td class="cover-meta-label">Tanggal</td>
+                    <td>:</td>
+                    <td class="cover-meta-val">{{ $tanggalLhr }}</td>
+                </tr>
+                <tr>
+                    <td class="cover-meta-label">Sifat Dokumen</td>
+                    <td>:</td>
+                    <td class="cover-meta-val" style="color: #1e3a8a;">Rahasia / Terbatas</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="cover-year-bottom">
+            <div>INSPEKTORAT DAERAH KABUPATEN REMBANG</div>
+            <div style="font-size: 11pt; margin-top: 3px; color: #1e3a8a;">TAHUN {{ $tahunTerbit }}</div>
+        </div>
     </div>
-    <div style="margin-top:25px">
-        <img src="{{ $logoSrc }}" alt="Logo Rembang" class="cover-logo">
-        <p style="font-weight:bold;font-size:10pt;margin:5px 0">BerAKHLAK</p>
-        <p style="font-size:8pt;margin:0">bangga melayani bangsa</p>
-    </div>
-    <div class="cover-title">
-        LAPORAN HASIL REVIU<br>
-        DOKUMEN RANCANGAN AKHIR<br>
-        RENCANA KERJA PEMERINTAH DAERAH (RKPD) KABUPATEN REMBANG<br>
-        TAHUN {{ $tahun }}<br>
-        <span style="font-size:12pt;text-transform:uppercase">{{ $namaUnit }}</span>
-    </div>
-    <div class="cover-meta">
-        <table class="plain" style="font-size:10pt">
-            <tr><td style="width:100px">Nomor</td><td>: {{ $nomorLhr }}</td></tr>
-            <tr><td>Tanggal</td><td>: {{ $tanggalLhr }}</td></tr>
-        </table>
-    </div>
-    <div class="cover-year">{{ $tahunTerbit }}</div>
 </section>
 
 {{-- ==================== ISI LAPORAN (mengalir otomatis antar halaman) ==================== --}}
 <main class="sheet">
 
-    {{-- Surat pengantar --}}
-    <div class="header-kop">
-        <h3>PEMERINTAH KABUPATEN REMBANG</h3>
-        <h2>INSPEKTORAT DAERAH</h2>
-        <p>JL. RAYA REMBANG LASEM KM. 1.1 REMBANG TELP. (0295) 691320</p>
-        <p>Fax. (0295) 693525 Rembang - 59219 Email: Inspektorat@rembangkab.go.id</p>
-    </div>
-
-    <table class="plain surat-meta">
+    {{-- Kop surat resmi --}}
+    <table class="kop-table">
         <tr>
-            <td style="width:15%">Nomor</td><td style="width:2%">:</td>
-            <td style="width:48%">{{ $nomorLhr }}</td>
-            <td style="width:35%">Rembang, {{ $tanggalLhr }}</td>
+            <td style="width: 15%; text-align: center; vertical-align: middle;">
+                <img src="{{ $logoSrc }}" alt="Logo Rembang" style="width: 66px; height: auto;">
+            </td>
+            <td style="width: 85%; text-align: center; vertical-align: middle; padding-left: 6px;">
+                <div class="kop-pemkab">PEMERINTAH KABUPATEN REMBANG</div>
+                <div class="kop-instansi">INSPEKTORAT DAERAH</div>
+                <div class="kop-alamat">JL. RAYA REMBANG - LASEM KM. 1.1 REMBANG, JAWA TENGAH 59219</div>
+                <div class="kop-kontak">Telp. (0295) 691320 | Fax. (0295) 693525 | Email: inspektorat@rembangkab.go.id</div>
+            </td>
         </tr>
-        <tr><td>Lampiran</td><td>:</td><td>-</td><td></td></tr>
+    </table>
+    <div class="kop-line"></div>
+
+    <table class="plain surat-meta" style="margin-bottom: 12px;">
         <tr>
-            <td>Perihal</td><td>:</td>
-            <td>Hasil Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }}</td>
-            <td>Kepada Yth.<br>Kepala {{ $namaUnit }}<br>di - REMBANG</td>
+            <td style="width: 13%;">Nomor</td>
+            <td style="width: 2%;">:</td>
+            <td style="width: 47%;">{{ $nomorLhr }}</td>
+            <td style="width: 38%;">Rembang, {{ $tanggalLhr }}</td>
+        </tr>
+        <tr>
+            <td>Sifat</td>
+            <td>:</td>
+            <td>Rahasia</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Lampiran</td>
+            <td>:</td>
+            <td>-</td>
+            <td>Kepada Yth.</td>
+        </tr>
+        <tr>
+            <td>Perihal</td>
+            <td>:</td>
+            <td style="font-weight: 600;">Hasil Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }}</td>
+            <td>
+                Kepala {{ $namaUnit }}<br>
+                di - <span style="text-decoration: underline;">REMBANG</span>
+            </td>
         </tr>
     </table>
 
-    <div class="text-justify" style="margin-top:12px">
+    <div class="text-justify" style="margin-top: 14px;">
         <p>Inspektorat Daerah Kabupaten Rembang sebagai Aparat Pengawasan Intern Pemerintah telah melakukan reviu atas Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }} berupa pengujian terbatas terhadap substansi yang termuat pada Rancangan Akhir Rencana Kerja Pemerintah Daerah. Reviu ditujukan untuk membantu terlaksananya penyusunan dan penyajikan dokumen Rencana Kerja Pemerintah Daerah (RKPD) serta memberikan keyakinan terbatas mengenai kepatuhan dan keabsahan informasi yang disajikan telah sesuai dengan kaidah-kaidah perencanaan, sehingga dapat menghasilkan dokumen Rencana Kerja Pemerintah Daerah (RKPD) yang berkualitas.</p>
         <p>Dalam pelaksanaan reviu, kami telah melakukan serangkaian aktivitas untuk menguji proses penyusunan atas penyajian dan substansi dalam dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Tahun {{ $tahun }} dengan dokumen pendukung lainnya, permintaan keterangan mengenai proses penyusunan untuk mengetahui hubungan dan hal-hal yang tidak terdapat dalam dokumen penyajian. Bersama ini kami sampaikan Laporan Hasil Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }}. Uraian rinci atas pelaksanaan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }} adalah sebagai berikut:</p>
     </div>
 
     {{-- A. Pernyataan --}}
-    <h4 class="new-page">A. Pernyataan Reviu</h4>
+    <h4 class="sec-h4 new-page">A. Pernyataan Reviu</h4>
     <p class="text-justify">Kami telah mereviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }} dengan mempedomani Peraturan Menteri Dalam Negeri Republik Indonesia Nomor 3 Tahun 2026 tentang Reviu Dokumen Perencanaan Pembangunan Daerah dan Dokumen Keuangan Daerah. Semua informasi yang dimuat dalam laporan adalah penyajian manajemen Badan Perencanaan Pembangunan Daerah Kabupaten Rembang dan Aplikasi Sistem Informasi Pemerintahan Daerah Kementerian Dalam Negeri Republik Indonesia.</p>
     <p class="text-justify">Reviu dilaksanakan sesuai dengan Peraturan Menteri Dalam Negeri Republik Indonesia Nomor 3 Tahun 2026 tentang Reviu Dokumen Perencanaan Pembangunan Daerah dan Dokumen Keuangan Daerah, yaitu tertera dalam:</p>
-    <table class="plain text-justify">
-        <tr><td style="width:100px;font-weight:bold">Pasal 2 ayat (1)</td><td>: APIP Daerah melaksanakan Reviu terhadap: a. dokumen Perencanaan Pembangunan Daerah; dan b. dokumen Keuangan Daerah;</td></tr>
-        <tr><td style="font-weight:bold">Pasal 3 ayat (1)</td><td>: Dokumen Perencanaan Pembangunan Daerah sebagaimana dimaksud dalam Pasal 2 ayat (1) huruf a, terdiri atas: a. rancangan akhir RPJMD; b. rancangan akhir Renstra Perangkat Daerah; dan c. rancangan akhir RKPD.</td></tr>
-        <tr><td style="font-weight:bold">Pasal 8</td><td>: Ketentuan lebih lanjut mengenai pedoman Reviu dokumen Perencanaan Pembangunan Daerah dan dokumen Keuangan Daerah tercantum dalam Lampiran yang merupakan bagian tidak terpisahkan dari Peraturan Menteri ini.</td></tr>
+    <table class="plain text-justify" style="margin: 4px 0 6px;">
+        <tr><td style="width: 110px; font-weight: bold; color: #1e3a8a;">Pasal 2 ayat (1)</td><td>: APIP Daerah melaksanakan Reviu terhadap: a. dokumen Perencanaan Pembangunan Daerah; dan b. dokumen Keuangan Daerah;</td></tr>
+        <tr><td style="font-weight: bold; color: #1e3a8a;">Pasal 3 ayat (1)</td><td>: Dokumen Perencanaan Pembangunan Daerah sebagaimana dimaksud dalam Pasal 2 ayat (1) huruf a, terdiri atas: a. rancangan akhir RPJMD; b. rancangan akhir Renstra Perangkat Daerah; dan c. rancangan akhir RKPD.</td></tr>
+        <tr><td style="font-weight: bold; color: #1e3a8a;">Pasal 8</td><td>: Ketentuan lebih lanjut mengenai pedoman Reviu dokumen Perencanaan Pembangunan Daerah dan dokumen Keuangan Daerah tercantum dalam Lampiran yang merupakan bagian tidak terpisahkan dari Peraturan Menteri ini.</td></tr>
     </table>
     <p class="text-justify">Reviu mempunyai lingkup yang jauh lebih sempit dibandingkan dengan lingkup audit yang dilakukan sesuai dengan peraturan terkait dengan tujuan audit.</p>
 
     {{-- B. Dasar hukum + tim --}}
-    <h4>B. Dasar Hukum Reviu</h4>
+    <h4 class="sec-h4">B. Dasar Hukum Reviu</h4>
     <ol class="text-justify">
         @foreach($dasarHukum as $dh)<li>{{ $dh }}</li>@endforeach
     </ol>
 
-    <div class="indent">
+    <div class="indent" style="margin-top: 8px;">
         @foreach($blokTim as $judulBlok => $orang)
-            <div class="nobreak">
-                <p style="font-weight:bold;margin:8px 0 2px">&#10148; {{ $judulBlok }}</p>
+            <div class="nobreak" style="margin-bottom: 8px;">
+                <div style="font-weight: bold; font-size: 8.5pt; color: #1e3a8a; background: #f1f5f9; padding: 2px 8px; border-left: 3px solid #1e3a8a; margin-bottom: 4px; display: inline-block; text-transform: uppercase;">
+                    {{ $judulBlok }}
+                </div>
                 @foreach($orang as $o)
-                    <table class="plain person nobreak" style="margin:0 0 4px">
-                        <tr><td>Nama</td><td>: {{ $o['nama'] }}</td></tr>
-                        <tr><td>NIP</td><td>: {{ $o['nip'] }}</td></tr>
-                        <tr><td>Jabatan</td><td>: {{ $o['jabatan'] }}</td></tr>
+                    <table class="plain person nobreak" style="margin: 0 0 3px 6px;">
+                        <tr><td style="width: 90px; color: #475569;">Nama</td><td>: <strong>{{ $o['nama'] }}</strong></td></tr>
+                        <tr><td style="color: #475569;">NIP</td><td>: {{ $o['nip'] }}</td></tr>
+                        <tr><td style="color: #475569;">Jabatan</td><td>: {{ $o['jabatan'] }}</td></tr>
                     </table>
                 @endforeach
             </div>
@@ -645,15 +926,15 @@
     </div>
 
     {{-- C–G --}}
-    <h4>C. Tujuan Reviu</h4>
+    <h4 class="sec-h4">C. Tujuan Reviu</h4>
     <p class="text-justify">Tujuan Reviu rancangan akhir Rencana Kerja Pemerintah Daerah (RKPD) yaitu untuk memberikan keyakinan terbatas bahwa Rencana Kerja Pemerintah Daerah telah disusun berpedoman kepada RPJMD, Rencana Kerja Pemerintah, Program Strategis Nasional, pedoman penyusunan RKPD dan kaidah-kaidah perencanaan pembangunan lainnya.</p>
 
-    <h4>D. Ruang Lingkup Reviu</h4>
+    <h4 class="sec-h4">D. Ruang Lingkup Reviu</h4>
     <p class="text-justify">Ruang lingkup reviu adalah pengujian atas penyusunan Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }} yang bersifat tahunan berupa Dokumen RKPD Tahun {{ $tahun }}.</p>
     <p>Ruang lingkup reviu mencakup pengujian terbatas atas:</p>
-    <p style="font-weight:bold;margin-bottom:0">&#10148; FORMAT</p>
-    <p style="margin:0 0 6px 15px">Kesesuaian Format Rancangan Akhir RKPD.</p>
-    <p style="font-weight:bold;margin-bottom:0">&#10148; SUBSTANSI</p>
+    <p style="font-weight: bold; color: #1e3a8a; margin: 4px 0 2px;">1. FORMAT</p>
+    <p style="margin: 0 0 6px 16px;">Kesesuaian Format Rancangan Akhir RKPD.</p>
+    <p style="font-weight: bold; color: #1e3a8a; margin: 4px 0 2px;">2. SUBSTANSI</p>
     <ol class="text-justify">
         @foreach($ruangLingkupSubstansi as $rl)
             @if(is_array($rl))
@@ -666,26 +947,26 @@
         @endforeach
     </ol>
 
-    <h4>E. Objek Reviu</h4>
+    <h4 class="sec-h4">E. Objek Reviu</h4>
     <p class="text-justify">Objek reviu adalah Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }}.</p>
 
-    <h4>F. Pelaksanaan Reviu</h4>
+    <h4 class="sec-h4">F. Pelaksanaan Reviu</h4>
     <p class="text-justify">Pelaksanaan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahun }} dilaksanakan mulai tanggal {{ $tanggalMulaiReviu }} sampai dengan selesai.</p>
 
-    <h4>G. Metodologi Reviu</h4>
+    <h4 class="sec-h4">G. Metodologi Reviu</h4>
     <p class="text-justify">Reviu dilaksanakan dengan menggunakan metodologi mengumpulkan dan melakukan penelaahan atas Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahun }}, konfirmasi, analisis dan prosedur lainnya terkait proses penyusunan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahun }}.</p>
 
-    <h4>H. Gambaran Umum</h4>
+    <h4 class="sec-h4">H. Gambaran Umum</h4>
     <ol class="text-justify">
         @foreach($gambaranUmum as $g)<li>{{ $g }}</li>@endforeach
     </ol>
 
     {{-- I. Uraian hasil --}}
-    <h4>I. Uraian Hasil Reviu</h4>
+    <h4 class="sec-h4">I. Uraian Hasil Reviu</h4>
     <p class="text-justify">Hasil pelaksanaan Reviu Dokumen Rancangan Akhir Rencana Kerja Pemerintah Daerah Kabupaten Rembang Tahun {{ $tahun }} dapat dijelaskan sebagai berikut:</p>
 
     {{-- 1. Simpulan --}}
-    <div class="sec-title">1. Simpulan</div>
+    <div class="sec-title" style="color: #1e3a8a;">1. Simpulan</div>
     <div class="indent">
         <div class="sec-title">a. Format</div>
         <div class="indent text-justify">
@@ -693,7 +974,7 @@
             {{ $getSimpulan($format['kode'], $format['simpulan']) }}
         </div>
 
-        <div class="sec-title">b. Substansi</div>
+        <div class="sec-title" style="margin-top: 8px;">b. Substansi</div>
         @foreach($substansi as $n => $u)
             <div class="item indent text-justify">
                 <b>{{ $n + 1 }}) {{ $u['judul'] }}</b>
@@ -714,7 +995,7 @@
     </div>
 
     {{-- 2. Catatan --}}
-    <div class="sec-title">2. Catatan</div>
+    <div class="sec-title" style="color: #1e3a8a; margin-top: 14px;">2. Catatan</div>
     <p class="text-justify">Berdasarkan reviu dokumen Rancangan Akhir RKPD Kabupaten Rembang tahun {{ $tahun }} terdapat catatan sebagai berikut:</p>
     <div class="indent">
         <div class="sec-title">a. Format</div>
@@ -722,27 +1003,27 @@
             <b>{{ $format['judul'] }}</b>
             {!! $catatanHtml($format['kode'], '<div class="note">' . $format['catatan'] . '</div>') !!}
         </div>
-        <table class="bordered" style="margin-left:15px;width:calc(100% - 15px)">
+        <table class="bordered" style="margin-left: 16px; width: calc(100% - 16px);">
             <thead>
                 <tr>
-                    <th style="width:10%">BAB</th>
-                    <th style="width:45%">Lampiran Permendagri No. 86 tahun 2017</th>
-                    <th style="width:45%">Rankir RKPD tahun {{ $tahun }}</th>
+                    <th style="width: 10%;">BAB</th>
+                    <th style="width: 45%;">Lampiran Permendagri No. 86 tahun 2017</th>
+                    <th style="width: 45%;">Rankir RKPD tahun {{ $tahun }}</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($formatRows as $r)
                     @php $b = !empty($r[3]); @endphp
                     <tr>
-                        <td>{{ $r[0] }}</td>
-                        <td>{!! $b ? '<b>'.e($r[1]).'</b>' : e($r[1]) !!}</td>
-                        <td>{!! $b ? '<b>'.e($r[2]).'</b>' : e($r[2]) !!}</td>
+                        <td class="c">{{ $r[0] }}</td>
+                        <td>{!! $b ? '<strong>'.e($r[1]).'</strong>' : e($r[1]) !!}</td>
+                        <td>{!! $b ? '<strong>'.e($r[2]).'</strong>' : e($r[2]) !!}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
 
-        <div class="sec-title">b. Substansi</div>
+        <div class="sec-title" style="margin-top: 10px;">b. Substansi</div>
         @foreach($substansi as $n => $u)
             <div class="item indent text-justify">
                 <b>{{ $n + 1 }}) {{ $u['judul'] }}</b>
@@ -757,7 +1038,7 @@
                 @elseif(!empty($u['tabel']))
                     @php $cats = $getCatatans($u['kode'])->values(); @endphp
                     <table class="bordered">
-                        <thead><tr><th style="width:8%">NO</th><th>CATATAN</th></tr></thead>
+                        <thead><tr><th style="width: 8%;">NO</th><th>CATATAN</th></tr></thead>
                         <tbody>
                         @if($cats->isNotEmpty())
                             @foreach($cats as $i => $cat)
@@ -793,7 +1074,7 @@
     </div>
 
     {{-- 3. Rekomendasi --}}
-    <div class="sec-title">3. Rekomendasi</div>
+    <div class="sec-title" style="color: #1e3a8a; margin-top: 14px;">3. Rekomendasi</div>
     <p class="text-justify">Berdasarkan hal tersebut, demi tersusunnya dokumen RKPD Kabupaten Rembang tahun {{ $tahun }} yang andal, akurat dan sebagai pedoman dalam penyusunan dokumen KUA-PPAS tahun {{ $tahun }} direkomendasikan beberapa hal sebagai berikut:</p>
     <div class="indent">
         <div class="sec-title">a. Format</div>
@@ -802,7 +1083,7 @@
             {!! $rekomHtml($format['kode'], '<div class="note">' . $format['rekom'] . '</div>') !!}
         </div>
 
-        <div class="sec-title">b. Substansi</div>
+        <div class="sec-title" style="margin-top: 10px;">b. Substansi</div>
         @foreach($rekomItems as $ri)
             <div class="item indent text-justify">
                 <b>{{ $ri['n'] }}) {{ $ri['u']['judul'] }}</b>
@@ -818,7 +1099,7 @@
                 @else {{-- tabel catatan | rekomendasi --}}
                     @php $rekoms = $getRekomendasis($ri['u']['kode'])->values(); @endphp
                     <table class="bordered">
-                        <thead><tr><th style="width:8%">NO</th><th style="width:46%">CATATAN</th><th style="width:46%">REKOMENDASI</th></tr></thead>
+                        <thead><tr><th style="width: 7%;">NO</th><th style="width: 46%;">CATATAN</th><th style="width: 47%;">REKOMENDASI</th></tr></thead>
                         <tbody>
                         @if($rekoms->isNotEmpty())
                             @foreach($rekoms as $i => $r)
@@ -851,18 +1132,19 @@
     </div>
 
     {{-- J. Apresiasi + TTD --}}
-    <div class="nobreak">
-        <h4>J. Apresiasi</h4>
+    <div class="nobreak" style="margin-top: 20px;">
+        <h4 class="sec-h4">J. Apresiasi</h4>
         <p class="text-justify">Demikian disampaikan hasil reviu atas rancangan akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang tahun {{ $tahun }}. Kami menyampaikan terima kasih atas bantuan dan kerjasama dari seluruh pejabat/pegawai pada Badan Perencanaan Pembangunan Daerah Kabupaten Rembang atas kesediaannya memberikan data/dokumen yang diperlukan, sehingga dapat mendukung terlaksananya kegiatan reviu Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) tahun {{ $tahun }}. Kami mengharapkan agar Saudara beserta seluruh jajaran untuk menindaklanjuti rekomendasi yang telah kami sampaikan.</p>
 
-        <table class="ttd">
+        <table class="ttd" style="page-break-inside: avoid; break-inside: avoid;">
             <tr>
-                <td style="width:50%"></td>
-                <td style="width:50%;text-align:center">
-                    <p style="margin-bottom:60px">INSPEKTUR DAERAH<br>KABUPATEN REMBANG</p>
-                    <p style="font-weight:bold;text-decoration:underline;margin:0">{{ $signer?->name ?? $defaultTeam['penanggung_jawab']['nama'] }}</p>
-                    <p style="margin:0">{{ $signer?->pangkat_gol ?? (\App\Models\User::find(2)?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)') }}</p>
-                    <p style="margin:0">NIP. {{ $signer?->nip ?? $defaultTeam['penanggung_jawab']['nip'] }}</p>
+                <td style="width: 50%;"></td>
+                <td style="width: 50%; text-align: center;">
+                    <p style="margin: 0; font-weight: bold; line-height: 1.3;">INSPEKTUR DAERAH<br>KABUPATEN REMBANG</p>
+                    <div style="height: 60px;"></div>
+                    <p style="font-weight: bold; text-decoration: underline; margin: 0; font-size: 10pt;">{{ $signer?->name ?? $defaultTeam['penanggung_jawab']['nama'] }}</p>
+                    <p style="margin: 2px 0 0; font-size: 8.5pt;">{{ $signer?->pangkat_gol ?? (\App\Models\User::find(2)?->pangkat_gol ?? 'Pembina Utama Ahli Muda (IV/c)') }}</p>
+                    <p style="margin: 2px 0 0; font-size: 8.5pt;">NIP. {{ $signer?->nip ?? $defaultTeam['penanggung_jawab']['nip'] }}</p>
                 </td>
             </tr>
         </table>
@@ -871,30 +1153,30 @@
     {{-- Lampiran dokumen pendukung --}}
     @if($attList && $attList->isNotEmpty())
         <div class="new-page">
-            <table class="plain" style="border-bottom:2px solid #1e3a8a;margin-bottom:12px">
+            <table class="plain" style="border-bottom: 2px solid #1e3a8a; margin-bottom: 12px; padding-bottom: 4px;">
                 <tr>
-                    <td style="width:50px;vertical-align:middle"><img src="{{ $logoSrc }}" alt="Logo" style="height:42px"></td>
-                    <td style="vertical-align:middle;padding-left:10px">
-                        <div style="font-size:11pt;font-weight:bold;color:#1e3a8a;text-transform:uppercase">INSPEKTORAT DAERAH KABUPATEN REMBANG</div>
-                        <div style="font-size:8.5pt;color:#475569">Lampiran Dokumen Pendukung Hasil Reviu RKPD Tahun {{ $tahun }}</div>
+                    <td style="width: 50px; vertical-align: middle;"><img src="{{ $logoSrc }}" alt="Logo" style="height: 40px;"></td>
+                    <td style="vertical-align: middle; padding-left: 10px;">
+                        <div style="font-size: 11pt; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">INSPEKTORAT DAERAH KABUPATEN REMBANG</div>
+                        <div style="font-size: 8.5pt; color: #475569;">Lampiran Dokumen Pendukung Hasil Reviu RKPD Tahun {{ $tahun }}</div>
                     </td>
                 </tr>
             </table>
-            <h3 class="text-center" style="font-size:11pt;text-transform:uppercase">DAFTAR LAMPIRAN DOKUMEN PENDUKUNG</h3>
+            <h3 class="text-center" style="font-size: 11pt; text-transform: uppercase; margin-bottom: 8px;">DAFTAR LAMPIRAN DOKUMEN PENDUKUNG</h3>
             <p class="text-justify">Berikut adalah daftar berkas dan dokumen pendukung perencanaan yang dihimpun, diverifikasi, dan ditelaah oleh Tim Reviu Inspektorat Daerah Kabupaten Rembang selama pelaksanaan reviu atas Rancangan Akhir Rencana Kerja Pemerintah Daerah (RKPD) Kabupaten Rembang Tahun {{ $tahun }}:</p>
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th style="width:5%">No</th>
-                        <th style="width:38%;text-align:left">Nama Dokumen / Berkas</th>
-                        <th style="width:32%;text-align:left">Keterangan / Uraian</th>
-                        <th style="width:12%">Format</th>
-                        <th style="width:13%;text-align:right">Ukuran</th>
+                        <th style="width: 5%;">No</th>
+                        <th style="width: 38%; text-align: left;">Nama Dokumen / Berkas</th>
+                        <th style="width: 32%; text-align: left;">Keterangan / Uraian</th>
+                        <th style="width: 12%;">Format</th>
+                        <th style="width: 13%; text-align: right;">Ukuran</th>
                     </tr>
                 </thead>
                 <tbody>
                 @foreach($attList as $i => $att)
-                    <tr style="background:{{ $i % 2 ? '#f8fafc' : '#fff' }}">
+                    <tr style="background: {{ $i % 2 ? '#f8fafc' : '#fff' }};">
                         <td class="c">{{ $i + 1 }}</td>
                         <td><strong>{{ $att->file_name }}</strong></td>
                         <td>{{ $att->keterangan ?: '-' }}</td>
@@ -910,11 +1192,11 @@
             @endphp
 
             @if($imageAttachments->isNotEmpty())
-                <div style="margin-top:25px">
-                    <h4 style="font-size:10.5pt;font-weight:bold;text-transform:uppercase;border-bottom:2px solid #1e3a8a;padding-bottom:5px;margin-bottom:15px;color:#1e3a8a">
+                <div style="margin-top: 25px;">
+                    <h4 style="font-size: 10.5pt; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #1e3a8a; padding-bottom: 5px; margin-bottom: 14px; color: #1e3a8a;">
                         DOKUMENTASI FOTO / BUKTI GAMBAR DOKUMEN PENDUKUNG
                     </h4>
-                    <p class="text-justify" style="font-size:9pt;margin-bottom:15px">
+                    <p class="text-justify" style="font-size: 9pt; margin-bottom: 14px;">
                         Berikut adalah dokumentasi visual berkas lampiran pendukung yang disertakan dalam pelaksanaan reviu perencanaan daerah:
                     </p>
                     
@@ -923,22 +1205,22 @@
                             $base64 = $imgAtt->base64_data;
                         @endphp
                         @if($base64)
-                            <div class="nobreak" style="margin-bottom:25px;padding:12px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:6px;text-align:center">
-                                <div style="margin-bottom:10px">
-                                    <img src="{{ $base64 }}" alt="{{ $imgAtt->file_name }}" style="max-width:95%;max-height:380px;display:inline-block;border:1px solid #94a3b8;border-radius:4px">
+                            <div class="nobreak" style="margin-bottom: 20px; padding: 12px; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 6px; text-align: center;">
+                                <div style="margin-bottom: 10px;">
+                                    <img src="{{ $base64 }}" alt="{{ $imgAtt->file_name }}" style="max-width: 95%; max-height: 380px; display: inline-block; border: 1px solid #94a3b8; border-radius: 4px;">
                                 </div>
-                                <table class="plain" style="width:100%;font-size:8.5pt;margin-top:8px;border-top:1px dashed #94a3b8;padding-top:6px;text-align:left">
+                                <table class="plain" style="width: 100%; font-size: 8.5pt; margin-top: 8px; border-top: 1px dashed #94a3b8; padding-top: 6px; text-align: left;">
                                     <tr>
-                                        <td style="width:20%;font-weight:bold;color:#334155">Gambar {{ $idx + 1 }}</td>
-                                        <td style="width:2%">:</td>
-                                        <td style="font-weight:bold;color:#0f172a">{{ $imgAtt->file_name }}</td>
-                                        <td style="width:20%;text-align:right;color:#64748b;font-family:monospace">{{ $imgAtt->file_size_formatted }}</td>
+                                        <td style="width: 20%; font-weight: bold; color: #334155;">Gambar {{ $idx + 1 }}</td>
+                                        <td style="width: 2%;">:</td>
+                                        <td style="font-weight: bold; color: #0f172a;">{{ $imgAtt->file_name }}</td>
+                                        <td style="width: 20%; text-align: right; color: #64748b; font-family: monospace;">{{ $imgAtt->file_size_formatted }}</td>
                                     </tr>
                                     @if($imgAtt->keterangan)
                                         <tr>
-                                            <td style="font-weight:bold;color:#334155">Keterangan</td>
+                                            <td style="font-weight: bold; color: #334155;">Keterangan</td>
                                             <td>:</td>
-                                            <td colspan="2" style="color:#1e293b">{{ $imgAtt->keterangan }}</td>
+                                            <td colspan="2" style="color: #1e293b;">{{ $imgAtt->keterangan }}</td>
                                         </tr>
                                     @endif
                                 </table>
@@ -948,24 +1230,22 @@
                 </div>
             @endif
 
-            <p style="font-size:8pt;color:#64748b;font-style:italic;margin-top:15px">* Seluruh berkas lampiran di atas tersimpan secara aman dan terenkripsi pada repositori arsip digital Sistem Informasi Pengawasan Terpadu dan Akuntabel (SIAPTUNTAS) Inspektorat Daerah Kabupaten Rembang.</p>
+            <p style="font-size: 8pt; color: #64748b; font-style: italic; margin-top: 15px;">* Seluruh berkas lampiran di atas tersimpan secara aman dan terenkripsi pada repositori arsip digital Sistem Informasi Pengawasan Terpadu dan Akuntabel (SIAPTUNTAS) Inspektorat Daerah Kabupaten Rembang.</p>
         </div>
     @endif
 </main>
 
-{{-- ==================== PENUTUP ==================== --}}
-<section class="bleed">
-    <div style="padding-top:60mm">
-        <img src="{{ $logoSrc }}" alt="Logo Rembang" style="width:150px;margin-bottom:20px">
-        <h2 style="font-size:18pt;margin:0 0 5px">INSPEKTORAT DAERAH</h2>
-        <h3 style="font-size:16pt;margin:0">KABUPATEN REMBANG</h3>
-        <p style="margin-top:40px;font-weight:bold">{{ $tahunTerbit }}</p>
+{{-- ==================== PENUTUP RESMI ==================== --}}
+<section class="back-cover-wrapper">
+    <div class="back-cover-inner">
+        <img src="{{ $logoSrc }}" alt="Logo Rembang" style="width: 100px; height: auto; margin-bottom: 18px;">
+        <h2 style="font-size: 15pt; font-weight: 800; color: #0f172a; margin: 0 0 4px; letter-spacing: 1px;">INSPEKTORAT DAERAH</h2>
+        <h3 style="font-size: 13pt; font-weight: 700; color: #1e3a8a; margin: 0; letter-spacing: 0.8px;">KABUPATEN REMBANG</h3>
+        <div style="height: 2px; background: #d97706; width: 60px; margin: 14px auto;"></div>
+        <p style="font-size: 8.5pt; color: #475569; margin: 4px 0;">Jl. Raya Rembang - Lasem Km. 1.1 Rembang, Jawa Tengah 59219</p>
+        <p style="margin-top: 35px; font-weight: 800; font-size: 11.5pt; color: #0f172a;">TAHUN {{ $tahunTerbit }}</p>
     </div>
 </section>
-
-@if($showBackCover)
-<section class="bleed"></section>
-@endif
 
 </body>
 </html>

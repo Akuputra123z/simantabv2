@@ -139,6 +139,7 @@ class LhrIndexSyncTest extends TestCase
         $response->assertSee('Irban I');
         $response->assertSee('Tuntas: 0/2');
         $response->assertSee('0%');
+        $response->assertSee('Reviu: Selesai 100%');
         $response->assertSee('Menunggu Tindak Lanjut OPD');
         $response->assertSee('Terbit Resmi');
     }

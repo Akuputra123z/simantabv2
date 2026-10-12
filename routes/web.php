@@ -161,6 +161,8 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('/{uuid}/review', [LhrController::class, 'review'])->name('review');
         Route::post('/{uuid}/approve', [LhrController::class, 'approve'])->name('approve');
         Route::post('/{uuid}/apply-standard-template', [LhrController::class, 'applyStandardTemplate'])->name('apply-standard-template');
+        Route::post('/{uuid}/tindak-lanjut/{tindakLanjut}/verifikasi', [LhrController::class, 'verifikasiTindakLanjut'])->name('tindak-lanjut.verifikasi');
+        Route::post('/{uuid}/tindak-lanjut/{tindakLanjut}/tolak', [LhrController::class, 'tolakTindakLanjut'])->name('tindak-lanjut.tolak');
     });
 
     // ── Master Data Reviu & Dasar Peraturan ──

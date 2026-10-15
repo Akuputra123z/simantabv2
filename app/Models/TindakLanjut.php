@@ -278,9 +278,9 @@ class TindakLanjut extends Model
                     $this->total_terbayar = max((float) $this->nilai_tindak_lanjut, $targetNilai);
                 } elseif ($this->status_verifikasi === 'berjalan') {
                     $nominal = (float) $this->nilai_tindak_lanjut;
-                    if ($nominal > 0) {
-                        $this->total_terbayar = min($nominal, $targetNilai);
-                    }
+                    $this->total_terbayar = $nominal > 0 ? min($nominal, $targetNilai) : 0;
+                } else {
+                    $this->total_terbayar = 0;
                 }
                 $this->jumlah_cicilan_realisasi = 0;
             }

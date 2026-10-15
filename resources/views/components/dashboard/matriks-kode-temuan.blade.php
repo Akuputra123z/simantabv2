@@ -228,7 +228,7 @@
                         </td>
                         <td class="py-3 px-4 text-slate-700 dark:text-slate-300 font-semibold max-w-[200px] truncate">
                             @if($rekom->temuan?->lhp?->unitDiperiksa)
-                                <a href="{{ route('lhps.show', $rekom->temuan->lhp->id) }}" class="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors">
+                                <a href="{{ route('lhps.show', $rekom->temuan->lhp) }}" class="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors">
                                     {{ $rekom->temuan->lhp->unitDiperiksa->nama_unit }}
                                 </a>
                             @else

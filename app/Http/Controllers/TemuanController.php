@@ -116,7 +116,7 @@ class TemuanController extends Controller
             // Setelah commit — data pasti tersimpan, statistik pasti baca data terbaru
             $this->statistikService->updateStatistik($temuan->lhp_id);
 
-            return redirect()->route('lhps.show', $temuan->lhp_id)
+            return redirect()->route('lhps.show', $temuan->lhp)
                 ->with('success', 'Temuan berhasil ditambahkan.');
 
         } catch (\Exception $e) {
@@ -252,7 +252,7 @@ class TemuanController extends Controller
             // 🔥 WAJIB: Hitung ulang statistik LHP agar Progress Bar di dashboard berubah
             $this->statistikService->updateStatistik($temuan->lhp_id);
 
-            return redirect()->route('lhps.show', $temuan->lhp_id)
+            return redirect()->route('lhps.show', $temuan->lhp)
                 ->with('success', 'Temuan diperbarui. Progres dihitung ulang berdasarkan nilai baru.');
 
         } catch (\Exception $e) {
@@ -303,7 +303,8 @@ class TemuanController extends Controller
             // 3. Update statistik
             $this->statistikService->updateStatistik($lhpId);
 
-            return redirect()->route('lhps.show', $lhpId)
+            $lhp = Lhp::find($lhpId);
+            return redirect()->route('lhps.show', $lhp ?? $lhpId)
                 ->with('success', 'Temuan dan file lampiran berhasil dihapus.');
 
         } catch (\Exception $e) {

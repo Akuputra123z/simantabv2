@@ -25,10 +25,10 @@
     <div class="space-y-3 min-h-[310px]">
       @forelse($unitKinerja as $index => $unit)
       @php
-        $lhpId = $unit['lhp_id'] ?? null;
+        $lhpTarget = $unit['lhp_uuid'] ?? $unit['lhp_id'] ?? null;
         $unitId = $unit['id'] ?? null;
-        if ($lhpId) {
-            $lhpShowUrl = route('lhps.show', $lhpId);
+        if ($lhpTarget) {
+            $lhpShowUrl = route('lhps.show', $lhpTarget);
         } elseif ($unitId) {
             $lhpShowUrl = route('lhps.index', ['unit_diperiksa_id' => $unitId]);
         } else {

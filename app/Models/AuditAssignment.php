@@ -214,7 +214,7 @@ class AuditAssignment extends Model
             return $query->whereRaw('1 = 0');
         }
 
-        if ($user->hasAnyRole(['super_admin', 'kepala_inspektorat'])) {
+        if ($user->hasAnyRole(['super_admin', 'kepala_inspektorat', 'staff_inspektorat'])) {
             return $query;
         }
 
@@ -256,15 +256,19 @@ class AuditAssignment extends Model
                     })
                     ->orWhere('ketua_tim_id', $user->id)
                     ->orWhere('created_by', $user->id)
-                    ->orWhereHas('members', fn ($mq) => $mq->where('user_id', $user->id));
+                    ->orWhereHas('members', fn ($mq) => $mq->where('user_id', $user->id))
+                    ->orWhereHas('lhps', fn ($lq) => $lq->where('created_by', $user->id));
             });
         }
 
         // Auditor (Ketua Tim / Anggota / Staf)
         return $query->where(function ($q) use ($user) {
             $q->where('ketua_tim_id', $user->id)
+                ->orWhere('pengendali_teknis_id', $user->id)
+                ->orWhere('pengendali_teknis', $user->name)
                 ->orWhere('created_by', $user->id)
-                ->orWhereHas('members', fn ($mq) => $mq->where('user_id', $user->id));
+                ->orWhereHas('members', fn ($mq) => $mq->where('user_id', $user->id))
+                ->orWhereHas('lhps', fn ($lq) => $lq->where('created_by', $user->id));
         });
     }
 }

@@ -39,9 +39,9 @@
 
                 @php
                     $tlRekom       = $tindakLanjut?->recommendation;
-                    $tlJenisRekom  = $tlRekom->jenis_rekomendasi ?? 'uang';
-                    $tlNilaiRekom  = (int) ($tlRekom->nilai_rekom ?? 0);
-                    $tlSisaRekom   = (int) ($tlRekom->nilai_sisa ?? 0);
+                    $tlJenisRekom  = $tlRekom?->jenis_rekomendasi ?? 'uang';
+                    $tlNilaiRekom  = (int) ($tlRekom?->nilai_rekom ?? 0);
+                    $tlSisaRekom   = (int) ($tlRekom?->nilai_sisa ?? 0);
                     $tlNilaiLama   = (int) old('nilai_tindak_lanjut', $tindakLanjut->nilai_tindak_lanjut);
                     $tlMaxNilai    = $tlJenisRekom === 'uang' ? ($tlSisaRekom + $tlNilaiLama) : 0;
                 @endphp
@@ -50,8 +50,8 @@
                 <div class="mb-5 rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-900 dark:bg-blue-900/20">
                     <p class="text-xs font-bold text-blue-600 uppercase mb-2">Rekomendasi Terkait</p>
                     <p class="text-sm text-gray-700 dark:text-gray-300">
-                        <strong>[{{ $tlRekom->temuan->lhp->nomor_lhp ?? '-' }}]</strong>
-                        {{ Str::limit(strip_tags($tlRekom->uraian_rekom ?? '-'), 160) }}
+                        <strong>[{{ $tlRekom?->temuan?->lhp?->nomor_lhp ?? '-' }}]</strong>
+                        {{ Str::limit(strip_tags($tlRekom?->uraian_rekom ?? '-'), 160) }}
                     </p>
                     <div class="mt-3 flex flex-wrap gap-4 border-t border-blue-100 pt-3 text-sm dark:border-blue-800">
                         <div>

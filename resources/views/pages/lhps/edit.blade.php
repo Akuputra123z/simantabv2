@@ -127,17 +127,52 @@ function lhpEditWizard() {
     return {
         step: 1,
 
-        selectedKategori: '{{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori ?? "" }}',
+        selectedKategori: @json($lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori ?? ''),
         kategoriWarningMessage: '',
         kategoriWarningUrl: '',
         kategoriWarningBtn: '',
-        programId: '{{ old("program_id", $lhp->auditAssignment?->auditProgramDetail?->audit_program_id) }}',
-        assignmentId: '{{ old("audit_assignment_id", $lhp->audit_assignment_id) }}',
-        unitId: '{{ old("unit_diperiksa_id", $lhp->unit_diperiksa_id) }}',
-        unitIds: {!! json_encode(array_values(array_map('strval', (array)old('unit_diperiksa_ids', $initialUnitIds)))) !!},
+        programId: @json((string)old("program_id", $lhp->auditAssignment?->auditProgramDetail?->audit_program_id ?? '')),
+        assignmentId: @json((string)old("audit_assignment_id", $lhp->audit_assignment_id ?? '')),
+        unitId: @json((string)old("unit_diperiksa_id", $lhp->unit_diperiksa_id ?? '')),
+        unitIds: @json(array_values(array_map('strval', (array)old('unit_diperiksa_ids', $initialUnitIds)))),
         availableUnits: [],
-        currentKategori: '{{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori ?? "PKPT" }}',
+        currentKategori: @json($lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori ?? 'PKPT'),
         isExternalAudit: {{ in_array($lhp->auditAssignment?->auditProgramDetail?->auditProgram?->kategori, ['BPK', 'BPKP', 'ITPROV', 'ITDA']) ? 'true' : 'false' }},
+
+        get currentAssignment() {
+            return ALL_ASSIGNMENTS.find(a => String(a.id) === String(this.assignmentId));
+        },
+
+        get currentAssignmentUnitsStatus() {
+            const ass = this.currentAssignment;
+            if (!ass || !ass.units) return { all: [], current: [], completedOther: [], remaining: [] };
+            const usedOtherIds = (USED_UNIT_MAP[ass.id] || []).map(String);
+            const myUnitIds = (this.unitIds && this.unitIds.length > 0) 
+                ? this.unitIds.map(String) 
+                : (this.unitId ? [String(this.unitId)] : INITIAL_UNIT_IDS.map(String));
+
+            const current = [];
+            const completedOther = [];
+            const remaining = [];
+
+            ass.units.forEach(u => {
+                const uIdStr = String(u.id);
+                if (myUnitIds.includes(uIdStr)) {
+                    current.push(u);
+                } else if (usedOtherIds.includes(uIdStr)) {
+                    completedOther.push(u);
+                } else {
+                    remaining.push(u);
+                }
+            });
+
+            return {
+                all: ass.units,
+                current,
+                completedOther,
+                remaining
+            };
+        },
 
         getProgramCountByKategori(kat) {
             if (!kat) return ALL_PROGRAMS.length;
@@ -147,17 +182,52 @@ function lhpEditWizard() {
         filterKategori(kat) {
             this.selectedKategori = kat;
             if (window.populateProgramsCascadeEdit) {
-                window.populateProgramsCascadeEdit(kat);
+                window.populateProgramsCascadeEdit(kat, true);
             }
         },
 
-        nomorLhp: '{{ old("nomor_lhp", $lhp->nomor_lhp) }}',
-        tanggalLhp: '{{ old("tanggal_lhp", $lhp->tanggal_lhp?->format("Y-m-d")) }}',
-        catatanUmum: '{{ old("catatan_umum", $lhp->catatan_umum) }}',
+        nomorLhp: @json(old("nomor_lhp", $lhp->nomor_lhp ?? '')),
+        tanggalLhp: @json(old("tanggal_lhp", $lhp->tanggal_lhp?->format("Y-m-d") ?? '')),
+        catatanUmum: @json(old("catatan_umum", $lhp->catatan_umum ?? '')),
         isNihil: {{ old("is_nihil", $lhp->is_nihil ? 1 : 0) ? 'true' : 'false' }},
+
+        get formatRecommendation() {
+            const kat = (this.currentKategori || this.selectedKategori || 'PKPT').toUpperCase();
+            const year = new Date().getFullYear();
+            if (kat === 'BPK') {
+                return {
+                    pattern: 'XX/LHP/XIX.PLK/05/' + year,
+                    label: 'Format BPK',
+                    sample: '12/LHP/XIX.PLK/05/' + year
+                };
+            } else if (kat === 'BPKP') {
+                return {
+                    pattern: 'PE.XX.XX/LHP-XXX/PW.XX/' + year,
+                    label: 'Format BPKP',
+                    sample: 'PE.01.03/LHP-045/PW.14/' + year
+                };
+            } else if (kat === 'ITPROV') {
+                return {
+                    pattern: '700.1.2.1/XXX/ITPROV/' + year,
+                    label: 'Format ITPROV',
+                    sample: '700.1.2.1/021/ITPROV/' + year
+                };
+            } else {
+                return {
+                    pattern: '700.1.2.1/XXX/ITDA/' + year,
+                    label: 'Format Standar ITDA / IRBAN',
+                    sample: '700.1.2.1/045/ITDA/' + year
+                };
+            }
+        },
+
+        applyFormatSample(sample) {
+            this.nomorLhp = sample;
+        },
 
         temuans: INITIAL_TEMUANS.length > 0 ? INITIAL_TEMUANS : [],
         attachments: [],
+        isDragging: false,
 
         // Modal & AJAX submit state
         showConfirmModal: false,
@@ -287,8 +357,8 @@ function lhpEditWizard() {
             const getRemainingUnitsCount = (ass) => {
                 const usedIds = (USED_UNIT_MAP[ass.id] || []).map(String);
                 if (!ass.units || ass.units.length === 0) return 0;
-                const currentLhpUnitIds = (this.unitIds || []).map(String);
-                return ass.units.filter(u => currentLhpUnitIds.includes(String(u.id)) || String(u.id) === String(this.unitId) || !usedIds.includes(String(u.id))).length;
+                const currentLhpUnitIds = INITIAL_UNIT_IDS.map(String);
+                return ass.units.filter(u => currentLhpUnitIds.includes(String(u.id)) || !usedIds.includes(String(u.id))).length;
             };
 
             const tsProgram = new TomSelect('#select-program', {
@@ -301,7 +371,8 @@ function lhpEditWizard() {
                 create: false,
                 placeholder: '-- Pilih Penugasan Audit / Surat Tugas --',
                 controlInput: '<input>',
-                maxOptions: null
+                maxOptions: null,
+                searchField: ['text', 'nomor_surat', 'detail_nama', 'program_nama', 'unit_names']
             });
             tsAssignment.disable();
 
@@ -316,7 +387,11 @@ function lhpEditWizard() {
 
             let isInit = true;
 
-            const populateProgramsCascadeEdit = (filterKat = '') => {
+            const populateProgramsCascadeEdit = (filterKat = '', preserveCurrent = true) => {
+                const prevProgId = this.programId;
+                const prevAssId = this.assignmentId;
+                const prevUnitIds = (this.unitIds && this.unitIds.length > 0) ? this.unitIds : (this.unitId ? [this.unitId] : INITIAL_UNIT_IDS);
+
                 tsProgram.clear();
                 tsProgram.clearOptions();
                 tsAssignment.clear();
@@ -355,7 +430,24 @@ function lhpEditWizard() {
                     this.kategoriWarningBtn = '';
                 }
 
-                filteredPrograms.forEach(p => {
+                // Saring program: Program LHP saat ini SELALU dimasukkan jika cocok dengan filter
+                const currentProgramId = @json((string)($lhp->auditAssignment?->auditProgramDetail?->audit_program_id ?? ''));
+                const availablePrograms = filteredPrograms.filter(p => {
+                    if (currentProgramId && String(p.id) === String(currentProgramId)) return true;
+                    const progAss = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(p.id));
+                    return progAss.some(a => getRemainingUnitsCount(a) > 0);
+                });
+
+                if (availablePrograms.length === 0) {
+                    tsProgram.addOption({
+                        value: '',
+                        text: filterKat ? `-- Tidak ada Program ${filterKat} yang memiliki sisa unit --` : '-- Belum ada program dengan sisa unit --'
+                    });
+                    tsProgram.setValue('', true);
+                    return;
+                }
+
+                availablePrograms.forEach(p => {
                     const progAss = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(p.id));
                     let totalRemainingUnits = 0;
                     progAss.forEach(a => {
@@ -363,10 +455,8 @@ function lhpEditWizard() {
                     });
 
                     let label = `[${p.kategori}] ${p.nama} (${p.tahun})`;
-                    if (p.assignments_count === 0) {
-                        label += ` — (Belum ada Surat Tugas)`;
-                    } else if (totalRemainingUnits === 0 && (!this.assignmentId || !progAss.some(a => String(a.id) === String(this.assignmentId)))) {
-                        label += ` — (Semua unit selesai LHP)`;
+                    if (currentProgramId && String(p.id) === String(currentProgramId)) {
+                        label += ` — (Program LHP Saat Ini, ${totalRemainingUnits} unit sisa)`;
                     } else {
                         label += ` — (${totalRemainingUnits} unit siap LHP)`;
                     }
@@ -378,6 +468,17 @@ function lhpEditWizard() {
                 });
 
                 tsProgram.refreshOptions(false);
+
+                // Preserve existing selection jika masih ada pada program yang tersedia
+                const targetProgId = prevProgId || currentProgramId;
+                if (preserveCurrent && targetProgId && availablePrograms.some(p => String(p.id) === String(targetProgId))) {
+                    tsProgram.setValue(String(targetProgId), true);
+                    this.programId = String(targetProgId);
+                    populateAssignments(targetProgId, prevAssId);
+                    if (prevAssId) {
+                        populateUnits(prevAssId, prevUnitIds);
+                    }
+                }
             };
 
             window.populateProgramsCascadeEdit = populateProgramsCascadeEdit;
@@ -388,34 +489,49 @@ function lhpEditWizard() {
 
                 if (!progId) return;
 
-                const filtered = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(progId));
+                let filtered = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(progId));
+
+                // Saring penugasan: Hanya tampilkan penugasan LHP ini, ATAU yang masih memiliki sisa unit
+                const currentAssId = @json((string)($lhp->audit_assignment_id ?? ''));
+                filtered = filtered.filter(a => {
+                    const isCurrentAss = currentAssId && String(a.id) === String(currentAssId);
+                    const isSelected = selectedAssId && String(a.id) === String(selectedAssId);
+                    return isCurrentAss || isSelected || getRemainingUnitsCount(a) > 0;
+                });
 
                 if (filtered.length === 0) {
-                    tsAssignment.addOption({ value: '', text: '-- Belum ada Surat Tugas pada program ini --' });
+                    tsAssignment.addOption({ value: '', text: '-- Tidak ada Surat Tugas pada program ini yang memiliki sisa unit --' });
                     tsAssignment.disable();
                     return;
                 }
 
                 filtered.forEach(a => {
                     const remaining = getRemainingUnitsCount(a);
-                    const isSelected = selectedAssId && String(a.id) === String(selectedAssId);
+                    const isCurrentAss = (currentAssId && String(a.id) === String(currentAssId)) || (selectedAssId && String(a.id) === String(selectedAssId));
                     let label = `[${a.kategori}] ${a.detail_nama}` + (a.nomor_surat ? ' — ' + a.nomor_surat : '');
-                    if (remaining > 0) {
-                        label += ` (${remaining} unit belum LHP)`;
-                    } else if (isSelected) {
-                        label += ` (LHP Saat Ini)`;
+                    if (isCurrentAss) {
+                        label += ` (Penugasan LHP Saat Ini)`;
                     } else {
-                        label += ` (Semua unit selesai LHP)`;
+                        label += ` (${remaining} unit belum LHP)`;
                     }
-                    tsAssignment.addOption({ value: a.id, text: label });
+                    const unitNames = (a.units || []).map(u => u.nama).join(', ');
+                    tsAssignment.addOption({
+                        value: a.id,
+                        text: label,
+                        nomor_surat: a.nomor_surat || '',
+                        detail_nama: a.detail_nama || '',
+                        program_nama: a.program_nama || '',
+                        unit_names: unitNames
+                    });
                 });
 
                 tsAssignment.enable();
-                if (selectedAssId) {
-                    tsAssignment.setValue(String(selectedAssId), true);
-                    this.assignmentId = String(selectedAssId);
+                const targetAssId = selectedAssId || (currentAssId && filtered.some(a => String(a.id) === String(currentAssId)) ? currentAssId : null);
+                if (targetAssId && filtered.some(a => String(a.id) === String(targetAssId))) {
+                    tsAssignment.setValue(String(targetAssId), true);
+                    this.assignmentId = String(targetAssId);
                     const hiddenAss = document.getElementById('hidden-assignment-id');
-                    if (hiddenAss) hiddenAss.value = String(selectedAssId);
+                    if (hiddenAss) hiddenAss.value = String(targetAssId);
                 } else if (filtered.length === 1 && (getRemainingUnitsCount(filtered[0]) > 0)) {
                     tsAssignment.setValue(String(filtered[0].id), false);
                 }
@@ -436,10 +552,19 @@ function lhpEditWizard() {
                     let selArray = [];
                     if (selectedUnitIds) {
                         selArray = Array.isArray(selectedUnitIds) ? selectedUnitIds.map(String) : [String(selectedUnitIds)];
-                    } else if (this.unitId) {
-                        selArray = [String(this.unitId)];
                     } else if (this.unitIds && this.unitIds.length > 0) {
                         selArray = this.unitIds.map(String);
+                    } else if (this.unitId) {
+                        selArray = [String(this.unitId)];
+                    }
+
+                    // Jika penugasan ini adalah penugasan LHP asli, pastikan INITIAL_UNIT_IDS selalu terikut
+                    const currentAssId = @json((string)($lhp->audit_assignment_id ?? ''));
+                    if (String(assId) === String(currentAssId)) {
+                        INITIAL_UNIT_IDS.forEach(uid => {
+                            const uStr = String(uid);
+                            if (!selArray.includes(uStr)) selArray.push(uStr);
+                        });
                     }
 
                     const available = assignment.units.filter(u =>
@@ -449,24 +574,37 @@ function lhpEditWizard() {
 
                     if (available.length === 0) {
                         tsUnit.addOption({ value: '', text: '-- Semua unit sudah dibuatkan LHP --' });
-                        tsUnit.enable();
+                        tsUnit.disable();
                         return;
                     }
 
-                    available.forEach(u => tsUnit.addOption({ value: String(u.id), text: u.nama }));
+                    available.forEach(u => {
+                        const isCurrent = selArray.includes(String(u.id));
+                        tsUnit.addOption({
+                            value: String(u.id),
+                            text: u.nama + (isCurrent ? ' (Unit LHP Saat Ini)' : ' (Belum dibuatkan LHP)')
+                        });
+                    });
                     tsUnit.enable();
 
+                    let targetUnitId = null;
                     if (selArray.length > 0 && available.some(u => String(u.id) === String(selArray[0]))) {
-                        tsUnit.setValue(String(selArray[0]), true);
-                        this.unitId = String(selArray[0]);
-                        this.unitIds = [this.unitId];
+                        targetUnitId = String(selArray[0]);
                     } else if (available.length === 1) {
-                        tsUnit.setValue(String(available[0].id), true);
-                        this.unitId = String(available[0].id);
-                        this.unitIds = [this.unitId];
+                        targetUnitId = String(available[0].id);
+                    }
+
+                    if (targetUnitId) {
+                        tsUnit.setValue(targetUnitId, true);
+                        this.unitId = targetUnitId;
+                        this.unitIds = [targetUnitId];
+                        const hiddenUnit = document.getElementById('hidden-unit-id');
+                        if (hiddenUnit) hiddenUnit.value = targetUnitId;
                     } else {
                         this.unitIds = [];
                         this.unitId = '';
+                        const hiddenUnit = document.getElementById('hidden-unit-id');
+                        if (hiddenUnit) hiddenUnit.value = '';
                     }
                 } else {
                     tsUnit.addOption({ value: '', text: '-- Tidak ada unit pada penugasan ini --' });
@@ -522,7 +660,7 @@ function lhpEditWizard() {
             });
 
             // Initial population
-            populateProgramsCascadeEdit(this.selectedKategori);
+            populateProgramsCascadeEdit(this.selectedKategori, true);
 
             if (!this.programId && this.assignmentId) {
                 const found = ALL_ASSIGNMENTS.find(a => String(a.id) === String(this.assignmentId));
@@ -586,7 +724,11 @@ function lhpEditWizard() {
 
         nextStep() {
             if (this.validateCurrentStep()) {
-                this.step = Math.min(4, this.step + 1);
+                if (this.isNihil && this.step === 1) {
+                    this.step = 4;
+                } else {
+                    this.step = Math.min(4, this.step + 1);
+                }
                 window.scrollTo({ top: 100, behavior: 'smooth' });
             } else {
                 this.showErrorModal = true;
@@ -762,12 +904,140 @@ function lhpEditWizard() {
             this.temuans[tIndex].recommendations.splice(rIndex, 1);
         },
 
-        addAttachment() {
-            this.attachments.push({ id: Date.now(), file_name: '', keterangan: '' });
+        // Logika Lampiran Berkas LHP (Step 1)
+        cleanFileName(name) {
+            if (!name) return '';
+            const parts = name.split('.');
+            if (parts.length > 1) parts.pop();
+            return parts.join('.');
+        },
+
+        formatBytes(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        },
+
+        getFileExt(name) {
+            if (!name) return 'FILE';
+            const parts = name.split('.');
+            return parts.length > 1 ? parts.pop().toUpperCase() : 'FILE';
+        },
+
+        addAttachment(initialFile = null) {
+            const id = Date.now() + Math.random().toString(36).substring(2, 7);
+            const newAtt = {
+                id: id,
+                file_name: initialFile ? this.cleanFileName(initialFile.name) : '',
+                raw_name: initialFile ? initialFile.name : '',
+                file_size: initialFile ? this.formatBytes(initialFile.size) : '',
+                file_ext: initialFile ? this.getFileExt(initialFile.name) : '',
+                keterangan: '',
+                has_file: !!initialFile
+            };
+            this.attachments.push(newAtt);
+
+            if (initialFile) {
+                this.$nextTick(() => {
+                    const el = document.getElementById('att-file-edit-' + id);
+                    if (el) {
+                        try {
+                            const dt = new DataTransfer();
+                            dt.items.add(initialFile);
+                            el.files = dt.files;
+                        } catch (e) {
+                            console.warn('DataTransfer not fully supported for programmatic file assignment', e);
+                        }
+                    }
+                });
+            } else {
+                this.$nextTick(() => {
+                    document.getElementById('att-file-edit-' + id)?.click();
+                });
+            }
         },
 
         removeAttachment(index) {
             this.attachments.splice(index, 1);
+        },
+
+        triggerSingleFilePicker(attId) {
+            document.getElementById('att-file-edit-' + attId)?.click();
+        },
+
+        processBatchFiles(fileList) {
+            const allowed = ['pdf', 'jpg', 'jpeg', 'png'];
+            const maxBytes = 10 * 1024 * 1024; // 10 MB
+
+            for (let i = 0; i < fileList.length; i++) {
+                const file = fileList[i];
+                const ext = this.getFileExt(file.name).toLowerCase();
+                
+                if (!allowed.includes(ext)) {
+                    this.stepErrors = [`Format berkas "${file.name}" tidak diizinkan. Harap unggah format PDF, JPG, atau PNG.`];
+                    this.showErrorModal = true;
+                    continue;
+                }
+
+                if (file.size > maxBytes) {
+                    this.stepErrors = [`Ukuran berkas "${file.name}" (${this.formatBytes(file.size)}) melebihi batas 10 MB.`];
+                    this.showErrorModal = true;
+                    continue;
+                }
+
+                this.addAttachment(file);
+            }
+        },
+
+        handleMasterFileInput(event) {
+            const files = event.target.files;
+            if (files && files.length > 0) {
+                this.processBatchFiles(files);
+            }
+            event.target.value = '';
+        },
+
+        handleMasterDrop(event) {
+            event.preventDefault();
+            this.isDragging = false;
+            const files = event.dataTransfer ? event.dataTransfer.files : null;
+            if (files && files.length > 0) {
+                this.processBatchFiles(files);
+            }
+        },
+
+        onSingleFileSelected(event, att) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            const allowed = ['pdf', 'jpg', 'jpeg', 'png'];
+            const ext = this.getFileExt(file.name).toLowerCase();
+            const maxBytes = 10 * 1024 * 1024;
+
+            if (!allowed.includes(ext)) {
+                this.stepErrors = [`Format berkas "${file.name}" tidak diizinkan. Harap gunakan PDF, JPG, atau PNG.`];
+                this.showErrorModal = true;
+                event.target.value = '';
+                return;
+            }
+
+            if (file.size > maxBytes) {
+                this.stepErrors = [`Ukuran berkas "${file.name}" (${this.formatBytes(file.size)}) melebihi batas 10 MB.`];
+                this.showErrorModal = true;
+                event.target.value = '';
+                return;
+            }
+
+            att.raw_name = file.name;
+            att.file_size = this.formatBytes(file.size);
+            att.file_ext = ext.toUpperCase();
+            att.has_file = true;
+
+            if (!att.file_name || att.file_name.trim() === '') {
+                att.file_name = this.cleanFileName(file.name);
+            }
         },
 
         fmtRupiah(num) {
@@ -1074,11 +1344,11 @@ function lhpEditWizard() {
                                 : (canGoToStep(2) ? 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/70 dark:border-gray-800/80 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300' : 'border-gray-100 bg-gray-100/40 text-gray-400 dark:border-gray-800/40 dark:bg-gray-800/20 cursor-not-allowed opacity-60')">
                         <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors"
                              :class="step === 2 ? 'bg-blue-600 text-white' : (canGoToStep(3) ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400')">
-                            <span x-text="canGoToStep(3) &amp;&amp; step !== 2 ? '✓' : (canGoToStep(2) ? '2' : '2')"></span>
+                            <span x-text="canGoToStep(3) && step !== 2 ? '✓' : (canGoToStep(2) ? '2' : '2')"></span>
                         </div>
                         <div class="min-w-0 flex-1">
                             <p class="text-xs font-bold">2. Temuan Audit</p>
-                            <p class="mt-0.5 truncate text-[11px] opacity-75" x-text="`${temuans.length} Temuan`"></p>
+                            <p class="mt-0.5 truncate text-[11px] opacity-75" x-text="isNihil ? 'Dilewati (Nihil)' : `${temuans.length} Temuan`"></p>
                         </div>
                     </button>
 
@@ -1090,11 +1360,11 @@ function lhpEditWizard() {
                                 : (canGoToStep(3) ? 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/70 dark:border-gray-800/80 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300' : 'border-gray-100 bg-gray-100/40 text-gray-400 dark:border-gray-800/40 dark:bg-gray-800/20 cursor-not-allowed opacity-60')">
                         <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors"
                              :class="step === 3 ? 'bg-blue-600 text-white' : (canGoToStep(4) ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400')">
-                            <span x-text="canGoToStep(4) &amp;&amp; step !== 3 ? '✓' : (canGoToStep(3) ? '3' : '3')"></span>
+                            <span x-text="canGoToStep(4) && step !== 3 ? '✓' : (canGoToStep(3) ? '3' : '3')"></span>
                         </div>
                         <div class="min-w-0 flex-1">
                             <p class="text-xs font-bold">3. Rekomendasi</p>
-                            <p class="mt-0.5 truncate text-[11px] opacity-75" x-text="`${totalRekomCount} Rekomendasi`"></p>
+                            <p class="mt-0.5 truncate text-[11px] opacity-75" x-text="isNihil ? 'Dilewati (Nihil)' : `${totalRekomCount} Rekomendasi`"></p>
                         </div>
                     </button>
 
@@ -1123,22 +1393,22 @@ function lhpEditWizard() {
                 <div class="space-y-3 text-xs">
                     <div class="rounded-xl bg-rose-50/80 p-3.5 border border-rose-100 dark:bg-rose-900/20 dark:border-rose-900/40">
                         <span class="text-[10px] font-bold uppercase tracking-wider text-rose-500">Plafon Kerugian Temuan</span>
-                        <p class="mt-1 text-lg font-extrabold text-rose-700 dark:text-rose-300" x-text="fmtRupiah(totalKerugianSum)"></p>
+                        <p class="mt-1 text-lg font-extrabold text-rose-700 dark:text-rose-300" x-text="isNihil ? 'Rp 0' : fmtRupiah(totalKerugianSum)"></p>
                     </div>
 
                     <div class="rounded-xl bg-blue-50/80 p-3.5 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/40">
                         <span class="text-[10px] font-bold uppercase tracking-wider text-blue-500">Nilai Rekomendasi</span>
-                        <p class="mt-1 text-lg font-extrabold text-blue-700 dark:text-blue-300" x-text="fmtRupiah(totalNilaiRekomSum)"></p>
+                        <p class="mt-1 text-lg font-extrabold text-blue-700 dark:text-blue-300" x-text="isNihil ? 'Rp 0' : fmtRupiah(totalNilaiRekomSum)"></p>
                     </div>
 
                     <div class="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-2">
                         <div class="flex justify-between text-slate-600 dark:text-slate-400">
                             <span>Total Temuan:</span>
-                            <strong class="text-slate-900 dark:text-white" x-text="`${temuans.length} Temuan`"></strong>
+                            <strong class="text-slate-900 dark:text-white" x-text="isNihil ? '0 (Nihil)' : `${temuans.length} Temuan`"></strong>
                         </div>
                         <div class="flex justify-between text-slate-600 dark:text-slate-400">
                             <span>Total Rekomendasi:</span>
-                            <strong class="text-slate-900 dark:text-white" x-text="`${totalRekomCount} Rekomendasi`"></strong>
+                            <strong class="text-slate-900 dark:text-white" x-text="isNihil ? '0 (Nihil)' : `${totalRekomCount} Rekomendasi`"></strong>
                         </div>
                     </div>
                 </div>
@@ -1176,6 +1446,7 @@ function lhpEditWizard() {
                     <input type="hidden" name="unit_diperiksa_ids[]" :value="uid">
                 </template>
                 <input type="hidden" name="unit_diperiksa_id" id="hidden-unit-id" :value="unitIds[0] || unitId">
+                <input type="hidden" name="is_nihil" :value="isNihil ? 1 : 0">
 
         {{-- ── STEP 1: INFORMASI UTAMA & LAMPIRAN ── --}}
         <div x-show="step === 1" x-cloak>
@@ -1186,9 +1457,117 @@ function lhpEditWizard() {
                 </div>
 
                 <div class="p-6 space-y-6">
-                    <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    {{-- ── 1. IDENTITAS DOKUMEN LHP ── --}}
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 dark:border-gray-700 dark:bg-gray-900/50 space-y-4">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold">1</span>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+                                Identitas Dokumen LHP
+                            </h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            {{-- Nomor LHP --}}
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                                    Nomor LHP <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="nomor_lhp" x-model="nomorLhp" required
+                                       placeholder="Contoh: 700.1.2.1/045/ITDA/2026"
+                                       class="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 font-mono focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                
+                                {{-- Format Rekomendasi Chip --}}
+                                <div class="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                                    <span>Rekomendasi (<span x-text="formatRecommendation.label"></span>):</span>
+                                    <button type="button" @click="applyFormatSample(formatRecommendation.sample)"
+                                            class="font-mono font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition inline-flex items-center gap-1 cursor-pointer">
+                                        <span x-text="formatRecommendation.sample"></span>
+                                        <span class="text-[9px] uppercase tracking-wider text-blue-500 font-sans font-bold">Gunakan</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{-- Tanggal LHP --}}
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                                    Tanggal LHP <span class="text-red-500">*</span>
+                                </label>
+                                <input type="date" name="tanggal_lhp" x-model="tanggalLhp" onclick="this.showPicker()" required
+                                       class="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ── 2. PARAMETER & OBJEK AUDIT ── --}}
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900/70 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold">2</span>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+                                    Parameter &amp; Objek Audit
+                                </h3>
+                            </div>
+                            <span class="inline-flex items-center gap-1 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 px-2.5 py-1 text-[11px] font-medium border border-blue-200/60 dark:border-blue-800/60">
+                                <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                <span>Terhubung ke Surat Tugas</span>
+                            </span>
+                        </div>
+
+                        {{-- Dynamic Surat Tugas & Objek Audit Context Card --}}
+                        <div x-show="currentAssignment" x-cloak class="rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50/60 to-indigo-50/40 p-4 dark:border-blue-900/30 dark:bg-gray-800/60 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold">📋</span>
+                                    <span class="text-xs font-bold text-gray-900 dark:text-white">Ringkasan Penugasan &amp; Objek Audit</span>
+                                </div>
+                                <span class="rounded bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200 px-2 py-0.5 text-[10px] font-bold"
+                                      x-text="currentAssignment?.kategori || 'PKPT'"></span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                <div class="rounded-lg bg-white/80 dark:bg-gray-800/80 p-2.5 border border-blue-100/60 dark:border-gray-700">
+                                    <span class="text-gray-400 block text-[10px] font-semibold uppercase">Nomor Surat Tugas:</span>
+                                    <p class="font-semibold text-gray-900 dark:text-white mt-0.5" x-text="currentAssignment?.nomor_surat || ('Penugasan #' + currentAssignment?.id)"></p>
+                                </div>
+                                <div class="rounded-lg bg-white/80 dark:bg-gray-800/80 p-2.5 border border-blue-100/60 dark:border-gray-700">
+                                    <span class="text-gray-400 block text-[10px] font-semibold uppercase">Program Kerja &amp; Kegiatan:</span>
+                                    <p class="font-semibold text-gray-900 dark:text-white mt-0.5 truncate" x-text="`${currentAssignment?.program_nama || '-'} (${currentAssignment?.detail_nama || '-'})`"></p>
+                                </div>
+                            </div>
+
+                            {{-- Status Objek Audit pada Surat Tugas Ini --}}
+                            <div class="pt-2 border-t border-blue-100/80 dark:border-gray-700/80 space-y-2">
+                                <div class="flex items-center justify-between text-[11px]">
+                                    <span class="text-gray-600 dark:text-gray-400 font-medium">Status Objek Audit pada Surat Tugas ini:</span>
+                                    <span class="text-[11px] font-bold text-blue-700 dark:text-blue-300"
+                                          x-text="`${(currentAssignmentUnitsStatus.current.length + currentAssignmentUnitsStatus.completedOther.length)} dari ${currentAssignmentUnitsStatus.all.length} Unit Selesai LHP`"></span>
+                                </div>
+
+                                <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+                                    {{-- Unit LHP Ini --}}
+                                    <template x-for="u in currentAssignmentUnitsStatus.current" :key="u.id">
+                                        <span class="inline-flex items-center gap-1 rounded-md bg-blue-600 text-white px-2 py-0.5 font-bold shadow-xs">
+                                            <span>🔵</span> <span x-text="u.nama + ' (LHP Ini)'"></span>
+                                        </span>
+                                    </template>
+                                    {{-- Unit LHP Lain yang sudah selesai --}}
+                                    <template x-for="u in currentAssignmentUnitsStatus.completedOther" :key="u.id">
+                                        <span class="inline-flex items-center gap-1 rounded-md bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 px-2 py-0.5">
+                                            <span>✓</span> <span x-text="u.nama + ' (LHP Lain)'"></span>
+                                        </span>
+                                    </template>
+                                    {{-- Unit yang masih tersisa / belum LHP --}}
+                                    <template x-for="u in currentAssignmentUnitsStatus.remaining" :key="u.id">
+                                        <span class="inline-flex items-center gap-1 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 px-2 py-0.5 font-semibold">
+                                            <span>⏳</span> <span x-text="u.nama + ' (Belum LHP)'"></span>
+                                        </span>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
                         {{-- Filter Kategori Pengawasan --}}
-                        <div class="md:col-span-2">
+                        <div>
                             <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                                 Filter Kategori Pengawasan
                             </label>
@@ -1217,7 +1596,7 @@ function lhpEditWizard() {
                         </div>
 
                         {{-- Alert jika kategori belum punya program / belum ada penugasan --}}
-                        <div x-show="kategoriWarningMessage" x-cloak class="md:col-span-2 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 dark:bg-amber-900/25 dark:border-amber-800 dark:text-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                        <div x-show="kategoriWarningMessage" x-cloak class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 dark:bg-amber-900/25 dark:border-amber-800 dark:text-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
                             <div class="flex items-start gap-2.5">
                                 <svg class="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
@@ -1236,7 +1615,7 @@ function lhpEditWizard() {
                         </div>
 
                         {{-- 1. Program Kerja --}}
-                        <div class="md:col-span-2">
+                        <div>
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                                 Program Kerja / Pengawasan <span class="text-red-500">*</span>
                                 <span class="ml-1 text-[11px] font-normal text-gray-500 dark:text-gray-400 normal-case">(PKPT, BPK, BPKP, ITPROV, ITDA, Lainnya)</span>
@@ -1247,7 +1626,7 @@ function lhpEditWizard() {
                         </div>
 
                         {{-- 2. Penugasan Audit --}}
-                        <div class="md:col-span-2">
+                        <div>
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                                 Penugasan Audit / Surat Tugas <span class="text-red-500">*</span>
                             </label>
@@ -1257,9 +1636,9 @@ function lhpEditWizard() {
                         </div>
 
                         {{-- 3. Unit Kerja / Objek Audit (Single Unit) --}}
-                        <div class="md:col-span-2">
+                        <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-                                Unit Kerja / Objek Audit <span class="text-red-500">*</span>
+                                Unit Kerja / Objek Audit yang Diperiksa <span class="text-red-500">*</span>
                                 <span class="ml-1 text-[11px] font-normal text-gray-500 dark:text-gray-400 normal-case">(1 LHP = 1 Unit Kerja)</span>
                             </label>
 
@@ -1267,131 +1646,283 @@ function lhpEditWizard() {
                                 <option value="">-- Pilih Penugasan Terlebih Dahulu --</option>
                             </select>
                             <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                                Setiap LHP mencatat temuan khusus untuk 1 unit kerja / objek audit yang diperiksa.
+                                Setiap LHP mencatat temuan khusus untuk 1 unit kerja / objek audit yang diperiksa. Opsi menampilkan unit saat ini dan unit lain pada penugasan yang belum dibuatkan LHP.
                             </p>
-                        </div>
-                        {{-- Nomor LHP --}}
-                        <div>
-                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                Nomor LHP <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" name="nomor_lhp" x-model="nomorLhp" required
-                                   class="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                        </div>
-
-                        {{-- Tanggal LHP --}}
-                        <div>
-                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                Tanggal LHP <span class="text-red-500">*</span>
-                            </label>
-                            <input type="date" name="tanggal_lhp" x-model="tanggalLhp" onclick="this.showPicker()" required
-                                   class="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                        </div>
-
-                        {{-- Catatan Umum --}}
-                        <div class="md:col-span-2">
-                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Catatan Umum / Ringkasan LHP</label>
-                            <textarea name="catatan_umum" x-model="catatanUmum" rows="3"
-                                      class="w-full resize-none rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"></textarea>
                         </div>
                     </div>
 
-                    {{-- Dynamic Berkas Lampiran LHP Card (TailAdmin Style) --}}
-                    <div class="pt-6 border-t border-gray-100 dark:border-gray-800 space-y-4">
-                        <div class="flex items-center justify-between">
+                    {{-- ── 3. HASIL PEMERIKSAAN (STATUS TEMUAN) ── --}}
+                    <div class="rounded-2xl border p-4 transition-all duration-300"
+                         :class="isNihil ? 'bg-emerald-50/70 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/40' : 'bg-gray-50/70 border-gray-200 dark:bg-gray-900/50 dark:border-gray-800'">
+                        <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                            Hasil Pemeriksaan (Status Temuan) <span class="text-red-500">*</span>
+                        </label>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {{-- Opsi 1: Memiliki Temuan --}}
+                            <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all"
+                                   :class="!isNihil ? 'bg-white border-blue-500 ring-2 ring-blue-500/20 dark:bg-gray-800 dark:border-blue-400' : 'bg-transparent border-gray-300 dark:border-gray-700 hover:bg-white/60'">
+                                <input type="radio" name="is_nihil" value="0" :checked="!isNihil" @change="isNihil = false" class="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                <div>
+                                    <span class="block text-xs font-bold text-gray-900 dark:text-white">Memiliki Temuan Pemeriksaan</span>
+                                    <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">LHP berisi daftar temuan &amp; rekomendasi yang wajib ditindaklanjuti.</span>
+                                </div>
+                            </label>
+
+                            {{-- Opsi 2: Bebas Temuan (Nihil) --}}
+                            <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all"
+                                   :class="isNihil ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/20 dark:bg-gray-800 dark:border-emerald-400' : 'bg-transparent border-gray-300 dark:border-gray-700 hover:bg-white/60'">
+                                <input type="radio" name="is_nihil" value="1" :checked="isNihil" @change="isNihil = true" class="mt-0.5 h-4 w-4 text-emerald-600 focus:ring-emerald-500">
+                                <div>
+                                    <span class="block text-xs font-bold text-emerald-700 dark:text-emerald-400">Bebas Temuan / Nihil (Tanpa Temuan)</span>
+                                    <span class="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Pemeriksaan selesai tanpa temuan. Progress LHP otomatis 100% Selesai.</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- ── 4. CATATAN UMUM ── --}}
+                    <div>
+                        <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Catatan Umum / Ringkasan LHP</label>
+                        <textarea name="catatan_umum" x-model="catatanUmum" rows="3"
+                                  placeholder="Tuliskan catatan ringkas mengenai LHP ini..."
+                                  class="w-full resize-none rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"></textarea>
+                    </div>
+
+                    {{-- Dynamic Berkas Lampiran LHP (Modern TailAdmin Style) --}}
+                    <div class="pt-6 border-t border-gray-100 dark:border-gray-800 space-y-5">
+                        {{-- Header Section --}}
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div>
-                                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-white/90">
-                                    Berkas Lampiran LHP (Opsional)
-                                </h3>
-                                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Unggah bukti pendukung LHP dalam format PDF, JPG, PNG, atau JPEG.</p>
-                                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Ukuran file maksimal 5MB</p>    
+                                <div class="flex items-center gap-2">
+                                    <span class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 text-[10px] font-bold">📎</span>
+                                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+                                        Berkas Lampiran LHP
+                                    </h3>
+                                    <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                        Opsional
+                                    </span>
+                                </div>
+                                <div class="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+                                    <span>Format: PDF, JPG, PNG</span>
+                                    <span>•</span>
+                                    <span>Maksimal 10 MB per berkas</span>
+                                    @if($lhp->attachments->isNotEmpty())
+                                        <span class="font-semibold text-emerald-600 dark:text-emerald-400">• {{ $lhp->attachments->count() }} berkas tersimpan</span>
+                                    @endif
+                                    <template x-if="attachments.length > 0">
+                                        <span class="font-semibold text-blue-600 dark:text-blue-400" x-text="`• ${attachments.length} berkas baru disiapkan`"></span>
+                                    </template>
+                                </div>
                             </div>
-                            <button type="button" @click="addAttachment()"
-                                    class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-white/[0.03] dark:text-gray-300 transition">
-                                <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                                Tambah File Baru
-                            </button>
+
+                            <div class="flex items-center gap-2">
+                                <button type="button" @click="addAttachment()"
+                                        class="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-3.5 py-2 text-xs font-semibold text-blue-700 shadow-xs hover:bg-blue-100 active:scale-95 dark:border-blue-800/80 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/60 transition cursor-pointer">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    Tambah Berkas Baru
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="space-y-3">
-                            {{-- List File Tersimpan --}}
-                            @if($lhp->attachments->isNotEmpty())
-                            <div class="mb-4 space-y-2">
-                                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">File Lampiran Tersimpan ({{ $lhp->attachments->count() }}):</p>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    @foreach($lhp->attachments as $att)
-                                    <div class="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50/80 p-3 text-xs dark:border-gray-700 dark:bg-gray-800/60">
-                                        <div class="flex items-start gap-2.5 min-w-0 flex-1 pr-2">
-                                            <svg class="h-4 w-4 shrink-0 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                                            <div class="min-w-0">
-                                                <p class="font-bold text-gray-800 dark:text-gray-200 truncate">{{ $att->file_name ?: 'Lampiran LHP' }}</p>
-                                                @if($att->keterangan)
-                                                    <p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ $att->keterangan }}</p>
-                                                @endif
-                                            </div>
+                        {{-- ── 1. Berkas Lampiran Tersimpan di Database ── --}}
+                        @if($lhp->attachments->isNotEmpty())
+                        <div class="space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Berkas Tersimpan di Sistem ({{ $lhp->attachments->count() }})
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                @foreach($lhp->attachments as $att)
+                                @php
+                                    $isPdf = $att->isPdf();
+                                    $ext = strtoupper(pathinfo($att->file_name ?: $att->file_path, PATHINFO_EXTENSION)) ?: ($isPdf ? 'PDF' : 'FILE');
+                                @endphp
+                                <div class="flex items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-white p-3.5 shadow-xs transition-all hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800/70">
+                                    <div class="flex items-start gap-3 min-w-0 flex-1">
+                                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-[10px] uppercase shadow-xs {{ $isPdf ? 'bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800' : 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800' }}">
+                                            {{ $ext }}
                                         </div>
-                                        <div class="flex items-center gap-2 shrink-0">
-                                            <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="font-semibold text-blue-600 hover:underline dark:text-blue-400">Lihat</a>
-                                            <form action="{{ route('attachments.destroy', $att->id) }}" method="POST" onsubmit="return confirm('Hapus lampiran ini?')" class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="font-semibold text-red-500 hover:text-red-700">Hapus</button>
-                                            </form>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center gap-1.5">
+                                                <p class="font-bold text-xs text-gray-900 dark:text-white truncate" title="{{ $att->file_name }}">
+                                                    {{ $att->file_name ?: 'Lampiran LHP' }}
+                                                </p>
+                                                <span class="rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 px-1.5 py-0.2 text-[9px] font-medium shrink-0">Tersimpan</span>
+                                            </div>
+                                            @if($att->keterangan)
+                                                <p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ $att->keterangan }}</p>
+                                            @endif
+                                            <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+                                                {{ $att->file_size_formatted ?? '' }} • Diunggah {{ $att->created_at?->diffForHumans() }}
+                                            </p>
                                         </div>
                                     </div>
-                                    @endforeach
+
+                                    <div class="flex items-center gap-1.5 shrink-0 self-center">
+                                        <a href="{{ route('attachments.show', $att->id) }}" target="_blank"
+                                           class="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-[11px] font-semibold text-blue-600 hover:bg-blue-50 dark:border-gray-700 dark:bg-gray-900 dark:text-blue-400 transition" title="Buka Dokumen">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                            </svg>
+                                            <span>Buka</span>
+                                        </a>
+                                        <form action="{{ route('attachments.destroy', $att->id) }}" method="POST"
+                                              onsubmit="return confirm('Apakah Anda yakin ingin menghapus berkas lampiran ini? Berkas yang dihapus tidak dapat dipulihkan.')" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50/60 px-2 py-1.5 text-[11px] font-semibold text-red-600 hover:bg-red-100 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-400 transition cursor-pointer" title="Hapus Berkas">
+                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- ── 2. Unggah Berkas Tambahan Baru (Dropzone) ── --}}
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Tambah Berkas Lampiran Baru
+                                </span>
+                            </div>
+
+                            {{-- Dropzone Area Interaktif --}}
+                            <div @dragover.prevent="isDragging = true"
+                                 @dragleave.prevent="isDragging = false"
+                                 @drop="handleMasterDrop($event)"
+                                 :class="isDragging ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20 dark:bg-blue-950/40' : 'border-gray-300 bg-gray-50/50 hover:border-blue-400 hover:bg-blue-50/20 dark:border-gray-700 dark:bg-gray-900/30 dark:hover:border-blue-500'"
+                                 class="group relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all cursor-pointer"
+                                 @click="$refs.masterFileInputEdit.click()">
+                                
+                                <input type="file" x-ref="masterFileInputEdit" class="sr-only" multiple accept=".pdf,.jpg,.jpeg,.png"
+                                       @change="handleMasterFileInput($event)">
+
+                                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5 group-hover:scale-105 group-hover:shadow transition-all dark:bg-gray-800 dark:ring-white/10">
+                                    <svg class="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                </div>
+
+                                <div class="mt-2.5">
+                                    <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                                        Tarik &amp; letakkan berkas baru ke sini, atau <span class="text-blue-600 underline dark:text-blue-400 font-bold">pilih dari perangkat</span>
+                                    </p>
+                                    <p class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
+                                        Format PDF, JPG, PNG (Maksimal 10 MB per file)
+                                    </p>
                                 </div>
                             </div>
-                            @endif
 
-                            <template x-for="(att, aIdx) in attachments" :key="att.id">
-                                <div class="rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-800 dark:bg-gray-900/50 space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-blue-600 dark:text-blue-400" x-text="`Lampiran Baru #${aIdx + 1}`"></span>
-                                        <button type="button" @click="removeAttachment(aIdx)" class="text-xs font-medium text-red-500 hover:text-red-700 flex items-center gap-1">
-                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            Hapus Lampiran
-                                        </button>
-                                    </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                            <label class="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                                Upload File
-                                            </label>
-                                            <input type="file" :name="`attachments[${aIdx}][file_path]`" accept=".pdf,.jpg,.jpeg,.png"
-                                                   class="focus:border-ring-brand-300 shadow-theme-xs focus:file:ring-brand-300 h-11 w-full overflow-hidden rounded-lg border border-gray-300 bg-transparent text-sm text-gray-500 transition-colors file:mr-5 file:border-collapse file:cursor-pointer file:rounded-l-lg file:border-0 file:border-r file:border-solid file:border-gray-200 file:bg-gray-50 file:py-3 file:pr-3 file:pl-3.5 file:text-sm file:text-gray-700 placeholder:text-gray-400 hover:file:bg-gray-100 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:text-white/90 dark:file:border-gray-800 dark:file:bg-white/[0.03] dark:file:text-gray-400 dark:placeholder:text-gray-400">
-                                        </div>
-                                        <div>
-                                            <label class="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                                Nama / Judul File
-                                            </label>
-                                            <input type="text" :name="`attachments[${aIdx}][file_name]`" x-model="att.file_name" placeholder="cth: LHP Audit Tambahan (PDF)..."
-                                                   class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-400">
-                                        </div>
-                                        <div>
-                                            <label class="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                                Keterangan File
-                                            </label>
-                                            <input type="text" :name="`attachments[${aIdx}][keterangan]`" x-model="att.keterangan" placeholder="cth: Dokumen audit tambahan..."
-                                                   class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-400">
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
+                            {{-- Daftar Kartu Berkas Baru Terpilih --}}
+                            <div class="space-y-3" x-show="attachments.length > 0">
+                                <template x-for="(att, aIdx) in attachments" :key="att.id">
+                                    <div class="group relative rounded-2xl border border-gray-200 bg-white p-4 shadow-xs transition-all hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800/80 dark:hover:border-gray-600 space-y-3.5">
+                                        
+                                        {{-- File Input Tersembunyi --}}
+                                        <input type="file" :name="`attachments[${aIdx}][file_path]`" :id="`att-file-edit-${att.id}`"
+                                               accept=".pdf,.jpg,.jpeg,.png" class="sr-only"
+                                               @change="onSingleFileSelected($event, att)">
 
-                            <div x-show="attachments.length === 0 && {{ $lhp->attachments->isEmpty() ? 'true' : 'false' }}" class="rounded-xl border border-dashed border-gray-200 py-6 text-center text-xs text-gray-400 dark:border-gray-800 dark:text-gray-500">
-                                Belum ada berkas lampiran ditambahkan. Klik <strong>"Tambah File Baru"</strong> di atas.
+                                        {{-- Baris 1: Header Item & Preview Info --}}
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-700/60">
+                                            <div class="flex items-center gap-2.5 min-w-0">
+                                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-[10px] uppercase shadow-xs transition-colors"
+                                                     :class="att.file_ext === 'PDF' 
+                                                        ? 'bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800' 
+                                                        : 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'">
+                                                    <span x-text="att.file_ext || 'FILE'"></span>
+                                                </div>
+
+                                                <div class="min-w-0">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-xs font-bold text-gray-900 dark:text-white truncate max-w-xs sm:max-w-md"
+                                                              x-text="att.raw_name || 'Berkas belum dipilih'"></span>
+                                                        <span class="rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 px-2 py-0.2 text-[9px] font-bold shrink-0"
+                                                              x-show="att.has_file">Siap Disimpan</span>
+                                                    </div>
+                                                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5"
+                                                       x-text="att.file_size ? `Ukuran: ${att.file_size}` : 'Klik tombol di samping untuk memilih berkas'"></p>
+                                                </div>
+                                            </div>
+
+                                            {{-- Actions: Ganti & Hapus --}}
+                                            <div class="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+                                                <button type="button" @click="triggerSingleFilePicker(att.id)"
+                                                        class="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-[11px] font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 transition cursor-pointer">
+                                                    <svg class="h-3.5 w-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                                    </svg>
+                                                    <span x-text="att.has_file ? 'Ganti Berkas' : 'Pilih Berkas'"></span>
+                                                </button>
+                                                <button type="button" @click="removeAttachment(aIdx)"
+                                                        class="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50/60 px-2.5 py-1.5 text-[11px] font-semibold text-red-600 hover:bg-red-100 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/60 transition cursor-pointer">
+                                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                    </svg>
+                                                    <span>Hapus</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {{-- Baris 2: Field Judul & Keterangan --}}
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                            <div>
+                                                <label class="mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                                    Nama / Judul Dokumen
+                                                </label>
+                                                <input type="text" :name="`attachments[${aIdx}][file_name]`" x-model="att.file_name"
+                                                       placeholder="cth: LHP Revisi Final, Berita Acara..."
+                                                       class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500">
+                                            </div>
+                                            <div>
+                                                <label class="mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                                    Keterangan Tambahan (Opsional)
+                                                </label>
+                                                <input type="text" :name="`attachments[${aIdx}][keterangan]`" x-model="att.keterangan"
+                                                       placeholder="cth: Dokumen perbaikan lampiran..."
+                                                       class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {{-- Footer Step 1 --}}
-                <div class="flex items-center justify-end border-t border-gray-100 bg-gray-50/50 px-6 py-4 dark:border-gray-800 dark:bg-gray-900/30">
-                    <button type="button" @click="nextStep()"
-                            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 active:scale-95 transition-all">
-                        Lanjut ke Langkah 2: Edit Temuan →
-                    </button>
+                <div class="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-6 py-4 dark:border-gray-800 dark:bg-gray-900/30">
+                    <div>
+                        <template x-if="isNihil">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                🌿 Status LHP: Bebas Temuan (Nihil) — Progress 100%
+                            </span>
+                        </template>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <template x-if="isNihil">
+                            <button type="button" @click="setStep(4)"
+                                    class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer">
+                                Lanjut ke Pratinjau &amp; Simpan (Bebas Temuan) →
+                            </button>
+                        </template>
+                        <template x-if="!isNihil">
+                            <button type="button" @click="nextStep()"
+                                    class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 active:scale-95 transition-all cursor-pointer">
+                                Lanjut ke Langkah 2: Edit Temuan →
+                            </button>
+                        </template>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1770,6 +2301,58 @@ function lhpEditWizard() {
                             <span class="text-[10px] font-bold uppercase text-gray-400">Total Rekomendasi</span>
                             <p class="mt-1 text-xl font-bold text-blue-600 dark:text-blue-400" x-text="`${totalRekomCount} Rekomendasi`"></p>
                             <p class="text-xs font-semibold text-gray-700 dark:text-gray-300" x-text="`Nilai Rekomendasi: ${fmtRupiah(totalNilaiRekomSum)}`"></p>
+                        </div>
+                    </div>
+
+                    {{-- Lampiran LHP Preview Box --}}
+                    <div class="rounded-xl border border-gray-200/80 bg-white p-4 space-y-3 dark:border-gray-700 dark:bg-gray-900/30">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">Berkas Lampiran LHP</h3>
+                            <div class="flex items-center gap-2 text-xs font-semibold text-gray-500">
+                                @if($lhp->attachments->isNotEmpty())
+                                    <span class="text-emerald-600 dark:text-emerald-400">{{ $lhp->attachments->count() }} Tersimpan</span>
+                                @endif
+                                <span x-show="attachments.length > 0" class="text-blue-600 dark:text-blue-400" x-text="`• ${attachments.length} Tambahan Baru`"></span>
+                            </div>
+                        </div>
+
+                        {{-- Berkas Tersimpan --}}
+                        @if($lhp->attachments->isNotEmpty())
+                        <div class="space-y-1.5">
+                            <span class="text-[10px] font-bold uppercase text-gray-400">Tersimpan di Dokumen:</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                @foreach($lhp->attachments as $att)
+                                <div class="flex items-center gap-2.5 p-2 rounded-lg border border-gray-100 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-800/40 text-xs">
+                                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded font-bold text-[9px] uppercase {{ $att->isPdf() ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' }}">
+                                        {{ $att->isPdf() ? 'PDF' : 'FILE' }}
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="font-bold text-gray-900 dark:text-white truncate">{{ $att->file_name ?: 'Lampiran LHP' }}</p>
+                                    </div>
+                                    <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="text-[11px] font-semibold text-blue-600 hover:underline shrink-0">Lihat</a>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Berkas Tambahan Baru --}}
+                        <div x-show="attachments.length > 0" class="space-y-1.5 pt-2 border-t border-gray-100 dark:border-gray-800">
+                            <span class="text-[10px] font-bold uppercase text-blue-600 dark:text-blue-400">Berkas Baru Siap Diunggah:</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <template x-for="(att, idx) in attachments" :key="att.id">
+                                    <div class="flex items-center gap-2.5 p-2 rounded-lg border border-blue-100 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-950/20 text-xs">
+                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded font-bold text-[9px] uppercase"
+                                             :class="att.file_ext === 'PDF' ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'">
+                                            <span x-text="att.file_ext || 'FILE'"></span>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="font-bold text-gray-900 dark:text-white truncate" x-text="att.file_name || att.raw_name || 'Lampiran Baru'"></p>
+                                            <p class="text-[10px] text-gray-400 truncate" x-text="att.raw_name ? `${att.raw_name} (${att.file_size || ''})` : 'Berkas lokal'"></p>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
                     </div>
                 </div>

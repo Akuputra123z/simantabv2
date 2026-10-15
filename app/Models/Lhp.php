@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Lhp extends Model
 {
@@ -27,6 +28,7 @@ class Lhp extends Model
     protected $primaryKey = 'id';
 
     protected $fillable = [
+        'uuid',
         'audit_assignment_id', 'nomor_lhp', 'tanggal_lhp', 'unit_diperiksa_id', 'is_nihil', 'catatan_umum',
         'status_batal_keterangan', 'status_batal_user_id', 'status_batal_at',
         'status', 'created_by', 'updated_by',
@@ -375,7 +377,37 @@ class Lhp extends Model
         );
     }
 
+    // ── Route Model Binding & UUID ────────────────────────────────────────────
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $field = $field ?? 'uuid';
+        $model = $this->where($field, $value)->first();
+
+        if ($model) {
+            return $model;
+        }
+
+        // Backward compatibility fallback jika dipanggil dengan numeric ID
+        if ($field === 'uuid' && is_numeric($value)) {
+            return $this->where('id', $value)->firstOrFail();
+        }
+
+        abort(404);
+    }
+
     // ── Events ────────────────────────────────────────────────────────────────
 
-    protected static function booted(): void {}
+    protected static function booted(): void
+    {
+        static::creating(function (self $model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
+            }
+        });
+    }
 }

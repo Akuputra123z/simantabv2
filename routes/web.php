@@ -22,11 +22,17 @@ use App\Http\Controllers\PegawaiInspektoratController;
 use App\Http\Controllers\PegawaiOpdController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\Security\DocumentAccessSecurityController;
 use App\Http\Controllers\TemuanController;
 use App\Http\Controllers\TindakLanjutCicilanController;
 use App\Http\Controllers\TindakLanjutController;
 use App\Http\Controllers\UnitDiperiksaController;
 use Illuminate\Support\Facades\Route;
+
+// ── Verifikasi Keamanan Akses Dokumen PDF ──
+Route::middleware(['auth', 'active', 'throttle:10,1'])
+    ->post('/security/verify-pdf-access', [DocumentAccessSecurityController::class, 'verifyPdfAccess'])
+    ->name('security.verify-pdf-access');
 
 // Public Route
 Route::get('/', function () {
@@ -151,7 +157,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::put('/{uuid}', [LhrController::class, 'update'])->name('update');
         Route::delete('/{uuid}', [LhrController::class, 'destroy'])->name('destroy');
         Route::get('/{uuid}/preview', [LhrController::class, 'preview'])->name('preview');
-        Route::get('/{uuid}/pdf', [LhrController::class, 'downloadPdf'])->name('pdf');
+        Route::get('/{uuid}/pdf', [LhrController::class, 'downloadPdf'])->middleware('secure.pdf')->name('pdf');
         Route::get('/{uuid}/word', [LhrController::class, 'downloadWord'])->name('word');
         Route::put('/{uuid}/pengujian/{pengujian}', [LhrController::class, 'updatePengujian'])->name('update-pengujian');
         Route::post('/{uuid}/pengujian/{pengujian}/catatan', [LhrController::class, 'storeCatatan'])->name('store-catatan');
@@ -216,12 +222,12 @@ Route::middleware(['auth', 'active'])->prefix('laporan')->name('laporan.')->grou
     // Laporan Kepatuhan OPD (Hanya LHP dengan progres TL 100% / Nihil)
     Route::get('/kepatuhan', [LaporanController::class, 'kepatuhanIndex'])->name('kepatuhan');
     Route::get('/kepatuhan/{lhp}', [LaporanController::class, 'kepatuhanShow'])->name('kepatuhan.show');
-    Route::get('/kepatuhan/{lhp}/pdf', [LaporanController::class, 'kepatuhanPdf'])->name('kepatuhan.pdf');
+    Route::get('/kepatuhan/{lhp}/pdf', [LaporanController::class, 'kepatuhanPdf'])->middleware('secure.pdf')->name('kepatuhan.pdf');
 
     Route::get('/{lhp}/rekap', [LaporanController::class, 'rekapPerLhp'])->name('rekap-per-lhp');
     Route::get('/download/pdf/semua', [LaporanController::class, 'downloadPdfSemua'])->name('download-pdf-semua');
-    Route::get('/download/pdf/{lhp}', [LaporanController::class, 'downloadPdfPerLhp'])->name('download-pdf-per-lhp');
-    Route::get('/preview/pdf/{lhp}', [LaporanController::class, 'previewPdfPerLhp'])->name('preview-pdf-per-lhp');
+    Route::get('/download/pdf/{lhp}', [LaporanController::class, 'downloadPdfPerLhp'])->middleware('secure.pdf')->name('download-pdf-per-lhp');
+    Route::get('/preview/pdf/{lhp}', [LaporanController::class, 'previewPdfPerLhp'])->middleware('secure.pdf')->name('preview-pdf-per-lhp');
     Route::get('/download/excel/semua', [LaporanController::class, 'downloadExcelSemua'])->name('download-excel-semua');
     Route::get('/download/excel/{lhp}', [LaporanController::class, 'downloadExcelPerLhp'])->name('download-excel-per-lhp');
 });
@@ -257,7 +263,7 @@ Route::middleware(['auth', 'active', 'role:opd'])
         Route::prefix('lhr')->name('lhr.')->group(function () {
             Route::get('/', [OpdLhrController::class, 'index'])->name('index');
             Route::get('/{uuid}', [OpdLhrController::class, 'show'])->name('show');
-            Route::get('/{uuid}/pdf', [OpdLhrController::class, 'downloadPdf'])->name('pdf');
+            Route::get('/{uuid}/pdf', [OpdLhrController::class, 'downloadPdf'])->middleware('secure.pdf')->name('pdf');
             Route::get('/{uuid}/word', [OpdLhrController::class, 'downloadWord'])->name('word');
 
             // Tindak Lanjut & Dokumen Revisi OPD

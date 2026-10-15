@@ -769,7 +769,8 @@ class LhrRkpdKuaWorkflowTest extends TestCase
         $previewResponse->assertSee('Foto Dokumentasi Kesepakatan Musrenbang');
 
         // 5. Verifikasi sinkronisasi di Unduh PDF (/pdf)
-        $pdfResponse = $this->actingAs($admin)->get(route('lhr.pdf', $lhr->uuid));
+        $signedPdfUrl = \Illuminate\Support\Facades\URL::signedRoute('lhr.pdf', $lhr->uuid);
+        $pdfResponse = $this->actingAs($admin)->get($signedPdfUrl);
         $pdfResponse->assertOk();
         $pdfResponse->assertHeader('Content-Type', 'application/pdf');
         $this->assertNotEmpty($pdfResponse->getContent());

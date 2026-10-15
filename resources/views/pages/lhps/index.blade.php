@@ -243,7 +243,7 @@
 
                         {{-- 2. Nama Program --}}
                         <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-snug">
-                            <a href="{{ route('lhps.show', $lhp->id) }}" class="font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                            <a href="{{ route('lhps.show', $lhp) }}" class="font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                                 {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
                             </a>
                             @if($lhp->auditAssignment?->auditProgramDetail?->nama_detail_program)
@@ -255,7 +255,7 @@
 
                         {{-- 3. Nomor LHP & Badges --}}
                         <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                            <a href="{{ route('lhps.show', $lhp->id) }}" class="font-mono text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded border border-blue-200/80 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors">
+                            <a href="{{ route('lhps.show', $lhp) }}" class="font-mono text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded border border-blue-200/80 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors">
                                 {{ $lhp->nomor_lhp }}
                             </a>
                             @if(isset($sharedNomorMap[$lhp->nomor_lhp]))
@@ -309,22 +309,23 @@
                     {{-- Aksi --}}
                     <td class="px-4 py-4 text-right whitespace-nowrap">
                         <div class="flex justify-end items-center gap-1.5">
-                            <a href="{{ route('lhps.show', $lhp->id) }}"
+                            <a href="{{ route('lhps.show', $lhp) }}"
                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-blue-700 dark:hover:bg-blue-950/40 dark:hover:text-blue-300 transition-all shadow-2xs hover:scale-105 active:scale-95"
                                title="Lihat Detail LHP">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"/></svg>
                             </a>
-                            <a href="{{ route('lhps.edit', $lhp->id) }}"
+                            <a href="{{ route('lhps.edit', $lhp) }}"
                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-amber-700 dark:hover:bg-amber-950/40 dark:hover:text-amber-300 transition-all shadow-2xs hover:scale-105 active:scale-95"
                                title="Edit LHP">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 17H9v-2.828l9.414-9.586z" stroke-width="2"/></svg>
                             </a>
-                            <a href="{{ route('laporan.preview-pdf-per-lhp', $lhp->id) }}" target="_blank"
-                               class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-green-700 dark:hover:bg-green-950/40 dark:hover:text-green-300 transition-all shadow-2xs hover:scale-105 active:scale-95"
-                               title="Unduh PDF">
+                            <button type="button"
+                               onclick="window.requestSecurePdf('lhp_preview', '{{ $lhp->id }}', 'LHP: {{ addslashes($lhp->nomor_lhp) }}')"
+                               class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-green-700 dark:hover:bg-green-950/40 dark:hover:text-green-300 transition-all shadow-2xs hover:scale-105 active:scale-95 cursor-pointer"
+                               title="Unduh / Pratinjau PDF">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-width="2"/></svg>
-                            </a>
-                            <button type="button" onclick="openDeleteModal('single', '{{ $lhp->id }}')"
+                            </button>
+                            <button type="button" onclick="openDeleteModal('single', '{{ $lhp->uuid }}')"
                                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-red-700 dark:hover:bg-red-950/40 dark:hover:text-red-300 transition-all shadow-2xs hover:scale-105 active:scale-95"
                                     title="Hapus LHP">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>

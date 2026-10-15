@@ -65,6 +65,10 @@ class RecommendationController extends Controller
 
     public function getTemuans($lhpId)
     {
+        if (! is_numeric($lhpId)) {
+            $lhpId = Lhp::where('uuid', $lhpId)->value('id') ?? $lhpId;
+        }
+
         $temuans = Temuan::query()
             ->select('id', 'lhp_id', 'kode_temuan_id', 'kondisi', 'nilai_temuan')
             ->with('kodeTemuan:id,kode,deskripsi,alternatif_rekom')

@@ -12,7 +12,7 @@
                 <nav class="mb-2 flex items-center gap-2 text-sm text-gray-500">
                     <a href="{{ route('lhps.index') }}" class="hover:text-blue-600">LHP</a>
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
-                    <a href="{{ route('lhps.show', $lhp->id) }}" class="hover:text-blue-600">{{ $lhp->nomor_lhp }}</a>
+                    <a href="{{ route('lhps.show', $lhp) }}" class="hover:text-blue-600">{{ $lhp->nomor_lhp }}</a>
                 </nav>
                 <h2 class="text-2xl font-black tracking-tight text-gray-900 dark:text-white uppercase">Tambah Temuan Baru</h2>
             </div>
@@ -217,7 +217,7 @@
         </div>
 
         <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-6 dark:border-gray-800">
-            <a href="{{ route('lhps.show', $lhp->id) }}"
+            <a href="{{ route('lhps.show', $lhp) }}"
                class="rounded-xl border border-gray-300 bg-white px-6 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 transition-all">BATAL</a>
             <button type="submit"
                     class="rounded-xl bg-blue-600 px-8 py-2.5 text-sm font-bold text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95 transition-all">SIMPAN TEMUAN</button>

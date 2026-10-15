@@ -31,29 +31,40 @@
     </div>
 
     {{-- Card --}}
-    <div class="rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
         <form action="{{ route('audit-program.update', $program->id) }}" method="POST">
             @csrf
             @method('PUT')
 
-            <div class="space-y-7 p-6 sm:p-8">
+            <div class="space-y-6 p-6 sm:p-8">
 
                 {{-- Nama Program --}}
                 <div>
-                    <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black dark:text-gray-500">Nama Program</label>
-                    <input type="text" name="nama_program" value="{{ old('nama_program', $program->nama_program) }}"
+                    <label for="nama_program" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Nama Program Utama <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text"
+                           name="nama_program"
+                           id="nama_program"
+                           value="{{ old('nama_program', $program->nama_program) }}"
                            placeholder="Contoh: Audit Operasional BOS"
-                           class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder-gray-500">
+                           class="w-full rounded-lg border px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-900 @error('nama_program') border-red-500 text-red-600 @else border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white @enderror hover:border-blue-400"
+                           required>
+                    @error('nama_program')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
                 </div>
 
-                {{-- Grid 2 Kolom + Kategori --}}
+                {{-- Grid 3 Kolom Responsif: Tahun, Kategori, Status --}}
                 <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
 
-                    {{-- Tahun — Year Picker --}}
+                    {{-- ══ 1. Tahun PKPT — Year Picker ══ --}}
                     <div x-data="yearPicker({{ (int) old('tahun', $program->tahun) }}, {{ (int) date('Y') }})"
                          x-init="init()"
                          class="relative">
-                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black dark:text-gray-500">Tahun PKPT</label>
+                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Tahun PKPT <span class="text-red-500">*</span>
+                        </label>
 
                         {{-- Hidden input untuk form submit --}}
                         <input type="hidden" name="tahun" :value="selected">
@@ -62,8 +73,10 @@
                         <button type="button"
                                 @click="open = !open"
                                 @keydown.escape.window="open = false"
-                                class="flex h-[50px] w-full items-center justify-between rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 text-sm transition focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white hover:border-blue-400"
-                                :class="open ? 'border-blue-500 ring-4 ring-blue-500/10' : ''">
+                                class="flex h-10 w-full items-center justify-between rounded-lg border px-4 text-sm transition focus:outline-none
+                                       @error('tahun') border-red-400 @else border-gray-200 dark:border-gray-700 @enderror
+                                       bg-white dark:bg-gray-900 dark:text-white hover:border-blue-400"
+                                :class="open ? 'border-blue-500 ring-2 ring-blue-500/20' : ''">
                             <span class="flex items-center gap-2">
                                 <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -79,7 +92,7 @@
                             </svg>
                         </button>
 
-                        {{-- Panel --}}
+                        {{-- Panel Dropdown Tahun --}}
                         <div x-show="open" x-cloak
                              @click.outside="open = false"
                              x-transition:enter="transition ease-out duration-150"
@@ -135,41 +148,73 @@
                                 </button>
                             </div>
                         </div>
+
+                        @error('tahun')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
                     </div>
 
-                    {{-- Kategori --}}
+                    {{-- ══ 2. Kategori ══ --}}
                     <div>
-                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black dark:text-gray-500">Kategori</label>
-                        <select name="kategori"
-                                class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                            @foreach($kategoriOptions as $opt)
-                                <option value="{{ $opt }}" {{ old('kategori', $program->kategori) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
-                            @endforeach
-                        </select>
+                        <label for="kategori" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Kategori <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <select name="kategori" id="kategori" data-no-ts required
+                                    class="h-10 w-full appearance-none rounded-lg border px-4 pr-10 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer
+                                           @error('kategori') border-red-500 text-red-600 @else border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white @enderror
+                                           bg-white dark:bg-gray-900 hover:border-blue-400">
+                                @foreach($kategoriOptions as $opt)
+                                    <option value="{{ $opt }}" {{ old('kategori', $program->kategori) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                @endforeach
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </div>
+                        </div>
+                        @error('kategori')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
                     </div>
 
-                    {{-- Status --}}
+                    {{-- ══ 3. Status Program ══ --}}
                     <div>
-                        <label class="block text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2 font-black dark:text-gray-500">Status Program</label>
-                        <select name="status"
-                                class="w-full rounded-xl border-2 border-gray-100 bg-gray-50/50 px-4 py-3.5 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                            <option value="draft" {{ old('status', $program->status) == 'draft' ? 'selected' : '' }}>Draft</option>
-                            <option value="berjalan" {{ old('status', $program->status) == 'berjalan' ? 'selected' : '' }}>Berjalan</option>
-                            <option value="selesai" {{ old('status', $program->status) == 'selesai' ? 'selected' : '' }}>Selesai</option>
-                        </select>
+                        <label for="status" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Status Program <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <select name="status" id="status" data-no-ts required
+                                    class="h-10 w-full appearance-none rounded-lg border px-4 pr-10 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer
+                                           @error('status') border-red-500 text-red-600 @else border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white @enderror
+                                           bg-white dark:bg-gray-900 hover:border-blue-400">
+                                <option value="draft" {{ old('status', $program->status) == 'draft' ? 'selected' : '' }}>Draft</option>
+                                <option value="berjalan" {{ old('status', $program->status) == 'berjalan' ? 'selected' : '' }}>Berjalan</option>
+                                <option value="selesai" {{ old('status', $program->status) == 'selesai' ? 'selected' : '' }}>Selesai</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </div>
+                        </div>
+                        @error('status')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
                     </div>
 
                 </div>
             </div>
 
             {{-- Footer --}}
-            <div class="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/30 px-6 py-5 dark:border-gray-800 dark:bg-white/[0.02]">
+            <div class="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/50 px-6 py-4 dark:border-gray-800 dark:bg-white/[0.02]">
                 <a href="{{ route('audit-program.index') }}"
-                   class="rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                   class="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                     Batal
                 </a>
                 <button type="submit"
-                        class="rounded-xl bg-blue-600 px-8 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all">
+                        class="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition-all">
                     Simpan Perubahan
                 </button>
             </div>

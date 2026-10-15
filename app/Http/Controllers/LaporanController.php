@@ -147,6 +147,12 @@ class LaporanController extends Controller
 
     public function kepatuhanShow(Lhp $lhp)
     {
+        // Enforce canonical UUID in URL
+        $rawParam = request()->route()?->originalParameter('lhp') ?? request()->segment(3);
+        if ($rawParam && ($rawParam !== $lhp->uuid || is_numeric($rawParam))) {
+            return redirect()->route('laporan.kepatuhan.show', $lhp, 301);
+        }
+
         $user = auth()->user();
         if ($user && $user->hasRole('opd')) {
             $unitIds = $user->opdUnits()->pluck('unit_diperiksas.id');
@@ -166,6 +172,29 @@ class LaporanController extends Controller
             return redirect()->route('laporan.kepatuhan')
                 ->with('warning', "Laporan Kepatuhan OPD untuk Nomor LHP {$lhp->nomor_lhp} belum dapat ditampilkan karena progres tindak lanjut belum mencapai 100%.");
         }
+
+        // Cek verifikasi password keamanan untuk show/preview dokumen
+        $request = request();
+        $isVerified = false;
+        if ($request->hasValidSignature()) {
+            $isVerified = true;
+            $request->session()->put("pdf_access_verified.kepatuhan_show.{$lhp->id}", now()->addMinutes(15)->timestamp);
+            $request->session()->put("pdf_access_verified.kepatuhan_show.{$lhp->uuid}", now()->addMinutes(15)->timestamp);
+            $request->session()->put("pdf_access_verified.kepatuhan_pdf.{$lhp->id}", now()->addMinutes(15)->timestamp);
+            $request->session()->put("pdf_access_verified.kepatuhan_pdf.{$lhp->uuid}", now()->addMinutes(15)->timestamp);
+        } else {
+            $sessKeys = array_filter([$lhp->id, $lhp->uuid]);
+            foreach ($sessKeys as $k) {
+                $sShow = session("pdf_access_verified.kepatuhan_show.{$k}");
+                $sPdf = session("pdf_access_verified.kepatuhan_pdf.{$k}");
+                if (($sShow && $sShow >= now()->timestamp) || ($sPdf && $sPdf >= now()->timestamp)) {
+                    $isVerified = true;
+                    break;
+                }
+            }
+        }
+
+        $isLocked = ! $isVerified;
 
         $lhp->load([
             'statistik',
@@ -194,11 +223,18 @@ class LaporanController extends Controller
         $masukanManajerial = $service->getMasukanManajerial($lhp, $analisisBerulang);
         $eskalasiSanksi = $service->getProtokolEskalasiSanksi();
 
-        return view('pages.laporan.kepatuhan.show', compact('lhp', 'analisisBerulang', 'masukanManajerial', 'eskalasiSanksi'));
+        return view('pages.laporan.kepatuhan.show', compact('lhp', 'analisisBerulang', 'masukanManajerial', 'eskalasiSanksi', 'isLocked'));
     }
 
     public function kepatuhanPdf(Lhp $lhp)
     {
+        // Enforce canonical UUID in URL
+        if (! request()->hasValidSignature()) {
+            $rawParam = request()->route()?->originalParameter('lhp') ?? request()->segment(3);
+            if ($rawParam && ($rawParam !== $lhp->uuid || is_numeric($rawParam))) {
+                return redirect()->route('laporan.kepatuhan.pdf', $lhp, 301);
+            }
+        }
         $user = auth()->user();
         if ($user && $user->hasRole('opd')) {
             $unitIds = $user->opdUnits()->pluck('unit_diperiksas.id');
@@ -262,6 +298,31 @@ class LaporanController extends Controller
 
     public function rekapPerLhp(Request $request, Lhp $lhp)
     {
+        // 1. Canonical redirect ke URL UUID jika diakses dengan numeric ID (e.g. /laporan/59/rekap)
+        $rawParam = request()->route()?->originalParameter('lhp') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $lhp->uuid || is_numeric($rawParam))) {
+            return redirect()->route('laporan.rekap-per-lhp', $lhp, 301);
+        }
+
+        // 2. Proteksi password keamanan akun
+        $sessionKeyId = "pdf_access_verified.rekap_show.{$lhp->id}";
+        $sessionKeyUuid = "pdf_access_verified.rekap_show.{$lhp->uuid}";
+        $isVerified = (
+            $request->hasValidSignature() ||
+            session($sessionKeyId) ||
+            session($sessionKeyUuid) ||
+            session("pdf_access_verified.lhp_preview.{$lhp->id}") ||
+            session("pdf_access_verified.lhp_preview.{$lhp->uuid}") ||
+            session("pdf_access_verified.lhp_download.{$lhp->id}") ||
+            session("pdf_access_verified.lhp_download.{$lhp->uuid}")
+        );
+
+        if ($isVerified) {
+            session([$sessionKeyId => true, $sessionKeyUuid => true]);
+        }
+
+        $isLocked = ! $isVerified;
+
         $lhp->load([
             'statistik',
             'auditAssignment.auditProgram',
@@ -272,7 +333,7 @@ class LaporanController extends Controller
             'creator',
         ]);
 
-        return view('pages.laporan.rekap-per-lhp', compact('lhp'));
+        return view('pages.laporan.rekap-per-lhp', compact('lhp', 'isLocked'));
     }
 
     // ── Download PDF: Rekap Semua LHP ─────────────────────────────────────
@@ -313,6 +374,11 @@ class LaporanController extends Controller
 
     public function downloadPdfPerLhp(Request $request, Lhp $lhp)
     {
+        $rawParam = request()->route()?->originalParameter('lhp') ?? request()->segment(4);
+        if (! $request->hasValidSignature() && $rawParam && ($rawParam !== $lhp->uuid || is_numeric($rawParam))) {
+            return redirect()->route('laporan.download-pdf-per-lhp', $lhp, 301);
+        }
+
         $lhp->load([
             'statistik',
             'auditAssignment.auditProgram',
@@ -341,6 +407,11 @@ class LaporanController extends Controller
 
     public function previewPdfPerLhp(Request $request, Lhp $lhp)
     {
+        $rawParam = request()->route()?->originalParameter('lhp') ?? request()->segment(4);
+        if (! $request->hasValidSignature() && $rawParam && ($rawParam !== $lhp->uuid || is_numeric($rawParam))) {
+            return redirect()->route('laporan.preview-pdf-per-lhp', $lhp, 301);
+        }
+
         $lhp->load([
             'statistik',
             'auditAssignment.auditProgram',
@@ -392,6 +463,11 @@ class LaporanController extends Controller
 
     public function downloadExcelPerLhp(Request $request, Lhp $lhp)
     {
+        $rawParam = request()->route()?->originalParameter('lhp') ?? request()->segment(4);
+        if ($rawParam && ($rawParam !== $lhp->uuid || is_numeric($rawParam))) {
+            return redirect()->route('laporan.download-excel-per-lhp', $lhp, 301);
+        }
+
         $lhp->load([
             'statistik',
             'auditAssignment.auditProgram',

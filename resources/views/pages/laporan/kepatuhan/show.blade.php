@@ -13,6 +13,90 @@
 @section('content')
 <div class="space-y-6 pb-12">
 
+    @if(!empty($isLocked))
+        {{-- SECURE LOCK SCREEN --}}
+        <div class="mx-auto max-w-lg mt-10 rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-xl dark:border-gray-800 dark:bg-gray-900"
+             x-data="{
+                 password: '',
+                 loading: false,
+                 errorMessage: '',
+                 async verifyAndUnlock() {
+                     if (!this.password) {
+                         this.errorMessage = 'Silakan masukkan password akun Anda.';
+                         return;
+                     }
+                     this.loading = true;
+                     this.errorMessage = '';
+                     try {
+                         const token = document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
+                         const res = await fetch('{{ route('security.verify-pdf-access') }}', {
+                             method: 'POST',
+                             headers: {
+                                 'Content-Type': 'application/json',
+                                 'Accept': 'application/json',
+                                 'X-CSRF-TOKEN': token || ''
+                             },
+                             body: JSON.stringify({
+                                 password: this.password,
+                                 document_type: 'kepatuhan_show',
+                                 document_id: '{{ $lhp->uuid }}'
+                             })
+                         });
+                         const data = await res.json();
+                         if (res.ok && data.success) {
+                             window.location.href = data.url || window.location.href;
+                         } else {
+                             this.errorMessage = data.message || 'Password yang Anda masukkan salah.';
+                             this.loading = false;
+                         }
+                     } catch (e) {
+                         this.errorMessage = 'Terjadi kesalahan jaringan. Silakan coba lagi.';
+                         this.loading = false;
+                     }
+                 }
+             }">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 shadow-inner">
+                <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+            </div>
+            <h2 class="mt-4 text-xl font-bold text-gray-900 dark:text-white">Dokumen Dilindungi Keamanan</h2>
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Laporan Kepatuhan LHP <strong>{{ $lhp->nomor_lhp }}</strong> diproteksi. Masukkan password akun Anda untuk membuka dokumen resmi ini.
+            </p>
+
+            <div class="mt-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3 text-left border border-gray-100 dark:border-gray-800">
+                <div class="text-[11px] font-semibold text-gray-400 uppercase">Unit Diperiksa / OPD</div>
+                <div class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ $lhp->unitDiperiksa?->nama_unit ?? $lhp->nama_unit ?? 'OPD' }}</div>
+            </div>
+
+            <form @submit.prevent="verifyAndUnlock" class="mt-5 space-y-3">
+                <div x-show="errorMessage" class="rounded-lg bg-rose-50 dark:bg-rose-950/40 p-2.5 text-xs text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60" x-text="errorMessage" x-cloak></div>
+
+                <div class="relative text-left">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Password Akun</label>
+                    <input type="password"
+                           x-model="password"
+                           placeholder="Masukkan password login Anda..."
+                           required
+                           class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2.5 text-sm text-gray-900 dark:text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500">
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <a href="{{ route('laporan.kepatuhan') }}"
+                       class="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 transition">
+                        Kembali
+                    </a>
+                    <button type="submit"
+                            :disabled="loading"
+                            class="flex-1 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700 transition disabled:opacity-50">
+                        <span x-show="!loading">Buka Dokumen</span>
+                        <span x-show="loading" x-cloak>Memverifikasi...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    @else
     {{-- TOP ACTION BAR (NO PRINT) --}}
     <div class="no-print flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -35,14 +119,14 @@
                 Cetak Web
             </button>
 
-            <a href="{{ route('laporan.kepatuhan.pdf', $lhp->id) }}"
-               target="_blank"
-               class="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-700 transition">
+            <button type="button"
+                    onclick="window.requestSecurePdf('kepatuhan_pdf', '{{ $lhp->uuid }}', 'Laporan Kepatuhan: {{ addslashes($lhp->nomor_lhp) }}')"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-700 transition cursor-pointer">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 Unduh PDF Resmi
-            </a>
+            </button>
         </div>
     </div>
 
@@ -584,6 +668,7 @@
         </div>
 
     </div>
+    @endif
 
 </div>
 @endsection

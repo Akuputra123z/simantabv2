@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureSecurePdfAccess;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureUserIsActive::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
+            'secure.pdf' => EnsureSecurePdfAccess::class,
         ]);
 
         $middleware->append(SecurityHeaders::class);

@@ -649,7 +649,7 @@
                         <span class="text-gray-500 dark:text-gray-400">Nomor LHP</span>
                         <p class="font-semibold text-blue-600 dark:text-blue-400 mt-0.5">
                             @if($lhp)
-                                <a href="{{ route('lhps.show', $lhp->id) }}" class="hover:underline">{{ $lhp->nomor_lhp }}</a>
+                                <a href="{{ route('lhps.show', $lhp) }}" class="hover:underline">{{ $lhp->nomor_lhp }}</a>
                             @else
                                 -
                             @endif

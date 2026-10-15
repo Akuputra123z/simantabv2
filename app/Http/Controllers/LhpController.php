@@ -168,12 +168,21 @@ class LhpController extends Controller
     {
         $user = auth()->user();
 
+        $requestedAssignmentId = request('assignment_id') ?? request('audit_assignment_id');
+
         $assignments = AuditAssignment::query()
             ->with([
                 'auditProgramDetail.auditProgram',
                 'unitDiperiksas',
             ])
-            ->forUser($user)
+            ->when($requestedAssignmentId, function ($q) use ($user, $requestedAssignmentId) {
+                $q->where(function ($sub) use ($user, $requestedAssignmentId) {
+                    $sub->where('id', $requestedAssignmentId)
+                        ->orWhere(fn ($sq) => $sq->forUser($user));
+                });
+            }, function ($q) use ($user) {
+                $q->forUser($user);
+            })
             ->latest()
             ->limit(100)
             ->get();
@@ -208,40 +217,112 @@ class LhpController extends Controller
         $kategoris = AuditProgram::KATEGORI;
 
         // Data Nomor LHP aktif yang sudah ada untuk opsi reuse/kolektif BPK/BPKP/ITPROV
-        $existingLhpsData = Lhp::with([
-            'auditAssignment.auditProgramDetail.auditProgram',
-            'auditAssignment.unitDiperiksas:id',
-            'unitDiperiksa:id,nama_unit',
-        ])
-            ->where('status', '!=', 'dibatalkan')
-            ->whereNull('deleted_at')
-            ->latest('tanggal_lhp')
-            ->get()
-            ->groupBy('nomor_lhp')
-            ->map(function ($group) {
-                $first = $group->first();
-                $assignment = $first->auditAssignment;
-                $program = $assignment?->auditProgramDetail?->auditProgram;
-                $usedUnitIds = $group->pluck('unit_diperiksa_id')->filter()->unique()->values()->toArray();
-                $totalUnitsInAss = $assignment ? $assignment->unitDiperiksas->count() : 0;
-
-                return [
-                    'nomor_lhp' => $first->nomor_lhp,
-                    'tanggal_lhp' => $first->tanggal_lhp ? $first->tanggal_lhp->format('Y-m-d') : '',
-                    'catatan_umum' => $first->catatan_umum ?? '',
-                    'audit_assignment_id' => $first->audit_assignment_id,
-                    'program_id' => $program?->id,
-                    'kategori' => $program?->kategori ?: 'PKPT',
-                    'program_nama' => $program?->nama_program ?? '',
-                    'nomor_surat' => $assignment?->nomor_surat ?? '',
-                    'total_units_created' => $group->count(),
-                    'total_units_in_ass' => $totalUnitsInAss,
-                    'used_unit_ids' => $usedUnitIds,
-                ];
+        // Disinkronkan langsung dengan Surat Tugas (AuditAssignment) dan unit yang diperiksa
+        $assignmentsWithLhp = AuditAssignment::query()
+            ->with([
+                'auditProgramDetail.auditProgram',
+                'unitDiperiksas',
+                'lhps' => function ($q) {
+                    $q->where('status', '!=', 'dibatalkan')
+                      ->whereNull('deleted_at')
+                      ->latest('tanggal_lhp')
+                      ->latest('id');
+                },
+                'lhps.unitDiperiksa',
+                'lhps.unitDiperiksas',
+            ])
+            ->when($requestedAssignmentId, function ($q) use ($user, $requestedAssignmentId) {
+                $q->where(function ($sub) use ($user, $requestedAssignmentId) {
+                    $sub->where('id', $requestedAssignmentId)
+                        ->orWhere(fn ($sq) => $sq->forUser($user));
+                });
+            }, function ($q) use ($user) {
+                $q->forUser($user);
             })
-            ->values();
+            ->whereHas('lhps', function ($q) {
+                $q->where('status', '!=', 'dibatalkan')->whereNull('deleted_at');
+            })
+            ->latest()
+            ->get();
 
-        return view('pages.lhps.create', compact('assignments', 'kodeTemuans', 'kodeRekoms', 'usedUnitMap', 'allPrograms', 'kategoris', 'existingLhpsData'));
+        $existingLhpsData = $assignmentsWithLhp->map(function ($assignment) {
+            $program = $assignment->auditProgramDetail?->auditProgram;
+            $allUnits = $assignment->unitDiperiksas->map(fn ($u) => [
+                'id' => $u->id,
+                'nama' => $u->nama_unit ?? ('Unit #' . $u->id),
+            ])->values();
+
+            // Kumpulkan seluruh unit yang sudah dibuatkan LHP untuk penugasan ini
+            $usedUnitsMap = collect();
+            foreach ($assignment->lhps as $lhp) {
+                if ($lhp->unit_diperiksa_id) {
+                    $usedUnitsMap->put($lhp->unit_diperiksa_id, [
+                        'id' => $lhp->unit_diperiksa_id,
+                        'nama' => $lhp->unitDiperiksa?->nama_unit ?? ('Unit #' . $lhp->unit_diperiksa_id),
+                        'nomor_lhp' => $lhp->nomor_lhp,
+                        'tanggal_lhp' => $lhp->tanggal_lhp ? $lhp->tanggal_lhp->format('Y-m-d') : '',
+                        'lhp_id' => $lhp->id,
+                    ]);
+                }
+                foreach ($lhp->unitDiperiksas as $pu) {
+                    $usedUnitsMap->put($pu->id, [
+                        'id' => $pu->id,
+                        'nama' => $pu->nama_unit ?? ('Unit #' . $pu->id),
+                        'nomor_lhp' => $lhp->nomor_lhp,
+                        'tanggal_lhp' => $lhp->tanggal_lhp ? $lhp->tanggal_lhp->format('Y-m-d') : '',
+                        'lhp_id' => $lhp->id,
+                    ]);
+                }
+            }
+
+            $usedUnitIds = $usedUnitsMap->keys()->toArray();
+
+            // Unit yang masih tersisa pada Surat Tugas (belum dibuatkan LHP)
+            $remainingUnits = $allUnits->filter(function ($u) use ($usedUnitIds) {
+                return !in_array($u['id'], $usedUnitIds);
+            })->values()->toArray();
+
+            $primaryLhp = $assignment->lhps->first();
+
+            return [
+                'key' => (string) $assignment->id,
+                'audit_assignment_id' => $assignment->id,
+                'nomor_lhp' => $primaryLhp?->nomor_lhp ?? '',
+                'tanggal_lhp' => $primaryLhp?->tanggal_lhp ? $primaryLhp->tanggal_lhp->format('Y-m-d') : '',
+                'catatan_umum' => $primaryLhp?->catatan_umum ?? '',
+                'program_id' => $program?->id,
+                'kategori' => $program?->kategori ?: 'PKPT',
+                'program_nama' => $program?->nama_program ?? ($assignment->nama_tim ?? 'Program Audit'),
+                'nomor_surat' => $assignment->nomor_surat ?? ('Penugasan #' . $assignment->id),
+                'total_units_created' => $usedUnitsMap->count(),
+                'total_units_in_ass' => $allUnits->count(),
+                'remaining_count' => count($remainingUnits),
+                'remaining_units' => $remainingUnits,
+                'completed_units' => $usedUnitsMap->values()->toArray(),
+                'all_units' => $allUnits->toArray(),
+            ];
+        })
+        ->filter(fn ($item) => ($item['remaining_count'] ?? 0) > 0)
+        ->sortByDesc('remaining_count')
+        ->values();
+
+        // Penugasan audit baru yang belum memiliki LHP sama sekali (untuk opsi panduan di Jalur B)
+        $unstartedAssignments = $assignments->filter(function ($a) use ($usedUnitMap) {
+            $used = $usedUnitMap[$a->id] ?? [];
+            return count($used) === 0 && $a->unitDiperiksas->isNotEmpty();
+        })->map(function ($a) {
+            $prog = $a->auditProgramDetail?->auditProgram;
+            return [
+                'id' => $a->id,
+                'nomor_surat' => $a->nomor_surat,
+                'program_id' => $prog?->id,
+                'program_nama' => $prog?->nama_program ?? '-',
+                'kategori' => $prog?->kategori ?: 'PKPT',
+                'units_count' => $a->unitDiperiksas->count(),
+            ];
+        })->values();
+
+        return view('pages.lhps.create', compact('assignments', 'kodeTemuans', 'kodeRekoms', 'usedUnitMap', 'allPrograms', 'kategoris', 'existingLhpsData', 'unstartedAssignments'));
     }
 
     // Contoh di Controller yang menghandle API /lhp/{id}/temuans
@@ -369,12 +450,13 @@ class LhpController extends Controller
 
         // 1. Authorization: Non-super admin must be authorized
         $user = auth()->user();
-        if (! $user->hasRole(['super_admin', 'kepala_inspektorat'])) {
+        if (! $user->hasRole(['super_admin', 'kepala_inspektorat', 'staff_inspektorat'])) {
             $irbanNames = ($user->isPengendaliTeknis() || $user->isIrban()) ? $user->getIrbanTeamNames() : [];
             $isAuthorized = $assignment->ketua_tim_id === $user->id
                 || $assignment->pengendali_teknis_id === $user->id
                 || $assignment->pengendali_teknis === $user->name
                 || $assignment->created_by === $user->id
+                || $assignment->lhps()->where('created_by', $user->id)->exists()
                 || $assignment->members()->where('user_id', $user->id)->exists()
                 || (! empty($irbanNames) && in_array($assignment->auditProgramDetail?->tim, $irbanNames));
             if (! $isAuthorized) {
@@ -511,6 +593,12 @@ class LhpController extends Controller
 
     public function show(Lhp $lhp)
     {
+        // Enforce canonical UUID in URL
+        $rawParam = request()->route()?->originalParameter('lhp') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $lhp->uuid || is_numeric($rawParam))) {
+            return redirect()->route('lhps.show', $lhp, 301);
+        }
+
         $lhp->load([
             'temuans.kodeTemuan',
             'temuans.recommendations.kodeRekomendasi',
@@ -529,6 +617,12 @@ class LhpController extends Controller
 
     public function edit(Lhp $lhp)
     {
+        // Enforce canonical UUID in URL
+        $rawParam = request()->route()?->originalParameter('lhp') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $lhp->uuid || is_numeric($rawParam))) {
+            return redirect()->route('lhps.edit', $lhp, 301);
+        }
+
         $user = auth()->user();
 
         $assignments = AuditAssignment::with(['auditProgramDetail.auditProgram', 'unitDiperiksas'])
@@ -550,6 +644,7 @@ class LhpController extends Controller
             ->whereIn('audit_assignment_id', $assignments->pluck('id'))
             ->where('status', '!=', 'dibatalkan')
             ->whereNotNull('unit_diperiksa_id')
+            ->whereNull('deleted_at')
             ->select('audit_assignment_id', 'unit_diperiksa_id')
             ->get();
 
@@ -638,9 +733,23 @@ class LhpController extends Controller
                 ->unique()
                 ->toArray();
 
-            if (! empty($alreadyUsedUnits)) {
+            $alreadyUsedUnitsLegacy = Lhp::where('audit_assignment_id', $request->audit_assignment_id)
+                ->where('id', '!=', $lhp->id)
+                ->where('status', '!=', 'dibatalkan')
+                ->whereNull('deleted_at')
+                ->whereIn('unit_diperiksa_id', $unitDiperiksaIds)
+                ->with('unitDiperiksa')
+                ->get()
+                ->pluck('unitDiperiksa.nama_unit')
+                ->filter()
+                ->unique()
+                ->toArray();
+
+            $alreadyUsedAll = array_unique(array_merge($alreadyUsedUnits, $alreadyUsedUnitsLegacy));
+
+            if (! empty($alreadyUsedAll)) {
                 throw ValidationException::withMessages([
-                    'unit_diperiksa_id' => 'Unit berikut sudah memiliki LHP pada penugasan ini: '.implode(', ', $alreadyUsedUnits),
+                    'unit_diperiksa_id' => 'Unit berikut sudah memiliki LHP pada penugasan ini: '.implode(', ', $alreadyUsedAll),
                 ]);
             }
         }
@@ -692,7 +801,7 @@ class LhpController extends Controller
 
         // 1. Authorization: Non-super admin must be authorized
         $user = auth()->user();
-        if (! $user->hasRole(['super_admin', 'kepala_inspektorat'])) {
+        if (! $user->hasRole(['super_admin', 'kepala_inspektorat', 'staff_inspektorat'])) {
             $irbanNames = ($user->isPengendaliTeknis() || $user->isIrban()) ? $user->getIrbanTeamNames() : [];
             $isAuthorized = $lhp->created_by === $user->id
                 || $assignment->ketua_tim_id === $user->id
@@ -874,9 +983,20 @@ class LhpController extends Controller
 
         } catch (ValidationException $e) {
             DB::rollBack();
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terdapat kesalahan validasi data.',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
             throw $e;
+        } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Gagal update LHP: '.$e->getMessage());
+            \Log::error('Gagal update LHP: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'lhp_id' => $lhp->id,
+            ]);
 
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
@@ -943,7 +1063,10 @@ class LhpController extends Controller
             return back()->with('error', 'Pilih data dulu.');
         }
 
-        Lhp::whereIn('id', $request->ids)
+        Lhp::where(function ($q) use ($request) {
+            $q->whereIn('id', $request->ids)
+                ->orWhereIn('uuid', $request->ids);
+        })
             ->with(['attachments', 'temuans.attachments', 'temuans.recommendations.tindakLanjuts.attachments'])
             ->chunk(50, function ($lhps) {
                 foreach ($lhps as $lhp) {

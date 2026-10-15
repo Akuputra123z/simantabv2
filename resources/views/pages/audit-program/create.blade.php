@@ -139,13 +139,22 @@
                     <label for="kategori" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Kategori <span class="text-red-500">*</span>
                     </label>
-                    <select name="kategori" id="kategori" required
-                            class="w-full rounded-lg border border-gray-200 bg-transparent px-4 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:text-white @error('kategori') border-red-500 @enderror">
-                        <option value="">-- Pilih Kategori --</option>
-                        @foreach($kategoriOptions as $opt)
-                            <option value="{{ $opt }}" {{ old('kategori') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
-                        @endforeach
-                    </select>
+                    <div class="relative">
+                        <select name="kategori" id="kategori" data-no-ts required
+                                class="h-10 w-full appearance-none rounded-lg border px-4 pr-10 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer
+                                       @error('kategori') border-red-500 text-red-600 @else border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white @enderror
+                                       bg-white dark:bg-gray-900 hover:border-blue-400">
+                            <option value="" disabled {{ old('kategori') ? '' : 'selected' }}>-- Pilih Kategori --</option>
+                            @foreach($kategoriOptions as $opt)
+                                <option value="{{ $opt }}" {{ old('kategori') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                            @endforeach
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
                     @error('kategori')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                     @enderror

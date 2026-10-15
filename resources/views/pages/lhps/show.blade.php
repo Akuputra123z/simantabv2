@@ -2,900 +2,692 @@
 
 @section('content')
 @php
-$totalTemuan = $lhp->temuans->count();
+    $statistik = $lhp->statistik;
+    $totalTemuan = $lhp->temuans->count();
+    $totalRekomendasi = $lhp->temuans->sum(fn($t) => $t->recommendations->count());
+    $totalNilaiTemuan = (float)($statistik?->total_kerugian ?? $lhp->temuans->sum('nilai_temuan'));
+    $totalNilaiRekomendasi = (float)$lhp->temuans->sum(fn($t) => $t->recommendations->sum('nilai_rekom'));
+    $totalTlSelesai = (float)($statistik?->total_nilai_tl_selesai ?? 0);
+    $totalSisaKerugian = (float)($statistik?->total_sisa_kerugian ?? max(0, $totalNilaiTemuan - $totalTlSelesai));
 
-$totalRekomendasi = $lhp->temuans->sum(function ($temuan) {
-    return $temuan->recommendations->count();
-});
+    $rekomSelesai = (int)($statistik?->rekom_selesai ?? 0);
+    $rekomProses = (int)($statistik?->rekom_proses ?? 0);
+    $rekomBelum = (int)($statistik?->rekom_belum ?? max(0, $totalRekomendasi - $rekomSelesai - $rekomProses));
 
-$totalNilaiTemuan = $lhp->temuans->sum('nilai_temuan');
+    $persenSelesai = $totalRekomendasi > 0 
+        ? (float)($statistik?->persen_selesai_gabungan ?? round(($rekomSelesai / $totalRekomendasi) * 100, 1))
+        : ($lhp->is_nihil ? 100 : 0);
 
-$totalNilaiRekomendasi = $lhp->temuans->sum(function ($temuan) {
-    return $temuan->recommendations->sum('nilai_rekom');
-});
+    $assignment = $lhp->auditAssignment;
+    $program = $assignment?->auditProgramDetail?->auditProgram;
+    $units = $lhp->unitDiperiksas->isNotEmpty() 
+        ? $lhp->unitDiperiksas 
+        : ($lhp->unitDiperiksa ? collect([$lhp->unitDiperiksa]) : collect());
+    $kategori = $program?->kategori ?: 'PKPT';
 @endphp
 
-<div class="w-full space-y-6">
+<div class="w-full space-y-6" x-data="{ activeTab: 'all', expandAll: true }">
 
-    {{-- ============================================================
-        PAGE HEADER
-    ============================================================ --}}
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-
+    {{-- ═════════════════════════════════════════════════════════════ --}}
+    {{-- ── 1. PAGE BREADCRUMB & EXECUTIVE HEADER ── --}}
+    {{-- ═════════════════════════════════════════════════════════════ --}}
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-            <nav class="mb-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <a href="{{ route('lhps.index') }}"
-                   class="transition hover:text-blue-600">
-                    LHP
+            <nav class="mb-1.5 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <a href="{{ route('lhps.index') }}" class="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                    Daftar LHP
                 </a>
-
                 <span>/</span>
-
-                <span class="text-gray-700 dark:text-gray-300">
-                    Detail LHP
+                <span class="rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:text-gray-300">
+                    {{ $kategori }}
+                </span>
+                <span>/</span>
+                <span class="text-gray-900 dark:text-white font-semibold truncate max-w-[200px]">
+                    {{ $lhp->nomor_lhp }}
                 </span>
             </nav>
 
-            <div class="flex items-center gap-3">
-                <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                    Detail Laporan Hasil Pemeriksaan
+            <div class="flex flex-wrap items-center gap-3">
+                <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                    Laporan Hasil Pemeriksaan
                 </h1>
 
+                {{-- Status Document Badge --}}
                 @if($lhp->is_nihil)
-                    <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-400">
-                        🌿 Bebas Temuan (Nihil)
+                    <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 shadow-xs">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Bebas Temuan (Nihil)
                     </span>
-                @elseif(($lhp->status ?? null) === 'published' || ($lhp->status ?? null) === 'final')
-                    <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-400">
-                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                        Diterbitkan
+                @elseif(($lhp->status ?? 'published') === 'published' || ($lhp->status ?? '') === 'final')
+                    <span class="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300 shadow-xs">
+                        <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                        Dokumen Terbit
                     </span>
                 @else
-                    <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-700">
+                    <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300 shadow-xs">
                         <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                         Draft
                     </span>
                 @endif
             </div>
 
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {{ $lhp->nomor_lhp }}
-            </p>
+            <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <span class="font-mono font-semibold text-gray-800 dark:text-gray-200">{{ $lhp->nomor_lhp }}</span>
+                <span>•</span>
+                <span>Terbit: <strong class="text-gray-700 dark:text-gray-300">{{ optional($lhp->tanggal_lhp)->translatedFormat('d F Y') ?? '-' }}</strong></span>
+                <span>•</span>
+                <span>Kategori: <strong class="text-blue-600 dark:text-blue-400">{{ $kategori }}</strong></span>
+            </div>
         </div>
 
-
-        {{-- ACTION --}}
+        {{-- Action Buttons Toolbar --}}
         <div class="flex flex-wrap items-center gap-2">
-
             <a href="{{ route('lhps.index') }}"
-               class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-
-                <svg class="h-4 w-4"
-                     fill="none"
-                     stroke="currentColor"
-                     viewBox="0 0 24 24">
-                    <path stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M15 19l-7-7 7-7" />
+               class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 shadow-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
-
                 Kembali
             </a>
 
-            <a href="{{ route('lhps.edit', $lhp->id) }}"
-               class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50 dark:border-blue-900 dark:bg-gray-800 dark:text-blue-400">
-
-                <svg class="h-4 w-4"
-                     fill="none"
-                     stroke="currentColor"
-                     viewBox="0 0 24 24">
-                    <path stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M12 20h9" />
-
-                    <path stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z" />
+            <a href="{{ route('lhps.edit', $lhp) }}"
+               class="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-2 text-xs font-bold text-blue-700 shadow-xs hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/60 transition">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-
-                Edit LHP
+                Edit Dokumen
             </a>
 
-            @if(Route::has('lhps.print'))
-                <a href="{{ route('lhps.print', $lhp->id) }}"
-                   target="_blank"
-                   class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700">
-
-                    <svg class="h-4 w-4"
-                         fill="none"
-                         stroke="currentColor"
-                         viewBox="0 0 24 24">
-                        <path stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-12 0v4h12v-4" />
+            @if(Route::has('tindak-lanjuts.lhp') && !$lhp->is_nihil && $totalTemuan > 0)
+                <a href="{{ route('tindak-lanjuts.lhp', $lhp) }}"
+                   class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-2 text-xs font-bold text-emerald-700 shadow-xs hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 transition">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
-
-                    Cetak LHP
+                    Tindak Lanjut
                 </a>
-            @else
-                <button type="button"
-                        onclick="window.print()"
-                        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700">
-
-                    <svg class="h-4 w-4"
-                         fill="none"
-                         stroke="currentColor"
-                         viewBox="0 0 24 24">
-                        <path stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-12 0v4h12v-4" />
-                    </svg>
-
-                    Cetak LHP
-                </button>
             @endif
 
+            {{-- Dropdown Cetak / Unduh --}}
+            <div class="relative" x-data="{ openPrint: false }">
+                <button type="button" @click="openPrint = !openPrint" @click.outside="openPrint = false"
+                        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition active:scale-95 cursor-pointer">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Cetak / Ekspor
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+
+                <div x-show="openPrint" x-cloak
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="transform opacity-0 scale-95"
+                     x-transition:enter-end="transform opacity-100 scale-100"
+                     class="absolute right-0 z-20 mt-1.5 w-48 rounded-xl border border-gray-100 bg-white p-1.5 shadow-lg dark:border-gray-800 dark:bg-gray-900">
+                    @if(Route::has('laporan.preview-pdf-per-lhp'))
+                        <button type="button"
+                           @click="openPrint = false; window.requestSecurePdf('lhp_preview', '{{ $lhp->uuid }}', 'LHP: {{ addslashes($lhp->nomor_lhp) }}')"
+                           class="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left cursor-pointer">
+                            <span class="text-rose-500 font-bold text-xs">PDF</span>
+                            <span>Pratinjau PDF</span>
+                        </button>
+                    @endif
+                    @if(Route::has('laporan.download-pdf-per-lhp'))
+                        <button type="button"
+                           @click="openPrint = false; window.requestSecurePdf('lhp_download', '{{ $lhp->uuid }}', 'LHP: {{ addslashes($lhp->nomor_lhp) }}')"
+                           class="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left cursor-pointer">
+                            <span class="text-rose-500 font-bold text-xs">⬇</span>
+                            <span>Unduh Dokumen PDF</span>
+                        </button>
+                    @endif
+                    @if(Route::has('laporan.download-excel-per-lhp'))
+                        <a href="{{ route('laporan.download-excel-per-lhp', $lhp) }}"
+                           class="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                            <span class="text-emerald-600 font-bold text-xs">XLS</span>
+                            <span>Unduh Data Excel</span>
+                        </a>
+                    @endif
+                    <button type="button" onclick="window.print()"
+                            class="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left cursor-pointer">
+                        <span class="text-blue-500 font-bold text-xs">🖨</span>
+                        <span>Cetak Halaman (Print)</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
+    {{-- ═════════════════════════════════════════════════════════════ --}}
+    {{-- ── 2. METADATA PENUGASAN & OBJEK AUDIT BANNER ── --}}
+    {{-- ═════════════════════════════════════════════════════════════ --}}
+    <div class="rounded-2xl border border-gray-200 bg-white shadow-xs dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+        <div class="grid grid-cols-1 divide-y divide-gray-100 sm:grid-cols-2 lg:grid-cols-4 sm:divide-y-0 sm:divide-x dark:divide-gray-800">
+            {{-- Program Kerja --}}
+            <div class="p-4 sm:p-5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Program Kerja</span>
+                <p class="mt-1 text-xs sm:text-sm font-bold text-gray-900 dark:text-white line-clamp-2">
+                    {{ $program?->nama_program ?? '-' }}
+                </p>
+                <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+                    Tahun Anggaran {{ $program?->tahun ?? date('Y') }}
+                </p>
+            </div>
 
-    {{-- ============================================================
-        HERO DOCUMENT HEADER
-    ============================================================ --}}
-    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            {{-- Penugasan / Surat Tugas --}}
+            <div class="p-4 sm:p-5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Surat Tugas / Penugasan</span>
+                <p class="mt-1 text-xs sm:text-sm font-bold text-gray-900 dark:text-white line-clamp-2 font-mono">
+                    {{ $assignment?->nomor_surat ?? '-' }}
+                </p>
+                <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                    {{ $assignment?->auditProgramDetail?->nama_detail_program ?? '-' }}
+                </p>
+            </div>
 
-        <div class="border-b border-gray-100 px-6 py-6 dark:border-gray-800">
+            {{-- Objek Audit / Unit Kerja --}}
+            <div class="p-4 sm:p-5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Unit Kerja / Objek Audit</span>
+                <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                    @forelse($units as $u)
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200/80 dark:bg-blue-950/40 dark:border-blue-900/60 dark:text-blue-300">
+                            {{ $u->nama_unit ?? $u->nama ?? ('Unit #' . $u->id) }}
+                        </span>
+                    @empty
+                        <span class="text-xs text-gray-400 italic">Belum ditentukan</span>
+                    @endforelse
+                </div>
+            </div>
 
-            <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            {{-- Administrasi Penerbitan --}}
+            <div class="p-4 sm:p-5 bg-gray-50/60 dark:bg-gray-800/30">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Pencatatan &amp; Pembuat</span>
+                <p class="mt-1 text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                    {{ $lhp->creator?->name ?? 'Administrator' }}
+                </p>
+                <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+                    Input: {{ optional($lhp->created_at)->translatedFormat('d M Y, H:i') }}
+                </p>
+            </div>
+        </div>
+    </div>
 
+    {{-- ═════════════════════════════════════════════════════════════ --}}
+    {{-- ── 3. STATE BANNER / KPI HIGHLIGHT CARDS ── --}}
+    {{-- ═════════════════════════════════════════════════════════════ --}}
+    @if($lhp->is_nihil)
+        {{-- Banner Elegan Bebas Temuan --}}
+        <div class="relative overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent p-6 dark:border-emerald-900/50 dark:from-emerald-950/40">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="flex items-start gap-4">
-
-                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/30">
-
-                        <svg class="h-6 w-6"
-                             fill="none"
-                             stroke="currentColor"
-                             viewBox="0 0 24 24">
-
-                            <path stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="1.8"
-                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z" />
-
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                         </svg>
-
                     </div>
-
-
                     <div>
-
-                        <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400">
-                            Laporan Hasil Pemeriksaan
-                        </p>
-
-                        <h2 class="mt-1 text-xl font-bold text-gray-900 dark:text-white">
-                            {{ $lhp->nomor_lhp }}
+                        <h2 class="text-base font-bold text-emerald-950 dark:text-emerald-100">
+                            Pemeriksaan Dinyatakan Bebas Temuan (Nihil)
                         </h2>
+                        <p class="mt-1 text-xs text-emerald-800 dark:text-emerald-300/90 leading-relaxed max-w-2xl">
+                            Laporan Hasil Pemeriksaan ini selesai tanpa mencatat temuan kerugian, ketidakpatuhan, maupun kelemahan SPI. Seluruh kewajiban audit dinyatakan tuntas dengan progres tindak lanjut 100%.
+                        </p>
+                    </div>
+                </div>
 
-                        <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-                            @php
-                                $units = $lhp->unitDiperiksas->isNotEmpty() ? $lhp->unitDiperiksas : ($lhp->unitDiperiksa ? collect([$lhp->unitDiperiksa]) : collect());
-                            @endphp
-                            @foreach($units as $u)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
-                                    {{ $u->nama_unit }}
-                                </span>
-                            @endforeach
-                            @if($units->isEmpty())
-                                <span class="text-sm text-gray-500 dark:text-gray-400">-</span>
-                            @endif
+                <div class="flex items-center gap-3 shrink-0 sm:border-l sm:border-emerald-200 sm:pl-6 dark:border-emerald-800/60">
+                    <div class="text-right">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Progres TL</span>
+                        <p class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">100%</p>
+                        <span class="text-[10px] font-semibold text-emerald-700/80 dark:text-emerald-400/80">Tuntas &amp; Bersih</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @else
+        {{-- 4-Card Executive KPI Financial & Resolution Strip --}}
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {{-- Card 1: Temuan & Rekomendasi --}}
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Temuan &amp; Rekomendasi</span>
+                    <span class="rounded-lg bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">Hasil Audit</span>
+                </div>
+                <div class="mt-2.5 flex items-baseline gap-2">
+                    <span class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ $totalTemuan }}</span>
+                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Temuan</span>
+                    <span class="text-gray-300 dark:text-gray-700">•</span>
+                    <span class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ $totalRekomendasi }}</span>
+                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Rekom</span>
+                </div>
+                <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                    Rekomendasi wajib ditindaklanjuti objek audit.
+                </p>
+            </div>
+
+            {{-- Card 2: Total Nilai Temuan (Plafon Kerugian) --}}
+            <div class="rounded-2xl border border-rose-200/80 bg-rose-50/30 p-5 shadow-xs dark:border-rose-900/40 dark:bg-rose-950/20">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">Nilai Temuan Kerugian</span>
+                    <span class="rounded-lg bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-950/80 dark:text-rose-300">Plafon</span>
+                </div>
+                <p class="mt-2 text-xl sm:text-2xl font-extrabold text-rose-600 dark:text-rose-400 tracking-tight">
+                    Rp {{ number_format($totalNilaiTemuan, 0, ',', '.') }}
+                </p>
+                <p class="mt-1 text-[11px] text-rose-700/80 dark:text-rose-400/80">
+                    Nilai rekomendasi: Rp {{ number_format($totalNilaiRekomendasi, 0, ',', '.') }}
+                </p>
+            </div>
+
+            {{-- Card 3: Realisasi Tindak Lanjut Finansial --}}
+            <div class="rounded-2xl border border-emerald-200/80 bg-emerald-50/30 p-5 shadow-xs dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Penyelesaian (Setor/TL)</span>
+                    <span class="rounded-lg bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">Realisasi</span>
+                </div>
+                <p class="mt-2 text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">
+                    Rp {{ number_format($totalTlSelesai, 0, ',', '.') }}
+                </p>
+                <p class="mt-1 text-[11px] text-emerald-800/80 dark:text-emerald-400/80">
+                    Sisa kerugian: <strong class="text-rose-600 dark:text-rose-400">Rp {{ number_format($totalSisaKerugian, 0, ',', '.') }}</strong>
+                </p>
+            </div>
+
+            {{-- Card 4: Progres Penyelesaian TL --}}
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Status Progres TL</span>
+                        <span class="text-xs font-extrabold text-blue-600 dark:text-blue-400">{{ $persenSelesai }}%</span>
+                    </div>
+                    <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                        <div class="h-full rounded-full transition-all duration-500 {{ $persenSelesai >= 100 ? 'bg-emerald-500' : 'bg-blue-600' }}"
+                             style="width: {{ min(100, max(0, $persenSelesai)) }}%"></div>
+                    </div>
+                </div>
+                <div class="mt-2 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 pt-1">
+                    <span class="text-emerald-600 dark:text-emerald-400 font-bold">✓ {{ $rekomSelesai }} Selesai</span>
+                    <span class="text-amber-600 dark:text-amber-400 font-bold">⏳ {{ $rekomProses }} Proses</span>
+                    <span class="text-gray-400 font-medium">• {{ $rekomBelum }} Belum</span>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ═════════════════════════════════════════════════════════════ --}}
+    {{-- ── 4. TWO-COLUMN MAIN WORKSPACE ── --}}
+    {{-- ═════════════════════════════════════════════════════════════ --}}
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
+
+        {{-- LEFT COLUMN: DETAIL TEMUAN & REKOMENDASI (COL 8) --}}
+        <div class="space-y-6 lg:col-span-8">
+
+            {{-- Ringkasan Eksekutif / Catatan Umum --}}
+            @if($lhp->catatan_umum)
+                <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-900 space-y-3">
+                    <div class="flex items-center gap-2 border-b border-gray-100 dark:border-gray-800 pb-3">
+                        <span class="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 text-xs font-bold">📝</span>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+                            Catatan Umum &amp; Ringkasan LHP
+                        </h3>
+                    </div>
+                    <div class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                        {!! nl2br(e($lhp->catatan_umum)) !!}
+                    </div>
+                </div>
+            @endif
+
+            {{-- Daftar Temuan Section --}}
+            <div class="rounded-2xl border border-gray-200 bg-white shadow-xs dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-100 px-6 py-4 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40">
+                    <div class="flex items-center gap-2.5">
+                        <span class="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white text-xs font-bold">
+                            {{ $totalTemuan }}
+                        </span>
+                        <div>
+                            <h2 class="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+                                Temuan Pemeriksaan &amp; Rekomendasi
+                            </h2>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                                Klik judul temuan untuk membuka atau menutup rinciannya.
+                            </p>
                         </div>
                     </div>
 
+                    @if(!$lhp->is_nihil && $totalTemuan > 0)
+                        <div class="flex items-center gap-2">
+                            <button type="button" @click="expandAll = !expandAll"
+                                    class="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 transition cursor-pointer">
+                                <span x-text="expandAll ? 'Ciutkan Semua' : 'Buka Semua'"></span>
+                            </button>
+                        </div>
+                    @endif
                 </div>
 
-
-                <div class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-right dark:border-gray-700 dark:bg-gray-800">
-
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                        Tanggal LHP
-                    </p>
-
-                    <p class="mt-1 text-sm font-bold text-gray-900 dark:text-white">
-                        {{ optional($lhp->tanggal_lhp)->translatedFormat('d F Y') ?? (is_string($lhp->tanggal_lhp) ? \Carbon\Carbon::parse($lhp->tanggal_lhp)->translatedFormat('d F Y') : '-') }}
-                    </p>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- QUICK INFO --}}
-        <div class="grid grid-cols-1 divide-y divide-gray-100 dark:divide-gray-800 md:grid-cols-3 md:divide-x md:divide-y-0">
-
-            <div class="px-6 py-4">
-
-                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                    Program Kerja
-                </p>
-
-                <p class="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-200">
-                    {{ $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program ?? '-' }}
-                </p>
-
-            </div>
-
-
-            <div class="px-6 py-4">
-
-                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                    Penugasan Audit
-                </p>
-
-                <p class="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-200">
-                    {{ $lhp->auditAssignment?->auditProgramDetail?->nama_detail_program ?? '-' }}
-                </p>
-
-                <p class="mt-1 text-xs text-gray-500">
-                    {{ $lhp->auditAssignment?->nomor_surat ?? '-' }}
-                </p>
-
-            </div>
-
-
-            <div class="px-6 py-4">
-
-                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                    Objek Pemeriksaan
-                </p>
-
-                <p class="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-200">
-                    {{ $lhp->nama_unit ?: '-' }}
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    {{-- ============================================================
-        SUMMARY
-    ============================================================ --}}
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-
-        {{-- TEMUAN --}}
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-
-            <div class="flex items-start justify-between">
-
-                <div>
-
-                    <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                        Total Temuan
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                        {{ $totalTemuan }}
-                    </p>
-
-                    <p class="mt-1 text-xs text-gray-500">
-                        Temuan pemeriksaan
-                    </p>
-
-                </div>
-
-                <div class="rounded-xl bg-blue-50 p-2.5 text-blue-600 dark:bg-blue-900/30">
-
-                    <svg class="h-5 w-5"
-                         fill="none"
-                         stroke="currentColor"
-                         viewBox="0 0 24 24">
-
-                        <path stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
-
-                    </svg>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- REKOMENDASI --}}
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-
-            <div class="flex items-start justify-between">
-
-                <div>
-
-                    <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                        Rekomendasi
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                        {{ $totalRekomendasi }}
-                    </p>
-
-                    <p class="mt-1 text-xs text-gray-500">
-                        Tindak lanjut
-                    </p>
-
-                </div>
-
-                <div class="rounded-xl bg-indigo-50 p-2.5 text-indigo-600 dark:bg-indigo-900/30">
-
-                    <svg class="h-5 w-5"
-                         fill="none"
-                         stroke="currentColor"
-                         viewBox="0 0 24 24">
-
-                        <path stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M9 12l2 2 4-4m5-3a9 9 0 11-6-6" />
-
-                    </svg>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- NILAI TEMUAN --}}
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-
-            <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                Nilai Temuan
-            </p>
-
-            <p class="mt-2 text-xl font-bold tracking-tight text-rose-600">
-                Rp {{ number_format($totalNilaiTemuan, 0, ',', '.') }}
-            </p>
-
-            <p class="mt-2 text-xs text-gray-500">
-                Akumulasi nilai temuan
-            </p>
-
-        </div>
-
-
-        {{-- NILAI REKOMENDASI --}}
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-
-            <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                Nilai Rekomendasi
-            </p>
-
-            <p class="mt-2 text-xl font-bold tracking-tight text-blue-600">
-                Rp {{ number_format($totalNilaiRekomendasi, 0, ',', '.') }}
-            </p>
-
-            <p class="mt-2 text-xs text-gray-500">
-                Nilai yang direkomendasikan
-            </p>
-
-        </div>
-
-    </div>
-
-
-    {{-- ============================================================
-        MAIN CONTENT
-    ============================================================ --}}
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
-
-        {{-- LEFT CONTENT --}}
-        <div class="space-y-6 xl:col-span-8">
-
-
-            {{-- CATATAN --}}
-            @if($lhp->catatan_umum)
-                <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-
-                    <div class="mb-4 flex items-center gap-2">
-
-                        <div class="h-2 w-2 rounded-full bg-blue-500"></div>
-
-                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">
-                            Ringkasan Pemeriksaan
-                        </h3>
-
-                    </div>
-
-                    <div class="prose prose-sm max-w-none text-sm leading-7 text-gray-600 dark:text-gray-300 dark:prose-invert">
-                        {!! $lhp->catatan_umum !!}
-                    </div>
-
-                </div>
-            @endif
-
-
-            {{-- TEMUAN --}}
-            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-
-                <div class="flex items-center justify-between border-b border-gray-100 px-6 py-5 dark:border-gray-800">
-
-                    <div>
-
-                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">
-                            Temuan Pemeriksaan
-                        </h3>
-
-                        <p class="mt-1 text-xs text-gray-500">
-                            Klik pada temuan untuk membuka / menutup rincian temuan dan rekomendasi.
+                {{-- State Jika Nihil --}}
+                @if($lhp->is_nihil)
+                    <div class="p-12 text-center space-y-3">
+                        <div class="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                            <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-white">Tidak Ada Temuan Pemeriksaan</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                            Laporan Hasil Pemeriksaan ini berstatus <strong>Nihil / Bebas Temuan</strong>. Tidak terdapat daftar ketidakpatuhan maupun rekomendasi tindak lanjut.
                         </p>
-
                     </div>
-
-                    <span class="rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                        {{ $totalTemuan }} Temuan
-                    </span>
-
-                </div>
-
-                <div class="divide-y divide-gray-100 dark:divide-gray-800">
-
-                    @foreach($lhp->temuans as $index => $temuan)
-
-                        <div class="p-6 lg:p-7" x-data="{ open: {{ $loop->first ? 'true' : 'false' }} }">
-
-                            {{-- TEMUAN HEADER (TOGGLE DROPDOWN) --}}
-                            <div @click="open = !open" class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between cursor-pointer select-none group">
-
-                                <div class="flex items-start gap-4">
-
-                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white shadow-sm transition group-hover:bg-blue-700">
-                                        {{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}
-                                    </div>
-
-                                    <div>
-
-                                        <div class="flex flex-wrap items-center gap-2">
-
-                                            <span class="rounded-md bg-blue-50 px-2 py-1 font-mono text-[10px] font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                                {{ $temuan->kodeTemuan?->kode ?? 'TEMUAN' }}
-                                            </span>
-
-                                            <span class="text-xs text-gray-400">
-                                                Temuan Pemeriksaan
-                                            </span>
-
-                                            <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
-                                                {{ $temuan->recommendations->count() }} Rekomendasi
-                                            </span>
-
+                @elseif($totalTemuan === 0)
+                    <div class="p-12 text-center space-y-2">
+                        <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Belum ada temuan yang diinputkan pada LHP ini.</p>
+                        <a href="{{ route('lhps.edit', $lhp) }}" class="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline">
+                            + Tambah Temuan di Halaman Edit
+                        </a>
+                    </div>
+                @else
+                    {{-- Loop Temuan --}}
+                    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+                        @foreach($lhp->temuans as $idx => $t)
+                            <div x-data="{ open: true }" x-init="$watch('expandAll', val => open = val)" class="transition-colors">
+                                {{-- Temuan Accordion Header --}}
+                                <div @click="open = !open"
+                                     class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 sm:px-6 cursor-pointer select-none hover:bg-gray-50/70 dark:hover:bg-gray-800/40 transition">
+                                    <div class="flex items-start gap-3.5 min-w-0">
+                                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-xs font-extrabold text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                            #{{ $idx + 1 }}
                                         </div>
-
-                                        <h4 class="mt-1.5 text-base font-bold leading-6 text-gray-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400 transition">
-                                            {{ $temuan->kodeTemuan?->deskripsi ?? $temuan->kodeTemuan?->nama ?? 'Temuan Pemeriksaan' }}
-                                        </h4>
-
+                                        <div class="min-w-0">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="rounded bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 px-2 py-0.5 font-mono text-[11px] font-bold">
+                                                    {{ $t->kodeTemuan?->kode ?? 'TEMUAN' }}
+                                                </span>
+                                                <span class="rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 px-2 py-0.5 text-[10px] font-semibold">
+                                                    {{ $t->recommendations->count() }} Rekomendasi
+                                                </span>
+                                            </div>
+                                            <h3 class="mt-1 text-sm font-bold text-gray-900 dark:text-white leading-snug">
+                                                {{ $t->kodeTemuan?->deskripsi ?? $t->kodeTemuan?->nama ?? 'Temuan Hasil Audit' }}
+                                            </h3>
+                                        </div>
                                     </div>
 
+                                    <div class="flex items-center gap-3 self-end sm:self-center shrink-0">
+                                        @if(($t->nilai_temuan ?? 0) > 0)
+                                            <div class="text-right">
+                                                <span class="text-[10px] font-bold uppercase tracking-wider text-rose-500">Nilai Temuan</span>
+                                                <p class="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400">
+                                                    Rp {{ number_format($t->nilai_temuan, 0, ',', '.') }}
+                                                </p>
+                                            </div>
+                                        @endif
+                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 transition-transform duration-200"
+                                             :class="open ? 'rotate-180' : ''">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </div>
+                                    </div>
                                 </div>
 
-
-                                <div class="flex items-center gap-3 self-end sm:self-center">
-
-                                    @if($temuan->nilai_temuan > 0)
-
-                                        <div class="shrink-0 rounded-xl border border-rose-100 bg-rose-50 px-3 py-1.5 text-right dark:border-rose-900/40 dark:bg-rose-900/20">
-
-                                            <p class="text-[9px] font-bold uppercase tracking-wider text-rose-400">
-                                                Nilai Temuan
-                                            </p>
-
-                                            <p class="text-xs font-bold text-rose-600">
-                                                Rp {{ number_format($temuan->nilai_temuan, 0, ',', '.') }}
-                                            </p>
-
+                                {{-- Temuan Accordion Body --}}
+                                <div x-show="open" x-cloak x-collapse class="border-t border-gray-100 dark:border-gray-800/80 bg-gray-50/30 dark:bg-gray-900/40 p-5 sm:p-6 space-y-5">
+                                    {{-- 1. Kondisi --}}
+                                    <div class="rounded-xl border border-gray-200/80 bg-white p-4 shadow-2xs dark:border-gray-800 dark:bg-gray-800/50 space-y-1.5">
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Uraian Kondisi Fakta:</span>
+                                        <div class="text-xs sm:text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-line">
+                                            {!! nl2br(e($t->kondisi ?: '-')) !!}
                                         </div>
+                                    </div>
 
+                                    {{-- 2. Sebab & Akibat Grid --}}
+                                    @if($t->sebab || $t->akibat)
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                            @if($t->sebab)
+                                                <div class="rounded-xl border border-amber-200/60 bg-amber-50/40 p-3.5 text-xs dark:border-amber-900/40 dark:bg-amber-950/20 space-y-1">
+                                                    <span class="font-bold uppercase text-[10px] tracking-wider text-amber-800 dark:text-amber-300">🔍 Penyebab (Sebab):</span>
+                                                    <p class="text-amber-900 dark:text-amber-200 leading-relaxed whitespace-pre-line">
+                                                        {!! nl2br(e($t->sebab)) !!}
+                                                    </p>
+                                                </div>
+                                            @endif
+                                            @if($t->akibat)
+                                                <div class="rounded-xl border border-rose-200/60 bg-rose-50/40 p-3.5 text-xs dark:border-rose-900/40 dark:bg-rose-950/20 space-y-1">
+                                                    <span class="font-bold uppercase text-[10px] tracking-wider text-rose-800 dark:text-rose-300">⚠️ Dampak (Akibat):</span>
+                                                    <p class="text-rose-900 dark:text-rose-200 leading-relaxed whitespace-pre-line">
+                                                        {!! nl2br(e($t->akibat)) !!}
+                                                    </p>
+                                                </div>
+                                            @endif
+                                        </div>
                                     @endif
 
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition group-hover:bg-blue-50 group-hover:text-blue-600 dark:bg-gray-800 dark:text-gray-400 dark:group-hover:bg-blue-900/40 dark:group-hover:text-blue-400">
-                                        <svg class="h-5 w-5 transform transition-transform duration-200"
-                                             :class="open ? 'rotate-180' : ''"
-                                             fill="none"
-                                             stroke="currentColor"
-                                             viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </div>
+                                    {{-- 3. Daftar Rekomendasi di bawah Temuan --}}
+                                    <div class="space-y-3 pt-2">
+                                        <div class="flex items-center justify-between">
+                                            <h4 class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                                                <span>📋 Rekomendasi Tindak Lanjut</span>
+                                                <span class="text-gray-400">({{ $t->recommendations->count() }})</span>
+                                            </h4>
+                                        </div>
 
-                                </div>
-
-                            </div>
-
-
-                            {{-- COLLAPSIBLE CONTENT BODY --}}
-                            <div x-show="open"
-                                 x-transition:enter="transition ease-out duration-200"
-                                 x-transition:enter-start="opacity-0 -translate-y-2"
-                                 x-transition:enter-end="opacity-100 translate-y-0"
-                                 x-transition:leave="transition ease-in duration-150"
-                                 x-transition:leave-start="opacity-100 translate-y-0"
-                                 x-transition:leave-end="opacity-0 -translate-y-2"
-                                 class="mt-6 border-t border-gray-100 pt-6 dark:border-gray-800">
-
-                                {{-- KONDISI --}}
-                                <div class="border-l-2 border-gray-200 pl-5 dark:border-gray-700">
-
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">
-                                        Kondisi
-                                    </p>
-
-                                    <div class="prose prose-sm max-w-none text-sm leading-7 text-gray-700 dark:text-gray-300 dark:prose-invert">
-                                        {!! $temuan->kondisi ?: '-' !!}
-                                    </div>
-
-                                </div>
-
-
-                                {{-- SEBAB DAN AKIBAT --}}
-                                @if($temuan->sebab || $temuan->akibat)
-
-                                    <div class="mt-5 space-y-4">
-
-                                        @if($temuan->sebab)
-                                            <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/60">
-
-                                                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">
-                                                    Penyebab (Sebab)
-                                                </p>
-
-                                                <div class="prose prose-sm max-w-none text-xs leading-6 text-gray-600 dark:text-gray-300 dark:prose-invert">
-                                                    {!! $temuan->sebab !!}
-                                                </div>
-
-                                            </div>
-                                        @endif
-
-
-                                        @if($temuan->akibat)
-                                            <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/60">
-
-                                                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">
-                                                    Dampak (Akibat)
-                                                </p>
-
-                                                <div class="prose prose-sm max-w-none text-xs leading-6 text-gray-600 dark:text-gray-300 dark:prose-invert">
-                                                    {!! $temuan->akibat !!}
-                                                </div>
-
-                                            </div>
-                                        @endif
-
-                                    </div>
-
-                                @endif
-
-
-                                {{-- REKOMENDASI --}}
-                                <div class="mt-7 border-t border-gray-100 pt-6 dark:border-gray-800">
-
-                                    <div class="mb-4 flex items-center gap-2">
-
-                                        <div class="h-2 w-2 rounded-full bg-blue-500"></div>
-
-                                        <h5 class="text-xs font-bold uppercase tracking-wider text-gray-500">
-                                            Rekomendasi Tindak Lanjut
-                                        </h5>
-
-                                    </div>
-
-
-                                    <div class="space-y-3">
-
-                                        @foreach($temuan->recommendations as $rIndex => $rekom)
-
-                                            <div class="relative rounded-xl border border-gray-200 p-5 transition hover:border-blue-200 hover:shadow-sm dark:border-gray-700 dark:hover:border-blue-800">
-
-                                                <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-
-                                                    <div class="flex items-center gap-3">
-
-                                                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-[11px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                                                            {{ $rIndex + 1 }}
-                                                        </span>
-
-                                                        <div>
-
-                                                            <span class="font-mono text-[10px] font-bold text-blue-600 dark:text-blue-400">
-                                                                {{ $rekom->kodeRekomendasi?->kode ?? 'REKOM' }}
+                                        <div class="space-y-2.5">
+                                            @forelse($t->recommendations as $rIdx => $r)
+                                                @php
+                                                    $rStatus = $r->status ?? 'belum';
+                                                @endphp
+                                                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-2xs dark:border-gray-800 dark:bg-gray-800/80 space-y-3">
+                                                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2.5">
+                                                        <div class="flex items-start gap-2.5">
+                                                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 text-[11px] font-bold">
+                                                                {{ $rIdx + 1 }}
                                                             </span>
-
-                                                            <p class="mt-1 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                                                {{ $rekom->kodeRekomendasi?->deskripsi ?? 'Rekomendasi' }}
-                                                            </p>
-
+                                                            <div>
+                                                                <div class="flex flex-wrap items-center gap-2">
+                                                                    <span class="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">
+                                                                        {{ $r->kodeRekomendasi?->kode ?? 'REKOM' }}
+                                                                    </span>
+                                                                    <span class="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                                                        {{ $r->jenis_rekomendasi ?: 'Administrasi' }}
+                                                                    </span>
+                                                                </div>
+                                                                <p class="mt-0.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                                                    {{ $r->kodeRekomendasi?->deskripsi ?? 'Rekomendasi Pemeriksaan' }}
+                                                                </p>
+                                                            </div>
                                                         </div>
 
+                                                        {{-- Badge Status TL Rekomendasi --}}
+                                                        <div class="self-end sm:self-start">
+                                                            @if($rStatus === 'selesai')
+                                                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                                                    ✓ Selesai TL
+                                                                </span>
+                                                            @elseif($rStatus === 'proses')
+                                                                <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                                                                    ⏳ Dalam Proses
+                                                                </span>
+                                                            @else
+                                                                <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                                                    • Belum TL
+                                                                </span>
+                                                            @endif
+                                                        </div>
                                                     </div>
 
-
-                                                    <span class="w-fit rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-bold uppercase text-gray-500 dark:bg-gray-800">
-                                                        {{ $rekom->jenis_rekomendasi }}
-                                                    </span>
-
-                                                </div>
-
-
-                                                <div class="prose prose-sm max-w-none text-sm leading-7 text-gray-700 dark:text-gray-300 dark:prose-invert">
-                                                    {!! $rekom->uraian_rekom !!}
-                                                </div>
-
-
-                                                <div class="mt-5 grid grid-cols-1 gap-3 border-t border-gray-100 pt-4 sm:grid-cols-2 dark:border-gray-800">
-
-                                                    <div>
-
-                                                        <p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">
-                                                            Batas Waktu
-                                                        </p>
-
-                                                        <p class="mt-1 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                                            {{ optional($rekom->batas_waktu)->translatedFormat('d F Y') ?? (is_string($rekom->batas_waktu) ? \Carbon\Carbon::parse($rekom->batas_waktu)->translatedFormat('d F Y') : '-') }}
-                                                        </p>
-
+                                                    {{-- Uraian Rekomendasi --}}
+                                                    <div class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed pl-8 whitespace-pre-line">
+                                                        {!! nl2br(e($r->uraian_rekom ?: '-')) !!}
                                                     </div>
 
-
-                                                    <div class="sm:text-right">
-
-                                                        <p class="text-[9px] font-bold uppercase tracking-wider text-gray-400">
-                                                            Nilai Rekomendasi
-                                                        </p>
-
-                                                        <p class="mt-1 text-xs font-bold text-blue-600">
-                                                            Rp {{ number_format($rekom->nilai_rekom ?? 0, 0, ',', '.') }}
-                                                        </p>
-
+                                                    {{-- Footer Rekomendasi (Nilai & Batas Waktu) --}}
+                                                    <div class="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 dark:border-gray-700/60 pt-2.5 pl-8 text-xs text-gray-500 dark:text-gray-400">
+                                                        <div class="flex items-center gap-1.5">
+                                                            <span>Batas Waktu:</span>
+                                                            <strong class="text-gray-700 dark:text-gray-300">
+                                                                {{ optional($r->batas_waktu)->translatedFormat('d F Y') ?? '-' }}
+                                                            </strong>
+                                                        </div>
+                                                        @if(($r->nilai_rekom ?? 0) > 0)
+                                                            <div class="flex items-center gap-1.5">
+                                                                <span>Nilai Rekomendasi:</span>
+                                                                <strong class="text-blue-600 dark:text-blue-400 font-bold">
+                                                                    Rp {{ number_format($r->nilai_rekom, 0, ',', '.') }}
+                                                                </strong>
+                                                            </div>
+                                                        @endif
                                                     </div>
-
                                                 </div>
-
-                                            </div>
-
-                                        @endforeach
-
+                                            @empty
+                                                <p class="text-xs text-gray-400 italic">Belum ada rekomendasi pada temuan ini.</p>
+                                            @endforelse
+                                        </div>
                                     </div>
-
                                 </div>
-
                             </div>
-
-                        </div>
-
-                    @endforeach
-
-                </div>
-
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
         </div>
 
+        {{-- RIGHT COLUMN: REKAP PROGRESS, LAMPIRAN & METADATA (COL 4) --}}
+        <aside class="space-y-6 lg:col-span-4">
 
-        {{-- ========================================================
-            RIGHT SIDEBAR
-        ======================================================== --}}
-        <aside class="space-y-5 xl:col-span-4">
-
-
-            {{-- INFORMASI DOKUMEN --}}
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-
-                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">
-                    Informasi Dokumen
-                </h3>
-
-
-                <dl class="mt-5 space-y-4 text-sm">
-
-                    <div class="border-b border-gray-100 pb-4 dark:border-gray-800">
-
-                        <dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                            Nomor LHP
-                        </dt>
-
-                        <dd class="mt-1 font-semibold text-gray-800 dark:text-gray-200">
-                            {{ $lhp->nomor_lhp }}
-                        </dd>
-
-                    </div>
-
-
-                    <div class="border-b border-gray-100 pb-4 dark:border-gray-800">
-
-                        <dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                            Tanggal
-                        </dt>
-
-                        <dd class="mt-1 font-semibold text-gray-800 dark:text-gray-200">
-                            {{ optional($lhp->tanggal_lhp)->translatedFormat('d F Y') ?? (is_string($lhp->tanggal_lhp) ? \Carbon\Carbon::parse($lhp->tanggal_lhp)->translatedFormat('d F Y') : '-') }}
-                        </dd>
-
-                    </div>
-
-
-                    <div>
-
-                        <dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                            Dibuat
-                        </dt>
-
-                        <dd class="mt-1 font-semibold text-gray-800 dark:text-gray-200">
-                            {{ optional($lhp->created_at)->translatedFormat('d F Y, H:i') }}
-                        </dd>
-
-                    </div>
-
-                </dl>
-
-            </div>
-
-
-            {{-- PROGRESS --}}
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-
-                <div class="flex items-center justify-between">
-
-                    <div>
-
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">
-                            Ringkasan Data
-                        </h3>
-
-                        <p class="mt-1 text-xs text-gray-500">
-                            Komposisi LHP
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="mt-5 space-y-5">
-
-                    <div>
-
-                        <div class="mb-2 flex items-center justify-between text-xs">
-
-                            <span class="text-gray-500">
-                                Temuan
-                            </span>
-
-                            <strong class="text-gray-800 dark:text-gray-200">
-                                {{ $totalTemuan }}
-                            </strong>
-
-                        </div>
-
-                        <div class="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-
-                            <div class="h-full w-full rounded-full bg-blue-500"></div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div>
-
-                        <div class="mb-2 flex items-center justify-between text-xs">
-
-                            <span class="text-gray-500">
-                                Rekomendasi
-                            </span>
-
-                            <strong class="text-gray-800 dark:text-gray-200">
-                                {{ $totalRekomendasi }}
-                            </strong>
-
-                        </div>
-
-                        <div class="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-
-                            <div class="h-full w-full rounded-full bg-indigo-500"></div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            {{-- LAMPIRAN --}}
-            @if($lhp->attachments && $lhp->attachments->count())
-
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-
+            {{-- 1. Card Status Tindak Lanjut Terpadu --}}
+            @if(!$lhp->is_nihil)
+                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900 space-y-4">
                     <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            Progres Tindak Lanjut
+                        </h3>
+                        <span class="rounded bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 px-2 py-0.5 text-[10px] font-bold">
+                            {{ $persenSelesai }}% Tuntas
+                        </span>
+                    </div>
 
-                        <div>
-
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Lampiran
-                            </h3>
-
-                            <p class="mt-1 text-xs text-gray-500">
-                                {{ $lhp->attachments->count() }} berkas
-                            </p>
-
+                    {{-- Multi-color segmented progress bar --}}
+                    <div>
+                        <div class="flex h-2.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                            @php
+                                $totalR = max(1, $totalRekomendasi);
+                                $wSelesai = round(($rekomSelesai / $totalR) * 100);
+                                $wProses = round(($rekomProses / $totalR) * 100);
+                                $wBelum = max(0, 100 - $wSelesai - $wProses);
+                            @endphp
+                            <div style="width: {{ $wSelesai }}%" class="bg-emerald-500 transition-all"></div>
+                            <div style="width: {{ $wProses }}%" class="bg-amber-400 transition-all"></div>
+                            <div style="width: {{ $wBelum }}%" class="bg-gray-300 dark:bg-gray-700 transition-all"></div>
                         </div>
 
+                        <div class="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                            <div class="rounded-lg bg-emerald-50/80 p-2 dark:bg-emerald-950/30">
+                                <span class="text-[10px] font-bold uppercase text-emerald-700 dark:text-emerald-400">Selesai</span>
+                                <p class="text-sm font-extrabold text-emerald-800 dark:text-emerald-300">{{ $rekomSelesai }}</p>
+                            </div>
+                            <div class="rounded-lg bg-amber-50/80 p-2 dark:bg-amber-950/30">
+                                <span class="text-[10px] font-bold uppercase text-amber-700 dark:text-amber-400">Proses</span>
+                                <p class="text-sm font-extrabold text-amber-800 dark:text-amber-300">{{ $rekomProses }}</p>
+                            </div>
+                            <div class="rounded-lg bg-gray-50 p-2 dark:bg-gray-800/50">
+                                <span class="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400">Belum</span>
+                                <p class="text-sm font-extrabold text-gray-700 dark:text-gray-300">{{ $rekomBelum }}</p>
+                            </div>
+                        </div>
                     </div>
 
+                    @if(Route::has('tindak-lanjuts.lhp'))
+                        <a href="{{ route('tindak-lanjuts.lhp', $lhp) }}"
+                           class="w-full flex items-center justify-center gap-1.5 rounded-xl bg-blue-50 py-2.5 text-xs font-bold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/60 transition">
+                            Kelola Tindak Lanjut Lengkap →
+                        </a>
+                    @endif
+                </div>
+            @endif
 
-                    <div class="mt-4 space-y-2">
-
-                        @foreach($lhp->attachments as $attachment)
-
-                            <a href="{{ route('attachments.show', $attachment->id) }}"
-                               target="_blank"
-                               class="group flex items-center gap-3 rounded-xl border border-gray-100 p-3 transition hover:border-blue-200 hover:bg-blue-50/30 dark:border-gray-800 dark:hover:border-blue-900 dark:hover:bg-blue-900/10">
-
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 group-hover:bg-blue-100 group-hover:text-blue-600 dark:bg-gray-800">
-
-                                    <svg class="h-4 w-4"
-                                         fill="none"
-                                         stroke="currentColor"
-                                         viewBox="0 0 24 24">
-
-                                        <path stroke-linecap="round"
-                                              stroke-linejoin="round"
-                                              stroke-width="2"
-                                              d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 00-5.656-5.656L5.05 11.464a6 6 0 108.486 8.486L19.5 14" />
-
-                                    </svg>
-
-                                </div>
-
-
-                                <div class="min-w-0 flex-1">
-
-                                    <p class="truncate text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                        {{ $attachment->file_name ?: 'Lampiran LHP' }}
-                                    </p>
-
-                                    @if($attachment->keterangan)
-                                        <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
-                                            {{ $attachment->keterangan }}
-                                        </p>
-                                    @endif
-
-                                    <p class="mt-0.5 text-[10px] text-gray-400">
-                                        Klik untuk membuka
-                                    </p>
-
-                                </div>
-
-                            </a>
-
-                        @endforeach
-
+            {{-- 2. Card Berkas Lampiran LHP --}}
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">📎</span>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+                            Berkas Lampiran LHP
+                        </h3>
                     </div>
-
+                    <span class="text-xs font-semibold text-gray-500">
+                        {{ $lhp->attachments ? $lhp->attachments->count() : 0 }} Berkas
+                    </span>
                 </div>
 
-            @endif
+                @if($lhp->attachments && $lhp->attachments->isNotEmpty())
+                    <div class="space-y-2">
+                        @foreach($lhp->attachments as $att)
+                            @php
+                                $ext = strtoupper(pathinfo($att->file_name, PATHINFO_EXTENSION) ?: 'FILE');
+                                $isPdf = $ext === 'PDF';
+                                $isImg = in_array($ext, ['JPG', 'JPEG', 'PNG']);
+                            @endphp
+                            <div class="group flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-blue-200 hover:shadow-xs dark:border-gray-800 dark:bg-gray-800/40 dark:hover:bg-gray-800 transition">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[9px] font-bold uppercase
+                                        {{ $isPdf ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300' : ($isImg ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300') }}">
+                                        {{ $ext }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-bold text-gray-900 dark:text-white truncate">
+                                            {{ $att->file_name ?: 'Lampiran LHP' }}
+                                        </p>
+                                        <p class="text-[10px] text-gray-400">
+                                            {{ $att->file_size ? number_format($att->file_size / 1024, 1) . ' KB' : 'Berkas Lampiran' }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    @if(Route::has('attachments.show'))
+                                        <a href="{{ route('attachments.show', $att->id) }}" target="_blank"
+                                           title="Buka Berkas"
+                                           class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/40 transition">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        </a>
+                                    @endif
+                                    @if(Route::has('attachments.download'))
+                                        <a href="{{ route('attachments.download', $att->id) }}"
+                                           title="Unduh Berkas"
+                                           class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-emerald-900/40 transition">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-4 text-center dark:border-gray-800 dark:bg-gray-800/30">
+                        <p class="text-xs text-gray-400 italic">Tidak ada berkas lampiran pendukung yang disertakan pada LHP ini.</p>
+                    </div>
+                @endif
+            </div>
+
+            {{-- 3. Detail Audit Trail Administrasi --}}
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900 space-y-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                    Informasi Sistem
+                </h3>
+                <dl class="space-y-2.5 text-xs">
+                    <div class="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+                        <dt class="text-gray-500">ID LHP</dt>
+                        <dd class="font-mono font-bold text-gray-800 dark:text-gray-200">#{{ $lhp->id }}</dd>
+                    </div>
+                    <div class="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+                        <dt class="text-gray-500">Dibuat Pada</dt>
+                        <dd class="font-semibold text-gray-800 dark:text-gray-200">{{ optional($lhp->created_at)->translatedFormat('d M Y, H:i') }}</dd>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <dt class="text-gray-500">Terakhir Diperbarui</dt>
+                        <dd class="font-semibold text-gray-800 dark:text-gray-200">{{ optional($lhp->updated_at)->translatedFormat('d M Y, H:i') }}</dd>
+                    </div>
+                </dl>
+            </div>
 
         </aside>
 

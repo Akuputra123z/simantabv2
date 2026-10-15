@@ -50,8 +50,8 @@
                  class="border-t border-red-200/60 dark:border-red-900/40 bg-white/90 dark:bg-gray-900/90 p-3 space-y-2">
                 @forelse($overdueItems as $item)
                     @php
-                        $lhpId = $item->recommendation?->temuan?->lhp_id;
-                        $itemUrl = $lhpId ? route('lhps.show', $lhpId) : route('tindak-lanjuts.index');
+                        $lhp = $item->recommendation?->temuan?->lhp;
+                        $itemUrl = $lhp ? route('lhps.show', $lhp) : route('tindak-lanjuts.index');
                     @endphp
                     <a href="{{ $itemUrl }}" class="flex items-center justify-between p-2.5 rounded-lg bg-red-50/50 hover:bg-red-100/70 dark:bg-red-950/30 dark:hover:bg-red-900/40 transition-colors gap-2 border border-red-100/80 dark:border-red-900/30 group">
                         <div class="min-w-0 flex-1">
@@ -112,7 +112,7 @@
                  class="border-t border-orange-200/60 dark:border-orange-900/40 bg-white/90 dark:bg-gray-900/90 p-3 space-y-2">
                 @forelse($temuanBelumTlItems as $t)
                     @php
-                        $tUrl = $t->lhp_id ? route('lhps.show', $t->lhp_id) : route('temuan.index');
+                        $tUrl = $t->lhp ? route('lhps.show', $t->lhp) : route('temuan.index');
                     @endphp
                     <a href="{{ $tUrl }}" class="flex items-center justify-between p-2.5 rounded-lg bg-orange-50/50 hover:bg-orange-100/70 dark:bg-orange-950/30 dark:hover:bg-orange-900/40 transition-colors gap-2 border border-orange-100/80 dark:border-orange-900/30 group">
                         <div class="min-w-0 flex-1">
@@ -171,8 +171,8 @@
                  class="border-t border-amber-200/60 dark:border-amber-900/40 bg-white/90 dark:bg-gray-900/90 p-3 space-y-2">
                 @forelse($unitLowProgressItems as $u)
                     @php
-                        $uLhpId = $u['lhp_id'] ?? null;
-                        $uUrl = $uLhpId ? route('lhps.show', $uLhpId) : route('unit-diperiksa.show', $u['id']);
+                        $uLhpTarget = $u['lhp_uuid'] ?? $u['lhp_id'] ?? null;
+                        $uUrl = $uLhpTarget ? route('lhps.show', $uLhpTarget) : route('unit-diperiksa.show', $u['id']);
                     @endphp
                     <a href="{{ $uUrl }}" class="flex items-center justify-between p-2.5 rounded-lg bg-amber-50/50 hover:bg-amber-100/70 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 transition-colors gap-2 border border-amber-100/80 dark:border-amber-900/30 group">
                         <div class="min-w-0 flex-1">

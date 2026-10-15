@@ -7,7 +7,7 @@
             <nav class="mb-1 flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
                 <a href="{{ route('lhps.index') }}" class="hover:text-primary-600">LHP</a>
                 <span>/</span>
-                <a href="{{ route('lhps.show', $temuan->lhp_id) }}" class="hover:text-primary-600">
+                <a href="{{ route('lhps.show', $temuan->lhp) }}" class="hover:text-primary-600">
                     {{ $temuan->lhp->nomor_lhp }}
                 </a>
                 <span>/</span>
@@ -20,7 +20,7 @@
                class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
                 Edit
             </a>
-            <a href="{{ route('lhps.show', $temuan->lhp_id) }}"
+            <a href="{{ route('lhps.show', $temuan->lhp) }}"
                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
                 Kembali
             </a>

@@ -386,6 +386,10 @@ class TindakLanjutController extends Controller
 
     public function getRekomendasisData($lhpId)
     {
+        if (! is_numeric($lhpId)) {
+            $lhpId = Lhp::where('uuid', $lhpId)->value('id') ?? $lhpId;
+        }
+
         return Recommendation::with(['temuan.kodeTemuan', 'kodeRekomendasi', 'tindakLanjuts'])
             ->whereHas('temuan', fn ($q) => $q->where('lhp_id', $lhpId))
             ->orderBy('id')
@@ -748,19 +752,31 @@ class TindakLanjutController extends Controller
             }
         }
 
+        if (! empty($validated['diverifikasi_oleh'])) {
+            $validated['diverifikasi_pada'] = $tindakLanjut->diverifikasi_pada ?? now();
+        } elseif (in_array($validated['status_verifikasi'], ['lunas', 'berjalan'])) {
+            $validated['diverifikasi_oleh'] = $tindakLanjut->diverifikasi_oleh ?? auth()->id();
+            $validated['diverifikasi_pada'] = $tindakLanjut->diverifikasi_pada ?? now();
+        } else {
+            $validated['diverifikasi_pada'] = null;
+            $validated['diverifikasi_oleh'] = null;
+        }
+
         try {
             DB::beginTransaction();
 
             $tindakLanjut->update($validated);
+            $tindakLanjut->syncCalculations(fromCascade: false)->saveQuietly();
 
             // Hapus lampiran yang dicentang
             if ($request->has('delete_attachments')) {
-                $deletes = Attachment::whereIn('id', (array) $request->delete_attachments)
-                    ->where('attachable_id', $tindakLanjut->id)
-                    ->where('attachable_type', get_class($tindakLanjut))
+                $deletes = $tindakLanjut->attachments()
+                    ->whereIn('id', (array) $request->delete_attachments)
                     ->get();
                 foreach ($deletes as $att) {
-                    Storage::disk('public')->delete($att->file_path);
+                    if ($att->file_path && Storage::disk('public')->exists($att->file_path)) {
+                        Storage::disk('public')->delete($att->file_path);
+                    }
                     $att->delete();
                 }
             }
@@ -774,7 +790,11 @@ class TindakLanjutController extends Controller
                         $tindakLanjut->attachments()->create([
                             'file_path' => $path,
                             'file_name' => $file->getClientOriginalName(),
+                            'file_type' => $file->getClientMimeType(),
+                            'file_size' => $file->getSize(),
                             'jenis_bukti' => 'tindak_lanjut',
+                            'visibilitas' => 'publik',
+                            'uploaded_by' => auth()->id(),
                             'urutan' => $existingCount + $i,
                         ]);
                     }

@@ -2127,10 +2127,13 @@ function lhpCreateWizard() {
 
                         {{-- Catatan Umum --}}
                         <div class="md:col-span-2">
-                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Catatan Umum / Ringkasan LHP</label>
-                            <textarea name="catatan_umum" x-model="catatanUmum" rows="3"
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Catatan Umum / Ringkasan LHP</label>
+                                <span class="text-[11px] font-mono text-gray-400 dark:text-gray-500" x-text="`${(catatanUmum || '').length} karakter`"></span>
+                            </div>
+                            <textarea name="catatan_umum" x-model="catatanUmum" rows="4"
                                       placeholder="Tuliskan catatan ringkas mengenai LHP ini..."
-                                      class="w-full resize-none rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"></textarea>
+                                      class="w-full resize-y min-h-[90px] rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white transition"></textarea>
                         </div>
                   
 
@@ -2388,23 +2391,38 @@ function lhpCreateWizard() {
 
                                 {{-- Kondisi --}}
                                 <div class="md:col-span-2">
-                                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Uraian Kondisi Temuan <span class="text-red-500">*</span></label>
-                                    <textarea :name="`temuans[${tIdx}][kondisi]`" x-model="t.kondisi" rows="3" placeholder="Uraikan kondisi temuan secara mendetail..."
-                                              class="w-full resize-none rounded-xl border border-gray-300 bg-white p-3 text-xs text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-blue-500 outline-none" required></textarea>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                            Uraian Kondisi Temuan <span class="text-red-500">*</span>
+                                        </label>
+                                        <span class="text-[11px] font-mono text-gray-400 dark:text-gray-500" x-text="`${(t.kondisi || '').length} karakter`"></span>
+                                    </div>
+                                    <textarea :name="`temuans[${tIdx}][kondisi]`" x-model="t.kondisi" rows="6" placeholder="Uraikan kondisi temuan secara mendetail (fakta yang ditemukan, kriteria/aturan yang dilanggar, bukti pemeriksaan, lokasi, dan objek temuan)..."
+                                              class="w-full resize-y min-h-[150px] rounded-xl border border-gray-300 bg-white p-3.5 text-sm leading-relaxed text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition placeholder:text-gray-400" required></textarea>
                                 </div>
 
                                 {{-- Sebab --}}
                                 <div class="md:col-span-2">
-                                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Penyebab (Sebab)</label>
-                                    <textarea :name="`temuans[${tIdx}][sebab]`" x-model="t.sebab" rows="2" placeholder="Uraikan penyebab temuan..."
-                                              class="w-full resize-none rounded-xl border border-gray-300 bg-white p-2.5 text-xs text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:border-blue-500"></textarea>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+                                            Penyebab (Sebab)
+                                        </label>
+                                        <span class="text-[11px] font-mono text-gray-400 dark:text-gray-500" x-text="`${(t.sebab || '').length} karakter`"></span>
+                                    </div>
+                                    <textarea :name="`temuans[${tIdx}][sebab]`" x-model="t.sebab" rows="4" placeholder="Uraikan faktor penyebab timbulnya temuan (kelemahan sistem pengendalian internal, kelalaian personal, ketidaktahuan regulasi, atau kurangnya pengawasan)..."
+                                              class="w-full resize-y min-h-[110px] rounded-xl border border-gray-300 bg-white p-3.5 text-sm leading-relaxed text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition placeholder:text-gray-400"></textarea>
                                 </div>
 
                                 {{-- Akibat --}}
                                 <div class="md:col-span-2">
-                                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Dampak (Akibat)</label>
-                                    <textarea :name="`temuans[${tIdx}][akibat]`" x-model="t.akibat" rows="2" placeholder="Uraikan dampak temuan..."
-                                              class="w-full resize-none rounded-xl border border-gray-300 bg-white p-2.5 text-xs text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:border-blue-500"></textarea>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+                                            Dampak (Akibat)
+                                        </label>
+                                        <span class="text-[11px] font-mono text-gray-400 dark:text-gray-500" x-text="`${(t.akibat || '').length} karakter`"></span>
+                                    </div>
+                                    <textarea :name="`temuans[${tIdx}][akibat]`" x-model="t.akibat" rows="4" placeholder="Uraikan dampak atau akibat langsung maupun tidak langsung (kerugian finansial, keterlambatan pekerjaan, risiko temuan BPK, sanksi administratif)..."
+                                              class="w-full resize-y min-h-[110px] rounded-xl border border-gray-300 bg-white p-3.5 text-sm leading-relaxed text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition placeholder:text-gray-400"></textarea>
                                 </div>
 
                                 {{-- Kerugian Finance Breakdown --}}
@@ -2489,7 +2507,7 @@ function lhpCreateWizard() {
                                         Rekomendasi Lain
                                     </button>
                                 </div>
-                                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed italic" x-text="t.kondisi ? 'Kondisi: ' + t.kondisi : '(kondisi temuan belum diisi)'"></p>
+                                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed italic whitespace-pre-wrap break-words" x-text="t.kondisi ? 'Kondisi: ' + t.kondisi : '(kondisi temuan belum diisi)'"></p>
                                 <div class="mt-2 flex items-center gap-4 text-xs">
                                     <span class="font-semibold text-rose-600 dark:text-rose-400">Plafon Kerugian Temuan: <strong x-text="fmtRupiah(t.nilai_temuan)"></strong></span>
                                     <span class="text-slate-400">&bull;</span>
@@ -2621,11 +2639,14 @@ function lhpCreateWizard() {
 
                                             {{-- Uraian Rekomendasi --}}
                                             <div class="md:col-span-2">
-                                                <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                                    Uraian Rekomendasi <span class="text-red-500">*</span>
-                                                </label>
-                                                <textarea :name="`temuans[${tIdx}][recommendations][${rIdx}][uraian_rekom]`" x-model="r.uraian_rekom" rows="3" placeholder="Tuliskan petunjuk / instruksi rekomendasi secara jelas, spesifik, dan terukur..."
-                                                          class="w-full resize-none rounded-xl border border-gray-300 bg-white p-3 text-xs text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-blue-500 outline-none" required></textarea>
+                                                <div class="flex items-center justify-between mb-1.5">
+                                                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                                        Uraian Rekomendasi <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <span class="text-[11px] font-mono text-gray-400 dark:text-gray-500" x-text="`${(r.uraian_rekom || '').length} karakter`"></span>
+                                                </div>
+                                                <textarea :name="`temuans[${tIdx}][recommendations][${rIdx}][uraian_rekom]`" x-model="r.uraian_rekom" rows="4" placeholder="Tuliskan petunjuk / instruksi rekomendasi secara jelas, spesifik, dan terukur..."
+                                                          class="w-full resize-y min-h-[100px] rounded-xl border border-gray-300 bg-white p-3.5 text-sm leading-relaxed text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" required></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -2709,7 +2730,7 @@ function lhpCreateWizard() {
                                             <span class="font-bold text-gray-900 dark:text-white" x-text="`Temuan #${i + 1}: ${getKodeTemuanLabel(t.kode_temuan_id)}`"></span>
                                             <span class="font-semibold text-red-600" x-text="fmtRupiah(t.nilai_temuan)"></span>
                                         </div>
-                                        <p class="text-gray-600 dark:text-gray-400" x-text="t.kondisi"></p>
+                                        <p class="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words" x-text="t.kondisi"></p>
 
                                         {{-- Nested Rekom list --}}
                                         <div class="mt-2 space-y-1 pl-3 border-l-2 border-blue-400">

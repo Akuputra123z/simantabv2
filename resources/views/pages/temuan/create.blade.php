@@ -51,16 +51,16 @@
                 <div class="space-y-6">
                     <div>
                         <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Kondisi <span class="text-red-500">*</span></label>
-                        <textarea name="kondisi" rows="4" required placeholder="Uraikan kondisi temuan secara mendetail..." class="w-full rounded-xl border border-gray-300 p-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:border-blue-500">{{ old('kondisi') }}</textarea>
+                        <textarea name="kondisi" rows="6" required placeholder="Uraikan kondisi temuan secara mendetail (fakta yang ditemukan, kriteria/aturan yang dilanggar, bukti pemeriksaan, lokasi, dan objek temuan)..." class="w-full resize-y min-h-[140px] rounded-xl border border-gray-300 p-3.5 text-sm leading-relaxed dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">{{ old('kondisi') }}</textarea>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Sebab</label>
-                            <textarea name="sebab" rows="4" placeholder="Uraikan penyebab..." class="w-full rounded-xl border border-gray-300 p-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:border-blue-500">{{ old('sebab') }}</textarea>
+                            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Sebab (Penyebab)</label>
+                            <textarea name="sebab" rows="4" placeholder="Uraikan faktor penyebab timbulnya temuan..." class="w-full resize-y min-h-[100px] rounded-xl border border-gray-300 p-3.5 text-sm leading-relaxed dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">{{ old('sebab') }}</textarea>
                         </div>
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Akibat</label>
-                            <textarea name="akibat" rows="4" placeholder="Uraikan dampak/akibat..." class="w-full rounded-xl border border-gray-300 p-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:border-blue-500">{{ old('akibat') }}</textarea>
+                            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Akibat (Dampak)</label>
+                            <textarea name="akibat" rows="4" placeholder="Uraikan dampak atau akibat langsung/tidak langsung..." class="w-full resize-y min-h-[100px] rounded-xl border border-gray-300 p-3.5 text-sm leading-relaxed dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">{{ old('akibat') }}</textarea>
                         </div>
                     </div>
                 </div>

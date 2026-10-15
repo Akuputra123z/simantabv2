@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('temuans', function (Blueprint $table) {
+            $table->longText('kondisi')->change();
+            $table->longText('sebab')->nullable()->change();
+            $table->longText('akibat')->nullable()->change();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('temuans', function (Blueprint $table) {
+            $table->text('kondisi')->change();
+            $table->text('sebab')->nullable()->change();
+            $table->text('akibat')->nullable()->change();
+        });
+    }
+};

@@ -74,9 +74,9 @@
                         <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Kondisi / Uraian Temuan <span class="text-red-500">*</span>
                         </label>
-                        <textarea name="kondisi" rows="4"
-                                  placeholder="Uraikan kondisi temuan..."
-                                  class="w-full resize-none rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white @error('kondisi') border-red-500 @enderror">{{ old('kondisi', $temuan->kondisi) }}</textarea>
+                        <textarea name="kondisi" rows="6"
+                                  placeholder="Uraikan kondisi temuan secara mendetail (fakta yang ditemukan, kriteria/aturan yang dilanggar, bukti pemeriksaan, lokasi, dan objek temuan)..."
+                                  class="w-full resize-y min-h-[140px] rounded-lg border border-gray-300 bg-white px-3.5 py-3 text-sm leading-relaxed text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white @error('kondisi') border-red-500 @enderror">{{ old('kondisi', $temuan->kondisi) }}</textarea>
                         @error('kondisi')
                             <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                         @enderror

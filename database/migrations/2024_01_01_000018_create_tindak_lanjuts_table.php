@@ -11,7 +11,8 @@ return new class extends Migration
         Schema::create('tindak_lanjuts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('recommendation_id')
-                ->constrained('recommendations')->cascadeOnDelete();
+                ->constrained('recommendations')
+                ->cascadeOnDelete();
 
             // ── Jenis penyelesaian ────────────────────────────────────────
             $table->string('jenis_penyelesaian', 100)->nullable()->index()
@@ -25,45 +26,52 @@ return new class extends Migration
             $table->date('tanggal_mulai_cicilan')->nullable();
             $table->date('tanggal_jatuh_tempo')->nullable()->index();
             $table->decimal('nilai_per_cicilan_rencana', 18, 2)->nullable();
-            $table->decimal('nilai_tindak_lanjut', 18, 2)
-                ->default(0)
-                ->comment('Total nilai tindak lanjut, e.g. total setor kas atau total nilai barang yang dikembalikan');
-            // ── Cached progress (updated by CicilanObserver) ──────────────
+            $table->decimal('nilai_tindak_lanjut', 18, 2)->default(0.00)
+                ->comment('Total nilai tindak lanjut');
+
+            // ── Cached progress ───────────────────────────────────────────
             $table->unsignedTinyInteger('jumlah_cicilan_realisasi')->default(0);
-            $table->decimal('total_terbayar', 18, 2)->default(0);
-            $table->decimal('sisa_belum_bayar', 18, 2)->default(0);
+            $table->decimal('total_terbayar', 18, 2)->default(0.00);
+            $table->decimal('sisa_belum_bayar', 18, 2)->default(0.00);
 
             // ── Notes ─────────────────────────────────────────────────────
-            $table->text('catatan_tl')->nullable()
-                ->comment('e.g. BA Desk 19 Desember 2023');
+            $table->text('catatan_tl')->nullable();
             $table->text('hambatan')->nullable();
 
             // ── Verification ──────────────────────────────────────────────
-            $table->string('status_verifikasi', 40)->default('menunggu_verifikasi')
+            $table->string('status_verifikasi', 40)->default('menunggu_verifikasi')->index()
                 ->comment('menunggu_verifikasi | berjalan | lunas | ditolak');
-            $table->foreignId('diverifikasi_oleh')->nullable()
-                ->constrained('users')->nullOnDelete();
+            $table->foreignId('diverifikasi_oleh')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
             $table->timestamp('diverifikasi_pada')->nullable();
             $table->text('catatan_verifikasi')->nullable();
 
+            // ── OPD Submission Fields ─────────────────────────────────────
+            $table->text('keterangan_pendukung_opd')->nullable();
+            $table->foreignId('upload_opd_oleh')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+            $table->string('status_opd', 20)->nullable()->index();
+            $table->dateTime('dikirim_pada')->nullable();
+            $table->text('alasan_tolak_opd')->nullable();
+
             // ── Audit trail ───────────────────────────────────────────────
-            $table->foreignId('created_by')->nullable()
-                ->constrained('users')->nullOnDelete();
-            $table->foreignId('updated_by')->nullable()
-                ->constrained('users')->nullOnDelete();
+            $table->foreignId('created_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+            $table->foreignId('updated_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();
 
-            // Covers: WHERE recommendation_id = ? AND status_verifikasi = ? AND deleted_at IS NULL
-            $table->index(
-                ['recommendation_id', 'status_verifikasi', 'deleted_at'],
-                'tl_rekom_status_deleted_idx'
-            );
-            // Dashboard: overdue cicilan query
-            $table->index(
-                ['is_cicilan', 'tanggal_jatuh_tempo'],
-                'tl_cicilan_jatuh_tempo_idx'
-            );
+            $table->index(['recommendation_id', 'status_verifikasi', 'deleted_at'], 'tl_rekom_status_deleted_idx');
+            $table->index(['is_cicilan', 'tanggal_jatuh_tempo'], 'tl_cicilan_jatuh_tempo_idx');
         });
     }
 

@@ -19,10 +19,15 @@ class PasswordResetLinkController extends Controller
     {
         $request->validate([
             'email' => ['required', 'email'],
+        ], [
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.email' => 'Format alamat email tidak valid.',
         ]);
 
-        Password::sendResetLink($request->only('email'));
+        $status = Password::sendResetLink($request->only('email'));
 
-        return back()->with('status', __('A reset link will be sent if the account exists.'));
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with('status', 'Tautan untuk mereset kata sandi telah dikirim ke email Anda.')
+            : back()->with('status', 'Jika alamat email terdaftar di sistem, tautan reset kata sandi telah dikirim.');
     }
 }

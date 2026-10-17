@@ -482,7 +482,7 @@ class DashboardTest extends TestCase
         $indexRes->assertSee('LHP/2026/088');
         $indexRes->assertSee('Pemeriksaan Aspal Hotmix');
         $indexRes->assertSee('Dinas Pekerjaan Umum');
-        $indexRes->assertSee('Nomor LHP & Sub Program', false);
+        $indexRes->assertSee('Sub Program & Nomor LHP', false);
         $indexRes->assertSee('Obrik & Ketua Tim', false);
         $indexRes->assertDontSee('Tanggal LHP & Kategori', false);
         $indexRes->assertDontSee('Temuan & Rekom / Nilai TL', false);

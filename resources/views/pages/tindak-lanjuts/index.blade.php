@@ -283,7 +283,7 @@
                         <th class="px-4 py-3.5 font-semibold">
                             <div class="flex items-center justify-between">
                                 <a href="{{ $sortUrl('sub_program') }}" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                    <span>Nomor LHP & Sub Program</span>
+                                    <span>Sub Program & Nomor LHP</span>
                                 </a>
                                 <a href="{{ $sortUrl('sub_program') }}">
                                     {!! $renderSortIcons('sub_program') !!}
@@ -337,21 +337,9 @@
                                 </td>
                             @endif
 
-                            {{-- Kolom 1: Nomor LHP, Sub Program, Tgl LHP, Irban, Kategori --}}
+                            {{-- Kolom 1: Sub Program, Nomor LHP, Tgl LHP, Irban, Kategori --}}
                             <td class="px-4 py-3.5 w-[30%] min-w-[280px]">
                                 <div class="space-y-1">
-                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                        <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
-                                           class="font-bold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 font-mono text-xs sm:text-sm block">
-                                            {{ $lhp->nomor_lhp }}
-                                        </a>
-                                        @if($lhp->is_nihil)
-                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40">
-                                                🌿 Nihil
-                                            </span>
-                                        @endif
-                                    </div>
-
                                     @php
                                         $subProgram = $lhp->auditAssignment?->auditProgramDetail?->nama_detail_program
                                             ?? $lhp->auditAssignment?->auditProgramDetail?->auditProgram?->nama_program
@@ -362,9 +350,24 @@
                                         $jenis = $lhp->auditAssignment?->jenis_pengawasan 
                                             ?? $lhp->auditAssignment?->auditProgramDetail?->jenis_kegiatan;
                                     @endphp
-                                    <p class="font-semibold text-gray-800 dark:text-gray-200 text-xs leading-snug line-clamp-2" title="{{ $subProgram }}">
+
+                                    <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
+                                       class="font-bold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 text-xs sm:text-sm leading-snug line-clamp-2 block transition-colors"
+                                       title="{{ $subProgram }}">
                                         {{ $subProgram }}
-                                    </p>
+                                    </a>
+
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <a href="{{ route('tindak-lanjuts.lhp', $lhp->id) }}"
+                                           class="font-mono text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                            {{ $lhp->nomor_lhp }}
+                                        </a>
+                                        @if($lhp->is_nihil)
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40">
+                                                🌿 Nihil
+                                            </span>
+                                        @endif
+                                    </div>
 
                                     <div class="flex items-center gap-1.5 flex-wrap pt-0.5 text-[10px]">
                                         @if($irban)

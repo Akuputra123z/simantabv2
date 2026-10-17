@@ -53,10 +53,6 @@
                                 <input type="email" name="email" value="{{ old('email', $user->email) }}" class="form-input-styled" required>
                             </div>
 
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No. HP</label>
-                                <input type="text" name="phone" value="{{ old('phone', $user->phone) }}" class="form-input-styled" placeholder="0812...">
-                            </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jenis Kelamin</label>

@@ -31,7 +31,6 @@ class OpdProfileController extends Controller
             'pendidikan_terakhir' => ['nullable', 'string', 'max:100'],
             'jenis_kelamin' => ['nullable', 'string', 'in:L,P'],
             'unit_kerja' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:20'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 

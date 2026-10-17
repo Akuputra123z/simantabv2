@@ -64,8 +64,13 @@ class PegawaiInspektoratController extends Controller
         return view('pegawai.inspektorat.index', compact('users', 'unitKerjaOptions', 'jabatanOptions', 'stats'));
     }
 
-    public function show(User $user): View
+    public function show(Request $request, User $user)
     {
+        $rawParam = $request->route()?->originalParameter('user') ?? $request->segment(3);
+        if ($rawParam && ($rawParam !== $user->uuid || is_numeric($rawParam))) {
+            return redirect()->route('pegawai.inspektorat.show', $user, 301);
+        }
+
         $user->load('roles');
 
         return view('pegawai.inspektorat.show', compact('user'));

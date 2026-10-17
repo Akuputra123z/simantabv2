@@ -19,32 +19,51 @@ class TemuanController extends Controller
 
     public function index(Request $request)
     {
-        // 1. Gunakan withCount jika Anda hanya ingin menampilkan jumlah rekomendasi di tabel.
-        // 2. Gunakan select() untuk hanya mengambil kolom yang diperlukan (opsional, tapi bagus untuk performa).
         $query = Temuan::query()
-            ->with(['lhp:id,nomor_lhp', 'kodeTemuan:id,kode,uraian'])
+            ->with([
+                'lhp' => function ($q) {
+                    $q->select('id', 'nomor_lhp', 'unit_diperiksa_id')
+                        ->with(['unitDiperiksa:id,nama_unit', 'unitDiperiksas:id,nama_unit']);
+                },
+                'kodeTemuan:id,kode,deskripsi',
+            ])
             ->withCount('recommendations');
 
-        // 3. Gunakan when() agar kode lebih bersih daripada if-statement manual.
+        if (auth()->check()) {
+            $query->whereHas('lhp', fn ($lhp) => $lhp->forUser(auth()->user()));
+        }
+
         $query->when($request->filled('lhp_id'), function ($q) use ($request) {
             $q->where('lhp_id', $request->lhp_id);
         });
 
         $query->when($request->filled('unit_diperiksa_id'), function ($q) use ($request) {
-            $q->whereHas('lhp', fn ($lhp) => $lhp->where('unit_diperiksa_id', $request->unit_diperiksa_id));
-        });
-
-        // 4. Tambahkan fitur pencarian sederhana untuk meningkatkan UX.
-        $query->when($request->filled('search'), function ($q) use ($request) {
-            $search = $request->search;
-            $q->where(function ($sub) use ($search) {
-                $sub->where('kondisi', 'like', '%'.$search.'%')
-                    ->orWhereHas('lhp.unitDiperiksa', fn ($u) => $u->where('nama_unit', 'like', '%'.$search.'%'))
-                    ->orWhereHas('lhp', fn ($l) => $l->where('nomor_lhp', 'like', '%'.$search.'%'));
+            $unitId = $request->unit_diperiksa_id;
+            $q->whereHas('lhp', function ($lhp) use ($unitId) {
+                $lhp->where('unit_diperiksa_id', $unitId)
+                    ->orWhereHas('unitDiperiksas', fn ($uq) => $uq->where('unit_diperiksas.id', $unitId));
             });
         });
 
-        // 5. withQueryString() memastikan pagination tidak hilang saat user melakukan filter/search.
+        $query->when($request->filled('status_tl'), function ($q) use ($request) {
+            $q->where('status_tl', $request->status_tl);
+        });
+
+        $query->when($request->filled('kode'), function ($q) use ($request) {
+            $q->whereHas('kodeTemuan', fn ($k) => $k->where('kode', 'like', $request->kode.'%'));
+        });
+
+        $query->when($request->filled('search'), function ($q) use ($request) {
+            $search = trim($request->search);
+            $q->where(function ($sub) use ($search) {
+                $sub->where('kondisi', 'like', '%'.$search.'%')
+                    ->orWhereHas('lhp.unitDiperiksa', fn ($u) => $u->where('nama_unit', 'like', '%'.$search.'%'))
+                    ->orWhereHas('lhp.unitDiperiksas', fn ($u) => $u->where('nama_unit', 'like', '%'.$search.'%'))
+                    ->orWhereHas('lhp', fn ($l) => $l->where('nomor_lhp', 'like', '%'.$search.'%'))
+                    ->orWhereHas('kodeTemuan', fn ($k) => $k->where('kode', 'like', '%'.$search.'%')->orWhere('deskripsi', 'like', '%'.$search.'%'));
+            });
+        });
+
         $temuans = $query->latest()->paginate(10)->withQueryString();
 
         return view('pages.temuan.index', compact('temuans'));

@@ -38,8 +38,13 @@ class PegawaiOpdController extends Controller
         return view('pegawai.opd.index', compact('users', 'stats', 'opdUnitOptions'));
     }
 
-    public function show(User $user): View
+    public function show(Request $request, User $user)
     {
+        $rawParam = $request->route()?->originalParameter('user') ?? $request->segment(3);
+        if ($rawParam && ($rawParam !== $user->uuid || is_numeric($rawParam))) {
+            return redirect()->route('pegawai.opd.show', $user, 301);
+        }
+
         $user->load('roles', 'opdUnits');
 
         return view('pegawai.opd.show', compact('user'));

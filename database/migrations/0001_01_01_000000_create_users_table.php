@@ -13,19 +13,22 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->uuid('uuid')->nullable()->unique()->index();
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password')->nullable();
+            $table->string('google_id')->nullable()->unique()->index();
             $table->string('nip', 30)->nullable()->unique();
             $table->string('pangkat_gol', 50)->nullable();
             $table->string('jabatan', 100)->nullable();
-            $table->string('pendidikan_terakhir', 150)->nullable(); // PENDIDIKAN TERAKHIR - STUDY
-            $table->enum('jenis_kelamin', ['L', 'P']); // L/P
-            $table->string('unit_kerja', 150)->nullable(); // UNIT KERJA
-            $table->string('phone', 20)->nullable();
+            $table->string('pendidikan_terakhir', 150)->nullable();
+            $table->enum('jenis_kelamin', ['L', 'P']);
+            $table->string('unit_kerja', 150)->nullable()->index();
             $table->string('avatar')->nullable();
-            $table->boolean('is_active')->default(true);
+            $table->string('signature')->nullable();
+            $table->timestamp('password_changed_at')->nullable();
+            $table->boolean('is_active')->default(true)->index();
             $table->rememberToken();
             $table->timestamps();
         });
@@ -51,8 +54,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };

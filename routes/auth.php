@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\ConfirmationController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -13,12 +14,34 @@ Route::middleware('guest')->group(function () {
     Route::post('login', [LoginController::class, 'store']);
     Route::get('captcha/refresh', [LoginController::class, 'refreshCaptcha'])->name('captcha.refresh');
 
+    // ── Google OAuth via Socialite ─────────────────────────────────────
+    Route::get('auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
+    Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
-    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('password.email');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
-    Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');
+    Route::post('reset-password', [NewPasswordController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('password.store');
+
+    // ── Fitur Permintaan Tautan Verifikasi Akun ─────────────────────────
+    Route::get('verify-account', [\App\Http\Controllers\Auth\AccountVerificationController::class, 'create'])->name('account.verify.request');
+    Route::post('verify-account', [\App\Http\Controllers\Auth\AccountVerificationController::class, 'send'])
+        ->middleware('throttle:5,1')
+        ->name('account.verify.send');
 });
+
+// ── Eksekusi Verifikasi & Aktivasi Akun (Bisa diakses baik saat login maupun guest) ──
+Route::get('verify-account/{id}/{hash}', [\App\Http\Controllers\Auth\AccountVerificationController::class, 'verify'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('account.verify.execute');
+Route::post('verify-account/set-password', [\App\Http\Controllers\Auth\AccountVerificationController::class, 'setPassword'])
+    ->middleware('throttle:10,1')
+    ->name('account.verify.setPassword');
 
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', [VerificationController::class, 'notice'])->name('verification.notice');

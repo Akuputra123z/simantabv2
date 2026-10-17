@@ -25,7 +25,17 @@ class VerificationController extends Controller
             return redirect()->intended(route('dashboard', absolute: false));
         }
 
-        $request->user()->sendEmailVerificationNotification();
+        try {
+            $request->user()->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal mengirim email verifikasi: ' . $e->getMessage());
+
+            $errorMessage = str_contains($e->getMessage(), 'BadCredentials') || str_contains($e->getMessage(), '535')
+                ? 'Kredensial SMTP Gmail ditolak oleh Google (BadCredentials). Pastikan menggunakan 16 digit Sandi Aplikasi (App Password) di file .env, bukan password login biasa.'
+                : 'Gagal mengirim email: ' . $e->getMessage();
+
+            return back()->with('error', $errorMessage);
+        }
 
         return back()->with('status', 'verification-link-sent');
     }

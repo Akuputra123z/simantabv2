@@ -142,6 +142,7 @@
                         class="bg-white dark:bg-gray-900/90 hover:bg-amber-50/50 dark:hover:bg-gray-800/60 transition-colors border-l-4 border-blue-500">
                         <td class="py-1.5 px-3 text-center text-slate-400 text-[10px]">↳</td>
                         <td class="py-1.5 px-3 pl-6 text-slate-700 dark:text-slate-300 text-[11px]">
+                            @if(!empty($unit['nama']) && $unit['nama'] !== 'Unit Tidak Diketahui')
                             <a href="{{ route('temuan.index', ['search' => $unit['nama']]) }}"
                                title="Filter data temuan untuk {{ $unit['nama'] }}"
                                class="group inline-flex items-center gap-1.5 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
@@ -150,6 +151,9 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                 </svg>
                             </a>
+                            @else
+                            <span class="font-medium text-slate-400 italic">{{ $unit['nama'] ?? 'Unit Tidak Diketahui' }}</span>
+                            @endif
                         </td>
                         <td class="py-1.5 px-3 text-center text-slate-400 text-[10px] font-mono">{{ $sub['kode'] }}</td>
                         <td class="py-1.5 px-3 text-center font-semibold text-slate-700 dark:text-slate-300">

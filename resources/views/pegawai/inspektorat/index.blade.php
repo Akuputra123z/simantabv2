@@ -166,7 +166,23 @@
                                     </div>
                                     <div class="min-w-0">
                                         <p class="font-semibold text-gray-900 dark:text-white truncate">{{ $user->name }}</p>
-                                        <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ $user->email }}</p>
+                                        <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                            <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ $user->email }}</p>
+                                            @if($user->isVerified())
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" title="Email Terverifikasi">
+                                                    ✓ Terverifikasi
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" title="Akun Belum Verifikasi">
+                                                    Belum Verifikasi
+                                                </span>
+                                            @endif
+                                            @if($user->hasGoogleLinked())
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" title="Google OAuth Terhubung">
+                                                    Google
+                                                </span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -188,6 +204,22 @@
 
                             <td class="px-5 py-4">
                                 <div class="flex items-center justify-end gap-2">
+                                    @can('user.edit')
+                                        @if(! $user->isVerified() && ! empty($user->email))
+                                        <form action="{{ route('pegawai.inspektorat.send-verification', $user) }}" method="POST"
+                                              onsubmit="return confirm('Kirimkan email aktivasi & verifikasi akun ke {{ $user->email }}?')">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 transition hover:bg-amber-50 dark:hover:bg-amber-900/30"
+                                                    title="Kirim Link Aktivasi Akun">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                        @endif
+                                    @endcan
+
                                     @can('user.view')
                                     <a href="{{ route('pegawai.inspektorat.show', $user) }}"
                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400"

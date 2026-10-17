@@ -36,6 +36,8 @@ return [
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 
+    'idle_timeout' => (int) env('SESSION_IDLE_TIMEOUT', 60),
+
     /*
     |--------------------------------------------------------------------------
     | Session Encryption
@@ -47,7 +49,7 @@ return [
     |
     */
 
-    'encrypt' => env('SESSION_ENCRYPT', false),
+    'encrypt' => env('SESSION_ENCRYPT', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -169,7 +171,9 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE', true),
+    'secure' => env('SESSION_SECURE_COOKIE') !== null
+        ? (bool) env('SESSION_SECURE_COOKIE')
+        : (env('APP_ENV') === 'production'),
 
     /*
     |--------------------------------------------------------------------------

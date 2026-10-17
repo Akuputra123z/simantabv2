@@ -21,6 +21,9 @@
             </nav>
         </div>
 
+        {{-- NOTIFIKASI AKUN BELUM DIVERIFIKASI --}}
+        <x-auth.unverified-alert />
+
         {{-- 1. GLOBAL DATE FILTER & PROGRAM CATEGORY FILTER --}}
         <x-dashboard.date-filter
             :preset="$preset"

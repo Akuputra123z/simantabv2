@@ -112,12 +112,6 @@
                     </select>
                     @error('jenis_kelamin')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                 </div>
-                <div>
-                    <label class="mb-1.5 block text-sm font-bold text-gray-700">No. Telepon</label>
-                    <input type="text" name="phone" value="{{ old('phone', $user->phone) }}"
-                           class="block w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                    @error('phone')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
-                </div>
             </div>
         </div>
 

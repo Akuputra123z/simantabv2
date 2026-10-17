@@ -23,11 +23,20 @@ class PasswordController extends Controller
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
             'password' => ['required', Rules\Password::defaults(), 'confirmed'],
+        ], [
+            'current_password.required' => 'Kata sandi saat ini wajib diisi.',
+            'current_password.current_password' => 'Kata sandi saat ini tidak sesuai.',
+            'password.required' => 'Kata sandi baru wajib diisi.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
         ]);
 
         $request->user()->update([
             'password' => Hash::make($validated['password']),
+            'password_changed_at' => now(),
         ]);
+
+        // Poin 7: Lindungi akun dari duplikasi sesi di perangkat lain saat kata sandi diperbarui
+        \Illuminate\Support\Facades\Auth::logoutOtherDevices($validated['password']);
 
         return back()->with('status', 'password-updated');
     }

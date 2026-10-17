@@ -135,7 +135,7 @@
                     <thead class="sticky top-0 z-10">
                         <tr class="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700 backdrop-blur-sm">
                             <th class="px-5 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Pegawai</th>
-                            <th class="px-5 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">NIP / Kontak</th>
+                            <th class="px-5 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">NIP</th>
                             <th class="px-5 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Unit OPD</th>
                             <th class="px-5 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Status</th>
                             <th class="px-5 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase text-right">Aksi</th>
@@ -159,12 +159,9 @@
                                 </div>
                             </td>
 
-                            {{-- Column 2: NIP / Kontak --}}
+                            {{-- Column 2: NIP --}}
                             <td class="px-5 py-4 whitespace-nowrap">
                                 <p class="text-xs font-mono font-medium text-gray-800 dark:text-gray-200">{{ $user->nip ?: '-' }}</p>
-                                @if($user->phone)
-                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ $user->phone }}</p>
-                                @endif
                             </td>
 
                             {{-- Column 3: Unit OPD --}}

@@ -1,133 +1,150 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="p-6 bg-gray-50 min-h-screen dark:bg-gray-950">
-    <div class="max-w-6xl mx-auto">
+<div x-data="{ activeTab: 'roles', searchPermission: '' }" class="space-y-6">
 
-        {{-- Header --}}
-        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Role & Permission</h1>
-                <p class="text-sm text-gray-500 mt-0.5">Kelola hak akses setiap role secara fleksibel.</p>
-            </div>
+    {{-- Page Header --}}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                Hak Akses & Peran Pengguna
+            </h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Pengaturan kewenangan berbasis peran (Role-Based Access Control) untuk seluruh modul SIMANTABv2.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-3">
             <a href="{{ route('permissions.create') }}"
-               class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+               class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm shadow-blue-500/10 active:scale-[0.98] transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                 </svg>
-                Tambah Role
+                <span>Tambah Peran Baru</span>
             </a>
         </div>
+    </div>
 
-        {{-- Flash --}}
-        @if(session('success'))
-        <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg dark:bg-green-900/20 dark:border-green-800 dark:text-green-300">
-            {{ session('success') }}
-        </div>
-        @endif
-        @if(session('error'))
-        <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
-            {{ session('error') }}
-        </div>
-        @endif
+    {{-- Tab Segmented Navigation --}}
+    <div class="border-b border-gray-200 dark:border-gray-800">
+        <nav class="flex gap-6 -mb-px" aria-label="Tabs">
+            <button type="button"
+                    @click="activeTab = 'roles'"
+                    :class="activeTab === 'roles'
+                        ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 font-semibold'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:border-gray-300 font-medium'"
+                    class="py-3 px-1 border-b-2 text-sm flex items-center gap-2 transition-colors">
+                <span>Daftar Peran</span>
+                <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono">
+                    {{ $roles->count() }}
+                </span>
+            </button>
 
-        {{-- Tabel Role --}}
-        <div class="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden mb-6">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Daftar Role</h2>
-                <span class="text-xs text-gray-400">{{ $roles->count() }} role · {{ $totalPermissions }} permission</span>
-            </div>
+            <button type="button"
+                    @click="activeTab = 'permissions'"
+                    :class="activeTab === 'permissions'
+                        ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 font-semibold'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:border-gray-300 font-medium'"
+                    class="py-3 px-1 border-b-2 text-sm flex items-center gap-2 transition-colors">
+                <span>Katalog Hak Akses</span>
+                <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono">
+                    {{ $totalPermissions }}
+                </span>
+            </button>
+        </nav>
+    </div>
+
+    {{-- TAB 1: DAFTAR PERAN (ROLES) --}}
+    <div x-show="activeTab === 'roles'" class="space-y-4">
+        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/40">
             <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left">
-                    <thead class="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-gray-700">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-50/75 border-b border-gray-200 dark:bg-gray-800/40 dark:border-gray-800 text-gray-600 dark:text-gray-400">
                         <tr>
-                            <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Nama Role</th>
-                            <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase text-center">Permission</th>
-                            <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase text-center">User</th>
-                            <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Cakupan Akses</th>
-                            <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase text-right">Aksi</th>
+                            <th scope="col" class="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider">Peran Pengguna</th>
+                            <th scope="col" class="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider">Tipe Peran</th>
+                            <th scope="col" class="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-center">Hak Akses</th>
+                            <th scope="col" class="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-center">Pegawai Terdaftar</th>
+                            <th scope="col" class="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-right">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
                         @foreach($roles as $role)
                         @php
                             $isSuperAdmin = $role->name === \App\Models\User::ROLE_SUPER_ADMIN;
-                            $isProtected  = in_array($role->name, [
-                                \App\Models\User::ROLE_SUPER_ADMIN,
-                                \App\Models\User::ROLE_KEPALA_INSPEKTORAT,
-                                \App\Models\User::ROLE_KETUA_TIM,
-                                \App\Models\User::ROLE_ANGGOTA,
-                                \App\Models\User::ROLE_STAFF_INSPEKTORAT,
-                            ]);
-                            $pct = $totalPermissions > 0
-                                ? round($role->permissions_count / $totalPermissions * 100)
-                                : 0;
-                            $barColor = $pct >= 80 ? 'bg-purple-500'
-                                : ($pct >= 50 ? 'bg-indigo-500'
-                                : ($pct >= 30 ? 'bg-teal-500' : 'bg-gray-400'));
-                            $label = \App\Models\User::ROLES[$role->name]
-                                ?? ucfirst(str_replace('_', ' ', $role->name));
+                            $isProtected = in_array($role->name, $protectedRoles);
+                            $label = \App\Models\User::ROLES[$role->name] ?? ucfirst(str_replace(['_', '-'], ' ', $role->name));
+                            $description = $roleDescriptions[$role->name] ?? 'Peran kustom operasional sistem SIMANTABv2.';
                         @endphp
-                        <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
+                        <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition-colors">
                             <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-semibold text-gray-800 dark:text-gray-100">{{ $label }}</span>
-                                    @if($isSuperAdmin)
-                                        <span class="px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 font-medium">Penuh</span>
-                                    @endif
-                                    @if($isProtected)
-                                        <span class="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">sistem</span>
-                                    @endif
+                                <div class="font-semibold text-gray-900 dark:text-white">
+                                    {{ $label }}
                                 </div>
-                                <span class="text-xs text-gray-400 font-mono">{{ $role->name }}</span>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
+                                    {{ $description }}
+                                </div>
+                                <code class="text-[11px] text-gray-400 font-mono mt-1 inline-block">{{ $role->name }}</code>
                             </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="font-mono font-semibold text-gray-800 dark:text-gray-200">
-                                    {{ $isSuperAdmin ? 'Semua' : $role->permissions_count }}
-                                </span>
-                                @if(! $isSuperAdmin)
-                                <span class="text-xs text-gray-400"> / {{ $totalPermissions }}</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="font-mono font-medium text-gray-700 dark:text-gray-300">{{ $role->users_count }}</span>
-                            </td>
-                            <td class="px-6 py-4 w-48">
+
+                            <td class="px-6 py-4 whitespace-nowrap">
                                 @if($isSuperAdmin)
-                                    <div class="h-2 rounded-full bg-purple-500"></div>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">
+                                        Hak Penuh
+                                    </span>
+                                @elseif($isProtected)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                                        Standar Sistem
+                                    </span>
                                 @else
-                                    <div class="flex items-center gap-2">
-                                        <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                                            <div class="h-full rounded-full {{ $barColor }} transition-all" style="width: {{ $pct }}%"></div>
-                                        </div>
-                                        <span class="text-xs text-gray-400 w-8 text-right">{{ $pct }}%</span>
-                                    </div>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50">
+                                        Peran Kustom
+                                    </span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-right">
-                                <div class="flex justify-end gap-1.5">
+
+                            <td class="px-6 py-4 text-center whitespace-nowrap">
+                                @if($isSuperAdmin)
+                                    <span class="text-xs font-semibold text-purple-700 dark:text-purple-300">
+                                        Semua Izin (Bypass)
+                                    </span>
+                                @else
+                                    <span class="font-semibold text-gray-900 dark:text-white">
+                                        {{ $role->permissions_count }}
+                                    </span>
+                                    <span class="text-xs text-gray-400">/ {{ $totalPermissions }} izin</span>
+                                @endif
+                            </td>
+
+                            <td class="px-6 py-4 text-center whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-50 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 border border-gray-200/80 dark:border-gray-700">
+                                    {{ $role->users_count }} Pegawai
+                                </span>
+                            </td>
+
+                            <td class="px-6 py-4 text-right whitespace-nowrap">
+                                <div class="flex items-center justify-end gap-3">
                                     @if(! $isSuperAdmin)
-                                    <a href="{{ route('permissions.edit', $role) }}"
-                                       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 hover:border-indigo-400 hover:text-indigo-600 transition-colors">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 012.828 0L21 3.586a2 2 0 010 2.828l-7 7a2 2 0 01-.883.515l-3 1a1 1 0 01-1.265-1.265l1-3a1 1 0 01.515-.883l7-7z"/>
-                                        </svg>
-                                        Atur Permission
-                                    </a>
-                                    @if(! $isProtected)
-                                    <form action="{{ route('permissions.destroy', $role) }}" method="POST"
-                                          onsubmit="return confirm('Hapus role \'{{ $role->name }}\'?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit"
-                                                class="p-1.5 text-gray-400 hover:text-red-600 transition-colors" title="Hapus">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        <a href="{{ route('permissions.edit', $role) }}"
+                                           class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                                             </svg>
-                                        </button>
-                                    </form>
-                                    @endif
+                                            <span>Atur Izin</span>
+                                        </a>
+
+                                        @if(! $isProtected)
+                                            <form action="{{ route('permissions.destroy', $role) }}" method="POST"
+                                                  onsubmit="return confirm('Hapus peran \'{{ $role->name }}\' secara permanen?')" class="inline-block">
+                                                @csrf @method('DELETE')
+                                                <button type="submit"
+                                                        class="text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 transition-colors">
+                                                    Hapus
+                                                </button>
+                                            </form>
+                                        @endif
                                     @else
-                                    <span class="text-xs text-gray-400 italic">tidak dapat diubah</span>
+                                        <span class="text-xs text-gray-400 italic">Terkunci</span>
                                     @endif
                                 </div>
                             </td>
@@ -137,86 +154,87 @@
                 </table>
             </div>
         </div>
+    </div>
 
-        {{-- Panel bawah: daftar permission + tambah/hapus --}}
-        <div class="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <div>
-                    <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Daftar Permission</h2>
-                    <p class="text-xs text-gray-400 mt-0.5">Tambah permission baru atau hapus yang tidak terpakai.</p>
+    {{-- TAB 2: KATALOG HAK AKSES (PERMISSIONS) --}}
+    <div x-show="activeTab === 'permissions'" x-cloak class="space-y-5">
+        {{-- Toolbar Katalog --}}
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900/40">
+            <div class="relative flex-1 max-w-md">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
                 </div>
-                {{-- Form tambah permission baru --}}
-                <form action="{{ route('permissions.permission.store') }}" method="POST" class="flex gap-2" id="form-add-perm">
-                    @csrf
-                    <input type="text" name="name"
-                           placeholder="contoh: laporan.cetak"
-                           class="h-9 w-52 px-3 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent dark:text-white focus:outline-none focus:border-indigo-400"
-                           pattern="[a-z0-9\-\.]+" title="Hanya huruf kecil, angka, titik, strip">
-                    <button type="submit"
-                            class="h-9 px-4 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-                        Tambah
-                    </button>
-                </form>
+                <input type="text"
+                       x-model="searchPermission"
+                       placeholder="Cari kunci izin akses (contoh: lhp, temuan, edit)..."
+                       class="h-9.5 w-full pl-9 pr-3 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
             </div>
 
-            @if(session('success') && str_contains(session('success'), 'Permission'))
-            <div class="px-6 py-3 bg-green-50 dark:bg-green-900/20 border-b border-green-100 dark:border-green-800 text-sm text-green-800 dark:text-green-300">
-                {{ session('success') }}
-            </div>
-            @endif
-            @if($errors->has('name'))
-            <div class="px-6 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800 text-sm text-red-800 dark:text-red-300">
-                {{ $errors->first('name') }}
-            </div>
-            @endif
+            {{-- Form Tambah Permission Baru --}}
+            <form action="{{ route('permissions.permission.store') }}" method="POST" class="flex items-center gap-2">
+                @csrf
+                <input type="text"
+                       name="name"
+                       placeholder="nama.izin.baru"
+                       class="h-9.5 px-3 text-xs font-mono rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 w-44"
+                       required
+                       pattern="[a-z0-9\-\.]+">
+                <button type="submit"
+                        class="h-9.5 px-3 text-xs font-semibold rounded-lg bg-gray-900 hover:bg-gray-800 text-white dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white transition-colors shrink-0">
+                    + Tambah Izin
+                </button>
+            </form>
+        </div>
 
-            <div class="p-6">
-                @php
-                    $allPermissions = \Spatie\Permission\Models\Permission::with('roles')
-                        ->orderBy('name')->get();
+        {{-- Grid Modul Izin --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @foreach($groupedPermissions as $module => $perms)
+            <div class="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900/40 p-4 space-y-3"
+                 x-show="!searchPermission || '{{ strtolower($module) }}'.includes(searchPermission.toLowerCase()) || {{ json_encode($perms->pluck('name')->map(fn($n) => strtolower($n))) }}.some(p => p.includes(searchPermission.toLowerCase()))">
+                
+                <div class="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+                    <h3 class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                        {{ $module }}
+                    </h3>
+                    <span class="text-xs text-gray-400 font-mono">
+                        {{ count($perms) }} izin
+                    </span>
+                </div>
 
-                    // Kelompokkan berdasarkan prefix (sebelum titik pertama)
-                    $grouped = $allPermissions->groupBy(fn($p) =>
-                        str_contains($p->name, '.') ? explode('.', $p->name)[0] : 'lainnya'
-                    );
-                @endphp
+                <div class="space-y-1.5">
+                    @foreach($perms as $perm)
+                    <div x-show="!searchPermission || '{{ strtolower($perm->name) }}'.includes(searchPermission.toLowerCase())"
+                         class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                        <code class="text-xs font-mono text-gray-800 dark:text-gray-200">{{ $perm->name }}</code>
 
-                <div class="space-y-4">
-                    @foreach($grouped as $prefix => $perms)
-                    <div>
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{{ ucfirst(str_replace('-', ' ', $prefix)) }}</p>
-                        <div class="flex flex-wrap gap-2">
-                            @foreach($perms as $perm)
-                            <div class="group flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/5 hover:border-red-300 transition-colors">
-                                <span class="text-xs font-mono text-gray-600 dark:text-gray-400">{{ $perm->name }}</span>
-                                @if($perm->roles->isEmpty())
-                                {{-- Hanya bisa dihapus jika tidak dipakai role manapun --}}
-                                <form action="{{ route('permissions.permission.destroy', $perm) }}"
-                                      method="POST" class="inline"
-                                      onsubmit="return confirm('Hapus permission \'{{ $perm->name }}\'?')">
+                        <div class="flex items-center gap-2">
+                            @if($perm->roles->isEmpty())
+                                <span class="text-[11px] text-gray-400">Belum dipakai</span>
+                                <form action="{{ route('permissions.permission.destroy', $perm) }}" method="POST"
+                                      onsubmit="return confirm('Hapus izin \'{{ $perm->name }}\'?')" class="inline-block">
                                     @csrf @method('DELETE')
-                                    <button type="submit"
-                                            class="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all" title="Hapus">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors" title="Hapus izin tidak terpakai">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                                         </svg>
                                     </button>
                                 </form>
-                                @else
-                                {{-- Dipakai role — tampilkan tooltip jumlah role --}}
-                                <span class="text-xs text-indigo-400" title="Digunakan oleh: {{ $perm->roles->pluck('name')->join(', ') }}">
-                                    ×{{ $perm->roles->count() }}
+                            @else
+                                <span class="text-[11px] font-medium text-gray-500 dark:text-gray-400"
+                                      title="Dimiliki oleh: {{ $perm->roles->pluck('name')->join(', ') }}">
+                                    {{ $perm->roles->count() }} peran
                                 </span>
-                                @endif
-                            </div>
-                            @endforeach
+                            @endif
                         </div>
                     </div>
                     @endforeach
                 </div>
             </div>
+            @endforeach
         </div>
-
     </div>
+
 </div>
 @endsection

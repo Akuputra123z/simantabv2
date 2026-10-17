@@ -200,6 +200,7 @@ Route::middleware(['auth', 'active', 'role:super_admin'])->group(function () {
         Route::put('{user}', [PegawaiController::class, 'update'])->name('update');
         Route::delete('{user}', [PegawaiController::class, 'destroy'])->name('destroy');
         Route::patch('{user}/toggle-active', [PegawaiController::class, 'toggleActive'])->name('toggle-active');
+        Route::post('{user}/send-verification', [PegawaiController::class, 'sendVerification'])->name('send-verification');
     });
 
     // ── Pegawai OPD ──
@@ -212,6 +213,7 @@ Route::middleware(['auth', 'active', 'role:super_admin'])->group(function () {
         Route::put('{user}', [PegawaiController::class, 'update'])->name('update');
         Route::delete('{user}', [PegawaiController::class, 'destroy'])->name('destroy');
         Route::patch('{user}/toggle-active', [PegawaiController::class, 'toggleActive'])->name('toggle-active');
+        Route::post('{user}/send-verification', [PegawaiController::class, 'sendVerification'])->name('send-verification');
     });
 });
 

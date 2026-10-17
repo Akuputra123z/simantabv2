@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -9,11 +10,12 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, HasRoles, Notifiable;
 
     protected $fillable = [
+        'uuid',
         'name',
         'email',
         'password',
@@ -23,9 +25,11 @@ class User extends Authenticatable
         'pendidikan_terakhir',
         'jenis_kelamin',
         'unit_kerja',
-        'phone',
         'avatar',
         'signature',
+        'google_id',
+        'password_changed_at',
+        'email_verified_at',
         'is_active',
     ];
 
@@ -39,8 +43,66 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'password_changed_at' => 'datetime',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Cek apakah masa berlaku kata sandi telah habis (default 90 hari)
+     */
+    public function isPasswordExpired(int $days = 90): bool
+    {
+        if (! $this->password_changed_at) {
+            return false;
+        }
+
+        return $this->password_changed_at->copy()->addDays($days)->isPast();
+    }
+
+    /**
+     * Sisa hari masa berlaku kata sandi
+     */
+    public function daysUntilPasswordExpires(int $days = 90): int
+    {
+        if (! $this->password_changed_at) {
+            return $days;
+        }
+
+        return max(0, (int) now()->diffInDays($this->password_changed_at->copy()->addDays($days), false));
+    }
+
+    /**
+     * Cek apakah akun sudah diverifikasi
+     */
+    public function isVerified(): bool
+    {
+        return ! is_null($this->email_verified_at);
+    }
+
+    /**
+     * Cek apakah akun sudah ditautkan dengan Google
+     */
+    public function hasGoogleLinked(): bool
+    {
+        return ! empty($this->google_id);
+    }
+
+    /**
+     * Kirim notifikasi verifikasi akun via email
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $verificationUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'account.verify.execute',
+            now()->addMinutes(60),
+            [
+                'id' => $this->getKey(),
+                'hash' => sha1($this->getEmailForVerification()),
+            ]
+        );
+
+        $this->notify(new \App\Notifications\AccountVerificationNotification($verificationUrl));
     }
 
     // ── Constants — daftar role yang valid di sistem ───────────────────────────
@@ -242,5 +304,40 @@ class User extends Authenticatable
             'user_id',
             'unit_diperiksa_id'
         )->withTimestamps();
+    }
+
+    // ── Route Model Binding & UUID ────────────────────────────────────────────
+
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $field = $field ?? 'uuid';
+        $model = $this->where($field, $value)->first();
+
+        if ($model) {
+            return $model;
+        }
+
+        // Backward compatibility fallback jika dipanggil dengan numeric ID
+        if ($field === 'uuid' && is_numeric($value)) {
+            return $this->where('id', $value)->firstOrFail();
+        }
+
+        abort(404);
+    }
+
+    // ── Events ────────────────────────────────────────────────────────────────
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
+            }
+        });
     }
 }

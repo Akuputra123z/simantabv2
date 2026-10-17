@@ -86,11 +86,17 @@ class PegawaiController extends Controller
         }
     }
 
-    public function edit(User $user): View
+    public function edit(Request $request, User $user)
     {
-        $user->load('roles', 'opdUnits');
-
         $type = $user->hasRole(User::ROLE_OPD) ? 'opd' : 'inspektorat';
+
+        $rawParam = $request->route()?->originalParameter('user') ?? $request->segment(3);
+        if ($rawParam && ($rawParam !== $user->uuid || is_numeric($rawParam))) {
+            $routeName = $type === 'opd' ? 'pegawai.opd.edit' : 'pegawai.inspektorat.edit';
+            return redirect()->route($routeName, $user, 301);
+        }
+
+        $user->load('roles', 'opdUnits');
         $roles = Role::orderBy('name')->get(['id', 'name']);
         $unitKerjaOptions = User::UNIT_KERJA_OPTIONS;
         $jabatanOptions = User::JABATAN_OPTIONS;
@@ -188,5 +194,16 @@ class PegawaiController extends Controller
         $user->update(['is_active' => ! $user->is_active]);
 
         return back()->with('success', 'Status user berhasil diperbarui.');
+    }
+
+    public function sendVerification(User $user): RedirectResponse
+    {
+        if (empty($user->email)) {
+            return back()->with('error', 'Pegawai ini belum memiliki email valid.');
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return back()->with('success', "Tautan verifikasi dan aktivasi akun berhasil dikirim ke {$user->email}.");
     }
 }

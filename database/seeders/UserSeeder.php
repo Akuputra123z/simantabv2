@@ -106,9 +106,10 @@ class UserSeeder extends Seeder
             $user = User::updateOrCreate(
                 ['nip' => $row[2]],
                 [
+                    'uuid' => (string) Str::uuid(),
                     'name' => $row[1],
                     'email' => Str::slug($row[1]).'@inspektorat.go.id',
-                    'email_verified_at' => now(),
+                    'email_verified_at' => null,
                     'password' => $defaultPassword,
                     'nip' => $row[2],
                     'pangkat_gol' => $row[3],
@@ -116,10 +117,10 @@ class UserSeeder extends Seeder
                     'pendidikan_terakhir' => $row[5],
                     'jenis_kelamin' => $row[6],
                     'unit_kerja' => $row[7],
-                    'phone' => null,
                     'avatar' => null,
                     'signature' => null,
                     'is_active' => true,
+                    'password_changed_at' => now(),
                     'remember_token' => Str::random(10),
                 ]
             );

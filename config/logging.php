@@ -63,14 +63,34 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
+            'formatter' => \App\Logging\Formatters\SafeLogFormatter::class,
+            'processors' => [
+                \App\Logging\Processors\MaskSensitiveDataProcessor::class,
+            ],
         ],
 
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'days' => env('LOG_DAILY_DAYS', 14),
+            'days' => env('LOG_DAILY_DAYS', 90),
             'replace_placeholders' => true,
+            'formatter' => \App\Logging\Formatters\SafeLogFormatter::class,
+            'processors' => [
+                \App\Logging\Processors\MaskSensitiveDataProcessor::class,
+            ],
+        ],
+
+        'secure_audit' => [
+            'driver' => 'monolog',
+            'handler' => \App\Logging\Handlers\EncryptedLogHandler::class,
+            'handler_with' => [
+                'filePath' => storage_path('logs/secure-audit-' . date('Y-m-d') . '.log'),
+            ],
+            'processors' => [
+                \App\Logging\Processors\MaskSensitiveDataProcessor::class,
+            ],
+            'level' => 'info',
         ],
 
         'slack' => [

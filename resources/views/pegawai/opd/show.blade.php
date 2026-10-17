@@ -43,12 +43,6 @@
                             {{ $user->nip ?: '—' }}
                         </p>
                     </div>
-                    <div>
-                        <p class="text-gray-400 text-xs mb-1">No. HP</p>
-                        <p class="font-medium text-gray-800 dark:text-gray-200">
-                            {{ $user->phone ?: '—' }}
-                        </p>
-                    </div>
                     <div class="sm:col-span-2">
                         <p class="text-gray-400 text-xs mb-1">Unit OPD yang Di-assign</p>
                         <div class="flex flex-wrap gap-2 mt-1">

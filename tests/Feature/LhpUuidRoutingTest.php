@@ -76,7 +76,7 @@ class LhpUuidRoutingTest extends TestCase
         $editUrl = route('lhps.edit', $this->lhp);
 
         $this->assertStringContainsString('/lhps/' . $this->lhp->uuid, $showUrl);
-        $this->assertStringNotContainsString('/lhps/' . $this->lhp->id, $showUrl);
+        $this->assertStringNotContainsString('/lhps/' . $this->lhp->id . '/', rtrim($showUrl, '/') . '/');
 
         $this->assertStringContainsString('/lhps/' . $this->lhp->uuid . '/edit', $editUrl);
         $this->assertStringNotContainsString('/lhps/' . $this->lhp->id . '/edit', $editUrl);

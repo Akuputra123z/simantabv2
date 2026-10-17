@@ -80,14 +80,6 @@
                             @error('email') <p class="text-xs text-red-500 mt-1.5 font-semibold">{{ $message }}</p> @enderror
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">No. HP</label>
-                            <input type="text" name="phone" value="{{ old('phone') }}"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all @error('phone') border-red-500 @enderror"
-                                   placeholder="0812xxxx">
-                            @error('phone') <p class="text-xs text-red-500 mt-1.5 font-semibold">{{ $message }}</p> @enderror
-                        </div>
-
                         {{-- Data Kepegawaian --}}
                         <div class="md:col-span-2 mt-4">
                             <h4 class="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-4">Data Kepegawaian</h4>

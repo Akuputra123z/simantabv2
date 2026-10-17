@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -200,6 +201,7 @@ class RoleAndPermissionSeeder extends Seeder
         $admin = User::firstOrCreate(
             ['email' => 'admin@inspektorat.go.id'],
             [
+                'uuid' => (string) Str::uuid(),
                 'name' => 'Super Administrator',
                 'password' => Hash::make('password'), // GANTI setelah deploy!
                 'nip' => '000000000000000000',

@@ -68,11 +68,6 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No. HP</label>
-                                <input type="text" name="phone" value="{{ old('phone', $user->phone) }}" class="form-input-styled" placeholder="0812...">
-                            </div>
-
-                            <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jenis Kelamin <span class="text-red-500">*</span></label>
                                 <select name="jenis_kelamin" required data-no-ts class="form-input-styled cursor-pointer @error('jenis_kelamin') border-red-500 @enderror">
                                     <option value="">-- Pilih Jenis Kelamin --</option>

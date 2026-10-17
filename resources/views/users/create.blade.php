@@ -65,12 +65,6 @@
                                    placeholder="contoh@email.com">
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">No. HP</label>
-                            <input type="text" name="phone" value="{{ old('phone') }}"
-                                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
-                                   placeholder="0812xxxx">
-                        </div>
 
                         {{-- Data Kepegawaian --}}
                         <div class="md:col-span-2 mt-4">

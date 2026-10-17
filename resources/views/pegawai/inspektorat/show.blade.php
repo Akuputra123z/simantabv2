@@ -71,13 +71,6 @@
                         <p class="text-gray-400 text-xs mb-1">Jenis Kelamin</p>
                         <p class="font-medium text-gray-800 dark:text-gray-200">
                             {{ $user->jenis_kelamin === 'L' ? 'Laki-laki' : ($user->jenis_kelamin === 'P' ? 'Perempuan' : '—') }}
-                        </p>
-                    </div>
-                    <div class="sm:col-span-2">
-                        <p class="text-gray-400 text-xs mb-1">Kontak</p>
-                        <p class="font-medium text-gray-800 dark:text-gray-200">
-                            {{ $user->phone ?: '—' }}
-                        </p>
                     </div>
                 </div>
 

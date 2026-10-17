@@ -32,6 +32,9 @@
         </div>
     </div>
 
+    {{-- NOTIFIKASI AKUN BELUM DIVERIFIKASI --}}
+    <x-auth.unverified-alert />
+
     {{-- 1. GLOBAL DATE FILTER --}}
     <x-dashboard.date-filter
         :preset="$preset"

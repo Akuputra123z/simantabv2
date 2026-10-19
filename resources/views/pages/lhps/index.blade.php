@@ -35,89 +35,94 @@
     </a>
 </div>
 
-{{-- Filter --}}
-<form method="GET" action="{{ url()->current() }}" class="mb-6 flex flex-col gap-3 md:flex-row md:items-center">
-    <div class="flex-1 min-w-0">
-        <div class="relative">
-            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 dark:text-gray-500">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
+{{-- Card Container --}}
+<div class="overflow-hidden rounded-xl border border-gray-200 bg-white pt-4 dark:border-gray-800 dark:bg-white/[0.03]">
+    
+    {{-- Top Controls Bar: Show entries, Filter Kategori, Filter Tahun, Search & Reset --}}
+    <form method="GET" action="{{ route('lhps.index') }}" id="filterForm" class="mb-4 px-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            
+            {{-- Left Controls: Entries Per Page, Category & Year Select --}}
+            <div class="flex flex-wrap items-center gap-2.5">
+                
+                {{-- Entries Per Page --}}
+                <div class="flex items-center gap-1.5">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Show</span>
+                    <div class="relative z-20">
+                        <select name="per_page" onchange="document.getElementById('filterForm').submit()" data-no-ts
+                                class="appearance-none cursor-pointer dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 rounded-lg border border-gray-300 bg-transparent py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                            @foreach([5, 8, 10, 20, 25, 30, 50, 100] as $sz)
+                                <option value="{{ $sz }}" @selected(request('per_page', 10) == $sz)>{{ $sz }}</option>
+                            @endforeach
+                        </select>
+                        <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
+                            <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </span>
+                    </div>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">entries</span>
+                </div>
+
+                {{-- Kategori Dropdown --}}
+                <div class="relative z-20">
+                    <select name="kategori" onchange="document.getElementById('filterForm').submit()" data-no-ts
+                            class="appearance-none cursor-pointer dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 rounded-lg border border-gray-300 bg-transparent py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                        <option value="">Semua Kategori</option>
+                        @foreach($kategoris as $kat)
+                            <option value="{{ $kat }}" {{ request('kategori') == $kat ? 'selected' : '' }}>{{ $kat }}</option>
+                        @endforeach
+                    </select>
+                    <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
+                        <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </span>
+                </div>
+
+                {{-- Tahun Dropdown --}}
+                <div class="relative z-20">
+                    <select name="tahun" onchange="document.getElementById('filterForm').submit()" data-no-ts
+                            class="appearance-none cursor-pointer dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 rounded-lg border border-gray-300 bg-transparent py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                        <option value="" @selected(!request()->filled('tahun'))>Semua Tahun</option>
+                        @foreach($tahuns ?? range(date('Y'), date('Y') - 4) as $thn)
+                            <option value="{{ $thn }}" @selected(request()->filled('tahun') && request('tahun') == $thn)>{{ $thn }}</option>
+                        @endforeach
+                    </select>
+                    <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
+                        <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </span>
+                </div>
+
             </div>
-            <input type="text" name="search" value="{{ request('search') }}"
-                   placeholder="Cari nomor LHP, unit, atau program..."
-                   class="h-10 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-500">
+
+            {{-- Right Controls: Search Box & Reset --}}
+            <div class="flex items-center gap-2">
+                <div class="relative flex-1 sm:flex-initial">
+                    <button type="submit" class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                        <svg class="fill-current" width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M3.04199 9.37363C3.04199 5.87693 5.87735 3.04199 9.37533 3.04199C12.8733 3.04199 15.7087 5.87693 15.7087 9.37363C15.7087 12.8703 12.8733 15.7053 9.37533 15.7053C5.87735 15.7053 3.04199 12.8703 3.04199 9.37363ZM9.37533 1.54199C5.04926 1.54199 1.54199 5.04817 1.54199 9.37363C1.54199 13.6991 5.04926 17.2053 9.37533 17.2053C11.2676 17.2053 13.0032 16.5344 14.3572 15.4176L17.1773 18.238C17.4702 18.5309 17.945 18.5309 18.2379 18.238C18.5308 17.9451 18.5309 17.4703 18.238 17.1773L15.4182 14.3573C16.5367 13.0033 17.2087 11.2669 17.2087 9.37363C17.2087 5.04817 13.7014 1.54199 9.37533 1.54199Z" fill=""></path>
+                        </svg>
+                    </button>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="Cari nomor LHP, unit, program..."
+                           class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 w-full sm:w-[260px] rounded-lg border border-gray-300 bg-transparent py-2 pr-3 pl-9 text-xs text-gray-800 placeholder:text-gray-400 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30">
+                </div>
+
+                @if (request()->filled('search') || request()->filled('tahun') || request()->filled('kategori') || request()->filled('sort') || (request()->filled('per_page') && request('per_page') != 10))
+                <a href="{{ route('lhps.index') }}"
+                   class="shadow-theme-xs inline-flex h-9 items-center justify-center rounded-lg border border-gray-300 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
+                    Reset
+                </a>
+                @endif
+            </div>
         </div>
-    </div>
-
-    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-        {{-- Tahun Dropdown --}}
-        <div class="relative z-20 flex-1 min-w-[140px] sm:flex-initial sm:w-40">
-            <select name="tahun" onchange="this.form.submit()" data-no-ts
-                    class="h-10 w-full appearance-none cursor-pointer rounded-lg border border-gray-300 bg-white py-2 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                <option value="" @selected(!request()->filled('tahun'))>Semua Tahun</option>
-                @foreach($tahuns ?? range(date('Y'), date('Y') - 4) as $y)
-                    <option value="{{ $y }}" @selected(request()->filled('tahun') && request('tahun') == $y)>{{ $y }}</option>
-                @endforeach
-            </select>
-            <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
-                <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
-                </svg>
-            </span>
-        </div>
-
-        {{-- Kategori Dropdown --}}
-        <div class="relative z-20 flex-1 min-w-[140px] sm:flex-initial sm:w-44">
-            <select name="kategori" onchange="this.form.submit()" data-no-ts
-                    class="h-10 w-full appearance-none cursor-pointer rounded-lg border border-gray-300 bg-white py-2 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                <option value="" @selected(!request()->filled('kategori'))>Semua Kategori</option>
-                @foreach($kategoris as $k)
-                    <option value="{{ $k }}" @selected(request()->filled('kategori') && request('kategori') == $k)>{{ $k }}</option>
-                @endforeach
-            </select>
-            <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
-                <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
-                </svg>
-            </span>
-        </div>
-
-        {{-- Entries Per Page --}}
-        <div class="relative z-20 flex-1 min-w-[120px] sm:flex-initial sm:w-32">
-            <select name="per_page" onchange="this.form.submit()" data-no-ts
-                    class="h-10 w-full appearance-none cursor-pointer rounded-lg border border-gray-300 bg-white py-2 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                @foreach([10, 20, 30, 50, 100] as $size)
-                    <option value="{{ $size }}" @selected(request('per_page', 10) == $size)>{{ $size }} Data</option>
-                @endforeach
-            </select>
-            <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
-                <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
-                </svg>
-            </span>
-        </div>
-
-        <button type="submit"
-                class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg bg-gray-950 text-sm font-medium text-white hover:bg-gray-850 focus:outline-none focus:ring-2 focus:ring-gray-950/20 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-500/20 transition-colors whitespace-nowrap">
-            Filter
-        </button>
-        @if (request()->filled('search') || request()->filled('tahun') || request()->filled('kategori') || request()->filled('sort') || (request()->filled('per_page') && request('per_page') != 10))
-        <a href="{{ route('lhps.index') }}"
-           class="h-10 px-4 flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors whitespace-nowrap">
-            Reset
-        </a>
-        @endif
-    </div>
-</form>
-
-{{-- Table --}}
-<form id="main-form" action="{{ route('lhps.bulkDelete') }}" method="POST" onsubmit="return false;">
-    @csrf
-    @method('DELETE')
+    </form>
 
     {{-- Bulk Action Banner Bar (User Friendly Top Position) --}}
-    <div id="bulk-action-bar" class="hidden mb-4 p-3 px-4 rounded-xl bg-red-50/90 dark:bg-red-950/40 border border-red-200/80 dark:border-red-800/60 flex items-center justify-between shadow-xs transition-all duration-300">
+    <div id="bulk-action-bar" class="hidden mx-4 mb-4 p-3 px-4 rounded-xl bg-red-50/90 dark:bg-red-950/40 border border-red-200/80 dark:border-red-800/60 flex items-center justify-between shadow-xs transition-all duration-300">
         <div class="flex items-center gap-3">
             <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-600 text-white font-bold text-xs shadow-xs" id="count-selected-badge">
                 0
@@ -144,10 +149,13 @@
         </div>
     </div>
 
-    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
-    <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
-            <thead class="bg-gray-50/80 dark:bg-gray-900/60 border-b border-gray-200 dark:border-gray-800">
+    {{-- Table Area --}}
+    <form id="main-form" action="{{ route('lhps.bulkDelete') }}" method="POST" onsubmit="return false;">
+        @csrf
+        @method('DELETE')
+        <div class="max-w-full overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="border-y border-gray-200 bg-gray-50/60 dark:border-gray-800 dark:bg-gray-900/40 text-xs font-semibold text-gray-700 dark:text-gray-400">
                 <tr>
                     <th class="px-3.5 py-3 w-[4%] text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center border-r border-gray-200/70 dark:border-gray-800/70">
                         <input type="checkbox" id="check-all"
@@ -348,14 +356,14 @@
             </tbody>
         </table>
     </div>
+    </form>
 
     @if($lhps->hasPages())
-    <div class="flex items-center justify-center border-t border-gray-100 px-5 py-3.5 dark:border-gray-800">
+    <div class="flex items-center justify-center border-t border-gray-200 px-5 py-3.5 dark:border-gray-800">
         {{ $lhps->links() }}
     </div>
     @endif
 </div>
-</form>
 
 {{-- Modal Konfirmasi Hapus --}}
 <div id="delete-modal" class="fixed inset-0 z-[9999] hidden items-center justify-center p-4 transition-all duration-300 ease-out opacity-0">

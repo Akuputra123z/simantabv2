@@ -614,7 +614,7 @@ class DashboardController extends Controller
             );
         });
 
-        $listKategori = AuditProgram::KATEGORI;
+        $listKategori = AuditProgram::getKategoriOptions();
 
         $yearsLhp = Lhp::whereNotNull('tanggal_lhp')
             ->pluck('tanggal_lhp')

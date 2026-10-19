@@ -66,7 +66,7 @@ class LaporanController extends Controller
                 ->pluck('tim');
         });
 
-        $kategoris = AuditProgram::KATEGORI;
+        $kategoris = AuditProgram::getKategoriOptions();
 
         return view('pages.laporan.index', compact(
             'lhps', 'ringkasan', 'irbanList', 'kategoris'

@@ -149,7 +149,7 @@
                 </div>
             </div>
 
-            {{-- Kategori Audit (Default: PKPT) --}}
+            {{-- Kategori Audit --}}
             <div>
                 <label for="kategori" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
                     Kategori Audit
@@ -159,7 +159,7 @@
                     <option value="semua" {{ $kategori === 'semua' ? 'selected' : '' }}>Semua Kategori Audit</option>
                     @foreach($listKategori as $kat)
                         <option value="{{ $kat }}" {{ $kategori === $kat ? 'selected' : '' }}>
-                            {{ $kat }} {{ $kat === 'PKPT' ? '(Default Utama)' : '' }}
+                            {{ $kat }}
                         </option>
                     @endforeach
                 </select>
@@ -215,7 +215,7 @@
             </div>
 
             <div class="flex items-center gap-2 w-full sm:w-auto">
-                @if($kategori !== 'PKPT' || $statusOpd || $status || $search)
+                @if(($kategori && $kategori !== 'semua') || $statusOpd || $status || $search)
                     <a href="{{ route('opd.tindak-lanjut.index') }}"
                        class="h-10 sm:h-8 px-3 inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 transition-colors w-full sm:w-auto">
                         Reset Filter

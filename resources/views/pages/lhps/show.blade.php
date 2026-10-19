@@ -606,55 +606,92 @@
 
             {{-- 2. Card Berkas Lampiran LHP --}}
             <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm">📎</span>
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
-                            Berkas Lampiran LHP
-                        </h3>
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
+                    <div class="flex items-center gap-2.5">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+                                Berkas Lampiran LHP
+                            </h3>
+                            <p class="text-[10px] text-gray-400 dark:text-gray-500">Dokumen pendukung &amp; bukti fisik</p>
+                        </div>
                     </div>
-                    <span class="text-xs font-semibold text-gray-500">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold {{ $lhp->attachments && $lhp->attachments->isNotEmpty() ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' }}">
                         {{ $lhp->attachments ? $lhp->attachments->count() : 0 }} Berkas
                     </span>
                 </div>
 
                 @if($lhp->attachments && $lhp->attachments->isNotEmpty())
-                    <div class="space-y-2">
+                    <div class="space-y-2.5">
                         @foreach($lhp->attachments as $att)
                             @php
-                                $ext = strtoupper(pathinfo($att->file_name, PATHINFO_EXTENSION) ?: 'FILE');
-                                $isPdf = $ext === 'PDF';
-                                $isImg = in_array($ext, ['JPG', 'JPEG', 'PNG']);
+                                $ext = strtoupper(pathinfo($att->file_name ?: $att->file_path, PATHINFO_EXTENSION) ?: 'FILE');
+                                $isPdf = $att->isPdf();
+                                $isImg = $att->isImage();
                             @endphp
-                            <div class="group flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-blue-200 hover:shadow-xs dark:border-gray-800 dark:bg-gray-800/40 dark:hover:bg-gray-800 transition">
-                                <div class="flex items-center gap-2.5 min-w-0">
-                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[9px] font-bold uppercase
-                                        {{ $isPdf ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300' : ($isImg ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300') }}">
-                                        {{ $ext }}
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-bold text-gray-900 dark:text-white truncate">
-                                            {{ $att->file_name ?: 'Lampiran LHP' }}
-                                        </p>
-                                        <p class="text-[10px] text-gray-400">
-                                            {{ $att->file_size ? number_format($att->file_size / 1024, 1) . ' KB' : 'Berkas Lampiran' }}
-                                        </p>
+                            <div class="group rounded-xl border border-gray-100 bg-gray-50/70 p-3 hover:bg-white hover:border-blue-200 hover:shadow-xs dark:border-gray-800 dark:bg-gray-800/40 dark:hover:bg-gray-800 transition-all space-y-2">
+                                <div class="flex items-start justify-between gap-2.5">
+                                    <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                                        {{-- File Type Icon / Image Thumbnail --}}
+                                        @if($isImg && $att->id)
+                                            <a href="{{ route('attachments.show', $att->id) }}" target="_blank"
+                                               class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 hover:opacity-90 transition block">
+                                                <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}"
+                                                     class="h-full w-full object-cover">
+                                            </a>
+                                        @else
+                                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-extrabold text-[10px] uppercase shadow-2xs {{ $isPdf ? 'bg-rose-50 text-rose-600 border border-rose-200/80 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/40' : 'bg-blue-50 text-blue-600 border border-blue-200/80 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/40' }}">
+                                                {{ $isPdf ? 'PDF' : $ext }}
+                                            </div>
+                                        @endif
+
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-xs font-bold text-gray-900 dark:text-white truncate" title="{{ $att->file_name }}">
+                                                {{ $att->file_name ?: 'Lampiran LHP' }}
+                                            </p>
+                                            @if($att->keterangan)
+                                                <p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5" title="{{ $att->keterangan }}">
+                                                    {{ $att->keterangan }}
+                                                </p>
+                                            @endif
+                                            <div class="flex flex-wrap items-center gap-1.5 mt-1 text-[10px] text-gray-400 dark:text-gray-500">
+                                                <span class="font-mono">{{ $att->file_size_formatted }}</span>
+                                                <span>&bull;</span>
+                                                <span>{{ $ext }}</span>
+                                                @if($att->created_at)
+                                                    <span>&bull;</span>
+                                                    <span>{{ $att->created_at->translatedFormat('d M Y') }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div class="flex items-center gap-1.5 shrink-0">
+                                {{-- Action Buttons --}}
+                                <div class="flex items-center justify-end gap-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-800/80">
                                     @if(Route::has('attachments.show'))
                                         <a href="{{ route('attachments.show', $att->id) }}" target="_blank"
-                                           title="Buka Berkas"
-                                           class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/40 transition">
-                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-[11px] font-semibold text-gray-700 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/50 shadow-2xs dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-blue-400 transition"
+                                           title="Buka Berkas di Tab Baru">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                            <span>Buka</span>
                                         </a>
                                     @endif
                                     @if(Route::has('attachments.download'))
                                         <a href="{{ route('attachments.download', $att->id) }}"
-                                           title="Unduh Berkas"
-                                           class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-emerald-900/40 transition">
-                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-[11px] font-semibold text-gray-700 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50/50 shadow-2xs dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-emerald-400 transition"
+                                           title="Unduh Berkas ke Perangkat">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            </svg>
+                                            <span>Unduh</span>
                                         </a>
                                     @endif
                                 </div>
@@ -662,8 +699,14 @@
                         @endforeach
                     </div>
                 @else
-                    <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-4 text-center dark:border-gray-800 dark:bg-gray-800/30">
-                        <p class="text-xs text-gray-400 italic">Tidak ada berkas lampiran pendukung yang disertakan pada LHP ini.</p>
+                    <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center dark:border-gray-800 dark:bg-gray-800/30">
+                        <div class="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500 mb-2">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v11a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300">Belum Ada Berkas Lampiran</p>
+                        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Tidak ada berkas pendukung yang disertakan pada laporan ini.</p>
                     </div>
                 @endif
             </div>

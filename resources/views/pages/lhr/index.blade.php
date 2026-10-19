@@ -110,69 +110,116 @@
     </a>
 </div>
 
-{{-- Filter Box --}}
-<div class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-    <form method="GET" action="{{ route('lhr.index') }}" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {{-- Pencarian --}}
-        <div>
-            <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Cari Dokumen</label>
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Nomor LHR, OPD, SPT..."
-                   class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
-        </div>
+{{-- Card Container --}}
+<div class="overflow-hidden rounded-xl border border-gray-200 bg-white pt-4 dark:border-gray-800 dark:bg-white/[0.03]">
+    
+    {{-- Top Controls Bar: Show entries, Filter Jenis Dokumen, Filter Status, Filter Tahun, Search & Reset --}}
+    <form method="GET" action="{{ route('lhr.index') }}" id="filterForm" class="mb-4 px-4">
+        @if(request('jenis_kode'))
+            <input type="hidden" name="jenis_kode" value="{{ request('jenis_kode') }}">
+        @endif
 
-        {{-- Tahun --}}
-        <div>
-            <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Tahun Anggaran</label>
-            <select name="tahun" data-no-ts onchange="this.form.submit()"
-                    class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer">
-                <option value="">Semua Tahun</option>
-                @foreach($tahunList as $th)
-                    <option value="{{ $th }}" @selected(request('tahun') == $th)>{{ $th }}</option>
-                @endforeach
-            </select>
-        </div>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            
+            {{-- Left Controls: Show Entries, Jenis Dokumen, Status & Tahun Dropdowns --}}
+            <div class="flex flex-wrap items-center gap-2.5">
+                
+                {{-- Entries Per Page --}}
+                <div class="flex items-center gap-1.5">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Show</span>
+                    <div class="relative z-20">
+                        <select name="per_page" onchange="document.getElementById('filterForm').submit()" data-no-ts
+                                class="appearance-none cursor-pointer dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 rounded-lg border border-gray-300 bg-transparent py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                            @foreach([5, 8, 10, 20, 25, 30, 50, 100] as $sz)
+                                <option value="{{ $sz }}" @selected(request('per_page', 10) == $sz)>{{ $sz }}</option>
+                            @endforeach
+                        </select>
+                        <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
+                            <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </span>
+                    </div>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">entries</span>
+                </div>
 
-        {{-- Jenis Dokumen --}}
-        <div>
-            <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Jenis Dokumen</label>
-            <select name="jenis_dokumen_id" data-no-ts onchange="this.form.submit()"
-                    class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer">
-                <option value="">Semua Jenis</option>
-                @foreach($jenisDokumens as $jd)
-                    <option value="{{ $jd->id }}" @selected(request('jenis_dokumen_id') == $jd->id)>{{ $jd->kode }} - {{ $jd->nama }}</option>
-                @endforeach
-            </select>
-        </div>
+                {{-- Jenis Dokumen Dropdown --}}
+                <div class="relative z-20">
+                    <select name="jenis_dokumen_id" onchange="document.getElementById('filterForm').submit()" data-no-ts
+                            class="appearance-none cursor-pointer dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 rounded-lg border border-gray-300 bg-transparent py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                        <option value="">Semua Jenis Dokumen</option>
+                        @foreach($jenisDokumens as $jd)
+                            <option value="{{ $jd->id }}" @selected(request('jenis_dokumen_id') == $jd->id)>{{ $jd->kode }} - {{ $jd->nama }}</option>
+                        @endforeach
+                    </select>
+                    <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
+                        <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </span>
+                </div>
 
-        {{-- Status --}}
-        <div>
-            <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Status LHR</label>
-            <select name="status" data-no-ts onchange="this.form.submit()"
-                    class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer">
-                <option value="">Semua Status</option>
-                @foreach(\App\Enums\LhrStatus::cases() as $st)
-                    <option value="{{ $st->value }}" @selected(request('status') == $st->value)>{{ $st->label() }}</option>
-                @endforeach
-            </select>
-        </div>
+                {{-- Status Dropdown --}}
+                <div class="relative z-20">
+                    <select name="status" onchange="document.getElementById('filterForm').submit()" data-no-ts
+                            class="appearance-none cursor-pointer dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 rounded-lg border border-gray-300 bg-transparent py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                        <option value="">Semua Status</option>
+                        @foreach(\App\Enums\LhrStatus::cases() as $st)
+                            <option value="{{ $st->value }}" @selected(request('status') == $st->value)>{{ $st->label() }}</option>
+                        @endforeach
+                    </select>
+                    <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
+                        <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </span>
+                </div>
 
-        {{-- Action Button --}}
-        <div class="flex items-end gap-2">
-            <button type="submit" class="h-10 w-full rounded-lg bg-gray-800 px-4 text-sm font-semibold text-white hover:bg-gray-900 transition dark:bg-gray-700 dark:hover:bg-gray-600">
-                Terapkan
-            </button>
-            <a href="{{ route('lhr.index') }}" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            </a>
+                {{-- Tahun Dropdown --}}
+                <div class="relative z-20">
+                    <select name="tahun" onchange="document.getElementById('filterForm').submit()" data-no-ts
+                            class="appearance-none cursor-pointer dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 rounded-lg border border-gray-300 bg-transparent py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-800 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                        <option value="" @selected(!request()->filled('tahun'))>Semua Tahun</option>
+                        @foreach($tahunList as $th)
+                            <option value="{{ $th }}" @selected(request()->filled('tahun') && request('tahun') == $th)>{{ $th }}</option>
+                        @endforeach
+                    </select>
+                    <span class="absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-500 pointer-events-none dark:text-gray-400">
+                        <svg class="stroke-current" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </span>
+                </div>
+
+            </div>
+
+            {{-- Right Controls: Search Box & Reset --}}
+            <div class="flex items-center gap-2">
+                <div class="relative flex-1 sm:flex-initial">
+                    <button type="submit" class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                        <svg class="fill-current" width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M3.04199 9.37363C3.04199 5.87693 5.87735 3.04199 9.37533 3.04199C12.8733 3.04199 15.7087 5.87693 15.7087 9.37363C15.7087 12.8703 12.8733 15.7053 9.37533 15.7053C5.87735 15.7053 3.04199 12.8703 3.04199 9.37363ZM9.37533 1.54199C5.04926 1.54199 1.54199 5.04817 1.54199 9.37363C1.54199 13.6991 5.04926 17.2053 9.37533 17.2053C11.2676 17.2053 13.0032 16.5344 14.3572 15.4176L17.1773 18.238C17.4702 18.5309 17.945 18.5309 18.2379 18.238C18.5308 17.9451 18.5309 17.4703 18.238 17.1773L15.4182 14.3573C16.5367 13.0033 17.2087 11.2669 17.2087 9.37363C17.2087 5.04817 13.7014 1.54199 9.37533 1.54199Z" fill=""></path>
+                        </svg>
+                    </button>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="Search..."
+                           class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-9 w-full sm:w-[220px] rounded-lg border border-gray-300 bg-transparent py-2 pr-3 pl-9 text-xs text-gray-800 placeholder:text-gray-400 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30">
+                </div>
+
+                @if (request()->filled('search') || request()->filled('tahun') || request()->filled('jenis_dokumen_id') || request()->filled('status') || request()->filled('jenis_kode') || (request()->filled('per_page') && request('per_page') != 10))
+                <a href="{{ route('lhr.index') }}"
+                   class="shadow-theme-xs inline-flex h-9 items-center justify-center rounded-lg border border-gray-300 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
+                    Reset
+                </a>
+                @endif
+            </div>
         </div>
     </form>
-</div>
 
-{{-- Tabel Dokumen LHR --}}
-<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-    <div class="overflow-x-auto">
+    {{-- Tabel Dokumen LHR --}}
+    <div class="max-w-full overflow-x-auto">
         <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
-            <thead class="border-b border-gray-200 bg-gray-50 text-xs uppercase font-semibold text-gray-700 dark:border-gray-800 dark:bg-gray-800/60 dark:text-gray-300">
+            <thead class="border-y border-gray-200 bg-gray-50/60 dark:border-gray-800 dark:bg-gray-900/40 text-xs font-semibold text-gray-700 dark:text-gray-400">
                 <tr>
                     <th class="px-5 py-4 w-12 text-center">No</th>
                     <th class="px-5 py-4">Perangkat Daerah, Nomor LHR & SPT</th>
@@ -510,7 +557,7 @@
 
     {{-- Pagination --}}
     @if($lhrs->hasPages())
-        <div class="border-t border-gray-200 p-4 dark:border-gray-800">
+        <div class="border-t border-gray-200 px-5 py-3.5 dark:border-gray-800">
             {{ $lhrs->links() }}
         </div>
     @endif

@@ -38,7 +38,7 @@
         ];
     });
 
-    $kategoriList = $kategoris ?? \App\Models\AuditProgram::KATEGORI;
+    $kategoriList = $kategoris ?? \App\Models\AuditProgram::getKategoriOptions();
 
     $assignmentData = $assignments->map(function ($a) {
         return [
@@ -1197,39 +1197,53 @@ function lhpCreateWizard() {
         },
 
         addAttachment(initialFile = null) {
+            if (!initialFile) {
+                this.$refs.masterFileInput?.click();
+                return;
+            }
+
             const id = Date.now() + Math.random().toString(36).substring(2, 7);
+            const ext = this.getFileExt(initialFile.name);
+            const isImg = ['JPG', 'JPEG', 'PNG', 'WEBP'].includes(ext);
+
+            let previewUrl = null;
+            if (isImg) {
+                try {
+                    previewUrl = URL.createObjectURL(initialFile);
+                } catch(e) {}
+            }
+
             const newAtt = {
                 id: id,
-                file_name: initialFile ? this.cleanFileName(initialFile.name) : '',
-                raw_name: initialFile ? initialFile.name : '',
-                file_size: initialFile ? this.formatBytes(initialFile.size) : '',
-                file_ext: initialFile ? this.getFileExt(initialFile.name) : '',
+                file_name: this.cleanFileName(initialFile.name),
+                raw_name: initialFile.name,
+                file_size: this.formatBytes(initialFile.size),
+                file_ext: ext,
+                preview_url: previewUrl,
                 keterangan: '',
-                has_file: !!initialFile
+                has_file: true
             };
             this.attachments.push(newAtt);
 
-            if (initialFile) {
-                this.$nextTick(() => {
-                    const el = document.getElementById('att-file-' + id);
-                    if (el) {
-                        try {
-                            const dt = new DataTransfer();
-                            dt.items.add(initialFile);
-                            el.files = dt.files;
-                        } catch (e) {
-                            console.warn('DataTransfer not fully supported for programmatic file assignment', e);
-                        }
+            this.$nextTick(() => {
+                const el = document.getElementById('att-file-' + id);
+                if (el) {
+                    try {
+                        const dt = new DataTransfer();
+                        dt.items.add(initialFile);
+                        el.files = dt.files;
+                    } catch (e) {
+                        console.warn('DataTransfer fallback', e);
                     }
-                });
-            } else {
-                this.$nextTick(() => {
-                    document.getElementById('att-file-' + id)?.click();
-                });
-            }
+                }
+            });
         },
 
         removeAttachment(index) {
+            const att = this.attachments[index];
+            if (att && att.preview_url) {
+                try { URL.revokeObjectURL(att.preview_url); } catch(e) {}
+            }
             this.attachments.splice(index, 1);
         },
 
@@ -1238,7 +1252,7 @@ function lhpCreateWizard() {
         },
 
         processBatchFiles(fileList) {
-            const allowed = ['pdf', 'jpg', 'jpeg', 'png'];
+            const allowed = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
             const maxBytes = 15 * 1024 * 1024; // 15 MB
 
             for (let i = 0; i < fileList.length; i++) {
@@ -1282,9 +1296,9 @@ function lhpCreateWizard() {
             const file = event.target.files && event.target.files[0];
             if (!file) return;
 
-            const allowed = ['pdf', 'jpg', 'jpeg', 'png'];
+            const allowed = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
             const ext = this.getFileExt(file.name).toLowerCase();
-            const maxBytes = 10 * 1024 * 1024;
+            const maxBytes = 15 * 1024 * 1024; // 15 MB
 
             if (!allowed.includes(ext)) {
                 this.stepErrors = [`Format berkas "${file.name}" tidak diizinkan. Harap gunakan PDF, JPG, atau PNG.`];
@@ -1300,10 +1314,15 @@ function lhpCreateWizard() {
                 return;
             }
 
+            if (att.preview_url) {
+                try { URL.revokeObjectURL(att.preview_url); } catch(e) {}
+            }
+
             att.raw_name = file.name;
             att.file_size = this.formatBytes(file.size);
             att.file_ext = ext.toUpperCase();
             att.has_file = true;
+            att.preview_url = ['jpg', 'jpeg', 'png', 'webp'].includes(ext) ? URL.createObjectURL(file) : null;
 
             if (!att.file_name || att.file_name.trim() === '') {
                 att.file_name = this.cleanFileName(file.name);
@@ -2202,29 +2221,36 @@ function lhpCreateWizard() {
                         {{-- Daftar Kartu Berkas Terpilih --}}
                         <div class="space-y-3" x-show="attachments.length > 0">
                             <template x-for="(att, aIdx) in attachments" :key="att.id">
-                                <div class="group relative rounded-2xl border border-gray-200 bg-white p-4 shadow-xs transition-all hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800/80 dark:hover:border-gray-600 space-y-3.5">
+                                <div class="group relative rounded-2xl border border-gray-200 bg-white p-4 shadow-xs transition-all hover:border-blue-300 dark:border-gray-700 dark:bg-gray-800/80 dark:hover:border-blue-800 space-y-3.5">
                                     
                                     {{-- File Input Tersembunyi (Dikendalikan oleh tombol Ganti / File Picker) --}}
                                     <input type="file" :name="`attachments[${aIdx}][file_path]`" :id="`att-file-${att.id}`"
-                                           accept=".pdf,.jpg,.jpeg,.png" class="sr-only"
+                                           accept=".pdf,.jpg,.jpeg,.png,.webp" class="sr-only"
                                            @change="onSingleFileSelected($event, att)">
 
                                     {{-- Baris 1: Header Item & Preview Info --}}
-                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-700/60">
-                                        <div class="flex items-center gap-2.5 min-w-0">
-                                            {{-- Format Icon Badge --}}
-                                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-[10px] uppercase shadow-xs transition-colors"
-                                                 :class="att.file_ext === 'PDF' 
-                                                    ? 'bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800' 
-                                                    : 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'">
-                                                <span x-text="att.file_ext || 'FILE'"></span>
-                                            </div>
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-gray-700/60">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            {{-- Thumbnail / Format Badge --}}
+                                            <template x-if="att.preview_url">
+                                                <div class="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-2xs">
+                                                    <img :src="att.preview_url" class="h-full w-full object-cover" alt="Preview">
+                                                </div>
+                                            </template>
+                                            <template x-if="!att.preview_url">
+                                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-black text-[11px] uppercase shadow-2xs transition-colors"
+                                                     :class="att.file_ext === 'PDF' 
+                                                        ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/40' 
+                                                        : 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/40'">
+                                                    <span x-text="att.file_ext || 'FILE'"></span>
+                                                </div>
+                                            </template>
 
-                                            <div class="min-w-0">
+                                            <div class="min-w-0 flex-1">
                                                 <div class="flex items-center gap-2">
                                                     <span class="text-xs font-bold text-gray-900 dark:text-white truncate max-w-xs sm:max-w-md"
                                                           x-text="att.raw_name || 'Berkas belum dipilih'"></span>
-                                                    <span class="rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.2 text-[9px] font-bold shrink-0"
+                                                    <span class="rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.5 text-[9px] font-bold shrink-0 border border-emerald-200/60 dark:border-emerald-800/40"
                                                           x-show="att.has_file">Siap Diunggah</span>
                                                 </div>
                                                 <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5"
@@ -2235,14 +2261,16 @@ function lhpCreateWizard() {
                                         {{-- Actions: Ganti & Hapus --}}
                                         <div class="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
                                             <button type="button" @click="triggerSingleFilePicker(att.id)"
-                                                    class="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-[11px] font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 transition cursor-pointer">
-                                                <svg class="h-3.5 w-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    class="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition cursor-pointer shadow-2xs"
+                                                    title="Ganti berkas ini dengan file lain">
+                                                <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                                                 </svg>
-                                                <span x-text="att.has_file ? 'Ganti Berkas' : 'Pilih Berkas'"></span>
+                                                <span>Ganti</span>
                                             </button>
                                             <button type="button" @click="removeAttachment(aIdx)"
-                                                    class="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50/60 px-2.5 py-1.5 text-[11px] font-semibold text-red-600 hover:bg-red-100 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/60 transition cursor-pointer">
+                                                    class="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50/70 px-2.5 py-1.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-400 dark:hover:bg-rose-900/60 transition cursor-pointer shadow-2xs"
+                                                    title="Hapus berkas ini dari antrean">
                                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                                 </svg>
@@ -2259,7 +2287,7 @@ function lhpCreateWizard() {
                                             </label>
                                             <input type="text" :name="`attachments[${aIdx}][file_name]`" x-model="att.file_name"
                                                    placeholder="cth: LHP Final Ditandatangani, Matriks Temuan..."
-                                                   class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500">
+                                                   class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs text-gray-900 focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500">
                                         </div>
                                         <div>
                                             <label class="mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
@@ -2267,7 +2295,7 @@ function lhpCreateWizard() {
                                             </label>
                                             <input type="text" :name="`attachments[${aIdx}][keterangan]`" x-model="att.keterangan"
                                                    placeholder="cth: Dokumen resmi asli berstempel basah..."
-                                                   class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500">
+                                                   class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs text-gray-900 focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500">
                                         </div>
                                     </div>
                                 </div>
@@ -2757,13 +2785,20 @@ function lhpCreateWizard() {
                             <p class="text-xs text-gray-400 italic">Tidak ada berkas lampiran pendukung yang disertakan (opsional).</p>
                         </template>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" x-show="attachments.length > 0">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" x-show="attachments.length > 0">
                             <template x-for="(att, idx) in attachments" :key="att.id">
-                                <div class="flex items-center gap-2.5 p-2.5 rounded-lg border border-gray-100 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-800/40 text-xs">
-                                    <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-bold text-[9px] uppercase"
-                                         :class="att.file_ext === 'PDF' ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'">
-                                        <span x-text="att.file_ext || 'FILE'"></span>
-                                    </div>
+                                <div class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-100 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-800/40 text-xs">
+                                    <template x-if="att.preview_url">
+                                        <div class="h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                                            <img :src="att.preview_url" class="h-full w-full object-cover" alt="Preview">
+                                        </div>
+                                    </template>
+                                    <template x-if="!att.preview_url">
+                                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg font-bold text-[9px] uppercase shadow-2xs"
+                                             :class="att.file_ext === 'PDF' ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/40' : 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/40'">
+                                            <span x-text="att.file_ext || 'FILE'"></span>
+                                        </div>
+                                    </template>
                                     <div class="min-w-0 flex-1">
                                         <p class="font-bold text-gray-900 dark:text-white truncate" x-text="att.file_name || att.raw_name || 'Lampiran LHP'"></p>
                                         <p class="text-[10px] text-gray-400 truncate" x-text="att.raw_name ? `${att.raw_name} (${att.file_size || '0 KB'})` : 'Berkas lokal'"></p>

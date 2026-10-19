@@ -38,7 +38,7 @@
         ];
     });
 
-    $kategoriList = $kategoris ?? \App\Models\AuditProgram::KATEGORI;
+    $kategoriList = $kategoris ?? \App\Models\AuditProgram::getKategoriOptions();
 
     $assignmentData = $assignments->map(function ($a) {
         return [
@@ -267,12 +267,39 @@ function lhpEditWizard() {
             if (btn) btn.disabled = true;
             if (txt) txt.textContent = 'Menyimpan Perubahan...';
 
-            const form = (this.formTarget && this.formTarget.tagName === 'FORM')
-                ? this.formTarget
-                : document.getElementById('form-lhp-edit');
-
+            const form = document.getElementById('form-lhp-edit') || (this.formTarget && this.formTarget.tagName === 'FORM' ? this.formTarget : null);
             const actionUrl = form ? (form.getAttribute('action') || form.action) : '{{ route("lhps.update", $lhp) }}';
             const formData = form ? new FormData(form) : new FormData();
+
+            // Pastikan nilai esensial selalu lengkap dan valid di formData
+            const finalAssId = (document.getElementById('hidden-assignment-id')?.value) || this.assignmentId || '{{ $lhp->audit_assignment_id }}';
+            const finalUnitId = (document.getElementById('hidden-unit-id')?.value) || (this.unitIds && this.unitIds[0]) || this.unitId || '{{ $lhp->unit_diperiksa_id }}';
+            const finalNomorLhp = this.nomorLhp || '{{ $lhp->nomor_lhp }}';
+            const finalTanggalLhp = this.tanggalLhp || '{{ $lhp->tanggal_lhp?->format("Y-m-d") }}';
+
+            if (finalAssId) formData.set('audit_assignment_id', finalAssId);
+            if (finalUnitId) {
+                formData.set('unit_diperiksa_id', finalUnitId);
+                if (!formData.get('unit_diperiksa_ids[]')) {
+                    formData.append('unit_diperiksa_ids[]', finalUnitId);
+                }
+            }
+            if (finalNomorLhp) formData.set('nomor_lhp', finalNomorLhp);
+            if (finalTanggalLhp) formData.set('tanggal_lhp', finalTanggalLhp);
+            formData.set('is_nihil', this.isNihil ? '1' : '0');
+            formData.set('_method', 'PUT');
+
+            // Bersihkan file attachments kosong agar tidak memicu error validasi backend mimes
+            for (let [key, val] of Array.from(formData.entries())) {
+                if (key.startsWith('attachments[') && key.endsWith('][file_path]')) {
+                    if (!(val instanceof File) || val.size === 0 || !val.name) {
+                        formData.delete(key);
+                        const prefix = key.replace('][file_path]', '');
+                        formData.delete(prefix + '][file_name]');
+                        formData.delete(prefix + '][keterangan]');
+                    }
+                }
+            }
 
             try {
                 const response = await fetch(actionUrl, {
@@ -295,6 +322,8 @@ function lhpEditWizard() {
                         data = { message: 'Sesi login Anda telah berakhir. Silakan muat ulang (refresh) halaman lalu coba lagi.' };
                     } else if (response.status === 413) {
                         data = { message: 'Ukuran berkas lampiran terlalu besar untuk dikirim ke server.' };
+                    } else if (response.status === 403) {
+                        data = { message: 'Anda tidak memiliki hak akses/wewenang untuk mengubah data LHP ini.' };
                     } else {
                         data = { message: `Gagal memperbarui LHP (Status Server ${response.status}). Silakan periksa koneksi atau log server.` };
                     }
@@ -430,13 +459,20 @@ function lhpEditWizard() {
                     this.kategoriWarningBtn = '';
                 }
 
-                // Saring program: Program LHP saat ini SELALU dimasukkan jika cocok dengan filter
+                // Saring program: Program LHP saat ini SELALU dimasukkan
                 const currentProgramId = @json((string)($lhp->auditAssignment?->auditProgramDetail?->audit_program_id ?? ''));
-                const availablePrograms = filteredPrograms.filter(p => {
+                let availablePrograms = filteredPrograms.filter(p => {
                     if (currentProgramId && String(p.id) === String(currentProgramId)) return true;
                     const progAss = ALL_ASSIGNMENTS.filter(a => String(a.program_id) === String(p.id));
                     return progAss.some(a => getRemainingUnitsCount(a) > 0);
                 });
+
+                if (currentProgramId) {
+                    const currentProg = ALL_PROGRAMS.find(p => String(p.id) === String(currentProgramId));
+                    if (currentProg && !availablePrograms.some(p => String(p.id) === String(currentProgramId))) {
+                        availablePrograms.unshift(currentProg);
+                    }
+                }
 
                 if (availablePrograms.length === 0) {
                     tsProgram.addOption({
@@ -590,7 +626,9 @@ function lhpEditWizard() {
                     let targetUnitId = null;
                     if (selArray.length > 0 && available.some(u => String(u.id) === String(selArray[0]))) {
                         targetUnitId = String(selArray[0]);
-                    } else if (available.length === 1) {
+                    } else if (INITIAL_UNIT_IDS.length > 0 && available.some(u => String(u.id) === String(INITIAL_UNIT_IDS[0]))) {
+                        targetUnitId = String(INITIAL_UNIT_IDS[0]);
+                    } else if (available.length > 0) {
                         targetUnitId = String(available[0].id);
                     }
 
@@ -601,10 +639,18 @@ function lhpEditWizard() {
                         const hiddenUnit = document.getElementById('hidden-unit-id');
                         if (hiddenUnit) hiddenUnit.value = targetUnitId;
                     } else {
-                        this.unitIds = [];
-                        this.unitId = '';
-                        const hiddenUnit = document.getElementById('hidden-unit-id');
-                        if (hiddenUnit) hiddenUnit.value = '';
+                        const fallbackUnitId = INITIAL_UNIT_IDS[0] || @json((string)($lhp->unit_diperiksa_id ?? ''));
+                        if (fallbackUnitId) {
+                            this.unitIds = [String(fallbackUnitId)];
+                            this.unitId = String(fallbackUnitId);
+                            const hiddenUnit = document.getElementById('hidden-unit-id');
+                            if (hiddenUnit) hiddenUnit.value = String(fallbackUnitId);
+                        } else {
+                            this.unitIds = [];
+                            this.unitId = '';
+                            const hiddenUnit = document.getElementById('hidden-unit-id');
+                            if (hiddenUnit) hiddenUnit.value = '';
+                        }
                     }
                 } else {
                     tsUnit.addOption({ value: '', text: '-- Tidak ada unit pada penugasan ini --' });
@@ -927,39 +973,53 @@ function lhpEditWizard() {
         },
 
         addAttachment(initialFile = null) {
+            if (!initialFile) {
+                this.$refs.masterFileInputEdit?.click();
+                return;
+            }
+
             const id = Date.now() + Math.random().toString(36).substring(2, 7);
+            const ext = this.getFileExt(initialFile.name);
+            const isImg = ['JPG', 'JPEG', 'PNG', 'WEBP'].includes(ext);
+
+            let previewUrl = null;
+            if (isImg) {
+                try {
+                    previewUrl = URL.createObjectURL(initialFile);
+                } catch(e) {}
+            }
+
             const newAtt = {
                 id: id,
-                file_name: initialFile ? this.cleanFileName(initialFile.name) : '',
-                raw_name: initialFile ? initialFile.name : '',
-                file_size: initialFile ? this.formatBytes(initialFile.size) : '',
-                file_ext: initialFile ? this.getFileExt(initialFile.name) : '',
+                file_name: this.cleanFileName(initialFile.name),
+                raw_name: initialFile.name,
+                file_size: this.formatBytes(initialFile.size),
+                file_ext: ext,
+                preview_url: previewUrl,
                 keterangan: '',
-                has_file: !!initialFile
+                has_file: true
             };
             this.attachments.push(newAtt);
 
-            if (initialFile) {
-                this.$nextTick(() => {
-                    const el = document.getElementById('att-file-edit-' + id);
-                    if (el) {
-                        try {
-                            const dt = new DataTransfer();
-                            dt.items.add(initialFile);
-                            el.files = dt.files;
-                        } catch (e) {
-                            console.warn('DataTransfer not fully supported for programmatic file assignment', e);
-                        }
+            this.$nextTick(() => {
+                const el = document.getElementById('att-file-edit-' + id);
+                if (el) {
+                    try {
+                        const dt = new DataTransfer();
+                        dt.items.add(initialFile);
+                        el.files = dt.files;
+                    } catch (e) {
+                        console.warn('DataTransfer fallback', e);
                     }
-                });
-            } else {
-                this.$nextTick(() => {
-                    document.getElementById('att-file-edit-' + id)?.click();
-                });
-            }
+                }
+            });
         },
 
         removeAttachment(index) {
+            const att = this.attachments[index];
+            if (att && att.preview_url) {
+                try { URL.revokeObjectURL(att.preview_url); } catch(e) {}
+            }
             this.attachments.splice(index, 1);
         },
 
@@ -968,7 +1028,7 @@ function lhpEditWizard() {
         },
 
         processBatchFiles(fileList) {
-            const allowed = ['pdf', 'jpg', 'jpeg', 'png'];
+            const allowed = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
             const maxBytes = 15 * 1024 * 1024; // 15 MB
 
             for (let i = 0; i < fileList.length; i++) {
@@ -1012,9 +1072,9 @@ function lhpEditWizard() {
             const file = event.target.files && event.target.files[0];
             if (!file) return;
 
-            const allowed = ['pdf', 'jpg', 'jpeg', 'png'];
+            const allowed = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
             const ext = this.getFileExt(file.name).toLowerCase();
-            const maxBytes = 10 * 1024 * 1024;
+            const maxBytes = 15 * 1024 * 1024; // 15 MB
 
             if (!allowed.includes(ext)) {
                 this.stepErrors = [`Format berkas "${file.name}" tidak diizinkan. Harap gunakan PDF, JPG, atau PNG.`];
@@ -1030,13 +1090,28 @@ function lhpEditWizard() {
                 return;
             }
 
+            if (att.preview_url) {
+                try { URL.revokeObjectURL(att.preview_url); } catch(e) {}
+            }
+
             att.raw_name = file.name;
             att.file_size = this.formatBytes(file.size);
             att.file_ext = ext.toUpperCase();
             att.has_file = true;
+            att.preview_url = ['jpg', 'jpeg', 'png', 'webp'].includes(ext) ? URL.createObjectURL(file) : null;
 
             if (!att.file_name || att.file_name.trim() === '') {
                 att.file_name = this.cleanFileName(file.name);
+            }
+        },
+
+        confirmDeleteSavedAttachment(deleteUrl, fileName) {
+            if (confirm(`Apakah Anda yakin ingin menghapus berkas lampiran "${fileName}"? Berkas yang dihapus tidak dapat dipulihkan.`)) {
+                const form = document.getElementById('delete-attachment-standalone-form');
+                if (form) {
+                    form.action = deleteUrl;
+                    form.submit();
+                }
             }
         },
 
@@ -1742,19 +1817,27 @@ function lhpEditWizard() {
                                 @foreach($lhp->attachments as $att)
                                 @php
                                     $isPdf = $att->isPdf();
-                                    $ext = strtoupper(pathinfo($att->file_name ?: $att->file_path, PATHINFO_EXTENSION)) ?: ($isPdf ? 'PDF' : 'FILE');
+                                    $isImg = $att->isImage();
+                                    $ext = strtoupper(pathinfo($att->file_name ?: $att->file_path, PATHINFO_EXTENSION)) ?: ($isPdf ? 'PDF' : ($isImg ? 'IMG' : 'FILE'));
+                                    $fileUrl = $att->file_url ?: (route('attachments.show', $att->id));
                                 @endphp
-                                <div class="flex items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-white p-3.5 shadow-xs transition-all hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800/70">
+                                <div class="flex items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-white p-3.5 shadow-2xs transition-all hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800/80">
                                     <div class="flex items-start gap-3 min-w-0 flex-1">
-                                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-[10px] uppercase shadow-xs {{ $isPdf ? 'bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800' : 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800' }}">
-                                            {{ $ext }}
-                                        </div>
+                                        @if($isImg && $fileUrl)
+                                            <div class="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shadow-2xs">
+                                                <img src="{{ $fileUrl }}" alt="{{ $att->file_name }}" class="h-full w-full object-cover">
+                                            </div>
+                                        @else
+                                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-black text-[11px] uppercase shadow-2xs {{ $isPdf ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/40' : 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/40' }}">
+                                                {{ $ext }}
+                                            </div>
+                                        @endif
                                         <div class="min-w-0 flex-1">
-                                            <div class="flex items-center gap-1.5">
+                                            <div class="flex items-center gap-1.5 flex-wrap">
                                                 <p class="font-bold text-xs text-gray-900 dark:text-white truncate" title="{{ $att->file_name }}">
                                                     {{ $att->file_name ?: 'Lampiran LHP' }}
                                                 </p>
-                                                <span class="rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 px-1.5 py-0.2 text-[9px] font-medium shrink-0">Tersimpan</span>
+                                                <span class="rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 px-1.5 py-0.2 text-[9px] font-semibold shrink-0">Tersimpan</span>
                                             </div>
                                             @if($att->keterangan)
                                                 <p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ $att->keterangan }}</p>
@@ -1773,17 +1856,15 @@ function lhpEditWizard() {
                                             </svg>
                                             <span>Buka</span>
                                         </a>
-                                        <form action="{{ route('attachments.destroy', $att->id) }}" method="POST"
-                                              onsubmit="return confirm('Apakah Anda yakin ingin menghapus berkas lampiran ini? Berkas yang dihapus tidak dapat dipulihkan.')" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    class="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50/60 px-2 py-1.5 text-[11px] font-semibold text-red-600 hover:bg-red-100 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-400 transition cursor-pointer" title="Hapus Berkas">
-                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                </svg>
-                                            </button>
-                                        </form>
+                                        {{-- Gunakan standalone form di luar form LHP untuk menghindari invalid nested form HTML --}}
+                                        <button type="button"
+                                                @click="confirmDeleteSavedAttachment('{{ route('attachments.destroy', $att->id) }}', '{{ addslashes($att->file_name ?: 'Lampiran LHP') }}')"
+                                                class="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50/70 px-2 py-1.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-400 transition cursor-pointer" 
+                                                title="Hapus Berkas">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
                                     </div>
                                 </div>
                                 @endforeach
@@ -1807,7 +1888,7 @@ function lhpEditWizard() {
                                  class="group relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all cursor-pointer"
                                  @click="$refs.masterFileInputEdit.click()">
                                 
-                                <input type="file" x-ref="masterFileInputEdit" class="sr-only" multiple accept=".pdf,.jpg,.jpeg,.png"
+                                <input type="file" x-ref="masterFileInputEdit" class="sr-only" multiple accept=".pdf,.jpg,.jpeg,.png,.webp"
                                        @change="handleMasterFileInput($event)">
 
                                 <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5 group-hover:scale-105 group-hover:shadow transition-all dark:bg-gray-800 dark:ring-white/10">
@@ -1821,7 +1902,7 @@ function lhpEditWizard() {
                                         Tarik &amp; letakkan berkas baru ke sini, atau <span class="text-blue-600 underline dark:text-blue-400 font-bold">pilih dari perangkat</span>
                                     </p>
                                     <p class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
-                                        Format PDF, JPG, PNG (Maksimal 15 MB per file)
+                                        Bisa memilih lebih dari 1 file sekaligus (PDF, Gambar JPG/PNG) • Maksimal 15 MB per file
                                     </p>
                                 </div>
                             </div>
@@ -1829,28 +1910,36 @@ function lhpEditWizard() {
                             {{-- Daftar Kartu Berkas Baru Terpilih --}}
                             <div class="space-y-3" x-show="attachments.length > 0">
                                 <template x-for="(att, aIdx) in attachments" :key="att.id">
-                                    <div class="group relative rounded-2xl border border-gray-200 bg-white p-4 shadow-xs transition-all hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800/80 dark:hover:border-gray-600 space-y-3.5">
+                                    <div class="group relative rounded-2xl border border-gray-200 bg-white p-4 shadow-xs transition-all hover:border-blue-300 dark:border-gray-700 dark:bg-gray-800/80 dark:hover:border-blue-800 space-y-3.5">
                                         
                                         {{-- File Input Tersembunyi --}}
                                         <input type="file" :name="`attachments[${aIdx}][file_path]`" :id="`att-file-edit-${att.id}`"
-                                               accept=".pdf,.jpg,.jpeg,.png" class="sr-only"
+                                               accept=".pdf,.jpg,.jpeg,.png,.webp" class="sr-only"
                                                @change="onSingleFileSelected($event, att)">
 
                                         {{-- Baris 1: Header Item & Preview Info --}}
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-700/60">
-                                            <div class="flex items-center gap-2.5 min-w-0">
-                                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-[10px] uppercase shadow-xs transition-colors"
-                                                     :class="att.file_ext === 'PDF' 
-                                                        ? 'bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800' 
-                                                        : 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'">
-                                                    <span x-text="att.file_ext || 'FILE'"></span>
-                                                </div>
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-gray-700/60">
+                                            <div class="flex items-center gap-3 min-w-0">
+                                                {{-- Thumbnail / Format Badge --}}
+                                                <template x-if="att.preview_url">
+                                                    <div class="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-2xs">
+                                                        <img :src="att.preview_url" class="h-full w-full object-cover" alt="Preview">
+                                                    </div>
+                                                </template>
+                                                <template x-if="!att.preview_url">
+                                                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-black text-[11px] uppercase shadow-2xs transition-colors"
+                                                         :class="att.file_ext === 'PDF' 
+                                                            ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/40' 
+                                                            : 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/40'">
+                                                        <span x-text="att.file_ext || 'FILE'"></span>
+                                                    </div>
+                                                </template>
 
-                                                <div class="min-w-0">
+                                                <div class="min-w-0 flex-1">
                                                     <div class="flex items-center gap-2">
                                                         <span class="text-xs font-bold text-gray-900 dark:text-white truncate max-w-xs sm:max-w-md"
                                                               x-text="att.raw_name || 'Berkas belum dipilih'"></span>
-                                                        <span class="rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 px-2 py-0.2 text-[9px] font-bold shrink-0"
+                                                        <span class="rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.5 text-[9px] font-bold shrink-0 border border-emerald-200/60 dark:border-emerald-800/40"
                                                               x-show="att.has_file">Siap Disimpan</span>
                                                     </div>
                                                     <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5"
@@ -1861,14 +1950,16 @@ function lhpEditWizard() {
                                             {{-- Actions: Ganti & Hapus --}}
                                             <div class="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
                                                 <button type="button" @click="triggerSingleFilePicker(att.id)"
-                                                        class="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-[11px] font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 transition cursor-pointer">
-                                                    <svg class="h-3.5 w-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        class="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition cursor-pointer shadow-2xs"
+                                                        title="Ganti berkas ini dengan file lain">
+                                                    <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                                                     </svg>
                                                     <span x-text="att.has_file ? 'Ganti Berkas' : 'Pilih Berkas'"></span>
                                                 </button>
                                                 <button type="button" @click="removeAttachment(aIdx)"
-                                                        class="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50/60 px-2.5 py-1.5 text-[11px] font-semibold text-red-600 hover:bg-red-100 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/60 transition cursor-pointer">
+                                                        class="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50/70 px-2.5 py-1.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-400 dark:hover:bg-rose-900/60 transition cursor-pointer shadow-2xs"
+                                                        title="Hapus berkas ini dari antrean">
                                                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                                     </svg>
@@ -2341,14 +2432,27 @@ function lhpEditWizard() {
                         @if($lhp->attachments->isNotEmpty())
                         <div class="space-y-1.5">
                             <span class="text-[10px] font-bold uppercase text-gray-400">Tersimpan di Dokumen:</span>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 @foreach($lhp->attachments as $att)
-                                <div class="flex items-center gap-2.5 p-2 rounded-lg border border-gray-100 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-800/40 text-xs">
-                                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded font-bold text-[9px] uppercase {{ $att->isPdf() ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' }}">
-                                        {{ $att->isPdf() ? 'PDF' : 'FILE' }}
-                                    </div>
+                                @php
+                                    $isImg = $att->isImage();
+                                    $isPdf = $att->isPdf();
+                                    $ext = strtoupper(pathinfo($att->file_name ?: $att->file_path, PATHINFO_EXTENSION)) ?: ($isPdf ? 'PDF' : ($isImg ? 'IMG' : 'FILE'));
+                                    $fileUrl = $att->file_url ?: (route('attachments.show', $att->id));
+                                @endphp
+                                <div class="flex items-center gap-2.5 p-2 rounded-xl border border-gray-100 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-800/40 text-xs">
+                                    @if($isImg && $fileUrl)
+                                        <div class="h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                            <img src="{{ $fileUrl }}" alt="{{ $att->file_name }}" class="h-full w-full object-cover">
+                                        </div>
+                                    @else
+                                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg font-bold text-[9px] uppercase shadow-2xs {{ $isPdf ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/40' : 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/40' }}">
+                                            {{ $ext }}
+                                        </div>
+                                    @endif
                                     <div class="min-w-0 flex-1">
                                         <p class="font-bold text-gray-900 dark:text-white truncate">{{ $att->file_name ?: 'Lampiran LHP' }}</p>
+                                        <p class="text-[10px] text-gray-400 truncate">{{ $att->file_size_formatted ?? '' }}</p>
                                     </div>
                                     <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="text-[11px] font-semibold text-blue-600 hover:underline shrink-0">Lihat</a>
                                 </div>
@@ -2359,14 +2463,21 @@ function lhpEditWizard() {
 
                         {{-- Berkas Tambahan Baru --}}
                         <div x-show="attachments.length > 0" class="space-y-1.5 pt-2 border-t border-gray-100 dark:border-gray-800">
-                            <span class="text-[10px] font-bold uppercase text-blue-600 dark:text-blue-400">Berkas Baru Siap Diunggah:</span>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <span class="text-[10px] font-bold uppercase text-blue-600 dark:text-blue-400">Berkas Baru Siap Disimpan:</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 <template x-for="(att, idx) in attachments" :key="att.id">
-                                    <div class="flex items-center gap-2.5 p-2 rounded-lg border border-blue-100 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-950/20 text-xs">
-                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded font-bold text-[9px] uppercase"
-                                             :class="att.file_ext === 'PDF' ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'">
-                                            <span x-text="att.file_ext || 'FILE'"></span>
-                                        </div>
+                                    <div class="flex items-center gap-2.5 p-2 rounded-xl border border-blue-100 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-950/20 text-xs">
+                                        <template x-if="att.preview_url">
+                                            <div class="h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                                                <img :src="att.preview_url" class="h-full w-full object-cover" alt="Preview">
+                                            </div>
+                                        </template>
+                                        <template x-if="!att.preview_url">
+                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg font-bold text-[9px] uppercase shadow-2xs"
+                                                 :class="att.file_ext === 'PDF' ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/40' : 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/40'">
+                                                <span x-text="att.file_ext || 'FILE'"></span>
+                                            </div>
+                                        </template>
                                         <div class="min-w-0 flex-1">
                                             <p class="font-bold text-gray-900 dark:text-white truncate" x-text="att.file_name || att.raw_name || 'Lampiran Baru'"></p>
                                             <p class="text-[10px] text-gray-400 truncate" x-text="att.raw_name ? `${att.raw_name} (${att.file_size || ''})` : 'Berkas lokal'"></p>
@@ -2394,6 +2505,12 @@ function lhpEditWizard() {
             </div>
         </div>
 
+    </form>
+
+    {{-- Standalone form untuk menghapus berkas lampiran yang sudah tersimpan (menghindari nested form) --}}
+    <form id="delete-attachment-standalone-form" method="POST" class="hidden">
+        @csrf
+        @method('DELETE')
     </form>
         </div>
     </div>

@@ -623,7 +623,7 @@ class OpdDashboardController extends Controller
             ->get();
 
         // ── 12. Breakdown Per Kategori Program Audit ────────────────────────────────
-        $kategoriBreakdown = collect(AuditProgram::KATEGORI)->map(function ($kat) use ($unitIds, $startDate, $endDate, $preset) {
+        $kategoriBreakdown = collect(AuditProgram::getKategoriOptions())->map(function ($kat) use ($unitIds, $startDate, $endDate, $preset) {
             $lhpQuery = Lhp::where(function ($q) use ($unitIds) {
                 $q->whereIn('unit_diperiksa_id', $unitIds)
                     ->orWhereHas('unitDiperiksas', fn ($uq) => $uq->whereIn('unit_diperiksas.id', $unitIds));
@@ -654,7 +654,7 @@ class OpdDashboardController extends Controller
             ];
         });
 
-        $listKategori = AuditProgram::KATEGORI;
+        $listKategori = AuditProgram::getKategoriOptions();
 
         // ── 13. Status Laporan Kepatuhan OPD (Tuntas 100% / Nihil) ───────────
         $kepatuhanQuery = Lhp::whereIn('id', $lhpIdsArray)

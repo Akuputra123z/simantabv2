@@ -150,9 +150,6 @@
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach($kategoriBreakdown as $item)
-                @php
-                    $isDefault = $item->kategori === 'PKPT';
-                @endphp
                 <a href="{{ route('opd.tindak-lanjut.index', ['kategori' => $item->kategori]) }}"
                    class="group relative rounded-xl border border-gray-200 bg-slate-50/60 p-4 hover:bg-white hover:border-blue-600 hover:shadow-md transition-all dark:border-gray-800 dark:bg-gray-800/40 dark:hover:bg-gray-800">
                     <div class="flex items-center justify-between">
@@ -160,11 +157,6 @@
                             <span class="inline-block rounded-md bg-indigo-100 px-2.5 py-0.5 text-xs font-bold text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                                 {{ $item->kategori }}
                             </span>
-                            @if($isDefault)
-                                <span class="rounded bg-blue-700 px-1.5 py-0.5 text-[10px] font-bold text-white uppercase">
-                                    Default Utama
-                                </span>
-                            @endif
                         </div>
                         <span class="text-xs font-mono font-bold text-gray-500 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
                             {{ $item->progres }}% Selesai

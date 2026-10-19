@@ -163,4 +163,56 @@ class AuditProgramUuidRoutingTest extends TestCase
             'status' => 'berjalan',
         ]);
     }
+
+    public function test_audit_program_index_filter_does_not_contain_pkpt_option(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('audit-program.index'));
+
+        $response->assertStatus(200);
+        $response->assertSee('name="kategori"', false);
+        $response->assertDontSee('<option value="PKPT"', false);
+        $response->assertSee('<option value="BPK"', false);
+        $response->assertSee('<option value="BPKP"', false);
+    }
+
+    public function test_audit_program_show_renders_per_page_options(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('audit-program.show', $this->program));
+
+        $response->assertStatus(200);
+        $response->assertSee('name="per_page"', false);
+        $response->assertSee('value="20"', false);
+        $response->assertSee('value="50"', false);
+        $response->assertSee('value="100"', false);
+    }
+
+    public function test_audit_program_show_applies_per_page_pagination(): void
+    {
+        // Create 25 sub-programs
+        for ($i = 1; $i <= 25; $i++) {
+            \App\Models\AuditProgramDetail::create([
+                'audit_program_id' => $this->program->id,
+                'nama_detail_program' => "Sub Program {$i}",
+                'jenis_kegiatan' => 'Audit',
+                'anggaran' => 1000000,
+                'status' => 'draft',
+            ]);
+        }
+
+        // With per_page=20, page 1 should have 20 items
+        $response20 = $this->actingAs($this->admin)->get(route('audit-program.show', [
+            $this->program,
+            'per_page' => 20,
+        ]));
+        $response20->assertStatus(200);
+        $this->assertCount(20, $response20->viewData('details')->items());
+
+        // With per_page=50, page 1 should have 25 items
+        $response50 = $this->actingAs($this->admin)->get(route('audit-program.show', [
+            $this->program,
+            'per_page' => 50,
+        ]));
+        $response50->assertStatus(200);
+        $this->assertCount(25, $response50->viewData('details')->items());
+    }
 }

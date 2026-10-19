@@ -27,7 +27,7 @@ class AuditAssignmentController extends Controller
                 ->where('approval_status', '!=', AuditProgram::APPROVAL_DITOLAK)
                 ->orWhereHas('details.assignments', fn ($q) => $q->where('id', $assignmentId))
             )->orderBy('tahun', 'desc')->orderBy('nama_program')->get(),
-            'programCategories' => AuditProgram::KATEGORI,
+            'programCategories' => AuditProgram::getKategoriOptions(),
             'ketuaTim' => User::orderBy('name')->get(),
             'members' => User::orderBy('name')->get(),
             'kategoriOptions' => ['BUMD', 'Sekolah', 'OPD', 'Desa', 'BLUD'],
@@ -75,7 +75,7 @@ class AuditAssignmentController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        $kategoriOptions = AuditProgram::KATEGORI;
+        $kategoriOptions = AuditProgram::getKategoriOptions();
 
         $tahuns = AuditProgram::select('tahun')
             ->whereNotNull('tahun')

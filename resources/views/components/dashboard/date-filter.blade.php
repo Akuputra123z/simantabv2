@@ -7,7 +7,7 @@
     'startDateFormatted' => '',
     'endDateFormatted' => '',
     'kategoriProgram' => 'semua',
-    'listKategori' => ['PKPT', 'BPK', 'BPKP', 'ITPROV', 'ITDA', 'LAINNYA'],
+    'listKategori' => ['BPK', 'BPKP', 'ITPROV', 'ITDA', 'LAINNYA'],
     'actionUrl' => route('dashboard')
 ])
 

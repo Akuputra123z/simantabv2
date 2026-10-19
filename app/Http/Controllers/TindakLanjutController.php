@@ -241,7 +241,7 @@ class TindakLanjutController extends Controller
             'sisa_setor' => max(0, $totalNilaiRekomUang - $totalTerbayarUang),
         ];
 
-        $kategoris = AuditProgram::KATEGORI;
+        $kategoris = AuditProgram::getKategoriOptions();
         $units = UnitDiperiksa::orderBy('nama_unit')->get();
 
         $yearExpr = DB::connection()->getDriverName() === 'sqlite'

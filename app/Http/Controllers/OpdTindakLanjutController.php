@@ -167,7 +167,7 @@ class OpdTindakLanjutController extends Controller
             ")
             ->first();
 
-        $listKategori = AuditProgram::KATEGORI;
+        $listKategori = AuditProgram::getKategoriOptions();
 
         return view('pages.opd.tindak-lanjut.index', compact(
             'lhps',

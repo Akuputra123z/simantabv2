@@ -39,7 +39,7 @@ class RecommendationController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $kategoris = AuditProgram::KATEGORI;
+        $kategoris = AuditProgram::getKategoriOptions();
 
         return view('pages.recommendations.index', compact('recommendations', 'kategoris', 'includeAll'));
     }

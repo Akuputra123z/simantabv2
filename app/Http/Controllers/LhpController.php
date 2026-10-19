@@ -128,13 +128,13 @@ class LhpController extends Controller
         }
 
         $perPage = (int) $request->input('per_page', 10);
-        if (! in_array($perPage, [10, 20, 30, 50, 100])) {
+        if (! in_array($perPage, [5, 8, 10, 20, 25, 30, 50, 100])) {
             $perPage = 10;
         }
 
         $lhps = $query->paginate($perPage)->withQueryString();
 
-        $kategoris = AuditProgram::KATEGORI;
+        $kategoris = AuditProgram::getKategoriOptions();
 
         $yearExpr = DB::connection()->getDriverName() === 'sqlite'
             ? "strftime('%Y', tanggal_lhp) as tahun"
@@ -214,7 +214,7 @@ class LhpController extends Controller
             ->orderBy('tahun', 'desc')
             ->orderBy('nama_program', 'asc')
             ->get();
-        $kategoris = AuditProgram::KATEGORI;
+        $kategoris = AuditProgram::getKategoriOptions();
 
         // Data Nomor LHP aktif yang sudah ada untuk opsi reuse/kolektif BPK/BPKP/ITPROV
         // Disinkronkan langsung dengan Surat Tugas (AuditAssignment) dan unit yang diperiksa
@@ -437,7 +437,7 @@ class LhpController extends Controller
             'temuans.*.recommendations.*.nilai_rekom' => 'nullable',
             'temuans.*.recommendations.*.batas_waktu' => 'nullable|date',
             'attachments' => 'nullable|array',
-            'attachments.*.file_path' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:15360',
+            'attachments.*.file_path' => 'nullable|file|mimes:pdf,jpg,png,jpeg,webp|max:15360',
             'attachments.*.file_name' => 'nullable|string',
             'attachments.*.keterangan' => 'nullable|string',
         ], [
@@ -660,7 +660,7 @@ class LhpController extends Controller
             ->orderBy('tahun', 'desc')
             ->orderBy('nama_program', 'asc')
             ->get();
-        $kategoris = AuditProgram::KATEGORI;
+        $kategoris = AuditProgram::getKategoriOptions();
 
         $lhp->load([
             'temuans.kodeTemuan',
@@ -788,7 +788,7 @@ class LhpController extends Controller
             'temuans.*.recommendations.*.nilai_rekom' => 'nullable',
             'temuans.*.recommendations.*.batas_waktu' => 'nullable|date',
             'attachments' => 'nullable|array',
-            'attachments.*.file_path' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:15360',
+            'attachments.*.file_path' => 'nullable|file|mimes:pdf,jpg,png,jpeg,webp|max:15360',
             'attachments.*.file_name' => 'nullable|string',
             'attachments.*.keterangan' => 'nullable|string',
         ], [
@@ -803,22 +803,24 @@ class LhpController extends Controller
         $user = auth()->user();
         if (! $user->hasRole(['super_admin', 'kepala_inspektorat', 'staff_inspektorat'])) {
             $irbanNames = ($user->isPengendaliTeknis() || $user->isIrban()) ? $user->getIrbanTeamNames() : [];
+            $assignmentTim = (string) $assignment->auditProgramDetail?->tim;
             $isAuthorized = $lhp->created_by === $user->id
                 || $assignment->ketua_tim_id === $user->id
                 || $assignment->pengendali_teknis_id === $user->id
                 || $assignment->pengendali_teknis === $user->name
                 || $assignment->created_by === $user->id
                 || $assignment->members()->where('user_id', $user->id)->exists()
-                || (! empty($irbanNames) && in_array($assignment->auditProgramDetail?->tim, $irbanNames));
+                || (! empty($irbanNames) && collect($irbanNames)->contains(fn ($n) => strcasecmp($n, $assignmentTim) === 0));
             if (! $isAuthorized) {
                 abort(403, 'Anda tidak memiliki wewenang untuk mengubah LHP ini.');
             }
         }
 
-        // 2. Relational Integrity: Unit kerja must belong to this assignment
+        // 2. Relational Integrity: Unit kerja must belong to this assignment (selalu toleransi unit existing LHP ini)
         $validUnitIds = $assignment->unitDiperiksas->pluck('id')->toArray();
         if (! empty($validUnitIds)) {
-            $invalidUnits = array_diff($unitDiperiksaIds, $validUnitIds);
+            $validWithExisting = array_unique(array_merge($validUnitIds, array_filter([(int) $lhp->unit_diperiksa_id])));
+            $invalidUnits = array_diff($unitDiperiksaIds, $validWithExisting);
             if (! empty($invalidUnits)) {
                 throw ValidationException::withMessages([
                     'unit_diperiksa_id' => 'Unit kerja yang dipilih tidak terdaftar dalam Surat Tugas / Penugasan ini.',

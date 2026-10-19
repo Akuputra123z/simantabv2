@@ -91,7 +91,7 @@ class AuditProgramController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        $kategoris = AuditProgram::KATEGORI;
+        $kategoris = AuditProgram::getKategoriOptions();
 
         $tahuns = AuditProgram::select('tahun')
             ->whereNotNull('tahun')
@@ -110,7 +110,7 @@ class AuditProgramController extends Controller
      */
     public function create()
     {
-        $kategoriOptions = array_values(array_diff(AuditProgram::KATEGORI, ['PKPT']));
+        $kategoriOptions = AuditProgram::getKategoriOptions();
 
         return view('pages.audit-program.create', compact('kategoriOptions'));
     }
@@ -138,16 +138,18 @@ class AuditProgramController extends Controller
     }
 
     /**
-     * Menampilkan Detail Program & List PKPT di bawahnya
+     * Menampilkan Detail Program & List Sub-Program di bawahnya
      */
-    public function show(AuditProgram $auditProgram)
+    public function show(Request $request, AuditProgram $auditProgram)
     {
         // Enforce canonical UUID in URL
-        $rawParam = request()->route()?->originalParameter('auditProgram') ?? request()->segment(2);
+        $rawParam = $request->route()?->originalParameter('auditProgram') ?? $request->segment(2);
         if ($rawParam && ($rawParam !== $auditProgram->uuid || is_numeric($rawParam))) {
             return redirect()->route('audit-program.show', $auditProgram, 301);
         }
 
+        // Load approver and detail progress counts efficiently
+        $auditProgram->loadMissing('approver:id,name');
         $auditProgram->loadCount([
             'details',
             'details as sudah_lhp_count' => function ($q) {
@@ -160,10 +162,27 @@ class AuditProgramController extends Controller
             },
         ]);
 
-        $search = request('search');
+        $search = trim((string) $request->input('search', ''));
+        $perPage = (int) $request->input('per_page', 10);
+        if (! in_array($perPage, [10, 20, 50, 100], true)) {
+            $perPage = 10;
+        }
 
         $details = $auditProgram->details()
-            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+            ->select([
+                'id',
+                'uuid',
+                'audit_program_id',
+                'nama_detail_program',
+                'jenis_kegiatan',
+                'objek_pengawasan',
+                'ruang_lingkup',
+                'tim',
+                'anggaran',
+                'status',
+                'created_at',
+            ])
+            ->when($search !== '', fn ($q) => $q->where(function ($q) use ($search) {
                 $q->where('nama_detail_program', 'like', "%{$search}%")
                     ->orWhere('jenis_kegiatan', 'like', "%{$search}%")
                     ->orWhere('objek_pengawasan', 'like', "%{$search}%")
@@ -174,12 +193,12 @@ class AuditProgramController extends Controller
                 'assignments',
                 'assignments as assignments_selesai_count' => fn ($q) => $q->where('status', 'selesai'),
             ])
-            ->latest()
-            ->paginate(10)
+            ->latest('id')
+            ->paginate($perPage)
             ->onEachSide(1)
             ->withQueryString();
 
-        return view('pages.audit-program.show', compact('auditProgram', 'details', 'search'));
+        return view('pages.audit-program.show', compact('auditProgram', 'details', 'search', 'perPage'));
     }
 
     /**
@@ -194,7 +213,7 @@ class AuditProgramController extends Controller
         }
 
         $program = $auditProgram;
-        $kategoriOptions = array_values(array_diff(AuditProgram::KATEGORI, ['PKPT']));
+        $kategoriOptions = AuditProgram::getKategoriOptions();
 
         return view('pages.audit-program.edit', compact('program', 'kategoriOptions'));
     }

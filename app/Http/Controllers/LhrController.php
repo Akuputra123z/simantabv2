@@ -95,7 +95,12 @@ class LhrController extends Controller implements HasMiddleware
             });
         }
 
-        $lhrs = $query->latest()->paginate(10)->withQueryString();
+        $perPage = (int) $request->input('per_page', 10);
+        if (! in_array($perPage, [5, 8, 10, 20, 25, 30, 50, 100])) {
+            $perPage = 10;
+        }
+
+        $lhrs = $query->latest()->paginate($perPage)->withQueryString();
 
         // Pastikan baris yang belum memiliki catatan statistik di-inisialisasi
         foreach ($lhrs as $lhr) {

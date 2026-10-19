@@ -169,18 +169,37 @@
                 </div>
             </div>
             <div class="lg:ml-auto flex flex-wrap items-center gap-3">
-                {{-- Search --}}
-                <form method="GET" action="{{ route('audit-program.show', $auditProgram) }}" class="relative">
-                    <input type="text" name="search" value="{{ $search ?? '' }}"
-                           placeholder="Cari sub-program..."
-                           class="w-48 rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-700 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500">
-                    <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    @if(request('search'))
-                        <a href="{{ route('audit-program.show', $auditProgram) }}"
-                           class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </a>
-                    @endif
+                {{-- Form Filter: Per Page & Search --}}
+                <form id="filter-detail-form" method="GET" action="{{ route('audit-program.show', $auditProgram) }}" class="flex flex-wrap items-center gap-2.5">
+                    {{-- Pilihan Jumlah Data (10, 20, 50, 100) --}}
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Tampilkan</span>
+                        <div class="relative">
+                            <select name="per_page" id="per_page" onchange="document.getElementById('filter-detail-form').submit()" data-no-ts
+                                    class="appearance-none cursor-pointer rounded-xl border border-gray-200 bg-white py-2 pl-3 pr-8 text-xs font-semibold text-gray-700 shadow-2xs focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                @foreach([10, 20, 50, 100] as $sz)
+                                    <option value="{{ $sz }}" @selected(request('per_page', 10) == $sz)>{{ $sz }} data</option>
+                                @endforeach
+                            </select>
+                            <span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Search Input --}}
+                    <div class="relative">
+                        <input type="text" name="search" value="{{ $search ?? '' }}"
+                               placeholder="Cari sub-program..."
+                               class="w-48 sm:w-56 rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-8 text-xs text-gray-700 placeholder-gray-400 focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500">
+                        <svg class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        @if(request('search'))
+                            <a href="{{ route('audit-program.show', array_filter(['auditProgram' => $auditProgram, 'per_page' => request('per_page')])) }}"
+                               class="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" title="Hapus pencarian">
+                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </a>
+                        @endif
+                    </div>
                 </form>
                 {{-- Export --}}
                 <div class="flex gap-1">
@@ -326,48 +345,63 @@
             </table>
         </div>
 
-        {{-- Pagination --}}
-        @if ($details->hasPages())
+        {{-- Pagination & Data Summary --}}
+        @if ($details->total() > 0)
         <div class="px-6 py-5 border-t border-gray-100 bg-gray-50/30 dark:bg-transparent dark:border-gray-800">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 
-                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
-                    Showing <span class="text-gray-900 dark:text-white">{{ $details->firstItem() }}</span> to <span class="text-gray-900 dark:text-white">{{ $details->lastItem() }}</span> of {{ $details->total() }}
-                </p>
+                <div class="flex flex-wrap items-center gap-3">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Menampilkan <span class="font-bold text-gray-900 dark:text-white">{{ $details->firstItem() }}</span> &ndash; <span class="font-bold text-gray-900 dark:text-white">{{ $details->lastItem() }}</span> dari <span class="font-bold text-gray-900 dark:text-white">{{ $details->total() }}</span> sub-program
+                    </p>
 
-                <nav class="flex items-center gap-1.5">
+                    {{-- Quick per-page pills --}}
+                    <div class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-400">
+                        <span class="text-gray-400">| Per hal:</span>
+                        @foreach([10, 20, 50, 100] as $sz)
+                            <a href="{{ request()->fullUrlWithQuery(['per_page' => $sz, 'page' => 1]) }}"
+                               class="px-2 py-0.5 rounded-md border text-[11px] font-semibold transition-all {{ request('per_page', 10) == $sz ? 'bg-blue-600 text-white border-blue-600 shadow-2xs font-bold' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700' }}">
+                                {{ $sz }}
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+
+                @if ($details->hasPages())
+                <nav class="flex items-center gap-1.5" aria-label="Pagination Navigation">
                     @if ($details->onFirstPage())
-                        <span class="flex h-8 w-8 items-center justify-center rounded-full text-gray-200 dark:text-gray-700">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-full text-gray-300 dark:text-gray-700 cursor-not-allowed">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                         </span>
                     @else
-                        <a href="{{ $details->previousPageUrl() }}" class="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white hover:shadow-sm transition-all text-gray-500 dark:hover:bg-gray-800">
+                        <a href="{{ $details->previousPageUrl() }}" class="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white hover:shadow-xs transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white" title="Halaman Sebelumnya">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                         </a>
                     @endif
 
                     @foreach ($details->getUrlRange(max(1, $details->currentPage() - 1), min($details->lastPage(), $details->currentPage() + 1)) as $page => $url)
                         @if ($page == $details->currentPage())
-                            <span class="h-8 min-w-[32px] flex items-center justify-center rounded-full bg-slate-900 text-white text-[11px] font-black tracking-tighter dark:bg-white dark:text-slate-900 shadow-sm">
+                            <span class="h-8 min-w-[32px] px-2 flex items-center justify-center rounded-full bg-slate-900 text-white text-[11px] font-black tracking-tight dark:bg-white dark:text-slate-900 shadow-xs">
                                 {{ $page }}
                             </span>
                         @else
-                            <a href="{{ $url }}" class="h-8 min-w-[32px] flex items-center justify-center rounded-full hover:bg-white text-gray-400 text-[11px] font-black tracking-tighter transition-all hover:text-slate-900 dark:hover:bg-gray-800">
+                            <a href="{{ $url }}" class="h-8 min-w-[32px] px-2 flex items-center justify-center rounded-full hover:bg-white text-gray-500 hover:text-slate-900 text-[11px] font-black tracking-tight transition-all dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white">
                                 {{ $page }}
                             </a>
                         @endif
                     @endforeach
 
                     @if ($details->hasMorePages())
-                        <a href="{{ $details->nextPageUrl() }}" class="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white hover:shadow-sm transition-all text-gray-500 dark:hover:bg-gray-800">
+                        <a href="{{ $details->nextPageUrl() }}" class="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white hover:shadow-xs transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white" title="Halaman Selanjutnya">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                         </a>
                     @else
-                        <span class="flex h-8 w-8 items-center justify-center rounded-full text-gray-200 dark:text-gray-700">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-full text-gray-300 dark:text-gray-700 cursor-not-allowed">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                         </span>
                     @endif
                 </nav>
+                @endif
             </div>
         </div>
         @endif

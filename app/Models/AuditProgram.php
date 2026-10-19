@@ -24,6 +24,18 @@ class AuditProgram extends Model
 
     const APPROVAL_DITOLAK = 'ditolak';
 
+    /**
+     * Mendapatkan opsi kategori untuk form dan filter (PKPT dikecualikan secara default).
+     */
+    public static function getKategoriOptions(bool $includePkpt = false): array
+    {
+        if ($includePkpt) {
+            return self::KATEGORI;
+        }
+
+        return array_values(array_diff(self::KATEGORI, ['PKPT']));
+    }
+
     protected $fillable = [
         'uuid',
         'nama_program',

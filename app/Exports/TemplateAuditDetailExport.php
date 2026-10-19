@@ -14,35 +14,35 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class TemplateAuditDetailExport implements FromArray, WithColumnWidths, WithHeadings, WithStyles
 {
     /**
-     * Sesuaikan urutan data dengan $fillable di Model (Tanpa audit_program_id)
+     * Contoh data template sub-program
      */
     public function array(): array
     {
         return [
             [
-                'Audit Ketaatan Pengelolaan Keuangan Desa', // nama_detail_program
-                'Audit Ketaatan',                          // jenis_kegiatan
-                'Pemerintah Desa',                         // objek_pengawasan
-                'Pengelolaan APBDes Semester I',           // ruang_lingkup
-                10,                                        // personil
-                'Memastikan akuntabilitas keuangan desa',  // tujuan
-                5000000,                                   // anggaran
-                'Tinggi',                                  // tingkat_resiko
-                1,                                         // laporan_akhir
-                '01/01/2026',                          // jadwal
-                'Irban III',                               // tim
-                'aktif',                                    // status
+                'Audit Ketaatan Pengelolaan Keuangan Desa', // Nama Detail Program
+                'Audit Ketaatan',                          // Jenis Kegiatan
+                'Pemerintah Desa',                         // Objek Pengawasan
+                'Pengelolaan APBDes Semester I',           // Ruang Lingkup
+                '10',                                      // Jumlah Personil
+                'Memastikan akuntabilitas dan kepatuhan pengelolaan APBDes', // Tujuan Pengawasan
+                5000000,                                   // Anggaran (Rp)
+                'Tinggi',                                  // Tingkat Risiko
+                '1 LHP',                                   // Target Laporan
+                '01/01/2026',                              // Jadwal Pelaksanaan
+                'Irban III',                               // Tim Pelaksana
+                'aktif',                                   // Status (aktif/rencana)
             ],
             [
-                'Reviu Laporan Keuangan Daerah',
+                'Reviu Laporan Keuangan Pemerintah Daerah',
                 'Reviu',
-                'BPKAD',
-                'Laporan Realisasi Anggaran',
-                12,
-                'Memberikan keyakinan terbatas atas laporan',
+                'BPKAD Kab. Rembang',
+                'Laporan Realisasi Anggaran dan Neraca',
+                '12',
+                'Memberikan keyakinan terbatas atas penyusunan LKPD',
                 3500000,
                 'Sedang',
-                1,
+                '1 LHR',
                 '01/02/2026',
                 'Irban I',
                 'rencana',
@@ -50,9 +50,6 @@ class TemplateAuditDetailExport implements FromArray, WithColumnWidths, WithHead
         ];
     }
 
-    /**
-     * Judul kolom yang human-readable namun urutannya sama dengan array()
-     */
     public function headings(): array
     {
         return [
@@ -62,7 +59,7 @@ class TemplateAuditDetailExport implements FromArray, WithColumnWidths, WithHead
             'Ruang Lingkup',
             'Jumlah Personil',
             'Tujuan Pengawasan',
-            'Anggaran (Angka)',
+            'Anggaran (Rp)',
             'Tingkat Risiko',
             'Target Laporan',
             'Jadwal Pelaksanaan',
@@ -74,44 +71,63 @@ class TemplateAuditDetailExport implements FromArray, WithColumnWidths, WithHead
     public function columnWidths(): array
     {
         return [
-            'A' => 40, 'B' => 20, 'C' => 25, 'D' => 30,
-            'E' => 15, 'F' => 45, 'G' => 20, 'H' => 15,
-            'I' => 15, 'J' => 20, 'K' => 15, 'L' => 15,
+            'A' => 38,
+            'B' => 18,
+            'C' => 24,
+            'D' => 30,
+            'E' => 15,
+            'F' => 45,
+            'G' => 18,
+            'H' => 15,
+            'I' => 15,
+            'J' => 20,
+            'K' => 16,
+            'L' => 18,
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        // Styling Header Baris Pertama
+        // Header Baris Pertama
         $sheet->getStyle('A1:L1')->applyFromArray([
-            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 10],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
                 'vertical' => Alignment::VERTICAL_CENTER,
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '1e293b'], // Slate 800
+                'startColor' => ['argb' => 'FF1E293B'], // Slate 800
             ],
         ]);
 
-        // Border dan Alignment untuk data
         $highestRow = $sheet->getHighestRow();
+
+        // Border seluruh data
         $sheet->getStyle('A1:L'.$highestRow)->applyFromArray([
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => 'cbd5e1'],
+                    'color' => ['argb' => 'FFCBD5E1'],
                 ],
-            ],
-            'alignment' => [
-                'vertical' => Alignment::VERTICAL_TOP,
-                'wrapText' => true,
             ],
         ]);
 
-        return [
-            1 => ['font' => ['size' => 11]],
-        ];
+        // Format Anggaran
+        $sheet->getStyle('G2:G'.$highestRow)->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('G2:G'.$highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+
+        // Center alignments
+        foreach (['B', 'E', 'H', 'I', 'J', 'K', 'L'] as $col) {
+            $sheet->getStyle("{$col}2:{$col}{$highestRow}")
+                ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        }
+
+        $sheet->getRowDimension(1)->setRowHeight(24);
+        for ($i = 2; $i <= $highestRow; $i++) {
+            $sheet->getRowDimension($i)->setRowHeight(20);
+        }
+
+        return [];
     }
 }

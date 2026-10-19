@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class AuditProgram extends Model
 {
@@ -24,6 +25,7 @@ class AuditProgram extends Model
     const APPROVAL_DITOLAK = 'ditolak';
 
     protected $fillable = [
+        'uuid',
         'nama_program',
         'tahun',
         'kategori',
@@ -179,4 +181,40 @@ class AuditProgram extends Model
                 fn ($r) => $r->whereDoesntHave('tindakLanjuts')
             );
     }
+
+    // ── Route Model Binding & UUID ────────────────────────────────────────────
+
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $field = $field ?? 'uuid';
+        $model = $this->where($field, $value)->first();
+
+        if ($model) {
+            return $model;
+        }
+
+        // Backward compatibility fallback jika dipanggil dengan numeric ID
+        if ($field === 'uuid' && is_numeric($value)) {
+            return $this->where('id', $value)->firstOrFail();
+        }
+
+        abort(404);
+    }
+
+    // ── Events ────────────────────────────────────────────────────────────────
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
+            }
+        });
+    }
 }
+

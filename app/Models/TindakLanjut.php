@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class TindakLanjut extends Model
 {
@@ -19,6 +20,7 @@ class TindakLanjut extends Model
     protected $table = 'tindak_lanjuts';
 
     protected $fillable = [
+        'uuid',
         'recommendation_id', 'jenis_penyelesaian', 'is_cicilan', 'nilai_tindak_lanjut',
         'jumlah_cicilan_rencana', 'tanggal_mulai_cicilan', 'tanggal_jatuh_tempo',
         'nilai_per_cicilan_rencana', 'jumlah_cicilan_realisasi', 'total_terbayar',
@@ -364,10 +366,37 @@ class TindakLanjut extends Model
         return $this->tanggal_jatuh_tempo;
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $field = $field ?? 'uuid';
+        $model = $this->where($field, $value)->first();
+
+        if ($model) {
+            return $model;
+        }
+
+        if ($field === 'uuid' && is_numeric($value)) {
+            return $this->where('id', $value)->firstOrFail();
+        }
+
+        abort(404);
+    }
+
     // ── Events ────────────────────────────────────────────────────────────────
 
     protected static function booted(): void
     {
+        static::creating(function (self $model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
+            }
+        });
+
         static::saving(function (self $model) {
             // fromCascade = false → dipanggil dari user (store/update),
             // jadi status manual user tidak di-override untuk jenis 'langsung'

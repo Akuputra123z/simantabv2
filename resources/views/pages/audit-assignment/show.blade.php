@@ -89,7 +89,7 @@
 
             {{-- Tombol Tanda Tangani (Bagi Pejabat) --}}
             @if($canSign && !$data->isSigned())
-                <form action="{{ route('audit-assignment.sign', $data->id) }}" method="POST" class="inline">
+                <form action="{{ route('audit-assignment.sign', $data) }}" method="POST" class="inline">
                     @csrf
                     <button type="submit"
                             class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition active:scale-95 cursor-pointer">
@@ -99,7 +99,7 @@
                 </form>
             @endif
 
-            <a href="{{ route('audit-assignment.edit', $data->id) }}"
+            <a href="{{ route('audit-assignment.edit', $data) }}"
                class="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-2 text-xs font-bold text-blue-700 shadow-xs hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/60 transition">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                 Edit Penugasan
@@ -119,12 +119,12 @@
                      x-transition:enter-start="transform opacity-0 scale-95"
                      x-transition:enter-end="transform opacity-100 scale-100"
                      class="absolute right-0 z-20 mt-1.5 w-48 rounded-xl border border-gray-100 bg-white p-1.5 shadow-lg dark:border-gray-800 dark:bg-gray-900">
-                    <a href="{{ route('audit-assignment.preview', $data->id) }}" target="_blank"
+                    <a href="{{ route('audit-assignment.preview', $data) }}" target="_blank"
                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                         <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         <span>Pratinjau Layar</span>
                     </a>
-                    <a href="{{ route('audit-assignment.print', $data->id) }}" target="_blank"
+                    <a href="{{ route('audit-assignment.print', $data) }}" target="_blank"
                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                         <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         <span>Unduh PDF SPT</span>
@@ -533,7 +533,7 @@
 
                         @if($canSign)
                             <div class="pt-2 border-t border-emerald-200/60 dark:border-emerald-900/60">
-                                <form action="{{ route('audit-assignment.batal-sign', $data->id) }}" method="POST"
+                                <form action="{{ route('audit-assignment.batal-sign', $data) }}" method="POST"
                                       onsubmit="return confirm('Apakah Anda yakin ingin membatalkan tanda tangan digital pada Surat Tugas ini?')">
                                     @csrf
                                     <button type="submit" class="text-[11px] font-bold text-amber-600 hover:text-amber-700 underline cursor-pointer">
@@ -549,7 +549,7 @@
                         <p class="text-[11px]">Naskah belum ditandatangani oleh Kepala Inspektorat atau Super Admin.</p>
                         @if($canSign)
                             <div class="pt-2">
-                                <form action="{{ route('audit-assignment.sign', $data->id) }}" method="POST">
+                                <form action="{{ route('audit-assignment.sign', $data) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="w-full rounded-lg bg-emerald-600 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition cursor-pointer">
                                         Tanda Tangani Sekarang
@@ -656,7 +656,7 @@
 
             {{-- 5. Delete Action Zone --}}
             <div class="pt-2">
-                <form action="{{ route('audit-assignment.destroy', $data->id) }}" method="POST"
+                <form action="{{ route('audit-assignment.destroy', $data) }}" method="POST"
                       onsubmit="return confirm('Apakah Anda yakin ingin menghapus data Penugasan Audit ini? Seluruh relasi terkait akan ikut terhapus.')">
                     @csrf
                     @method('DELETE')

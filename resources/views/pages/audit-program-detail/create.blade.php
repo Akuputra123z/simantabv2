@@ -149,7 +149,7 @@
 
             {{-- Footer Action --}}
             <div class="bg-gray-50/80 px-8 py-6 border-t border-gray-100 flex items-center justify-end gap-4 dark:bg-gray-900/50">
-                <a href="{{ route('audit-program.show', $auditProgram->id) }}" class="px-6 py-2.5 text-sm text-gray-500 hover:text-gray-800 transition font-semibold italic">Batal</a>
+                <a href="{{ route('audit-program.show', $auditProgram) }}" class="px-6 py-2.5 text-sm text-gray-500 hover:text-gray-800 transition font-semibold italic">Batal</a>
                 <button type="submit" class="px-10 py-3 rounded-xl bg-blue-600 text-sm font-bold text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
                     Simpan Sub-Program
                 </button>

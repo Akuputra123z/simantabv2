@@ -920,7 +920,7 @@
                                                         <div class="text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
                                                             <span>Diverifikasi oleh: <strong>{{ $tl->verifikator->name ?? 'Pengendali Teknis / Irban' }}</strong> pada {{ $tl->diverifikasi_pada ? $tl->diverifikasi_pada->translatedFormat('d F Y H:i') : '-' }}</span>
                                                             @if($canVerify)
-                                                                <form method="POST" action="{{ route('lhr.tindak-lanjut.verifikasi', [$lhr->uuid, $tl->id]) }}" onsubmit="return confirm('Kembalikan status verifikasi menjadi Dalam Proses?')">
+                                                                <form method="POST" action="{{ route('lhr.tindak-lanjut.verifikasi', [$lhr->uuid, $tl]) }}" onsubmit="return confirm('Kembalikan status verifikasi menjadi Dalam Proses?')">
                                                                     @csrf
                                                                     <input type="hidden" name="status_verifikasi" value="berjalan">
                                                                     <button type="submit" class="text-[10px] text-gray-500 hover:text-gray-800 underline cursor-pointer">Ubah ke Berjalan</button>
@@ -941,7 +941,7 @@
                                                             </button>
 
                                                             {{-- Tombol Setujui (Lunas/Selesai) --}}
-                                                            <form method="POST" action="{{ route('lhr.tindak-lanjut.verifikasi', [$lhr->uuid, $tl->id]) }}" onsubmit="return confirm('Apakah Anda yakin menyetujui naskah revisi dari OPD untuk rekomendasi butir ini?')">
+                                                            <form method="POST" action="{{ route('lhr.tindak-lanjut.verifikasi', [$lhr->uuid, $tl]) }}" onsubmit="return confirm('Apakah Anda yakin menyetujui naskah revisi dari OPD untuk rekomendasi butir ini?')">
                                                                 @csrf
                                                                 <input type="hidden" name="status_verifikasi" value="lunas">
                                                                 <button type="submit"
@@ -953,7 +953,7 @@
 
                                                             {{-- Dropdown / Form Alasan Tolak --}}
                                                             <div x-show="openTolak" x-cloak class="w-full mt-2 p-3 rounded-xl border border-rose-200 bg-white shadow-sm dark:bg-gray-900 dark:border-rose-900/60">
-                                                                <form method="POST" action="{{ route('lhr.tindak-lanjut.tolak', [$lhr->uuid, $tl->id]) }}">
+                                                                <form method="POST" action="{{ route('lhr.tindak-lanjut.tolak', [$lhr->uuid, $tl]) }}">
                                                                     @csrf
                                                                     <label class="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
                                                                         Catatan Koreksi / Alasan Penolakan untuk OPD:

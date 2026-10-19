@@ -106,14 +106,14 @@
                 </a>
             @endif
 
-            <a href="{{ route('tindak-lanjuts.edit', $tindakLanjut->id) }}"
+            <a href="{{ route('tindak-lanjuts.edit', $tindakLanjut) }}"
                class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
                 <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                 Edit
             </a>
 
             @if(auth()->user()?->hasRole('super_admin'))
-            <form action="{{ route('tindak-lanjuts.destroy', $tindakLanjut->id) }}" method="POST"
+            <form action="{{ route('tindak-lanjuts.destroy', $tindakLanjut) }}" method="POST"
                   onsubmit="return confirm('Apakah Anda yakin ingin menghapus data tindak lanjut ini?')" class="inline">
                 @csrf @method('DELETE')
                 <button type="submit"
@@ -516,7 +516,7 @@
                     <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                         Riwayat Pembayaran Cicilan
                     </h2>
-                    <a href="{{ route('tindak-lanjuts.cicilans.index', $tindakLanjut->id) }}" class="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400">
+                    <a href="{{ route('tindak-lanjuts.cicilans.index', $tindakLanjut) }}" class="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400">
                         Kelola Cicilan &rarr;
                     </a>
                 </div>

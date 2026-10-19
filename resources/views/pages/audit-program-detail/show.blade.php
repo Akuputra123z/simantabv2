@@ -6,7 +6,7 @@
     {{-- Header --}}
     <div class="flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:flex-row md:items-center md:justify-between">
         <div class="flex items-center gap-5">
-            <a href="{{ route('audit-program.show', $detail->audit_program_id) }}"
+            <a href="{{ route('audit-program.show', $detail->auditProgram ?? $detail->audit_program_id) }}"
                class="flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 text-gray-500 transition-all hover:bg-gray-100 hover:scale-105 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
@@ -176,7 +176,7 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-5 text-right">
-                                    <a href="{{ route('audit-assignment.show', $assignment->id) }}"
+                                    <a href="{{ route('audit-assignment.show', $assignment) }}"
                                        class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-400 transition-all hover:border-blue-600 hover:bg-blue-600 hover:text-white dark:border-gray-700 dark:bg-gray-800">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>

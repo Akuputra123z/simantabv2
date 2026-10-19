@@ -73,7 +73,7 @@ class GoogleAuthController extends Controller
             // Karena sistem pendaftaran mandiri ditutup (akun dibuatkan admin),
             // tolak login Google jika email belum terdaftar di database.
             return redirect()->route('login')->withErrors([
-                'email' => "Akun dengan alamat email Google ({$email}) belum terdaftar di sistem SIMANTAB. Akun harus dibuatkan terlebih dahulu oleh Administrator. Silakan hubungi admin.",
+                'email' => "Akun dengan alamat email Google ({$email}) belum terdaftar di sistem SIAP TUNTAS. Akun harus dibuatkan terlebih dahulu oleh Administrator. Silakan hubungi admin.",
             ]);
         }
 

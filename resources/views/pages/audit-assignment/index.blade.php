@@ -180,7 +180,7 @@
                             
                             {{-- Program & Surat --}}
                             <div class="col-span-3 border-r border-gray-100 px-4 py-3.5 dark:border-gray-800">
-                                <a href="{{ route('audit-assignment.show', $item->id) }}" class="text-xs font-bold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 truncate block">
+                                <a href="{{ route('audit-assignment.show', $item) }}" class="text-xs font-bold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 truncate block">
                                     {{ $item->auditProgramDetail->nama_detail_program ?? 'Penugasan Audit' }}
                                 </a>
                                 <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
@@ -251,7 +251,7 @@
                             <div class="col-span-2 flex items-center justify-end px-4 py-3.5">
                                 <div class="flex items-center gap-2">
                                     {{-- Preview / Cetak Surat --}}
-                                    <a href="{{ route('audit-assignment.preview', $item->id) }}" target="_blank" title="Cetak / Pratinjau Surat Tugas"
+                                    <a href="{{ route('audit-assignment.preview', $item) }}" target="_blank" title="Cetak / Pratinjau Surat Tugas"
                                        class="text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H7a2 2 0 00-2 2v4h10z"/>
@@ -259,7 +259,7 @@
                                     </a>
 
                                     {{-- Detail Button --}}
-                                    <a href="{{ route('audit-assignment.show', $item->id) }}" title="Detail Penugasan"
+                                    <a href="{{ route('audit-assignment.show', $item) }}" title="Detail Penugasan"
                                        class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                         <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path d="M10 4.5C5.5 4.5 2 10 2 10C2 10 5.5 15.5 10 15.5C14.5 15.5 18 10 18 10C18 10 14.5 4.5 10 4.5ZM10 13.5C8.07 13.5 6.5 11.93 6.5 10C6.5 8.07 8.07 6.5 10 6.5C11.93 6.5 13.5 8.07 13.5 10C13.5 11.93 11.93 13.5 10 13.5ZM10 8.5C9.17 8.5 8.5 9.17 8.5 10C8.5 10.83 9.17 11.5 10 11.5C10.83 11.5 11.5 10.83 11.5 10C11.5 9.17 10.83 8.5 10 8.5Z" fill=""></path>
@@ -267,7 +267,7 @@
                                     </a>
 
                                     {{-- Edit Button --}}
-                                    <a href="{{ route('audit-assignment.edit', $item->id) }}" title="Edit Penugasan"
+                                    <a href="{{ route('audit-assignment.edit', $item) }}" title="Edit Penugasan"
                                        class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                         <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path fill-rule="evenodd" clip-rule="evenodd" d="M16.0911 2.53206C15.2124 1.65338 13.7878 1.65338 12.9091 2.53206L4.6074 10.8337C4.29899 11.1421 4.08687 11.5335 3.99684 11.9603L3.26177 15.445C3.20943 15.6931 3.286 15.9508 3.46529 16.1301C3.64458 16.3094 3.90232 16.3859 4.15042 16.3336L7.63507 15.5985C8.06184 15.5085 8.45324 15.2964 8.76165 14.988L17.0633 6.68631C17.942 5.80763 17.942 4.38301 17.0633 3.50433L16.0911 2.53206ZM13.9697 3.59272C14.2626 3.29982 14.7375 3.29982 15.0304 3.59272L16.0027 4.56499C16.2956 4.85788 16.2956 5.33276 16.0027 5.62565L15.1043 6.52402L13.0714 4.49109L13.9697 3.59272ZM12.0107 5.55175L5.66806 11.8944C5.56526 11.9972 5.49455 12.1277 5.46454 12.2699L4.96704 14.6283L7.32547 14.1308C7.46772 14.1008 7.59819 14.0301 7.70099 13.9273L14.0436 7.58468L12.0107 5.55175Z" fill=""></path>
@@ -275,7 +275,7 @@
                                     </a>
 
                                     {{-- Delete Button --}}
-                                    <form action="{{ route('audit-assignment.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus penugasan ini?')" class="inline">
+                                    <form action="{{ route('audit-assignment.destroy', $item) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus penugasan ini?')" class="inline">
                                         @csrf @method('DELETE')
                                         <button type="submit" title="Hapus Penugasan" class="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                             <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">

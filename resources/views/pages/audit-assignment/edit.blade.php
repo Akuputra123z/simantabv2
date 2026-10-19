@@ -62,7 +62,7 @@
         </div>
     @endif
 
-    <form action="{{ route('audit-assignment.update', $data->id) }}" method="POST"
+    <form action="{{ route('audit-assignment.update', $data) }}" method="POST"
         enctype="multipart/form-data" class="space-y-6" id="audit-form" novalidate>
         @csrf
         @method('PUT')

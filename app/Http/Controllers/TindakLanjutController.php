@@ -661,6 +661,11 @@ class TindakLanjutController extends Controller
 
     public function show(TindakLanjut $tindakLanjut)
     {
+        $rawParam = request()->route()?->originalParameter('tindakLanjut') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $tindakLanjut->uuid || is_numeric($rawParam))) {
+            return redirect()->route('tindak-lanjuts.show', $tindakLanjut, 301);
+        }
+
         $tindakLanjut->load([
             'recommendation.temuan.lhp.unitDiperiksa',
             'recommendation.temuan.lhp.auditAssignment.ketuaTim',
@@ -680,6 +685,11 @@ class TindakLanjutController extends Controller
 
     public function edit(TindakLanjut $tindakLanjut)
     {
+        $rawParam = request()->route()?->originalParameter('tindakLanjut') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $tindakLanjut->uuid || is_numeric($rawParam))) {
+            return redirect()->route('tindak-lanjuts.edit', $tindakLanjut, 301);
+        }
+
         $tindakLanjut->load(['recommendation.temuan.lhp', 'attachments']);
 
         $recommendations = Recommendation::with(['temuan.lhp'])

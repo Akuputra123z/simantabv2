@@ -324,7 +324,7 @@
                                         </button>
                                     </div>
                                 @else
-                                    <a href="{{ route('opd.tindak-lanjut.lhp', $lhp->id) }}"
+                                    <a href="{{ route('opd.tindak-lanjut.lhp', $lhp) }}"
                                        title="Progres belum 100%. Lanjutkan unggah tindak lanjut untuk membuka laporan."
                                        class="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition">
                                         <span>Tindak Lanjuti</span>

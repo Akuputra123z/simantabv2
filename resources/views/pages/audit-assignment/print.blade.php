@@ -524,7 +524,7 @@
     <div class="toolbar-wrapper no-print">
         <div class="toolbar-container">
             <div class="toolbar-left">
-                <a href="{{ route('audit-assignment.show', $assignment->id) }}" class="btn-toolbar btn-back">
+                <a href="{{ route('audit-assignment.show', $assignment) }}" class="btn-toolbar btn-back">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                     Kembali
                 </a>
@@ -553,7 +553,7 @@
                         Ditandatangani Elektronik
                     </span>
                     @if($canSign)
-                        <form action="{{ route('audit-assignment.batal-sign', $assignment->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Batalkan tanda tangan Surat Tugas ini?')">
+                        <form action="{{ route('audit-assignment.batal-sign', $assignment) }}" method="POST" style="display:inline;" onsubmit="return confirm('Batalkan tanda tangan Surat Tugas ini?')">
                             @csrf
                             <input type="hidden" name="from" value="preview">
                             <button type="submit" class="btn-toolbar btn-unsign">Batal TTD</button>
@@ -561,7 +561,7 @@
                     @endif
                 @else
                     @if($canSign)
-                        <form action="{{ route('audit-assignment.sign', $assignment->id) }}" method="POST" style="display:inline;">
+                        <form action="{{ route('audit-assignment.sign', $assignment) }}" method="POST" style="display:inline;">
                             @csrf
                             <input type="hidden" name="from" value="preview">
                             <button type="submit" class="btn-toolbar btn-sign" onclick="return confirm('Tandatangani Surat Tugas ini secara resmi?')">
@@ -573,7 +573,7 @@
                     @endif
                 @endif
 
-                <a id="btn-download-pdf" href="{{ route('audit-assignment.print', ['id' => $assignment->id, 'paper' => $currentPaper]) }}" target="_blank" class="btn-toolbar btn-pdf">
+                <a id="btn-download-pdf" href="{{ route('audit-assignment.print', ['auditAssignment' => $assignment, 'paper' => $currentPaper]) }}" target="_blank" class="btn-toolbar btn-pdf">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     Unduh PDF (<span id="pdf-paper-label">{{ strtoupper($currentPaper) }}</span>)
                 </a>
@@ -910,7 +910,7 @@
                 pageStyle.innerHTML = '@page { size: A4; margin: 20mm 15mm 15mm 20mm; }';
                 buttons[1].classList.add('active');
                 if (pdfLink) {
-                    pdfLink.href = "{{ route('audit-assignment.print', $assignment->id) }}?paper=a4";
+                    pdfLink.href = "{{ route('audit-assignment.print', $assignment) }}?paper=a4";
                 }
                 if (pdfLabel) {
                     pdfLabel.innerText = 'A4';
@@ -921,7 +921,7 @@
                 pageStyle.innerHTML = '@page { size: 215mm 330mm; margin: 20mm 15mm 15mm 20mm; }';
                 buttons[0].classList.add('active');
                 if (pdfLink) {
-                    pdfLink.href = "{{ route('audit-assignment.print', $assignment->id) }}?paper=f4";
+                    pdfLink.href = "{{ route('audit-assignment.print', $assignment) }}?paper=f4";
                 }
                 if (pdfLabel) {
                     pdfLabel.innerText = 'F4';

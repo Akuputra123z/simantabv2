@@ -109,7 +109,8 @@ class AccountVerificationTest extends TestCase
 
         $response = $this->get($url);
 
-        $response->assertStatus(403);
+        $response->assertRedirect(route('account.verify.request'));
+        $response->assertSessionHasErrors('identifier');
     }
 
     public function test_user_can_set_initial_password_after_verification(): void

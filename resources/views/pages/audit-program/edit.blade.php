@@ -32,7 +32,7 @@
 
     {{-- Card --}}
     <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
-        <form action="{{ route('audit-program.update', $program->id) }}" method="POST">
+        <form action="{{ route('audit-program.update', $program) }}" method="POST">
             @csrf
             @method('PUT')
 

@@ -156,7 +156,7 @@
 
             // QR Code Verifikasi Tanda Tangan Elektronik (URL Resmi untuk deteksi cepat kamera smartphone)
             try {
-                $qrPayload = route('audit-program.preview', $auditProgram->id);
+                $qrPayload = route('audit-program.preview', $auditProgram);
                 $qrBase64 = \App\Helpers\QrCodeHelper::generateDataUrl($qrPayload, 260, 2);
             } catch (\Throwable $e) {
                 // Fallback safe

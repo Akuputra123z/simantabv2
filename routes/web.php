@@ -123,8 +123,8 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/get-program-details/{programId}', [AuditAssignmentController::class, 'getProgramDetails'])->name('get-program-details'); // TAMBAHKAN INI
     Route::get('/get-kecamatan/{kategori}', [AuditAssignmentController::class, 'getKecamatan'])->name('get-kecamatan');
     Route::get('/get-unit/{kecamatan}', [AuditAssignmentController::class, 'getUnit'])->name('get-unit');
-    Route::get('/audit-assignment/{id}/preview', [AuditAssignmentController::class, 'print'])->name('audit-assignment.preview');
-    Route::get('/audit-assignment/{id}/print', [AuditAssignmentController::class, 'printPdf'])->name('audit-assignment.print');
+    Route::get('/audit-assignment/{auditAssignment}/preview', [AuditAssignmentController::class, 'print'])->name('audit-assignment.preview');
+    Route::get('/audit-assignment/{auditAssignment}/print', [AuditAssignmentController::class, 'printPdf'])->name('audit-assignment.print');
     Route::post('/audit-assignment/{auditAssignment}/sign', [AuditAssignmentController::class, 'sign'])->name('audit-assignment.sign');
     Route::post('/audit-assignment/{auditAssignment}/batal-sign', [AuditAssignmentController::class, 'batalSign'])->name('audit-assignment.batal-sign');
 

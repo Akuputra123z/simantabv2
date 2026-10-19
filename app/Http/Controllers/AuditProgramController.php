@@ -141,6 +141,12 @@ class AuditProgramController extends Controller
      */
     public function show(AuditProgram $auditProgram)
     {
+        // Enforce canonical UUID in URL
+        $rawParam = request()->route()?->originalParameter('auditProgram') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $auditProgram->uuid || is_numeric($rawParam))) {
+            return redirect()->route('audit-program.show', $auditProgram, 301);
+        }
+
         $auditProgram->loadCount([
             'details',
             'details as sudah_lhp_count' => function ($q) {
@@ -180,6 +186,12 @@ class AuditProgramController extends Controller
      */
     public function edit(AuditProgram $auditProgram)
     {
+        // Enforce canonical UUID in URL
+        $rawParam = request()->route()?->originalParameter('auditProgram') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $auditProgram->uuid || is_numeric($rawParam))) {
+            return redirect()->route('audit-program.edit', $auditProgram, 301);
+        }
+
         $program = $auditProgram;
         $kategoriOptions = AuditProgram::KATEGORI;
 
@@ -203,7 +215,8 @@ class AuditProgramController extends Controller
         ]));
 
         // Cek jika request datang dari halaman edit atau modal di index/show
-        if ($request->header('referer') == route('audit-program.edit', $auditProgram->id)) {
+        $referer = (string) $request->header('referer');
+        if (str_contains($referer, '/edit')) {
             return redirect()->route('audit-program.index')->with('success', 'Data PKPT berhasil diperbarui.');
         }
 
@@ -227,6 +240,12 @@ class AuditProgramController extends Controller
 
     public function preview(AuditProgram $auditProgram)
     {
+        // Enforce canonical UUID in URL
+        $rawParam = request()->route()?->originalParameter('auditProgram') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $auditProgram->uuid || is_numeric($rawParam))) {
+            return redirect()->route('audit-program.preview', $auditProgram, 301);
+        }
+
         $auditProgram->load('approver');
 
         return view('pages.audit-program.preview', compact('auditProgram'));
@@ -264,7 +283,8 @@ class AuditProgramController extends Controller
                 'isRemoteEnabled' => false,
             ]);
 
-        $filename = 'sub-program-'.str_replace('/', '-', $auditProgram->nama_program).'-'.now()->format('Ymd').'.pdf';
+        $slug = \Illuminate\Support\Str::slug($auditProgram->nama_program) ?: 'pkpt-'.$auditProgram->id;
+        $filename = 'sub-program-'.$slug.'-'.now()->format('Ymd').'.pdf';
 
         return $pdf->download($filename);
     }
@@ -276,7 +296,8 @@ class AuditProgramController extends Controller
     {
         $details = $this->getFilteredDetails($auditProgram);
 
-        $filename = 'sub-program-'.str_replace('/', '-', $auditProgram->nama_program).'-'.now()->format('Ymd').'.xlsx';
+        $slug = \Illuminate\Support\Str::slug($auditProgram->nama_program) ?: 'pkpt-'.$auditProgram->id;
+        $filename = 'sub-program-'.$slug.'-'.now()->format('Ymd').'.xlsx';
 
         return Excel::download(new DetailProgramExport($auditProgram, $details), $filename);
     }

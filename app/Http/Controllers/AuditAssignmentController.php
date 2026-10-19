@@ -208,6 +208,12 @@ class AuditAssignmentController extends Controller
 
     public function edit(AuditAssignment $auditAssignment)
     {
+        // Enforce canonical UUID in URL
+        $rawParam = request()->route()?->originalParameter('auditAssignment') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $auditAssignment->uuid || is_numeric($rawParam))) {
+            return redirect()->route('audit-assignment.edit', $auditAssignment, 301);
+        }
+
         $data = $auditAssignment->load([
             'members',
             'auditProgramDetail.auditProgram',
@@ -401,7 +407,7 @@ class AuditAssignmentController extends Controller
             }
 
             try {
-                $qrPayload = route('audit-assignment.preview', $assignment->id);
+                $qrPayload = route('audit-assignment.preview', $assignment);
                 $qrBase64 = QrCodeHelper::generateDataUrl($qrPayload, 260, 2);
             } catch (\Throwable $e) {
                 // fallback
@@ -411,9 +417,15 @@ class AuditAssignmentController extends Controller
         return [$signatureBase64, $qrBase64];
     }
 
-    public function print(Request $request, $id)
+    public function print(Request $request, AuditAssignment $auditAssignment)
     {
-        $assignment = AuditAssignment::with([
+        // Enforce canonical UUID in URL
+        $rawParam = request()->route()?->originalParameter('auditAssignment') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $auditAssignment->uuid || is_numeric($rawParam))) {
+            return redirect()->route('audit-assignment.preview', array_merge(['auditAssignment' => $auditAssignment], request()->query()), 301);
+        }
+
+        $assignment = $auditAssignment->loadMissing([
             'auditProgramDetail.auditProgram',
             'unitDiperiksas',
             'ketuaTim',
@@ -421,7 +433,7 @@ class AuditAssignmentController extends Controller
             'signer',
             'members',
             'dasarPeraturans',
-        ])->findOrFail($id);
+        ]);
 
         $logoPath = public_path('images/logo/image.png');
         if (! file_exists($logoPath)) {
@@ -441,9 +453,9 @@ class AuditAssignmentController extends Controller
 
     // ── Print PDF (stream) ────────────────────────────────────────────────
 
-    public function printPdf(Request $request, $id)
+    public function printPdf(Request $request, AuditAssignment $auditAssignment)
     {
-        $assignment = AuditAssignment::with([
+        $assignment = $auditAssignment->loadMissing([
             'auditProgramDetail.auditProgram',
             'unitDiperiksas',
             'ketuaTim',
@@ -451,7 +463,7 @@ class AuditAssignmentController extends Controller
             'signer',
             'members',
             'dasarPeraturans',
-        ])->findOrFail($id);
+        ]);
 
         $logoPath = public_path('images/logo/image.png');
         if (! file_exists($logoPath)) {
@@ -483,6 +495,12 @@ class AuditAssignmentController extends Controller
 
     public function show(AuditAssignment $auditAssignment)
     {
+        // Enforce canonical UUID in URL
+        $rawParam = request()->route()?->originalParameter('auditAssignment') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $auditAssignment->uuid || is_numeric($rawParam))) {
+            return redirect()->route('audit-assignment.show', $auditAssignment, 301);
+        }
+
         // Load semua relasi agar data tampil lengkap di halaman detail
         $data = $auditAssignment->load([
             'auditProgramDetail.auditProgram',
@@ -515,8 +533,8 @@ class AuditAssignmentController extends Controller
         ]);
 
         $redirectTo = request('from') === 'preview'
-            ? route('audit-assignment.preview', $auditAssignment->id)
-            : route('audit-assignment.show', $auditAssignment->id);
+            ? route('audit-assignment.preview', $auditAssignment)
+            : route('audit-assignment.show', $auditAssignment);
 
         return redirect($redirectTo)->with('success', 'Surat Tugas berhasil ditandatangani.');
     }
@@ -537,8 +555,8 @@ class AuditAssignmentController extends Controller
         ]);
 
         $redirectTo = request('from') === 'preview'
-            ? route('audit-assignment.preview', $auditAssignment->id)
-            : route('audit-assignment.show', $auditAssignment->id);
+            ? route('audit-assignment.preview', $auditAssignment)
+            : route('audit-assignment.show', $auditAssignment);
 
         return redirect($redirectTo)->with('success', 'Tanda tangan Surat Tugas berhasil dibatalkan.');
     }

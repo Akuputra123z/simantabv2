@@ -74,7 +74,7 @@
             $canApprove = auth()->check() && (auth()->user()->hasRole('kepala_inspektorat') || auth()->user()->hasRole('super_admin'));
             $downloadPdfUrl = ($auditProgram->approved_pdf && Storage::disk('public')->exists($auditProgram->approved_pdf))
                 ? Storage::url($auditProgram->approved_pdf)
-                : route('audit-program.preview-pdf', $auditProgram->id);
+                : route('audit-program.preview-pdf', $auditProgram);
         @endphp
         <div class="border-b border-gray-100 px-6 py-5 dark:border-gray-800 {{ $auditProgram->isApproved() ? 'bg-emerald-50/50 dark:bg-emerald-500/5' : ($auditProgram->isWaiting() ? 'bg-amber-50/50 dark:bg-amber-500/5' : '') }}">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -110,19 +110,19 @@
 
                 <div class="flex items-center gap-2">
                     @if(!$auditProgram->isApproved())
-                        <a href="{{ route('audit-program.preview', $auditProgram->id) }}"
+                        <a href="{{ route('audit-program.preview', $auditProgram) }}"
                            class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 hover:border-rose-200 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-rose-400">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                             Preview
                         </a>
                     @else
-                        <a href="{{ route('audit-program.download-approved-pdf', $auditProgram->id) }}" target="_blank"
+                        <a href="{{ route('audit-program.download-approved-pdf', $auditProgram) }}" target="_blank"
                            class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 shadow-sm">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                             Unduh PDF Disetujui
                         </a>
                         @if($canApprove)
-                        <form action="{{ route('audit-program.batal-setujui', $auditProgram->id) }}" method="POST" onsubmit="return confirm('Batalkan persetujuan PKPT ini?')">
+                        <form action="{{ route('audit-program.batal-setujui', $auditProgram) }}" method="POST" onsubmit="return confirm('Batalkan persetujuan PKPT ini?')">
                             @csrf
                             <button type="submit" class="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-white px-4 py-2 text-xs font-semibold text-amber-600 transition hover:bg-amber-50 dark:border-amber-500/20 dark:bg-gray-800 dark:text-amber-400">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -170,13 +170,13 @@
             </div>
             <div class="lg:ml-auto flex flex-wrap items-center gap-3">
                 {{-- Search --}}
-                <form method="GET" action="{{ route('audit-program.show', $auditProgram->id) }}" class="relative">
+                <form method="GET" action="{{ route('audit-program.show', $auditProgram) }}" class="relative">
                     <input type="text" name="search" value="{{ $search ?? '' }}"
                            placeholder="Cari sub-program..."
                            class="w-48 rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-700 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500">
                     <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     @if(request('search'))
-                        <a href="{{ route('audit-program.show', $auditProgram->id) }}"
+                        <a href="{{ route('audit-program.show', $auditProgram) }}"
                            class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </a>
@@ -420,33 +420,33 @@
                             <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                         </div>
                         <span class="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400" id="file-name-label">Klik untuk pilih file Excel</span>
-                        <p class="mt-1 text-xs text-gray-400">Format .xlsx atau .xls (Maks. 10MB)</p>
-                        <input type="file" name="file" id="file-input" class="hidden" accept=".xlsx, .xls" required onchange="updateFileName(this)">
+                        <p class="mt-1 text-xs text-gray-400">Format .xlsx, .xls, atau .csv (Maks. 10MB)</p>
+                        <input type="file" name="file" id="file-input" class="hidden" accept=".xlsx, .xls, .csv" required onchange="updateFileName(this)">
                     </label>
 
-                   <div class="rounded-xl bg-blue-50/50 p-4 border border-blue-100 dark:bg-blue-500/5 dark:border-blue-500/20">
-    <div class="flex gap-3">
-        <svg class="h-5 w-5 shrink-0 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <div class="space-y-3">
-            <div>
-                <p class="text-sm font-bold text-blue-900 dark:text-blue-100">Panduan Kolom Excel</p>
-                <p class="text-xs text-blue-700/80 dark:text-blue-300/80 leading-relaxed mt-1">
-                    Urutan kolom wajib sesuai: <span class="font-medium text-blue-900 dark:text-blue-200">1. Nama Detail, 2. Jenis, 3. Objek, 4. Ruang Lingkup, 5. Personil, 6. Tujuan, 7. Anggaran, 8. Risiko, 9. Target, 10. Jadwal, 11. Tim, 12. Status.</span>
-                </p>
-            </div>
+                    <div class="rounded-xl bg-blue-50/50 p-4 border border-blue-100 dark:bg-blue-500/5 dark:border-blue-500/20">
+                        <div class="flex gap-3">
+                            <svg class="h-5 w-5 shrink-0 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <div class="space-y-3">
+                                <div>
+                                    <p class="text-sm font-bold text-blue-900 dark:text-blue-100">Panduan Kolom Excel</p>
+                                    <p class="text-xs text-blue-700/80 dark:text-blue-300/80 leading-relaxed mt-1">
+                                        Kolom yang didukung: <span class="font-medium text-blue-900 dark:text-blue-200">1. Nama Detail Program, 2. Jenis Kegiatan, 3. Objek Pengawasan, 4. Ruang Lingkup, 5. Jumlah Personil, 6. Tujuan Pengawasan, 7. Anggaran, 8. Tingkat Risiko, 9. Target Laporan, 10. Jadwal Pelaksanaan, 11. Tim Pelaksana, 12. Status.</span>
+                                    </p>
+                                </div>
 
-            <a href="{{ route('audit-program-detail.download-template') }}" 
-                class="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                </svg>
-                UNDUH TEMPLATE EXCEL
-            </a>
-        </div>
-    </div>
-</div>
+                                <a href="{{ route('audit-program-detail.download-template') }}" 
+                                    class="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                    </svg>
+                                    UNDUH TEMPLATE EXCEL
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mt-8 flex gap-3">
@@ -583,8 +583,8 @@
             }
 
             const action = type === 'pdf'
-                ? '{{ route("audit-program.export-pdf", $auditProgram->id) }}'
-                : '{{ route("audit-program.export-excel", $auditProgram->id) }}';
+                ? '{{ route("audit-program.export-pdf", $auditProgram) }}'
+                : '{{ route("audit-program.export-excel", $auditProgram) }}';
 
             exportForm.action = action;
             exportForm.target = type === 'pdf' ? '_blank' : '';

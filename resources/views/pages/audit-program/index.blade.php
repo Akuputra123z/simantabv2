@@ -222,7 +222,7 @@
                                 {{-- Program Name --}}
                                 <div class="col-span-3 flex items-center border-r border-gray-100 px-4 py-3.5 dark:border-gray-800">
                                     <div class="min-w-0">
-                                        <a href="{{ route('audit-program.show', $item->id) }}" class="text-xs font-bold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 truncate block">
+                                        <a href="{{ route('audit-program.show', $item) }}" class="text-xs font-bold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 truncate block">
                                             {{ $item->nama_program }}
                                         </a>
                                         <span class="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
@@ -259,7 +259,7 @@
                                         @endif
                                     </span>
                                     @if($item->isApproved())
-                                    <a href="{{ route('audit-program.download-approved-pdf', $item->id) }}" target="_blank" class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60 transition shadow-2xs">
+                                    <a href="{{ route('audit-program.download-approved-pdf', $item) }}" target="_blank" class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60 transition shadow-2xs">
                                         <svg class="h-3 w-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
@@ -285,7 +285,7 @@
                                 <div class="col-span-2 flex items-center justify-end px-4 py-3.5">
                                     <div class="flex items-center gap-2">
                                         {{-- Detail Button --}}
-                                        <a href="{{ route('audit-program.show', $item->id) }}"
+                                        <a href="{{ route('audit-program.show', $item) }}"
                                            title="Detail Sub Program"
                                            class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                             <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -294,7 +294,7 @@
                                         </a>
 
                                         {{-- Edit Button --}}
-                                        <a href="{{ route('audit-program.edit', $item->id) }}"
+                                        <a href="{{ route('audit-program.edit', $item) }}"
                                            title="Edit Program"
                                            class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                             <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -303,7 +303,7 @@
                                         </a>
 
                                         {{-- Delete Form Button --}}
-                                        <form action="{{ route('audit-program.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus PKPT ini?')" class="inline">
+                                        <form action="{{ route('audit-program.destroy', $item) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus PKPT ini?')" class="inline">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" title="Hapus Program" class="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">

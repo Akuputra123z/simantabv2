@@ -100,24 +100,26 @@ class RekapSemuaLhpSheet implements FromCollection, WithColumnWidths, WithHeadin
         ]);
         $sheet->getRowDimension(1)->setRowHeight(30);
 
-        // Data rows — stripe
-        for ($row = 2; $row <= $lastRow; $row++) {
-            $bgColor = ($row % 2 === 0) ? 'F0F9FF' : 'FFFFFF';
-            $sheet->getStyle("A{$row}:Q{$row}")->applyFromArray([
-                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bgColor]],
-                'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
-                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E2E8F0']]],
-            ]);
-        }
+        // Data rows — stripe & formatting (hanya jika ada baris data)
+        if ($lastRow >= 2) {
+            for ($row = 2; $row <= $lastRow; $row++) {
+                $bgColor = ($row % 2 === 0) ? 'F0F9FF' : 'FFFFFF';
+                $sheet->getStyle("A{$row}:Q{$row}")->applyFromArray([
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bgColor]],
+                    'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
+                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E2E8F0']]],
+                ]);
+            }
 
-        // Kolom numerik — right align
-        $numCols = ['I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'];
-        foreach ($numCols as $col) {
-            $sheet->getStyle("{$col}2:{$col}{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-        }
+            // Kolom numerik — right align
+            $numCols = ['I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'];
+            foreach ($numCols as $col) {
+                $sheet->getStyle("{$col}2:{$col}{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            }
 
-        // Format rupiah
-        $sheet->getStyle("N2:P{$lastRow}")->getNumberFormat()->setFormatCode('#,##0');
+            // Format rupiah
+            $sheet->getStyle("N2:P{$lastRow}")->getNumberFormat()->setFormatCode('#,##0');
+        }
 
         // Freeze header
         $sheet->freezePane('A2');
@@ -149,7 +151,7 @@ class RekapStatistikSheet implements FromCollection, WithColumnWidths, WithHeadi
             'total_kerugian' => $this->lhps->sum(fn ($l) => $l->statistik?->total_kerugian ?? 0),
             'tl_selesai' => $this->lhps->sum(fn ($l) => $l->statistik?->total_nilai_tl_selesai ?? 0),
             'sisa_kerugian' => $this->lhps->sum(fn ($l) => $l->statistik?->total_sisa_kerugian ?? 0),
-            'avg_persen' => round($this->lhps->avg(fn ($l) => $l->statistik?->persen_selesai_gabungan ?? 0), 1),
+            'avg_persen' => round((float) ($this->lhps->avg(fn ($l) => $l->statistik?->persen_selesai_gabungan ?? 0) ?? 0), 1),
         ];
 
         return collect([

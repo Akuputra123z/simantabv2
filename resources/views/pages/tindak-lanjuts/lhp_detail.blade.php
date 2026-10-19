@@ -489,9 +489,9 @@
                                             </div>
 
                                             <div class="pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700 text-right sm:text-left">
-                                                <a href="{{ route('tindak-lanjuts.show', $tl->id) }}"
+                                                <a href="{{ route('tindak-lanjuts.show', $tl) }}"
                                                    class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">
-                                                    Detail Penuh TL #{{ $tl->id }} &rarr;
+                                                    Detail Penuh TL &rarr;
                                                 </a>
                                             </div>
                                         </div>

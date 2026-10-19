@@ -74,7 +74,7 @@
                     @endif
                 </div>
 
-                <form action="{{ route('tindak-lanjuts.update', $tindakLanjut->id) }}" method="POST" id="edit-form" enctype="multipart/form-data">
+                <form action="{{ route('tindak-lanjuts.update', $tindakLanjut) }}" method="POST" id="edit-form" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -371,7 +371,7 @@
                 </div>
 
                 {{-- Standalone delete form (hidden) --}}
-                <form id="delete-form" action="{{ route('tindak-lanjuts.destroy', $tindakLanjut->id) }}" method="POST" class="hidden">
+                <form id="delete-form" action="{{ route('tindak-lanjuts.destroy', $tindakLanjut) }}" method="POST" class="hidden">
                     @csrf @method('DELETE')
                 </form>
             </div>

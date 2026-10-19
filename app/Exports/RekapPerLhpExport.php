@@ -176,16 +176,18 @@ class TemuanSheet implements FromCollection, WithColumnWidths, WithHeadings, Wit
         ]);
         $sheet->getRowDimension(1)->setRowHeight(25);
 
-        for ($row = 2; $row <= $lastRow; $row++) {
-            $bg = ($row % 2 === 0) ? 'FFFBEB' : 'FFFFFF';
-            $sheet->getStyle("A{$row}:L{$row}")->applyFromArray([
-                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]],
-                'alignment' => ['vertical' => Alignment::VERTICAL_TOP, 'wrapText' => true],
-                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E2E8F0']]],
-            ]);
-        }
+        if ($lastRow >= 2) {
+            for ($row = 2; $row <= $lastRow; $row++) {
+                $bg = ($row % 2 === 0) ? 'FFFBEB' : 'FFFFFF';
+                $sheet->getStyle("A{$row}:L{$row}")->applyFromArray([
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]],
+                    'alignment' => ['vertical' => Alignment::VERTICAL_TOP, 'wrapText' => true],
+                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E2E8F0']]],
+                ]);
+            }
 
-        $sheet->getStyle("F2:J{$lastRow}")->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle("F2:J{$lastRow}")->getNumberFormat()->setFormatCode('#,##0');
+        }
         $sheet->freezePane('A2');
 
         return [];
@@ -219,7 +221,7 @@ class RekomSheet implements FromCollection, WithColumnWidths, WithHeadings, With
                     'kode_temuan' => $temuan->kodeTemuan?->kode ?? '-',
                     'kode_rekom' => $r->kodeRekomendasi?->kode ?? '-',
                     'uraian_rekom' => $r->uraian_rekom ?? '-',
-                    'jenis_rekom' => ucfirst($r->jenis_rekomendasi),
+                    'jenis_rekom' => ucfirst($r->jenis_rekomendasi ?? ''),
                     'nilai_rekom' => (float) ($r->nilai_rekom ?? 0),
                     'nilai_tl' => $totalTl,
                     'sisa_nilai' => $sisaNilai,
@@ -259,7 +261,8 @@ class RekomSheet implements FromCollection, WithColumnWidths, WithHeadings, With
 
     public function styles(Worksheet $sheet): array
     {
-        $lastRow = max(2, $this->lhp->temuans->flatMap->recommendations->count() + 1);
+        $count = $this->lhp->temuans->flatMap->recommendations->count();
+        $lastRow = $count + 1;
 
         $sheet->getStyle('A1:L1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
@@ -268,16 +271,18 @@ class RekomSheet implements FromCollection, WithColumnWidths, WithHeadings, With
         ]);
         $sheet->getRowDimension(1)->setRowHeight(25);
 
-        for ($row = 2; $row <= $lastRow; $row++) {
-            $bg = ($row % 2 === 0) ? 'ECFDF5' : 'FFFFFF';
-            $sheet->getStyle("A{$row}:L{$row}")->applyFromArray([
-                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]],
-                'alignment' => ['vertical' => Alignment::VERTICAL_TOP, 'wrapText' => true],
-                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E2E8F0']]],
-            ]);
-        }
+        if ($count > 0) {
+            for ($row = 2; $row <= $lastRow; $row++) {
+                $bg = ($row % 2 === 0) ? 'ECFDF5' : 'FFFFFF';
+                $sheet->getStyle("A{$row}:L{$row}")->applyFromArray([
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]],
+                    'alignment' => ['vertical' => Alignment::VERTICAL_TOP, 'wrapText' => true],
+                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E2E8F0']]],
+                ]);
+            }
 
-        $sheet->getStyle("F2:H{$lastRow}")->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle("F2:H{$lastRow}")->getNumberFormat()->setFormatCode('#,##0');
+        }
         $sheet->freezePane('A2');
 
         return [];

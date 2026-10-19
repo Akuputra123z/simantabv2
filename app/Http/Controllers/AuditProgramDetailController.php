@@ -22,6 +22,11 @@ class AuditProgramDetailController extends Controller
             'file' => 'required|mimes:xlsx,xls,csv|max:10240',
             'audit_program_id' => 'required|exists:audit_programs,id',
             'mode' => 'required|in:add,replace',
+        ], [
+            'file.required' => 'Silakan pilih berkas Excel (.xlsx, .xls) atau CSV untuk diimpor.',
+            'file.mimes' => 'Format berkas harus berupa Excel (.xlsx, .xls) atau CSV.',
+            'file.max' => 'Ukuran berkas maksimal adalah 10MB.',
+            'audit_program_id.exists' => 'Program audit (PKPT) tidak ditemukan di sistem.',
         ]);
 
         $auditProgramId = $request->audit_program_id;
@@ -47,29 +52,38 @@ class AuditProgramDetailController extends Controller
                 }
             }
 
-            Excel::import(new AuditProgramDetailImport($auditProgramId), $request->file('file'));
+            $import = new AuditProgramDetailImport($auditProgramId);
+            Excel::import($import, $request->file('file'));
+
+            $importedCount = $import->getImportedCount();
+
+            if ($importedCount === 0) {
+                DB::rollBack();
+
+                return back()->with('error', 'Tidak ada data sub-program yang valid untuk diimpor. Pastikan file Excel memiliki baris data dan judul kolom sesuai template.');
+            }
 
             DB::commit();
 
-            $importedCount = AuditProgramDetail::where('audit_program_id', $auditProgramId)->count();
-
             if ($request->mode === 'replace') {
-                $msg = "$deletedCount data lama diganti.";
+                $msg = "{$deletedCount} data lama diganti. {$importedCount} data sub-program baru berhasil diimpor.";
                 if (! empty($skippedNames)) {
-                    $msg .= ' '.count($skippedNames).' data dilewati (sudah punya penugasan): '.implode(', ', $skippedNames).'.';
+                    $msg .= ' '.count($skippedNames).' data dilewati (sudah memiliki surat tugas penugasan): '.implode(', ', $skippedNames).'.';
                 }
             } else {
-                $msg = "$importedCount data sub-program berhasil ditambahkan.";
+                $msg = "Berhasil mengimpor {$importedCount} data sub-program.";
             }
 
+            $program = AuditProgram::find($auditProgramId);
+
             return redirect()
-                ->route('audit-program.show', $auditProgramId)
+                ->route('audit-program.show', $program ?? $auditProgramId)
                 ->with('success', $msg);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
 
-            return back()->with('error', 'Gagal mengimport data: '.$e->getMessage());
+            return back()->with('error', 'Gagal mengimpor data: '.$e->getMessage());
         }
     }
 
@@ -196,8 +210,10 @@ class AuditProgramDetailController extends Controller
         $deleted = count($allowed);
         $skipped = count($blocked);
 
+        $program = AuditProgram::find($auditProgramId);
+
         if ($skipped > 0 && $deleted === 0) {
-            return redirect()->route('audit-program.show', $auditProgramId)
+            return redirect()->route('audit-program.show', $program ?? $auditProgramId)
                 ->with('error', "Tidak dapat menghapus $skipped data karena sudah memiliki penugasan.");
         }
 
@@ -206,7 +222,7 @@ class AuditProgramDetailController extends Controller
             $msg .= " $skipped data dilewati karena sudah memiliki penugasan.";
         }
 
-        return redirect()->route('audit-program.show', $auditProgramId)
+        return redirect()->route('audit-program.show', $program ?? $auditProgramId)
             ->with('success', $msg);
     }
 
@@ -215,9 +231,10 @@ class AuditProgramDetailController extends Controller
         if ($auditProgramDetail->assignments()->exists()) {
             return back()->with('error', 'Gagal menghapus! Sudah ada data penugasan.');
         }
+        $parent = $auditProgramDetail->auditProgram;
         $parentId = $auditProgramDetail->audit_program_id;
         $auditProgramDetail->delete();
 
-        return redirect()->route('audit-program.show', $parentId)->with('success', 'Sub-program berhasil dihapus.');
+        return redirect()->route('audit-program.show', $parent ?? $parentId)->with('success', 'Sub-program berhasil dihapus.');
     }
 }

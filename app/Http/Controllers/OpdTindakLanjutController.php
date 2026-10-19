@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class OpdTindakLanjutController extends Controller
@@ -52,6 +53,7 @@ class OpdTindakLanjutController extends Controller
             if ($missingRekomIds->isNotEmpty()) {
                 $now = now();
                 $stubs = $missingRekomIds->map(fn ($rekomId) => [
+                    'uuid' => (string) Str::uuid(),
                     'recommendation_id' => $rekomId,
                     'status_verifikasi' => 'menunggu_verifikasi',
                     'nilai_tindak_lanjut' => 0,
@@ -270,8 +272,13 @@ class OpdTindakLanjutController extends Controller
             ->with('success', 'Seluruh tindak lanjut pada LHP ini berhasil dikirim ke Inspektorat.');
     }
 
-    public function show(TindakLanjut $tindakLanjut): View
+    public function show(TindakLanjut $tindakLanjut): View|RedirectResponse
     {
+        $rawParam = request()->route()?->originalParameter('tindakLanjut') ?? request()->segment(3);
+        if ($rawParam && ($rawParam !== $tindakLanjut->uuid || is_numeric($rawParam))) {
+            return redirect()->route('opd.tindak-lanjut.show', $tindakLanjut, 301);
+        }
+
         $this->authorize('uploadOpd', $tindakLanjut);
 
         $tindakLanjut->load([

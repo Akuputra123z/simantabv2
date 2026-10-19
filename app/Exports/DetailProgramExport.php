@@ -18,7 +18,6 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class DetailProgramExport implements FromCollection, WithColumnWidths, WithHeadings, WithStyles, WithTitle
 {
     protected $auditProgram;
-
     protected $details;
 
     public function __construct(AuditProgram $auditProgram, Collection $details)
@@ -35,12 +34,15 @@ class DetailProgramExport implements FromCollection, WithColumnWidths, WithHeadi
                 'nama' => $d->nama_detail_program,
                 'jenis' => $d->jenis_kegiatan ?? '-',
                 'objek' => $d->objek_pengawasan ?? '-',
+                'ruang_lingkup' => $d->ruang_lingkup ?? '-',
                 'personil' => $d->personil ?? '-',
+                'tujuan' => $d->tujuan ?? '-',
                 'anggaran' => (float) $d->anggaran,
-                'risiko' => $d->tingkat_resiko ?? '-',
-                'jadwal' => DateHelper::formatJadwal($d->jadwal),
+                'risiko' => $d->tingkat_resiko ?? 'Sedang',
+                'target_laporan' => $d->laporan_akhir ?? '1',
+                'jadwal' => $d->jadwal ? DateHelper::formatJadwal($d->jadwal) : '-',
                 'tim' => $d->tim ?? '-',
-                'status' => strtoupper($d->status),
+                'status' => strtoupper($d->status ?? 'rencana'),
             ];
         });
     }
@@ -49,15 +51,37 @@ class DetailProgramExport implements FromCollection, WithColumnWidths, WithHeadi
     {
         return [
             'No',
-            'Nama Sub-Program',
+            'Nama Detail Program',
             'Jenis Kegiatan',
             'Objek Pengawasan',
-            'Personil',
+            'Ruang Lingkup',
+            'Jumlah Personil',
+            'Tujuan Pengawasan',
             'Anggaran (Rp)',
             'Tingkat Risiko',
-            'Jadwal',
-            'Tim',
+            'Target Laporan',
+            'Jadwal Pelaksanaan',
+            'Tim Pelaksana',
             'Status',
+        ];
+    }
+
+    public function columnWidths(): array
+    {
+        return [
+            'A' => 6,
+            'B' => 38,
+            'C' => 18,
+            'D' => 24,
+            'E' => 30,
+            'F' => 15,
+            'G' => 45,
+            'H' => 18,
+            'I' => 15,
+            'J' => 15,
+            'K' => 20,
+            'L' => 16,
+            'M' => 14,
         ];
     }
 
@@ -67,7 +91,7 @@ class DetailProgramExport implements FromCollection, WithColumnWidths, WithHeadi
         $lastRow = $count + 1;
 
         // Header row
-        $sheet->getStyle('A1:J1')->applyFromArray([
+        $sheet->getStyle('A1:M1')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['argb' => 'FFFFFFFF'],
@@ -75,7 +99,7 @@ class DetailProgramExport implements FromCollection, WithColumnWidths, WithHeadi
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'FF1E293B'],
+                'startColor' => ['argb' => 'FF1E293B'], // Slate 800
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -83,44 +107,46 @@ class DetailProgramExport implements FromCollection, WithColumnWidths, WithHeadi
             ],
         ]);
 
-        // Border seluruh data
-        $sheet->getStyle("A1:J{$lastRow}")->applyFromArray([
-            'borders' => [
-                'allBorders' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['argb' => 'FFD1D5DB'],
-                ],
-            ],
-        ]);
+        $sheet->getRowDimension(1)->setRowHeight(24);
 
-        // Alternating row colors
-        for ($i = 2; $i <= $lastRow; $i++) {
-            if ($i % 2 === 0) {
-                $sheet->getStyle("A{$i}:J{$i}")->applyFromArray([
-                    'fill' => [
-                        'fillType' => Fill::FILL_SOLID,
-                        'startColor' => ['argb' => 'FFF8FAFC'],
+        if ($count > 0) {
+            // Border seluruh data
+            $sheet->getStyle("A1:M{$lastRow}")->applyFromArray([
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                        'color' => ['argb' => 'FFCBD5E1'],
                     ],
-                ]);
+                ],
+            ]);
+
+            // Alternating row colors
+            for ($i = 2; $i <= $lastRow; $i++) {
+                if ($i % 2 === 0) {
+                    $sheet->getStyle("A{$i}:M{$i}")->applyFromArray([
+                        'fill' => [
+                            'fillType' => Fill::FILL_SOLID,
+                            'startColor' => ['argb' => 'FFF8FAFC'],
+                        ],
+                    ]);
+                }
             }
-        }
 
-        // Anggaran column (F) — right align + number format
-        $sheet->getStyle("F2:F{$lastRow}")->applyFromArray([
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
-        ]);
-        $sheet->getStyle("F2:F{$lastRow}")->getNumberFormat()->setFormatCode('#,##0');
+            // Anggaran column (H) — right align + number format
+            $sheet->getStyle("H2:H{$lastRow}")->applyFromArray([
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
+            ]);
+            $sheet->getStyle("H2:H{$lastRow}")->getNumberFormat()->setFormatCode('#,##0');
 
-        // Center some columns
-        foreach (['A', 'B', 'J'] as $col) {
-            $sheet->getStyle("{$col}2:{$col}{$lastRow}")
-                ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        }
+            // Center specific columns
+            foreach (['A', 'C', 'F', 'I', 'J', 'K', 'L', 'M'] as $col) {
+                $sheet->getStyle("{$col}2:{$col}{$lastRow}")
+                    ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            }
 
-        // Row height
-        $sheet->getRowDimension(1)->setRowHeight(22);
-        for ($i = 2; $i <= $lastRow; $i++) {
-            $sheet->getRowDimension($i)->setRowHeight(18);
+            for ($i = 2; $i <= $lastRow; $i++) {
+                $sheet->getRowDimension($i)->setRowHeight(20);
+            }
         }
 
         // Freeze header
@@ -129,24 +155,8 @@ class DetailProgramExport implements FromCollection, WithColumnWidths, WithHeadi
         return [];
     }
 
-    public function columnWidths(): array
-    {
-        return [
-            'A' => 5,
-            'B' => 10,
-            'C' => 10,
-            'D' => 24,
-            'E' => 10,
-            'F' => 24,
-            'G' => 14,
-            'H' => 16,
-            'I' => 14,
-            'J' => 10,
-        ];
-    }
-
     public function title(): string
     {
-        return 'Sub-Program';
+        return 'Sub-Program PKPT';
     }
 }

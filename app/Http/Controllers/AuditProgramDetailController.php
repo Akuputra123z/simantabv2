@@ -19,13 +19,13 @@ class AuditProgramDetailController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv|max:10240',
+            'file' => 'required|mimes:xlsx,xls,csv|max:15360',
             'audit_program_id' => 'required|exists:audit_programs,id',
             'mode' => 'required|in:add,replace',
         ], [
             'file.required' => 'Silakan pilih berkas Excel (.xlsx, .xls) atau CSV untuk diimpor.',
             'file.mimes' => 'Format berkas harus berupa Excel (.xlsx, .xls) atau CSV.',
-            'file.max' => 'Ukuran berkas maksimal adalah 10MB.',
+            'file.max' => 'Ukuran berkas maksimal adalah 15MB.',
             'audit_program_id.exists' => 'Program audit (PKPT) tidak ditemukan di sistem.',
         ]);
 
@@ -135,9 +135,15 @@ class AuditProgramDetailController extends Controller
         }
     }
 
-    public function show($id)
+    public function show(AuditProgramDetail $auditProgramDetail)
     {
-        $detail = AuditProgramDetail::with(['parentProgram', 'assignments.ketuaTim', 'assignments.unitDiperiksas'])->findOrFail($id);
+        $rawParam = request()->route()?->originalParameter('auditProgramDetail') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $auditProgramDetail->uuid || is_numeric($rawParam))) {
+            return redirect()->route('audit-program-detail.show', $auditProgramDetail, 301);
+        }
+
+        $auditProgramDetail->load(['parentProgram', 'assignments.ketuaTim', 'assignments.unitDiperiksas']);
+        $detail = $auditProgramDetail;
         $assignments = $detail->assignments;
 
         return view('pages.audit-program-detail.show', compact('detail', 'assignments'));
@@ -145,6 +151,11 @@ class AuditProgramDetailController extends Controller
 
     public function edit(AuditProgramDetail $auditProgramDetail)
     {
+        $rawParam = request()->route()?->originalParameter('auditProgramDetail') ?? request()->segment(2);
+        if ($rawParam && ($rawParam !== $auditProgramDetail->uuid || is_numeric($rawParam))) {
+            return redirect()->route('audit-program-detail.edit', $auditProgramDetail, 301);
+        }
+
         $detail = $auditProgramDetail;
         $auditProgram = $detail->parentProgram;
         if (! $auditProgram) {
@@ -183,7 +194,7 @@ class AuditProgramDetailController extends Controller
         try {
             $auditProgramDetail->update($validated);
 
-            return redirect()->route('audit-program-detail.show', $auditProgramDetail->id)->with('success', 'Data diperbarui.');
+            return redirect()->route('audit-program-detail.show', $auditProgramDetail)->with('success', 'Data diperbarui.');
         } catch (\Exception $e) {
             return back()->withInput()->with('error', 'Gagal memperbarui data.');
         }

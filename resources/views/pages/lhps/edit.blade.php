@@ -969,7 +969,7 @@ function lhpEditWizard() {
 
         processBatchFiles(fileList) {
             const allowed = ['pdf', 'jpg', 'jpeg', 'png'];
-            const maxBytes = 10 * 1024 * 1024; // 10 MB
+            const maxBytes = 15 * 1024 * 1024; // 15 MB
 
             for (let i = 0; i < fileList.length; i++) {
                 const file = fileList[i];
@@ -982,7 +982,7 @@ function lhpEditWizard() {
                 }
 
                 if (file.size > maxBytes) {
-                    this.stepErrors = [`Ukuran berkas "${file.name}" (${this.formatBytes(file.size)}) melebihi batas 10 MB.`];
+                    this.stepErrors = [`Ukuran berkas "${file.name}" (${this.formatBytes(file.size)}) melebihi batas 15 MB.`];
                     this.showErrorModal = true;
                     continue;
                 }
@@ -1024,7 +1024,7 @@ function lhpEditWizard() {
             }
 
             if (file.size > maxBytes) {
-                this.stepErrors = [`Ukuran berkas "${file.name}" (${this.formatBytes(file.size)}) melebihi batas 10 MB.`];
+                this.stepErrors = [`Ukuran berkas "${file.name}" (${this.formatBytes(file.size)}) melebihi batas 15 MB.`];
                 this.showErrorModal = true;
                 event.target.value = '';
                 return;
@@ -1709,7 +1709,7 @@ function lhpEditWizard() {
                                 <div class="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
                                     <span>Format: PDF, JPG, PNG</span>
                                     <span>•</span>
-                                    <span>Maksimal 10 MB per berkas</span>
+                                    <span>Maksimal 15 MB per berkas</span>
                                     @if($lhp->attachments->isNotEmpty())
                                         <span class="font-semibold text-emerald-600 dark:text-emerald-400">• {{ $lhp->attachments->count() }} berkas tersimpan</span>
                                     @endif
@@ -1821,7 +1821,7 @@ function lhpEditWizard() {
                                         Tarik &amp; letakkan berkas baru ke sini, atau <span class="text-blue-600 underline dark:text-blue-400 font-bold">pilih dari perangkat</span>
                                     </p>
                                     <p class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
-                                        Format PDF, JPG, PNG (Maksimal 10 MB per file)
+                                        Format PDF, JPG, PNG (Maksimal 15 MB per file)
                                     </p>
                                 </div>
                             </div>

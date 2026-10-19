@@ -47,7 +47,7 @@
         </div>
 
         <div class="flex items-center gap-3">
-            <a href="{{ route('audit-program-detail.edit', $detail->id) }}"
+            <a href="{{ route('audit-program-detail.edit', $detail) }}"
                class="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-xs font-bold text-gray-600 transition hover:bg-gray-50 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
                 Edit Detail
             </a>

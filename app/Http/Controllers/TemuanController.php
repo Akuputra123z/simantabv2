@@ -103,7 +103,7 @@ class TemuanController extends Controller
             'jumlah_barang' => 'nullable|numeric|min:0',
             'kondisi_barang' => 'nullable|string',
             'lokasi_barang' => 'nullable|string',
-            'attachments.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'attachments.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:15360',
             'attachments.*.name' => 'nullable|string',
         ]);
 
@@ -177,9 +177,9 @@ class TemuanController extends Controller
             'jumlah_barang' => 'nullable|numeric|min:0',
             'kondisi_barang' => 'nullable|string',
             'lokasi_barang' => 'nullable|string',
-            'attachments.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'attachments.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:15360',
             'attachments.*.name' => 'nullable|string',
-            'new_attachments.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'new_attachments.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:15360',
         ]);
 
         try {

@@ -204,7 +204,7 @@ class LhrController extends Controller implements HasMiddleware
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
             'attachments' => 'nullable|array',
-            'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png,xlsx,xls,docx,doc|max:10240',
+            'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png,xlsx,xls,docx,doc|max:15360',
             'attachment_notes' => 'nullable|array',
             'attachment_notes.*' => 'nullable|string|max:255',
         ], [
@@ -408,7 +408,7 @@ class LhrController extends Controller implements HasMiddleware
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
             'next_step' => 'nullable|integer|min:1|max:3',
             'attachments' => 'nullable|array',
-            'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png,xlsx,xls,docx,doc|max:10240',
+            'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png,xlsx,xls,docx,doc|max:15360',
             'attachment_notes' => 'nullable|array',
             'attachment_notes.*' => 'nullable|string|max:255',
             'delete_attachments' => 'nullable|array',

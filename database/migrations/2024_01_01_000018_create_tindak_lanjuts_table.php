@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('tindak_lanjuts', function (Blueprint $table) {
             $table->id();
+            $table->uuid('uuid')->nullable()->unique();
             $table->foreignId('recommendation_id')
                 ->constrained('recommendations')
                 ->cascadeOnDelete();

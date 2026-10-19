@@ -97,8 +97,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/create/{audit_program_id}', [AuditProgramDetailController::class, 'create'])->name('create');
         Route::post('/', [AuditProgramDetailController::class, 'store'])->name('store');
 
-        // Rute ini yang sebelumnya "memakan" rute download-template
-        Route::get('/{id}', [AuditProgramDetailController::class, 'show'])->name('show');
+        Route::get('/{auditProgramDetail}', [AuditProgramDetailController::class, 'show'])->name('show');
 
         Route::get('/{auditProgramDetail}/edit', [AuditProgramDetailController::class, 'edit'])->name('edit');
         Route::put('/{auditProgramDetail}', [AuditProgramDetailController::class, 'update'])->name('update');

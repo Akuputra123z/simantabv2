@@ -26,7 +26,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
         .ts-wrapper {
             min-width: 0 !important;
@@ -284,7 +284,7 @@
                     new TomSelect(el, {
                         maxItems: el.multiple ? undefined : 1,
                         hideSelected: true,
-                        maxOptions: null,
+                        maxOptions: 50,
                         allowEmptyOption: true,
                         plugins: el.multiple ? ['remove_button'] : [],
                         onChange: function() {
@@ -299,8 +299,7 @@
             });
         });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <!-- PWA Service Worker Registration -->
     <script>

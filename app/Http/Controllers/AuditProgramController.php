@@ -110,7 +110,7 @@ class AuditProgramController extends Controller
      */
     public function create()
     {
-        $kategoriOptions = AuditProgram::KATEGORI;
+        $kategoriOptions = array_values(array_diff(AuditProgram::KATEGORI, ['PKPT']));
 
         return view('pages.audit-program.create', compact('kategoriOptions'));
     }
@@ -123,10 +123,11 @@ class AuditProgramController extends Controller
         $validated = $request->validate([
             'nama_program' => 'required|string|max:255',
             'tahun' => 'required|integer|digits:4',
-            'kategori' => 'required|string|in:'.implode(',', AuditProgram::KATEGORI),
+            'kategori' => 'nullable|string|in:'.implode(',', AuditProgram::KATEGORI),
         ]);
 
         $program = AuditProgram::create(array_merge($validated, [
+            'kategori' => $validated['kategori'] ?? 'PKPT',
             'status' => 'draft',
             'created_by' => auth()->id(),
             'updated_by' => auth()->id(),
@@ -193,7 +194,7 @@ class AuditProgramController extends Controller
         }
 
         $program = $auditProgram;
-        $kategoriOptions = AuditProgram::KATEGORI;
+        $kategoriOptions = array_values(array_diff(AuditProgram::KATEGORI, ['PKPT']));
 
         return view('pages.audit-program.edit', compact('program', 'kategoriOptions'));
     }

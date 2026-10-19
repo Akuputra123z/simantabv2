@@ -605,7 +605,7 @@
                                             {{-- File Upload --}}
                                             <div :class="{'sm:col-span-2': !isUang && skema !== 'pengembalian_barang'}">
                                                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                                    Upload File Bukti Pendukung (Maks 10MB/file: PDF, JPG, PNG, DOC, XLS)
+                                                    Upload File Bukti Pendukung (Maks 15MB/file: PDF, JPG, PNG, DOC, XLS)
                                                 </label>
                                                 <input type="file" name="attachments[]" multiple
                                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"

@@ -500,7 +500,7 @@ class TindakLanjutController extends Controller
             'catatan_tl' => 'nullable|string|max:2000',
             'hambatan' => 'nullable|string|max:2000',
             'attachments' => 'nullable|array',
-            'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
+            'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png,webp|max:15360',
         ], [
             'recommendation_id.required' => 'Rekomendasi yang Ditindaklanjuti wajib dipilih.',
             'recommendation_id.exists' => 'Rekomendasi yang dipilih tidak valid atau tidak ditemukan.',
@@ -726,7 +726,7 @@ class TindakLanjutController extends Controller
             'catatan_tl' => 'nullable|string|max:1000',
             'hambatan' => 'nullable|string|max:1000',
             'new_attachments' => 'nullable|array',
-            'new_attachments.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'new_attachments.*' => 'file|mimes:pdf,jpg,jpeg,png|max:15360',
         ]);
 
         $rekom = Recommendation::findOrFail($validated['recommendation_id']);

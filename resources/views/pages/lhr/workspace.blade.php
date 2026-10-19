@@ -1253,6 +1253,7 @@ function lhrWorkspace(initialStep = 1) {
                 }
 
                 tinymce.init({
+                    license_key: 'gpl',
                     selector: selector,
                     height: 200,
                     plugins: 'advlist autolink lists link table code help wordcount',

@@ -21,6 +21,7 @@
         if (el.closest('[x-data]') && typeof Alpine !== 'undefined') {
             Alpine.$nextTick(() => {
                 tinymce.init({
+                    license_key: 'gpl',
                     selector: selector,
                     height: {{ $height }},
                     plugins: 'advlist autolink lists link charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount',
@@ -41,6 +42,7 @@
         } else {
             document.addEventListener('DOMContentLoaded', function() {
                 tinymce.init({
+                    license_key: 'gpl',
                     selector: selector,
                     height: {{ $height }},
                     plugins: 'advlist autolink lists link charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount',

@@ -10,9 +10,10 @@ return new class extends Migration
     {
         Schema::create('audit_programs', function (Blueprint $table) {
             $table->id();
+            $table->uuid('uuid')->nullable()->unique();
             $table->string('nama_program', 255);
             $table->year('tahun')->index();
-            $table->string('kategori', 20);
+            $table->string('kategori', 20)->default('PKPT');
             $table->string('status', 20)->default('draft');
             $table->string('approval_status', 30)->default('draft');
             $table->foreignId('approved_by')

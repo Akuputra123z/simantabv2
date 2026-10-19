@@ -34,7 +34,7 @@ class UpdateTindakLanjutCicilanRequest extends FormRequest
             'keterangan' => ['nullable', 'string', 'max:1000'],
             'status' => ['required', 'in:menunggu_verifikasi,diterima,ditolak'],
             'attachments' => ['nullable', 'array'],
-            'attachments.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx', 'max:10240'],
+            'attachments.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx', 'max:15360'],
         ];
     }
 

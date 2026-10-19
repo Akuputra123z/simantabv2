@@ -91,7 +91,7 @@
                         <div class="rounded-lg bg-blue-50/80 p-3 text-xs text-blue-800 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300">
                             <p class="font-semibold mb-1">💡 Petunjuk Impor File:</p>
                             <ul class="list-disc list-inside space-y-0.5 text-[11px]">
-                                <li>Format yang didukung: <strong>.xlsx, .xls, .csv</strong> (Maks 10MB).</li>
+                                <li>Format yang didukung: <strong>.xlsx, .xls, .csv</strong> (Maks 15MB).</li>
                                 <li>Header kolom: <code>nama_unit</code>, <code>kategori</code>, <code>nama_kecamatan</code>, <code>alamat</code>, <code>telepon</code>, <code>keterangan</code>.</li>
                                 <li>Jika unit sudah ada, data lama akan diperbarui secara otomatis.</li>
                             </ul>

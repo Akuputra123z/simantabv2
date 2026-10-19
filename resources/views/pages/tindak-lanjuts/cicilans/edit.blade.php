@@ -254,7 +254,7 @@
                             <input type="file" name="attachments[]" multiple
                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
                                    class="block w-full text-xs text-slate-500 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/40 dark:file:text-indigo-300 border border-slate-200 dark:border-slate-800 rounded-xl p-2 bg-slate-50/50 dark:bg-slate-800/30">
-                            <p class="text-[11px] text-slate-400 mt-1">Format: PDF, JPG, PNG, DOC, XLS (Maks. 10MB per file)</p>
+                            <p class="text-[11px] text-slate-400 mt-1">Format: PDF, JPG, PNG, DOC, XLS (Maks. 15MB per file)</p>
                         </div>
                     </div>
 

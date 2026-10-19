@@ -720,7 +720,7 @@
                     </template>
                 </div>
                 <p class="mt-3 text-[11px] text-gray-500 dark:text-gray-400">
-                    Format file yang didukung: <strong>PDF, JPG, JPEG, PNG, WEBP</strong> (Maksimal 10 MB per berkas).
+                    Format file yang didukung: <strong>PDF, JPG, JPEG, PNG, WEBP</strong> (Maksimal 15 MB per berkas).
                 </p>
             </div>
 

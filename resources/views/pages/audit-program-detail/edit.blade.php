@@ -20,7 +20,7 @@
         </div>
     @endif
 
-    <form action="{{ route('audit-program-detail.update', $detail->id) }}" method="POST" x-data="{ kategori: '{{ $kategori }}' }">
+    <form action="{{ route('audit-program-detail.update', $detail) }}" method="POST" x-data="{ kategori: '{{ $kategori }}' }">
         @csrf
         @method('PUT')
 

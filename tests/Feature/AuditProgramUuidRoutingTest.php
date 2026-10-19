@@ -103,4 +103,64 @@ class AuditProgramUuidRoutingTest extends TestCase
         $response->assertRedirect(route('audit-program.index'));
         $this->assertSoftDeleted('audit_programs', ['id' => $this->program->id]);
     }
+
+    public function test_create_page_renders_without_pkpt_category_option(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('audit-program.create'));
+
+        $response->assertStatus(200);
+        $response->assertSee('id="kategori"', false);
+        $response->assertDontSee('value="PKPT"', false);
+        $response->assertSee('value="BPK"', false);
+        $response->assertSee('value="BPKP"', false);
+        $response->assertSee('value="ITPROV"', false);
+        $response->assertSee('value="ITDA"', false);
+        $response->assertSee('value="LAINNYA"', false);
+    }
+
+    public function test_can_store_audit_program_with_selected_kategori(): void
+    {
+        $response = $this->actingAs($this->admin)->post(route('audit-program.store'), [
+            'nama_program' => 'Audit BPK TA 2027',
+            'tahun' => 2027,
+            'kategori' => 'BPK',
+        ]);
+
+        $response->assertRedirect(route('audit-program.index'));
+        $this->assertDatabaseHas('audit_programs', [
+            'nama_program' => 'Audit BPK TA 2027',
+            'tahun' => 2027,
+            'kategori' => 'BPK',
+        ]);
+    }
+
+    public function test_edit_page_renders_without_pkpt_category_option(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('audit-program.edit', $this->program));
+
+        $response->assertStatus(200);
+        $response->assertSee('id="kategori"', false);
+        $response->assertDontSee('value="PKPT"', false);
+        $response->assertSee('value="BPK"', false);
+        $response->assertSee('value="BPKP"', false);
+        $response->assertSee('value="ITPROV"', false);
+        $response->assertSee('value="ITDA"', false);
+        $response->assertSee('value="LAINNYA"', false);
+    }
+
+    public function test_can_update_audit_program_with_selected_kategori(): void
+    {
+        $response = $this->actingAs($this->admin)->put(route('audit-program.update', $this->program), [
+            'nama_program' => 'Audit BPKP Updated TA 2026',
+            'tahun' => 2026,
+            'kategori' => 'BPKP',
+            'status' => 'berjalan',
+        ]);
+
+        $this->assertDatabaseHas('audit_programs', [
+            'id' => $this->program->id,
+            'kategori' => 'BPKP',
+            'status' => 'berjalan',
+        ]);
+    }
 }

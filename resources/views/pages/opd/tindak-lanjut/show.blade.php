@@ -252,7 +252,7 @@
 
                          <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1.5">
-                                Upload Bukti (Maks. 5 file, 10MB/file)
+                                Upload Bukti (Maks. 5 file, 15MB/file)
                             </label>
                             <div class="flex flex-wrap gap-3">
                                 <input type="file" name="attachments[]" multiple
@@ -265,7 +265,7 @@
                             @error('attachments')
                                 <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                             @enderror
-                            <p class="mt-1.5 text-xs text-gray-400">Format: PDF, JPG, PNG, DOC, XLS. Maksimal 10MB per file.</p>
+                            <p class="mt-1.5 text-xs text-gray-400">Format: PDF, JPG, PNG, DOC, XLS. Maksimal 15MB per file.</p>
                         </div>
 
                         <div>

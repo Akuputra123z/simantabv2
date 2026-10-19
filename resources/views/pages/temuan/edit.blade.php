@@ -182,7 +182,7 @@
                 {{-- Tambah File Baru (ditampilkan pertama) --}}
                 <div class="mb-6">
                     <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Tambah File Baru</label>
-                    <p class="mb-3 text-xs text-gray-400">PDF, JPG, JPEG, PNG. Maks 10MB per file.</p>
+                    <p class="mb-3 text-xs text-gray-400">PDF, JPG, JPEG, PNG. Maks 15MB per file.</p>
                     <div id="new-attachments-container" class="space-y-3">
                         <div class="flex items-center gap-3">
                             <input type="file" name="new_attachments[]"

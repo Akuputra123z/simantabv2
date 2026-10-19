@@ -164,6 +164,7 @@
                                     class="h-10 w-full appearance-none rounded-lg border px-4 pr-10 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer
                                            @error('kategori') border-red-500 text-red-600 @else border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white @enderror
                                            bg-white dark:bg-gray-900 hover:border-blue-400">
+                                <option value="" disabled {{ old('kategori', $program->kategori) && in_array(old('kategori', $program->kategori), $kategoriOptions) ? '' : 'selected' }}>-- Pilih Kategori --</option>
                                 @foreach($kategoriOptions as $opt)
                                     <option value="{{ $opt }}" {{ old('kategori', $program->kategori) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                                 @endforeach

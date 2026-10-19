@@ -700,7 +700,7 @@
                         atau klik area kotak ini / seret dan lepas berkas ke sini
                     </p>
                     <p class="text-[11px] text-gray-400 dark:text-gray-500">
-                        Mendukung format <strong>PDF, DOCX/DOC, XLSX/XLS, dan JPG/PNG</strong> (Maks. 10 MB per berkas)
+                        Mendukung format <strong>PDF, DOCX/DOC, XLSX/XLS, dan JPG/PNG</strong> (Maks. 15 MB per berkas)
                     </p>
                 </div>
 
@@ -942,7 +942,7 @@
             files: [],
             deletedExisting: [],
             dataTransfer: new DataTransfer(),
-            maxBytes: 10 * 1024 * 1024, // 10 MB per berkas
+            maxBytes: 15 * 1024 * 1024, // 15 MB per berkas
             allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png'],
 
             toggleDeleteExisting(id) {
@@ -990,7 +990,7 @@
                     }
 
                     if (file.size > this.maxBytes) {
-                        this.errorMessage = `Ukuran berkas "${file.name}" (${this.formatBytes(file.size)}) melebihi batas maksimal 10 MB.`;
+                        this.errorMessage = `Ukuran berkas "${file.name}" (${this.formatBytes(file.size)}) melebihi batas maksimal 15 MB.`;
                         continue;
                     }
 

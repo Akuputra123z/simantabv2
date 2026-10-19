@@ -5,12 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class AuditProgramDetail extends Model
 {
     protected $table = 'audit_program_details';
 
     protected $fillable = [
+        'uuid',
         'audit_program_id',
         'nama_detail_program',
         'jenis_kegiatan',
@@ -29,6 +31,36 @@ class AuditProgramDetail extends Model
     protected $casts = [
         'anggaran' => 'decimal:2',
     ];
+
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $field = $field ?? 'uuid';
+        $model = $this->where($field, $value)->first();
+
+        if ($model) {
+            return $model;
+        }
+
+        if ($field === 'uuid' && is_numeric($value)) {
+            return $this->where('id', $value)->firstOrFail();
+        }
+
+        abort(404);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
+            }
+        });
+    }
 
     /**
      * Relasi ke Program Kerja Utama (PKPT)

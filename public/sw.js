@@ -72,17 +72,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML / Page Navigation -> Network First with Cache Fallback
+  // HTML / Page Navigation -> Network First with Offline Fallback (do not write dynamic admin pages to cache)
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const copy = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          }
-          return networkResponse;
-        })
         .catch(() => {
           return caches.match(request).then((cachedResponse) => {
             if (cachedResponse) return cachedResponse;

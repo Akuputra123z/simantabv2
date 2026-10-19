@@ -1239,7 +1239,7 @@ function lhpCreateWizard() {
 
         processBatchFiles(fileList) {
             const allowed = ['pdf', 'jpg', 'jpeg', 'png'];
-            const maxBytes = 10 * 1024 * 1024; // 10 MB
+            const maxBytes = 15 * 1024 * 1024; // 15 MB
 
             for (let i = 0; i < fileList.length; i++) {
                 const file = fileList[i];
@@ -1252,7 +1252,7 @@ function lhpCreateWizard() {
                 }
 
                 if (file.size > maxBytes) {
-                    this.stepErrors = [`Ukuran berkas "${file.name}" (${this.formatBytes(file.size)}) melebihi batas 10 MB.`];
+                    this.stepErrors = [`Ukuran berkas "${file.name}" (${this.formatBytes(file.size)}) melebihi batas 15 MB.`];
                     this.showErrorModal = true;
                     continue;
                 }
@@ -1294,7 +1294,7 @@ function lhpCreateWizard() {
             }
 
             if (file.size > maxBytes) {
-                this.stepErrors = [`Ukuran berkas "${file.name}" (${this.formatBytes(file.size)}) melebihi batas 10 MB.`];
+                this.stepErrors = [`Ukuran berkas "${file.name}" (${this.formatBytes(file.size)}) melebihi batas 15 MB.`];
                 this.showErrorModal = true;
                 event.target.value = '';
                 return;
@@ -2154,7 +2154,7 @@ function lhpCreateWizard() {
                                 <div class="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
                                     <span>Format: PDF, JPG, PNG</span>
                                     <span>•</span>
-                                    <span>Maksimal 10 MB per berkas</span>
+                                    <span>Maksimal 15 MB per berkas</span>
                                     <template x-if="attachments.length > 0">
                                         <span class="font-semibold text-blue-600 dark:text-blue-400" x-text="`• ${attachments.length} berkas disiapkan`"></span>
                                     </template>

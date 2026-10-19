@@ -48,11 +48,11 @@ class UnitDiperiksaController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:10240',
+            'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:15360',
         ], [
             'file.required' => 'Pilih file Excel atau CSV untuk diimpor.',
             'file.mimes' => 'Format file harus berupa .xlsx, .xls, atau .csv.',
-            'file.max' => 'Ukuran file tidak boleh melebihi 10MB.',
+            'file.max' => 'Ukuran file tidak boleh melebihi 15MB.',
         ]);
 
         try {

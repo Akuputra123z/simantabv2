@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('audit_assignments', function (Blueprint $table) {
             $table->id();
+            $table->uuid('uuid')->nullable()->unique();
             $table->foreignId('audit_program_detail_id')
                 ->constrained('audit_program_details')
                 ->cascadeOnDelete();

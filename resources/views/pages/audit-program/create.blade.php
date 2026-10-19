@@ -134,7 +134,7 @@
                     @enderror
                 </div>
 
-                {{-- Kategori --}}
+                {{-- Kategori (Hanya PKPT) --}}
                 <div>
                     <label for="kategori" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Kategori <span class="text-red-500">*</span>

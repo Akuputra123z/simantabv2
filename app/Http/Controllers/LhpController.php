@@ -437,7 +437,7 @@ class LhpController extends Controller
             'temuans.*.recommendations.*.nilai_rekom' => 'nullable',
             'temuans.*.recommendations.*.batas_waktu' => 'nullable|date',
             'attachments' => 'nullable|array',
-            'attachments.*.file_path' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
+            'attachments.*.file_path' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:15360',
             'attachments.*.file_name' => 'nullable|string',
             'attachments.*.keterangan' => 'nullable|string',
         ], [
@@ -788,7 +788,7 @@ class LhpController extends Controller
             'temuans.*.recommendations.*.nilai_rekom' => 'nullable',
             'temuans.*.recommendations.*.batas_waktu' => 'nullable|date',
             'attachments' => 'nullable|array',
-            'attachments.*.file_path' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
+            'attachments.*.file_path' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:15360',
             'attachments.*.file_name' => 'nullable|string',
             'attachments.*.keterangan' => 'nullable|string',
         ], [

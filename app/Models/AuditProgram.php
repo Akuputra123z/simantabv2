@@ -43,6 +43,11 @@ class AuditProgram extends Model
         'approved_at' => 'datetime',
     ];
 
+    protected $attributes = [
+        'kategori' => 'PKPT',
+        'status' => 'draft',
+    ];
+
     /**
      * Pastikan kategori selalu mengembalikan string valid (default 'PKPT').
      */
